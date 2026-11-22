@@ -4,26 +4,35 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -148,5 +157,52 @@ private fun ProvideColorAndStyle(color: Color, style: TextStyle, content: @Compo
     CompositionLocalProvider(LocalContentColor provides color) { ProvideTextStyle(style, content) }
 }
 
+/**
+ * A dialog's main action: one filled pill, at least 48dp tall. A [destructive] action (one that
+ * deletes or removes something for good) is filled in the error colour. Pair it with
+ * [BoxloreDialogDismissButton], so the action and Cancel never look alike.
+ */
+@Composable
+fun BoxloreDialogConfirmButton(text: String, onClick: () -> Unit, destructive: Boolean = false, enabled: Boolean = true) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.heightIn(min = DialogButtonMinHeight),
+        colors = if (destructive) {
+            ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError)
+        } else {
+            ButtonDefaults.buttonColors()
+        },
+    ) {
+        Text(text, textAlign = TextAlign.Center)
+    }
+}
+
+/** A dialog's quiet way out (Cancel, Not now): a text button with no container. */
+@Composable
+fun BoxloreDialogDismissButton(text: String, onClick: () -> Unit) {
+    TextButton(onClick = onClick, modifier = Modifier.heightIn(min = DialogButtonMinHeight)) {
+        Text(text, textAlign = TextAlign.Center)
+    }
+}
+
+/** Which colour role a [BoxloreDialogIcon] takes: neutral, a caution, or something that destroys. */
+enum class BoxloreDialogIconTone { Neutral, Caution, Destructive }
+
+/** A dialog's icon in a 48dp circle of the [tone]'s container colour, its icon in the matching on-colour. */
+@Composable
+fun BoxloreDialogIcon(icon: ImageVector, tone: BoxloreDialogIconTone = BoxloreDialogIconTone.Neutral) {
+    val colors = MaterialTheme.colorScheme
+    val (container, content) = when (tone) {
+        BoxloreDialogIconTone.Neutral -> colors.secondaryContainer to colors.onSecondaryContainer
+        BoxloreDialogIconTone.Caution -> colors.tertiaryContainer to colors.onTertiaryContainer
+        BoxloreDialogIconTone.Destructive -> colors.errorContainer to colors.onErrorContainer
+    }
+    Surface(shape = CircleShape, color = container, contentColor = content) {
+        Icon(icon, contentDescription = null, modifier = Modifier.padding(12.dp).size(24.dp))
+    }
+}
+
+private val DialogButtonMinHeight = 48.dp
 private val DialogMinWidth = 280.dp
 private val DialogMaxWidth = 560.dp
