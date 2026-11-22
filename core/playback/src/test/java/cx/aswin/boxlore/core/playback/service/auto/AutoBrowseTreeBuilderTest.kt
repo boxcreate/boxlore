@@ -186,9 +186,11 @@ class AutoBrowseTreeBuilderTest {
     }
 
     @Test
-    fun aShowsEpisodeListLeavesArchivedEpisodesOut() = runBlocking {
+    fun aShowsEpisodeListStaysNewestFirstAndLeavesArchivedEpisodesOut() = runBlocking {
         database.podcastDao().upsertRow(show("1", latest = episode("e2", publishedSeconds = nowSeconds)))
         database.listeningHistoryDao().upsert(history("trailer", progressMs = 0L, playedAt = 0L).copy(dismissedAt = 30L))
+        // Regression: a started episode was lifted to the top; it now keeps its place.
+        database.listeningHistoryDao().upsert(history("e1", progressMs = 60_000L, playedAt = 10L))
 
         val rows = treeBuilder.podcastEpisodeRows("1", listOf(episode("e2"), episode("e1"), episode("trailer")))
 
