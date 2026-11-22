@@ -16,6 +16,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.ArgumentMatchers.anyList
@@ -167,6 +168,25 @@ class CastTransferPolicyTest {
         BoxLoreCastTransferCallback().transferState(source, target)
 
         verify(target).setMediaItems(listOf(queue[1]), 0, 42_000L)
+    }
+
+    @Test
+    fun `an empty phone player leaves a resumed Cast session alone`() {
+        // Regression: reopening boxlore while casting handed the phone's empty player to the TV,
+        // which paused the episode playing there and reset its speed.
+        val source = mock(Player::class.java)
+        `when`(source.availableCommands).thenReturn(allCommands)
+        `when`(source.currentTimeline).thenReturn(Timeline.EMPTY)
+        `when`(source.mediaItemCount).thenReturn(0)
+        `when`(source.playbackParameters).thenReturn(PlaybackParameters.DEFAULT)
+        `when`(source.trackSelectionParameters).thenReturn(TrackSelectionParameters.DEFAULT)
+        val target = remotePlayer()
+
+        BoxLoreCastTransferCallback().transferState(source, target)
+
+        verify(target, never()).setPlayWhenReady(anyBoolean())
+        verify(target, never()).setPlaybackParameters(any())
+        verify(target, never()).setMediaItems(anyList(), anyInt(), anyLong())
     }
 
     @Test

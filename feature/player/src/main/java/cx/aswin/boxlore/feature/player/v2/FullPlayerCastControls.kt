@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.player.v2
 
-import android.content.Context
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,7 +30,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,14 +48,12 @@ import androidx.media3.cast.Cast
 import androidx.media3.common.util.UnstableApi
 import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
-import com.google.android.gms.cast.framework.CastContext
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.feature.player.R
-import kotlinx.coroutines.delay
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -110,28 +106,23 @@ internal fun CastRoutePickerSheet(
     val mediaRouter = remember(context) { MediaRouter.getInstance(context) }
     val routeSelector = remember(context) { resolveCastRouteSelector(context) }
     val routes = rememberAvailableCastRoutes(mediaRouter, routeSelector)
+    val castSession = rememberCastSessionWatch(context, isCasting)
     var connectingRouteId by rememberSaveable { mutableStateOf<String?>(null) }
     var connectingRouteName by rememberSaveable { mutableStateOf<String?>(null) }
-    var hasConnectedCastSession by remember { mutableStateOf(false) }
+    // The device the phone was casting to when the listener picked; null when it wasn't casting.
+    var connectingFromDeviceId by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val connectionComplete =
-        routes.any { route ->
-            isCastConnectionComplete(
-                pendingRouteId = connectingRouteId,
-                routeId = route.id,
-                isSelected = route.isSelected,
-                hasActiveCastSession = isCasting || hasConnectedCastSession,
+    followCastPick(
+        progress =
+        connectingRouteId?.let {
+            castPickProgress(
+                deviceIdAtPick = connectingFromDeviceId,
+                connected = castSession.connected,
+                startFailed = castSession.startFailed,
             )
-        }
-    dismissConnectedCastRoute(
-        connectionComplete = connectionComplete,
-        onDismiss = onDismiss,
-    )
-    monitorPendingCastConnection(
-        context = context,
-        connectingRouteId = connectingRouteId,
-        onConnectionChanged = { hasConnectedCastSession = it },
-        onTimeout = {
+        },
+        onConnected = onDismiss,
+        onEnded = {
             connectingRouteId = null
             connectingRouteName = null
         },
@@ -146,6 +137,7 @@ internal fun CastRoutePickerSheet(
         CastRoutePickerContent(
             isCasting = isCasting,
             routes = routes,
+            connectedDevice = castSession.connected,
             connectingRouteId = connectingRouteId,
             connectingRouteName = connectingRouteName,
             onStopCasting = {
@@ -153,9 +145,16 @@ internal fun CastRoutePickerSheet(
                 onDismiss()
             },
             onRouteSelected = { route ->
-                connectingRouteId = route.id
-                connectingRouteName = route.name
-                route.select()
+                if (isConnectedCastRoute(route.castDeviceId(), route.name, castSession.connected)) {
+                    // Already casting there: nothing to connect.
+                    onDismiss()
+                } else {
+                    connectingFromDeviceId = castSession.connected?.id
+                    castSession.startFailed = false
+                    connectingRouteId = route.id
+                    connectingRouteName = route.name
+                    route.select()
+                }
             },
         )
     }
@@ -216,56 +215,10 @@ private fun rememberAvailableCastRoutes(
 }
 
 @Composable
-private fun dismissConnectedCastRoute(
-    connectionComplete: Boolean,
-    onDismiss: () -> Unit,
-) {
-    LaunchedEffect(connectionComplete) {
-        if (connectionComplete) {
-            delay(250L)
-            onDismiss()
-        }
-    }
-}
-
-@Composable
-private fun monitorPendingCastConnection(
-    context: android.content.Context,
-    connectingRouteId: String?,
-    onConnectionChanged: (Boolean) -> Unit,
-    onTimeout: () -> Unit,
-) {
-    LaunchedEffect(connectingRouteId) {
-        if (connectingRouteId == null) {
-            onConnectionChanged(false)
-            return@LaunchedEffect
-        }
-        val connected = awaitActiveCastSession(context)
-        onConnectionChanged(connected)
-        if (!connected) onTimeout()
-    }
-}
-
-private suspend fun awaitActiveCastSession(context: android.content.Context): Boolean {
-    repeat(60) {
-        val connected =
-            runCatching {
-                CastContext
-                    .getSharedInstance(context)
-                    .sessionManager
-                    .currentCastSession
-                    ?.isConnected == true
-            }.getOrDefault(false)
-        if (connected) return true
-        delay(250L)
-    }
-    return false
-}
-
-@Composable
 private fun CastRoutePickerContent(
     isCasting: Boolean,
     routes: List<MediaRouter.RouteInfo>,
+    connectedDevice: ConnectedCastDevice?,
     connectingRouteId: String?,
     connectingRouteName: String?,
     onStopCasting: () -> Unit,
@@ -308,22 +261,23 @@ private fun CastRoutePickerContent(
         }
         routes.forEach { route ->
             val isPending = route.id == connectingRouteId
+            val isConnected = isConnectedCastRoute(route.castDeviceId(), route.name, connectedDevice)
             CastRouteRow(
                 title = route.name,
                 subtitle =
                 castRouteSubtitle(
-                    isSelected = route.isSelected,
+                    isConnected = isConnected,
                     isConnecting =
                     isPending ||
                         route.connectionState == MediaRouter.RouteInfo.CONNECTION_STATE_CONNECTING,
                     description = route.description,
                 ).asString(),
-                selected = route.isSelected,
+                selected = isConnected,
                 enabled = connectingRouteId == null,
-                connecting = isPending,
+                connecting = isPending && !isConnected,
                 icon = {
                     Icon(
-                        imageVector = if (route.isSelected) Icons.Rounded.CastConnected else Icons.Rounded.Tv,
+                        imageVector = if (isConnected) Icons.Rounded.CastConnected else Icons.Rounded.Tv,
                         contentDescription = null,
                     )
                 },
