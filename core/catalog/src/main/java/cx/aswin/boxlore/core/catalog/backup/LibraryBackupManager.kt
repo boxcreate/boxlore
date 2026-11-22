@@ -730,6 +730,7 @@ class LibraryBackupManager(
         } ?: nothing
     }
 
+    /** The file's outlines with a feed address, each address once (first outline kept), so screens count what is imported. */
     fun parseOpmlFeeds(inputStream: InputStream): List<OpmlFeed> {
         val feeds = mutableListOf<OpmlFeed>()
         try {
@@ -755,7 +756,7 @@ class LibraryBackupManager(
         } catch (e: Exception) {
             Log.e("OPML_IMPORT", "Failed to parse OPML feeds", e)
         }
-        return feeds
+        return feeds.distinctBy(OpmlFeed::xmlUrl)
     }
 
     /** Imports one outline; a show the catalog couldn't answer for yet is [OpmlFeedImport.Pending], not dropped. */
