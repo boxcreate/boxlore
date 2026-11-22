@@ -26,12 +26,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalToggleButton
+import androidx.compose.material3.FilledTonalToggleButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleButtonDefaults
-import androidx.compose.material3.TonalToggleButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -197,12 +197,12 @@ private fun RailAction(active: Boolean, icon: ImageVector, actionLabel: String, 
             pressedShape = RoundedCornerShape(18.dp),
         )
     }
-    TonalToggleButton(
+    FilledTonalToggleButton(
         checked = active,
         onCheckedChange = { onClick() },
         enabled = !loading,
         shapes = shapes,
-        colors = ToggleButtonDefaults.tonalToggleButtonColors(
+        colors = FilledTonalToggleButtonDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,

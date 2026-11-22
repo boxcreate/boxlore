@@ -17,6 +17,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTouchHeightIsEqualTo
@@ -174,6 +176,40 @@ class BriefingScreenTest {
         assertEquals(listOf(90_000L), seeks)
         assertTrue(playback.isEmpty())
     }
+
+    @Test
+    fun `seek bar follows playback in place and seeks from the new position`() {
+        val state = mutableStateOf<BriefingUiState>(sampleEdition().copy(currentPosition = 30_000, isPlaying = true))
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                Box(Modifier.width(320.dp)) {
+                    BriefingScreen(
+                        uiState = state.value,
+                        onBackClick = {},
+                        onRegionSelect = {},
+                        onPlayPauseClick = { _, position -> playback.add(position) },
+                        onSeekTo = { seeks.add(it) },
+                        onEpisodeClick = {},
+                        onFeedbackClick = {},
+                        defaultEdition = "global",
+                        onDefaultEditionSelect = {},
+                    )
+                }
+            }
+        }
+        val seekbar = compose.onNodeWithTag("briefingSeekbar")
+        val node = seekbar.fetchSemanticsNode().id
+        assertEquals(30_000f / 180_000f, seekbar.progress(), 0.001f)
+
+        compose.runOnIdle { state.value = (state.value as BriefingUiState.Success).copy(currentPosition = 120_000) }
+        assertEquals(120_000f / 180_000f, seekbar.progress(), 0.001f)
+        assertEquals(node, seekbar.fetchSemanticsNode().id)
+
+        seekbar.performSemanticsAction(SemanticsActions.SetProgress) { it(0.25f) }
+        assertEquals(listOf(45_000L), seeks)
+    }
+
+    private fun SemanticsNodeInteraction.progress(): Float = fetchSemanticsNode().config[SemanticsProperties.ProgressBarRangeInfo].current
 
     @Test
     fun `thin progress track preserves seeking with enlarged RTL controls`() {

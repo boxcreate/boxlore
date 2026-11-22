@@ -604,7 +604,8 @@ private fun ClassicNavigationBar(currentRoute: String, onNavigate: (String) -> U
                         ShortNavigationBarItemDefaults.colors(
                             selectedIndicatorColor = accentColors.indicator,
                             selectedIconColor = accentColors.content,
-                            selectedTextColor = accentColors.indicator,
+                            selectedTextColorTopIconPosition = accentColors.indicator,
+                            selectedTextColorStartIconPosition = accentColors.indicator,
                         )
                     },
                 )

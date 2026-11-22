@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.home.components
 
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.model.Podcast
@@ -24,6 +26,7 @@ import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.StableHeroList
 import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
+import kotlin.math.floor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -314,10 +317,22 @@ private fun FullArtworkHeroCard(
 }
 
 /**
- * Tablets show fixed-width cards on an uncontained carousel; phones keep multi-browse. With no end
- * padding, material3 crashes at the end of the row when the space after the last whole card is
- * almost a card wide (its end shift distance is zero while it has two end steps), so tablets always
- * keep at least [UncontainedEndPadding] after the last card. `HeroCarouselEndTest` covers it.
+ * Tablets show fixed-width cards on an uncontained carousel; phones keep multi-browse.
+ *
+ * Known material3 carousel bug (material3 1.5.0 with Compose 1.12, `HorizontalUncontainedCarousel`),
+ * all at the end of the row, for 320dp cards and 16dp gaps:
+ * - With no end padding it crashes where the space after the last whole card is almost a card wide
+ *   (616–672, 952–1008, 1288–1344dp): its end shift distance is zero while it has two end steps.
+ *   Tablets therefore keep at least [UncontainedEndPadding] after the last card.
+ * - Where one whole card fits with almost a second (about 606–672dp), the last card ends past the
+ *   end edge. [heroTabletItemWidth] fits two whole cards there instead.
+ * - With two or more whole cards, the last card can stop up to one card spacing short of the end
+ *   edge (15.5dp at 1316dp; 1.5.0-alpha11 placed it flush). This is accepted, and
+ *   `HeroCarouselEndTest` allows it while still rejecting a card past the edge.
+ * Cause: material3's keyline maths is unchanged, but Compose 1.12's pager settles on a different
+ * current page at the end of the row, and 1.5.0's `KeylineSnapPosition` snaps the last items to the
+ * end step's last focal keyline instead of its first. Re-check on every material3 or Compose
+ * upgrade: once `HeroCarouselEndTest` passes flush without these workarounds, remove them.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -337,11 +352,31 @@ internal fun ResponsiveHeroCarousel(
             end = maxOf(contentPadding.calculateEndPadding(direction), UncontainedEndPadding),
             bottom = contentPadding.calculateBottomPadding(),
         )
-        HorizontalUncontainedCarousel(state = state, itemWidth = preferredItemWidth, itemSpacing = itemSpacing, contentPadding = padding, modifier = modifier, content = content)
+        BoxWithConstraints(modifier) {
+            val available = maxWidth - padding.calculateStartPadding(direction) - padding.calculateEndPadding(direction)
+            val itemWidth = heroTabletItemWidth(available, preferredItemWidth, itemSpacing)
+            HorizontalUncontainedCarousel(state = state, itemWidth = itemWidth, itemSpacing = itemSpacing, contentPadding = padding, modifier = Modifier.matchParentSize(), content = content)
+        }
     } else {
         HorizontalMultiBrowseCarousel(state = state, preferredItemWidth = preferredItemWidth, itemSpacing = itemSpacing, contentPadding = contentPadding, modifier = modifier, content = content)
     }
 }
 
-/** The least end padding that keeps material3's uncontained carousel from crashing at the end of the row. */
+/** The least end padding that keeps material3's uncontained carousel from crashing at the end of the row (see [ResponsiveHeroCarousel]). */
 private val UncontainedEndPadding = 1.dp
+
+/**
+ * The tablet card width for a row [available] wide. When one whole card fits with almost a second
+ * one after it, two narrower cards fill the row instead: material3's uncontained carousel otherwise
+ * leaves the last card past the end edge at the end of the row (a known material3 bug, see
+ * [ResponsiveHeroCarousel]). Every other width keeps [preferred].
+ */
+internal fun heroTabletItemWidth(available: Dp, preferred: Dp, spacing: Dp): Dp {
+    val slot = preferred + spacing
+    val whole = floor(available / slot).toInt().coerceAtLeast(1)
+    val rest = available - slot * whole
+    return if (whole == 1 && rest >= slot * NearlyAnotherCard) available / 2 - spacing else preferred
+}
+
+/** How much of another card's space counts as "almost a second card" for [heroTabletItemWidth]. */
+private const val NearlyAnotherCard = 0.8f

@@ -16,8 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `DailyPage` uses `DailyColors.accent` for primary, Subscribe, checked toggles, Play and the episode time, uses pill chips, and keeps white header icons over the sky by day. ([#1288](https://github.com/boxcreate/boxlore/pull/1288)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `:wear` declares `com.google.android.gms.permission.AD_ID`, matching `:app`, so Play's advertising ID check passes for the watch bundle; `WatchManifestTest` guards both manifests. ([#1286](https://github.com/boxcreate/boxlore/pull/1286)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - `watch_changes_merged` goes out once a day per watch with `day`, `merge_count`, `episode_count` and `follow_change_count` totals, added up by `WatchListeningSummary` in `:core:analytics` instead of one event per merge; `BoxLoreApplication` sends a finished day at startup. ([#1289](https://github.com/boxcreate/boxlore/pull/1289)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- Upgraded Material 3 to the stable 1.5.0 release (Compose 1.12.1, Material 3 Adaptive 1.3.0, Window 1.5.0, Wear Compose 1.7.2). ([#1290](https://github.com/boxcreate/boxlore/pull/1290)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- Replaced the removed Material alert-dialog override with `BoxloreAlertDialog`; phone alert dialogs must use it, enforced by `ArchitectureGuardTest`. ([#1290](https://github.com/boxcreate/boxlore/pull/1290)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - `DailyHorizon` no longer lets the sky's edge show as a line across The Daily's description in dark mode. ([#1291](https://github.com/boxcreate/boxlore/pull/1291)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- Locale and resource reads in Settings, Library, History and Onboarding follow configuration changes, and the account check-email screen updates with the signed-in user. ([#1290](https://github.com/boxcreate/boxlore/pull/1290)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Removed
 - The Daily's dateline (`millisUntilNextDay`) and the unused `daily_horizon` drawable. ([#1288](https://github.com/boxcreate/boxlore/pull/1288)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ## [v0.0.32] - 2026-11-20

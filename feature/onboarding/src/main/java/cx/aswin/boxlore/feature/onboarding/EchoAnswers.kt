@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -66,7 +67,6 @@ import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-import java.util.Locale
 import kotlinx.coroutines.android.awaitFrame
 
 internal data class EchoAnswerCallbacks(
@@ -347,7 +347,7 @@ internal fun EchoSelectionBadge(selected: Boolean, icon: ImageVector?, size: Dp 
 @Composable
 private fun EchoWrittenAnswer(state: OnboardingUiState, hasChoices: Boolean, metrics: EchoLayoutMetrics, callbacks: EchoAnswerCallbacks) {
     val focus = remember { FocusRequester() }
-    val showLanguageHint = EchoLanguageHint.show(state.aiCustomInputText, Locale.getDefault().language)
+    val showLanguageHint = EchoLanguageHint.show(state.aiCustomInputText, LocalConfiguration.current.locales[0].language)
     LaunchedEffect(Unit) {
         // Wait for the hand-off to place the field before asking for the keyboard.
         awaitFrame()

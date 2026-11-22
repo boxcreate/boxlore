@@ -35,7 +35,6 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Queue
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SelectAll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -81,6 +80,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -725,7 +725,7 @@ fun DownloadedShowEpisodesScreen(
 
         // Dialog for deleting selected
         if (deleteConfirmSelectedDialog) {
-            AlertDialog(
+            BoxloreAlertDialog(
                 onDismissRequest = { deleteConfirmSelectedDialog = false },
                 title = { Text(stringResource(R.string.library_downloads_delete_episodes_title)) },
                 text = { Text(pluralStringResource(R.plurals.library_downloads_delete_episodes_body, selectedEpisodeIds.size, selectedEpisodeIds.size)) },
@@ -749,7 +749,7 @@ fun DownloadedShowEpisodesScreen(
 
         // Dialog for deleting whole show
         if (deleteConfirmShowDialog) {
-            AlertDialog(
+            BoxloreAlertDialog(
                 onDismissRequest = { deleteConfirmShowDialog = false },
                 title = { Text(stringResource(R.string.library_downloads_delete_show_title)) },
                 text = { Text(stringResource(R.string.library_downloads_delete_show_body, podcastTitle)) },

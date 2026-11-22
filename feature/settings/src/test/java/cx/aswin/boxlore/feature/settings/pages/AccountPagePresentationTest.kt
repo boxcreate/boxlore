@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -181,6 +182,23 @@ class AccountPagePresentationTest {
         composeRule.onNodeWithText("Not in your inbox? Check your spam folder.").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("account_change_email").performClick()
         composeRule.runOnIdle { assertFalse(state.magicLinkSent) }
+    }
+
+    @Test fun `without a typed address, the sent-link screen shows the signed-in email and follows the account`() {
+        val repository = SignedInAuthRepository(BoxLoreUser("one", "first@example.test", null))
+        composeRule.setContent {
+            EchoStillTheme(darkTheme = false, dynamicColor = false) {
+                val context = LocalContext.current
+                val focus = LocalFocusManager.current
+                val scope = rememberCoroutineScope()
+                val state = remember { AccountAuthState(repository, context, null, focus, scope, SavedAccountAuthState(magicLinkSent = true, methodChosen = true)) }
+                AccountPageScaffold({}, isOnboarding = false, scroll = rememberScrollState()) { AccountCheckEmailContent(AccountEmailCheck.Link, state) }
+            }
+        }
+        composeRule.onNodeWithText("first@example.test").assertIsDisplayed()
+        composeRule.runOnIdle { repository.currentUser.value = BoxLoreUser("two", "second@example.test", null) }
+        composeRule.onNodeWithText("second@example.test").assertIsDisplayed()
+        composeRule.onAllNodesWithText("first@example.test").assertCountEquals(0)
     }
 
     @Test fun `confirming a new account offers I've confirmed and waits before resending`() {
