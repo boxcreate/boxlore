@@ -13,8 +13,10 @@ import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.ports.PodcastNotificationSyncPort
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.UserSubscriptionSyncDto
+import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 
 /**
@@ -31,6 +33,10 @@ import cx.aswin.boxlore.core.rss.RssPodcastRepository
  * A new Podcast Index follow is saved as a placeholder row ([STUB_TITLE], no artwork) and filled in
  * from `GET /podcast` through [detailsLookups] only while the route budget has room, so a pull of a
  * large library never runs into the API's rate limit; [healStubRows] fills in the rest later.
+ *
+ * A pulled follow or unfollow of a Podcast Index show clears or starts its stored catalog's 14-day
+ * countdown through [localEpisodeCatalog], as a follow or unfollow on this phone does; `rss:` shows
+ * delete their episodes on unfollow instead.
  */
 class SubscriptionSyncResolver(
     private val podcastDao: PodcastDao,
@@ -40,6 +46,7 @@ class SubscriptionSyncResolver(
     private val notificationSyncPort: PodcastNotificationSyncPort? = null,
     private val feedAddresses: FeedAddressUpdater? = null,
     private val detailsLookups: PacedPodcastLookups? = podcastRepository?.let(::PacedPodcastLookups),
+    private val localEpisodeCatalog: LocalEpisodeCatalogPort? = null,
 ) {
     /** Placeholder rows the server has no show for, asked once per process. */
     private val unknownStubs: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
@@ -96,6 +103,8 @@ class SubscriptionSyncResolver(
         podcastDao.upsert(stubEntity)
 
         if (!isRss) {
+            // The stored copy is the followed show's now, with no countdown.
+            localEpisodeCatalog?.setUnsubscribedTtl(remote.podcastId, null)
             if (remote.notificationsEnabled) {
                 notificationSyncPort?.setNotificationTopicSubscribed(remote.podcastId, true)
             }
@@ -228,6 +237,11 @@ class SubscriptionSyncResolver(
                 folderRepository?.removePodcastFromAllFolders(local.podcastId)
                 if (local.isRss) {
                     podcastDao.deleteRssEpisodes(local.podcastId)
+                } else if (!local.podcastId.startsWith("rss:")) {
+                    localEpisodeCatalog?.setUnsubscribedTtl(
+                        local.podcastId,
+                        System.currentTimeMillis() + LocalEpisodeCatalogRepository.UNSUBSCRIBE_TTL_MS,
+                    )
                 }
                 if (local.notificationsEnabled) {
                     notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, false)
@@ -270,6 +284,7 @@ class SubscriptionSyncResolver(
         )
         upsertMerged(updated)
         applyPulledAddress(local, remote)
+        if (!local.isRss && !local.podcastId.startsWith("rss:")) localEpisodeCatalog?.setUnsubscribedTtl(local.podcastId, null)
         if (!local.isRss) {
             if (remote.notificationsEnabled) {
                 notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, true)

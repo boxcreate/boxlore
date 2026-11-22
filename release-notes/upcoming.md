@@ -30,3 +30,5 @@ Announcement title:
 - The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.
 
 ## Fixed
+
+- Shows you unfollow on another device or on your watch are now cleared from this phone's saved shows, just as when you unfollow them here.
