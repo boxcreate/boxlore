@@ -118,16 +118,25 @@ internal fun TurnstileStepUpHost(
         }
     } else {
         TurnstileStepUpSheet(onSkip = { controller.cancel(attempt) }) {
-            Box(Modifier.fillMaxWidth().height(72.dp), contentAlignment = Alignment.Center) {
-                // The page is see-through: this placeholder, the size of Cloudflare's box, shimmers
-                // until the box draws over it, so the card never sits empty while the check loads.
-                SkeletonBlock(
-                    Modifier.widthIn(max = CHECK_BOX_WIDTH).fillMaxWidth().height(CHECK_BOX_HEIGHT).testTag(CHALLENGE_PLACEHOLDER_TAG),
-                    shape = MaterialTheme.shapes.small,
-                )
+            TurnstileChallengeFrame {
                 AndroidView(factory = holder::attach, modifier = Modifier.fillMaxSize().testTag(CHALLENGE_PAGE_TAG))
             }
         }
+    }
+}
+
+/**
+ * The check's 72dp frame. The page is see-through: a placeholder the size of Cloudflare's box
+ * shimmers under it until the box draws over it, so the card never sits empty while the check loads.
+ */
+@Composable
+internal fun TurnstileChallengeFrame(page: @Composable () -> Unit) {
+    Box(Modifier.fillMaxWidth().height(72.dp), contentAlignment = Alignment.Center) {
+        SkeletonBlock(
+            Modifier.widthIn(max = CHECK_BOX_WIDTH).fillMaxWidth().height(CHECK_BOX_HEIGHT).testTag(CHALLENGE_PLACEHOLDER_TAG),
+            shape = MaterialTheme.shapes.small,
+        )
+        page()
     }
 }
 
