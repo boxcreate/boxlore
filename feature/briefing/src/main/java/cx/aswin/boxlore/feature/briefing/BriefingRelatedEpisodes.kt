@@ -19,10 +19,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
@@ -40,10 +38,10 @@ internal fun RelatedEpisodesSection(
     HorizontalDivider(
         modifier = Modifier.padding(vertical = 12.dp),
         thickness = 0.8.dp,
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+        color = MaterialTheme.colorScheme.outlineVariant
     )
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        RelatedEpisodesHeader(state.isActive)
+        RelatedEpisodesHeader()
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxWidth()
@@ -66,7 +64,7 @@ internal fun RelatedEpisodesSection(
 private fun relatedEpisodeKey(episode: Episode): String = "${episode.podcastId.orEmpty()}:${episode.id}:${episode.audioUrl}:${episode.title}"
 
 @Composable
-private fun RelatedEpisodesHeader(isActive: Boolean) {
+private fun RelatedEpisodesHeader() {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -75,29 +73,16 @@ private fun RelatedEpisodesHeader(isActive: Boolean) {
         Icon(
             imageVector = Icons.Rounded.Podcasts,
             contentDescription = null,
-            tint = relatedEpisodesHeaderColor(isActive, alpha = 0.6f),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(14.dp)
         )
         Text(
             text = stringResource(R.string.briefing_screen_listen_further),
-            style = MaterialTheme.typography.labelSmall.copy(
-                letterSpacing = 0.sp,
-                fontSize = 12.sp
-            ),
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = GoogleSansWeight.bold,
-            color = relatedEpisodesHeaderColor(isActive, alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
-}
-
-@Composable
-private fun relatedEpisodesHeaderColor(
-    isActive: Boolean,
-    alpha: Float,
-): Color = if (isActive) {
-    MaterialTheme.colorScheme.onSurfaceVariant
-} else {
-    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
 }
 
 private fun trackRelatedEpisodeClick(

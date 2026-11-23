@@ -10,18 +10,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -36,6 +51,7 @@ import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.BriefingSource
 import cx.aswin.boxlore.core.model.Chapter
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.SystemInsets
 import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
@@ -159,6 +175,127 @@ class BriefingAdaptiveTest {
             assertEquals("$size: scroll changed", scrolled, compose.onNodeWithTag("briefingArticle").scroll(), 1f)
             assertTrue(state.value is BriefingUiState.Success)
         }
+    }
+
+    @Test fun `in short panes the cover is shorter so the headline and Listen show on the first screen`() {
+        render()
+        compose.walkWindows(window, BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE, BoxloreTestWindows.TABLET, BoxloreTestWindows.PHONE_LAND) { size ->
+            val cover = compose.onNodeWithTag("briefingPageCover").bounds()
+            if (size.heightDp < 480f) {
+                assertTrue("$size: cover is ${cover.height} tall", cover.height <= size.heightDp * 0.42f + 0.5f)
+                assertTrue("$size: Listen starts below the first screen", compose.onNodeWithText("Listen to the Brief").bounds().bottom <= size.heightDp)
+            } else {
+                assertEquals("$size: the cover keeps 1.6:1", cover.width / 1.6f, cover.height, 1f)
+            }
+        }
+        // A tabletop fold's lower half is short though the window isn't.
+        window.value = BoxloreTestWindows.FOLD_TABLETOP
+        pane.value = BoxloreLayoutBounds(0f, 336f, 932f, 650f)
+        compose.waitForIdle()
+        assertTrue(compose.onNodeWithTag("briefingPageCover").bounds().height <= 314f * 0.42f + 0.5f)
+    }
+
+    @Test fun `loading scrolls to its last placeholder on a sideways phone`() {
+        state.value = BriefingUiState.Loading("global")
+        window.value = BoxloreTestWindows.PHONE_LAND
+        render()
+        val loading = compose.onNodeWithTag("briefingLoading")
+        val range = loading.fetchSemanticsNode().config.getOrNull(SemanticsProperties.VerticalScrollAxisRange)
+        assertTrue("Loading should scroll in a short window", (range?.maxValue?.invoke() ?: 0f) > 0f)
+    }
+
+    @Test fun `Brief preferences is one choice list that stays open through fold and width changes`() {
+        render()
+        compose.onNodeWithContentDescription("Brief preferences").performClick()
+        compose.waitForIdle()
+        val rows = compose.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
+        assertEquals(5, rows.fetchSemanticsNodes().size)
+        rows.fetchSemanticsNodes().forEach { node -> assertTrue(node.config.contains(SemanticsProperties.Selected)) }
+        compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.SelectableGroup)).assertExists()
+        compose.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and hasText("Global")).assertIsSelected()
+        compose.walkWindows(window, BoxloreTestWindows.FOLD_TABLETOP, BoxloreTestWindows.PHONE, BoxloreTestWindows.W839, BoxloreTestWindows.W841, BoxloreTestWindows.W839) { size ->
+            compose.onNodeWithText("Default Brief region").assertExists()
+            assertTrue("$size: the default changed", defaults.isEmpty())
+        }
+        compose.onNodeWithText("India").performScrollTo().performClick()
+        assertEquals(listOf("in"), defaults)
+    }
+
+    @Test fun `with many sources the sources title stays while the list scrolls to the last one`() {
+        state.value = edition().let { it.copy(briefing = it.briefing.copy(sources = (1..12).map { n -> BriefingSource("Source story $n", "https://site$n.example.invalid/a") })) }
+        window.value = BoxloreTestWindows.PHONE_LAND
+        render()
+        compose.onNodeWithContentDescription("Sources").performClick()
+        compose.waitForIdle()
+        compose.onNode(hasScrollToIndexAction() and hasAnyDescendant(hasText("Source story 1"))).performScrollToIndex(11)
+        val last = compose.onNodeWithText("Source story 12").assertExists().bounds()
+        val title = compose.onNode(hasText("Sources") and !hasClickAction()).assertIsDisplayed().bounds()
+        assertTrue("The title stays above the list", title.bottom <= last.top)
+    }
+
+    @Test fun `Listen spans the row with no sources, and a story's play button is a smaller end-aligned button`() {
+        state.value = edition().let { it.copy(briefing = it.briefing.copy(sources = emptyList())) }
+        render()
+        val listen = compose.onNodeWithTag("briefingListen").bounds()
+        val edition = compose.onNode(hasContentDescription("Choose Brief edition", substring = true)).bounds()
+        compose.onNodeWithContentDescription("Sources").assertDoesNotExist()
+        assertEquals("Listen reaches the end of the text column", edition.right, listen.right, 1f)
+
+        compose.onNodeWithTag("briefingArticle").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 400f) }
+        compose.waitForIdle()
+        val play = compose.onAllNodes(hasTestTag(STORY_PLAY_BUTTON_TAG)).onFirst()
+        play.assertContentDescriptionEquals("Play story: Story title 1")
+        val button = play.bounds()
+        val card = compose.onAllNodes(hasTestTag(STORY_PLAY_BUTTON_TAG)).onFirst().fetchSemanticsNode().let { node ->
+            generateSequence(node.parent) { it.parent }.first { it.boundsInRoot.width > button.width + 60f }.boundsInRoot
+        }
+        assertTrue("The play button is ${button.height} tall", button.height >= 48f)
+        assertTrue("The play button is narrower than the card", button.width < card.width - 60f)
+        assertTrue("The play button sits at the card's end", card.right - button.right < 40f)
+    }
+
+    @Test fun `the counter is the only story number, while TalkBack still hears it on the card`() {
+        render()
+        compose.onNodeWithTag("briefingArticle").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 400f) }
+        compose.waitForIdle()
+        compose.onNodeWithText("Story 1 of 6").assertExists()
+        compose.onAllNodesWithText("Story 1").assertCountEquals(0)
+        compose.onAllNodes(hasContentDescription("Story 1 of 6", substring = true)).onFirst().assertExists()
+    }
+
+    @Test fun `related episode tiles stand apart from their card and keep readable text`() {
+        state.value = edition().let { success ->
+            success.copy(chapters = success.chapters.mapIndexed { index, chapter -> if (index == 0) chapter.copy(relatedEpisodes = listOf(Episode("e1", "A related episode", "", "https://example.invalid/e1.mp3", podcastTitle = "A show"))) else chapter })
+        }
+        render()
+        compose.onNodeWithTag("briefingArticle").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 400f) }
+        compose.waitForIdle()
+        compose.onAllNodes(hasTestTag(RELATED_EPISODE_TILE_TAG)).onFirst().assertExists()
+    }
+
+    @Test fun `TalkBack names the seek bar and says where playback is`() {
+        state.value = edition().copy(currentPosition = 60_000)
+        render()
+        val seek = compose.onNodeWithTag("briefingSeekbar")
+        assertEquals("Playback position", seek.fetchSemanticsNode().config[SemanticsProperties.ContentDescription].single())
+        assertEquals("1:00 of 8:00", seek.fetchSemanticsNode().config[SemanticsProperties.StateDescription])
+        state.value = edition().copy(currentPosition = 120_000)
+        compose.waitForIdle()
+        assertEquals("2:00 of 8:00", compose.onNodeWithTag("briefingSeekbar").fetchSemanticsNode().config[SemanticsProperties.StateDescription])
+    }
+
+    @Test fun `the date line wraps instead of cutting the listen time on a small phone with very large text`() {
+        window.value = BoxloreTestWindows.PHONE_SMALL
+        fontScale.value = 2f
+        render()
+        val meta = compose.onNodeWithTag("briefingMeta").fetchSemanticsNode()
+        val text = meta.config[SemanticsProperties.Text].joinToString { it.text }
+        assertTrue("The listen time is in \"$text\"", text.contains("min") || text.contains("m "))
+        val layout = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        meta.config[SemanticsActions.GetTextLayoutResult].action?.invoke(layout)
+        val lines = layout.single()
+        assertTrue("The date line should wrap here", lines.lineCount == 2)
+        assertTrue("The date line is cut", !lines.isLineEllipsized(1))
     }
 
     private fun scrollToEnd(node: SemanticsNodeInteraction) {

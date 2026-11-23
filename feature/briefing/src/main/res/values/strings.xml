@@ -20,4 +20,8 @@
     <string name="briefing_screen_episode_description">Your daily AI-generated news briefing for %1$s.</string>
     <!-- Heading above the brief's source links in the episode description. -->
     <string name="briefing_screen_sources_heading">References &amp; Sources</string>
+    <!-- TalkBack name of the Brief's seek bar. -->
+    <string name="briefing_screen_seek_name">Playback position</string>
+    <!-- TalkBack position on the seek bar: where playback is, then the Brief's length, e.g. "12:03 of 58:00". -->
+    <string name="briefing_screen_seek_position">%1$s of %2$s</string>
 </resources>

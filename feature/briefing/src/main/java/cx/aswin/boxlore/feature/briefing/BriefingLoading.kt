@@ -4,13 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -26,7 +28,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.R
-import cx.aswin.boxlore.core.designsystem.briefing.BRIEFING_COVER_ASPECT_RATIO
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingCover
 import cx.aswin.boxlore.core.designsystem.briefing.briefingRegionLabel
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -42,21 +43,23 @@ import java.time.LocalDate
  * their final places, so the page settles in place instead of swapping a spinner for content.
  */
 @Composable
-internal fun BriefingLoadingContent(region: String, topPadding: Dp, mastheadLeftPadding: Dp = 0.dp) {
+internal fun BriefingLoadingContent(region: String, topPadding: Dp, mastheadLeftPadding: Dp = 0.dp, onCoverMeasured: (Int) -> Unit = {}) {
     val label = stringResource(R.string.briefing_loading_edition, stringResource(briefingRegionLabel(region)))
     val today = remember { LocalDate.now().toString() }
     ShimmerScope(active = true) {
         Column(
-            Modifier.fillMaxSize().testTag("briefingLoading").semantics { contentDescription = label },
+            // Scrolls in short windows, where the placeholders run past the first screen.
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).testTag("briefingLoading").semantics { contentDescription = label },
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             BriefingCover(
                 region = region,
                 editionDate = today,
-                modifier = Modifier.fillMaxWidth().aspectRatio(BRIEFING_COVER_ASPECT_RATIO).clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)),
+                modifier = Modifier.briefingPageCoverSize().onSizeChanged { onCoverMeasured(it.height) }.clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)),
                 mastheadTopPadding = topPadding + 12.dp,
                 mastheadScrim = true,
                 mastheadLeftPadding = mastheadLeftPadding,
+                artworkContentScale = briefingCoverScale(),
             )
             Column(Modifier.boxloreHorizontalSafePadding().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -67,20 +70,25 @@ internal fun BriefingLoadingContent(region: String, topPadding: Dp, mastheadLeft
                 LoadingBlock(Modifier.fillMaxWidth(0.58f).height(30.dp))
                 LoadingBlock(Modifier.fillMaxWidth().height(52.dp), RoundedCornerShape(28.dp))
             }
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.boxloreHorizontalSafePadding().padding(horizontal = 24.dp).boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth(),
-            ) {
-                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    LoadingBlock(Modifier.width(72.dp).height(20.dp))
-                    LoadingBlock(Modifier.fillMaxWidth(0.85f).height(24.dp))
-                    Box(Modifier.height(4.dp))
-                    repeat(5) { line -> LoadingBlock(Modifier.fillMaxWidth(if (line == 4) 0.6f else 1f).height(14.dp)) }
-                    Box(Modifier.height(8.dp))
-                    LoadingBlock(Modifier.fillMaxWidth().height(52.dp), RoundedCornerShape(28.dp))
-                }
-            }
+            BriefingStoryCardSkeleton(Modifier.boxloreHorizontalSafePadding().padding(horizontal = 24.dp).boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth())
+        }
+    }
+}
+
+/**
+ * A story card while stories load: the time, the title and the story's lines as soft placeholders,
+ * and the play button, in a story card's own shape. Inside a [ShimmerScope].
+ */
+@Composable
+internal fun BriefingStoryCardSkeleton(modifier: Modifier = Modifier) {
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer, modifier = modifier) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            LoadingBlock(Modifier.width(72.dp).height(20.dp))
+            LoadingBlock(Modifier.fillMaxWidth(0.85f).height(24.dp))
+            Box(Modifier.height(4.dp))
+            repeat(5) { line -> LoadingBlock(Modifier.fillMaxWidth(if (line == 4) 0.6f else 1f).height(14.dp)) }
+            Box(Modifier.height(8.dp))
+            LoadingBlock(Modifier.fillMaxWidth().height(52.dp), RoundedCornerShape(28.dp))
         }
     }
 }

@@ -24,6 +24,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTouchHeightIsEqualTo
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -77,7 +78,7 @@ class BriefingScreenTest {
 
     @Test
     @Config(qualifiers = "w1280dp-h1400dp-mdpi")
-    fun `tablet edition page and loading cover share a bounded reading frame in both orientations`() {
+    fun `tablet edition page and loading cover sit in a bounded centred frame in both orientations`() {
         val window = mutableStateOf(BoxloreWindowLayout(1280f, 800f))
         val state = mutableStateOf<BriefingUiState>(sampleEdition())
         compose.setContent {
@@ -95,7 +96,9 @@ class BriefingScreenTest {
                 compose.runOnIdle { state.value = content }
                 val frame = compose.onNodeWithTag("briefing_reading_frame").fetchSemanticsNode().boundsInRoot
                 val back = compose.onNodeWithTag("briefingBack").fetchSemanticsNode().boundsInRoot
-                assertEquals(720f, frame.width, 1f)
+                // A landscape tablet's edition sits in two panes in a wider frame; everything else reads at 720dp.
+                val twoPane = layout.widthDp > layout.heightDp && content is BriefingUiState.Success
+                assertEquals(if (twoPane) BRIEFING_TWO_PANE_MAX_WIDTH_DP else 720f, frame.width, 1f)
                 assertEquals(layout.widthDp / 2, frame.center.x, 1f)
                 assertTrue(back.left >= frame.left && back.right <= frame.right)
             }
@@ -285,12 +288,12 @@ class BriefingScreenTest {
                 Box(Modifier.width(320.dp)) { BriefingScreen(state.value, {}, {}, { _, _ -> }, {}, {}, {}) }
             }
         }
-        compose.onNodeWithText("Loading stories…").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Loading stories…").performScrollTo().assertIsDisplayed()
         compose.onAllNodesWithText(UNAVAILABLE_STORIES, substring = true).assertCountEquals(0)
 
         compose.runOnIdle { state.value = BriefingUiState.Success(briefing, "global", duration = 180_000) }
         compose.onNodeWithText(UNAVAILABLE_STORIES, substring = true).performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("Loading stories…").assertCountEquals(0)
+        compose.onAllNodesWithContentDescription("Loading stories…").assertCountEquals(0)
     }
 
     @Test
@@ -300,7 +303,7 @@ class BriefingScreenTest {
         assertEquals(listOf<Long?>(null), playback)
 
         compose.onNodeWithContentDescription("Next story").performScrollTo().performClick()
-        compose.onNodeWithText("Story 2").assertIsDisplayed()
+        compose.onNodeWithText("Story 2 of 2").assertIsDisplayed()
         compose.onNodeWithContentDescription("Play story: Digital policy").performScrollTo().performClick()
         assertEquals(listOf(null, 60_000L), playback)
 

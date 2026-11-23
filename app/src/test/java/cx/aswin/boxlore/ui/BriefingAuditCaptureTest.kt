@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.isRoot
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -62,8 +63,12 @@ class BriefingAuditCaptureTest(private val view: String, configuration: PhoneGol
         fixture.compose.mainClock.advanceTimeBy(1_000)
         fixture.compose.waitForIdle()
         when (view) {
-            "brief-page-scrolled" -> fixture.compose.onNodeWithTag("briefingArticle")
-                .performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, fixture.configuration.width / 1.6f) }
+            // The page's own scroller: the article, or on wide windows the story list beside the edition.
+            "brief-page-scrolled" -> {
+                val article = fixture.compose.onAllNodesWithTag("briefingArticle").fetchSemanticsNodes().isNotEmpty()
+                fixture.compose.onNodeWithTag(if (article) "briefingArticle" else "briefing_story_list")
+                    .performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, fixture.configuration.width / 1.6f) }
+            }
             "brief-edition-menu" -> tap(fixture.compose.onAllNodes(hasContentDescription(text(DesignR.string.briefing_choose_edition), substring = true)).onFirst())
             "brief-preferences" -> tap(fixture.compose.onNodeWithContentDescription(text(DesignR.string.briefing_preferences)))
             "brief-sources" -> tap(fixture.compose.onAllNodes(hasContentDescription(text(DesignR.string.briefing_sources))).onFirst())

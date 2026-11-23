@@ -1,14 +1,16 @@
 package cx.aswin.boxlore.feature.briefing
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,6 +20,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -32,7 +37,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -42,9 +49,7 @@ import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
-import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Briefing
 import kotlinx.coroutines.launch
 
@@ -57,6 +62,8 @@ internal data class BriefingStoryCardState(
     val pageCount: Int,
     val isActive: Boolean,
     val accentColor: Color,
+    /** Show "Story N" on the card: in the list on wide windows, where no counter sits above the stories. */
+    val showNumber: Boolean = false,
 )
 
 /** Below this window height a pager card scrolls as one piece instead of pinning its actions. */
@@ -89,6 +96,10 @@ internal fun BriefingStoryCard(
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth().then(height),
     ) {
+        // In a list of stories, the playing one carries a strip along its top.
+        if (state.showNumber && state.isActive) {
+            Box(Modifier.fillMaxWidth().height(6.dp).background(MaterialTheme.colorScheme.primaryContainer).testTag(PLAYING_STORY_STRIP_TAG))
+        }
         Column(
             modifier = Modifier.fillMaxWidth().then(height)
                 .then(if (scrollCard) Modifier.verticalScroll(rememberScrollState()) else Modifier)
@@ -119,31 +130,35 @@ private fun StoryCardTop(state: BriefingStoryCardState) {
     Spacer(modifier = Modifier.height(10.dp))
 }
 
+/**
+ * The story's time at the card's start, in the accent while it plays. The pager's counter above is
+ * the only "Story N of M" on screen; TalkBack still hears the number with the time. In the list on
+ * wide windows the card says "Story N" itself.
+ */
 @Composable
 private fun StoryCardHeader(state: BriefingStoryCardState) {
+    val time = formatChapterTime(state.chapter.startTime.toLong())
+    val position = androidx.compose.ui.res.stringResource(cx.aswin.boxlore.feature.briefing.R.string.briefing_screen_story_position, state.page + 1, state.pageCount)
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = "$position, $time" },
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        StoryCountBadge(state)
+        if (state.showNumber) {
+            Text(
+                stringResource(R.string.briefing_story_label, state.page + 1),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = GoogleSansWeight.bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
         Text(
-            text = formatChapterTime(state.chapter.startTime.toLong()),
+            text = time,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = GoogleSansWeight.bold,
-            color = if (state.isActive) state.accentColor else MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (state.isActive) state.accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-}
-
-@Composable
-private fun StoryCountBadge(state: BriefingStoryCardState) {
-    Text(
-        stringResource(R.string.briefing_story_label, state.page + 1),
-        fontFamily = FontFamily.Serif,
-        fontSize = 22.sp,
-        color = MaterialTheme.colorScheme.primary
-    )
 }
 
 @Composable
@@ -185,56 +200,40 @@ private fun Modifier.fadeWhileMoreBelow(scrollState: ScrollState): Modifier =
         }
     }
 
+/**
+ * Play or pause this story: a tonal button at the card's end (one main action per page is the
+ * Brief's Listen), filled with the accent's container while this story plays.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun StoryPlayButton(
     state: BriefingStoryCardState,
     actions: BriefingStoriesPagerActions,
 ) {
     val actionLabel = stringResource(if (state.isActive) R.string.briefing_pause_story_named else R.string.briefing_play_story_named, state.chapter.title)
-    Surface(
-        shape = RoundedCornerShape(28.dp),
-        color = if (state.isActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.primary,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .semantics { contentDescription = actionLabel }
-            .expressiveClickable(
-                feedback = ExpressivePressFeedback.Control,
-                shape = RoundedCornerShape(28.dp),
-                onClick = { handleStoryPlayClick(state, actions) }
-            )
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxSize()
+    val scheme = MaterialTheme.colorScheme
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+        FilledTonalButton(
+            onClick = { handleStoryPlayClick(state, actions) },
+            shapes = ButtonDefaults.shapes(),
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = if (state.isActive) scheme.primaryContainer else scheme.secondaryContainer,
+                contentColor = if (state.isActive) scheme.onPrimaryContainer else scheme.onSecondaryContainer,
+            ),
+            modifier = Modifier.heightIn(min = 48.dp).testTag(STORY_PLAY_BUTTON_TAG).semantics { contentDescription = actionLabel },
         ) {
-            StoryPlayIcon(state.isActive)
+            Icon(if (state.isActive) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            StoryPlayLabel(state.isActive)
+            Text(stringResource(if (state.isActive) R.string.briefing_pause_story else R.string.briefing_play_story), fontWeight = GoogleSansWeight.bold)
         }
     }
 }
 
-@Composable
-private fun StoryPlayIcon(isActive: Boolean) {
-    Icon(
-        imageVector = if (isActive) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-        contentDescription = null,
-        tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onPrimary,
-        modifier = Modifier.size(22.dp)
-    )
-}
+/** The playing listed story's strip's test tag. */
+internal const val PLAYING_STORY_STRIP_TAG = "briefing_playing_story"
 
-@Composable
-private fun StoryPlayLabel(isActive: Boolean) {
-    Text(
-        text = stringResource(if (isActive) R.string.briefing_pause_story else R.string.briefing_play_story),
-        fontWeight = GoogleSansWeight.bold,
-        style = MaterialTheme.typography.labelLarge,
-        color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onPrimary
-    )
-}
+/** A story card's play button's test tag. */
+internal const val STORY_PLAY_BUTTON_TAG = "briefing_story_play"
 
 private fun handleStoryPlayClick(
     state: BriefingStoryCardState,
