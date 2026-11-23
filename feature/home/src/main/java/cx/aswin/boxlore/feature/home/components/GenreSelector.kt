@@ -51,13 +51,13 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.AdaptiveOverflowRow
 import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChip
 import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChipDefaults
-import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.BoxloreMoreChip
 import cx.aswin.boxlore.core.designsystem.components.rememberAdaptiveOverflowState
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.home.R
+import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -114,7 +114,10 @@ fun GenreSelector(
             modifier =
             modifier
                 .fillMaxWidth()
-                .horizontalScroll(scrollState),
+                // Runs to the screen edge, with the gutter inside the scroll, so chips slide off the edge.
+                .bleed(HomeFeedSpacing.GridSide)
+                .horizontalScroll(scrollState)
+                .padding(horizontal = HomeFeedSpacing.GridSide),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             HomeGenreFilterChip(
