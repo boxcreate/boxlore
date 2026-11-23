@@ -73,6 +73,7 @@ internal fun FullPlayerTranscriptOverlay(
     visibleHeight: androidx.compose.ui.unit.Dp = androidx.compose.ui.unit.Dp.Unspecified,
 ) {
     val fullscreenRequest = LocalPlayerFullscreenRequest.current
+    val tabletop = cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.tabletopFold != null
     AnimatedVisibility(
         visible = ui.showFullscreenTranscript,
         enter = slideInVertically(initialOffsetY = { it }),
@@ -99,7 +100,8 @@ internal fun FullPlayerTranscriptOverlay(
                 fullscreenRequest?.invoke(PlayerFullscreenOverlay.Transcript, false)
             },
             // The sheet can be taller than the screen; keep the controls in view, then away from a fold.
-            modifier = Modifier.fitVisibleHeight(visibleHeight).boxloreFoldSafeViewport(),
+            // Half-open on a table the screen splits itself around the hinge instead of using one half.
+            modifier = Modifier.fitVisibleHeight(visibleHeight).let { fitted -> if (tabletop) fitted else fitted.boxloreFoldSafeViewport() },
             transcriptUrl = model.episode.transcriptUrl
         )
     }

@@ -12,6 +12,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -41,6 +44,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -48,6 +54,7 @@ import androidx.compose.ui.unit.isSpecified
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneBottomInset
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
@@ -304,14 +311,7 @@ fun FullscreenTranscriptScreen(
     val positionMs by positionFlow.collectAsState(initial = 0L)
     val containerColor = colorScheme.surface
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(containerColor)
-            .padding(top = boxlorePaneTopInset(), bottom = boxlorePaneBottomInset())
-            // Sideways phones: the close button and transport stay clear of side system buttons and cutouts.
-            .boxloreHorizontalSafePadding()
-    ) {
+    val reading: @Composable ColumnScope.() -> Unit = {
         // Top bar
         Row(
             modifier = Modifier
@@ -354,7 +354,8 @@ fun FullscreenTranscriptScreen(
                 transcriptUrl = transcriptUrl
             )
         }
-
+    }
+    val controls: @Composable () -> Unit = {
         // Bottom controls (Pause/Play and Seek only)
         Column(
             modifier = Modifier
@@ -410,5 +411,25 @@ fun FullscreenTranscriptScreen(
                 height = 72.dp
             )
         }
+    }
+    val container = modifier
+        .fillMaxSize()
+        .background(containerColor)
+        .padding(top = boxlorePaneTopInset(), bottom = boxlorePaneBottomInset())
+        // Sideways phones: the close button and transport stay clear of side system buttons and cutouts.
+        .boxloreHorizontalSafePadding()
+    // Half-open on a table: the transcript fills the part above the hinge and the controls sit below it.
+    // One column either way, so the transcript keeps its place when the fold opens or closes.
+    val hinge = LocalBoxloreWindowLayout.current.tabletopFold?.bounds
+    var originY by remember { mutableFloatStateOf(Float.NaN) }
+    val density = LocalDensity.current
+    val readingHeight = hinge?.takeIf { !originY.isNaN() }?.let { (it.top - originY / density.density).dp }?.takeIf { it > 0.dp }
+    Column(modifier = container.onGloballyPositioned { originY = it.positionInWindow().y }) {
+        Column(
+            Modifier.fillMaxWidth().then(if (readingHeight != null) Modifier.height(readingHeight) else Modifier.weight(1f)),
+            content = reading
+        )
+        if (readingHeight != null && hinge != null) Spacer(Modifier.height(hinge.height.dp))
+        controls()
     }
 }

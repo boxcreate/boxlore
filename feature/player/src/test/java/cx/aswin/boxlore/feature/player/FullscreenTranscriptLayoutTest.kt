@@ -94,4 +94,44 @@ class FullscreenTranscriptLayoutTest {
         val message = composeRule.onNodeWithText("Undo").getUnclippedBoundsInRoot().bottom.value
         assertTrue("Undo at ${message}dp, past the 800dp visible", message <= 800f)
     }
+
+    @Test fun `half-open on a table the transcript sits above the hinge and the controls below, and back`() {
+        val hinge = cx.aswin.boxlore.core.designsystem.layout.BoxloreFold(
+            cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldState.HalfOpened,
+            cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation.Horizontal,
+            cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds(0f, 480f, 400f, 500f),
+            true,
+            true,
+        )
+        val window = androidx.compose.runtime.mutableStateOf(cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(400f, 1_000f, listOf(hinge)))
+        composeRule.setContent {
+            androidx.compose.runtime.CompositionLocalProvider(cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout provides window.value) {
+                FullscreenTranscriptScreen(
+                    transcript = List(30) { TranscriptSegment(it * 1_000L, it * 1_000L + 999L, "Line $it") },
+                    positionFlow = flowOf(0L),
+                    isPlaying = false,
+                    isLoading = false,
+                    durationMs = 60_000L,
+                    colorScheme = lightColorScheme(),
+                    isSyncEnabled = true,
+                    onSyncEnabledChange = {},
+                    onSeek = {},
+                    onPlayPause = {},
+                    onClose = {},
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        val lines = composeRule.onAllNodes(androidx.compose.ui.test.hasText("Line ", substring = true)).fetchSemanticsNodes()
+        assertTrue("some transcript shows", lines.isNotEmpty())
+        lines.forEach { assertTrue("a transcript line at ${it.boundsInRoot} crosses the hinge", it.boundsInRoot.bottom <= 480f) }
+        val play = composeRule.onNodeWithContentDescription("Play").getUnclippedBoundsInRoot()
+        assertTrue("play at ${play.top} sits just below the hinge", play.top.value >= 500f && play.bottom.value <= 800f)
+        composeRule.runOnIdle { window.value = cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(400f, 1_000f) }
+        composeRule.waitForIdle()
+        assertTrue("flat: controls at the foot", playBottom() > 900f)
+        composeRule.runOnIdle { window.value = cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(400f, 1_000f, listOf(hinge)) }
+        composeRule.waitForIdle()
+        assertTrue(composeRule.onNodeWithContentDescription("Play").getUnclippedBoundsInRoot().top.value >= 500f)
+    }
 }
