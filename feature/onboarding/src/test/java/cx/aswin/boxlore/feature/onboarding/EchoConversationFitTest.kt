@@ -17,12 +17,14 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -147,13 +149,15 @@ class EchoConversationFitTest(
     // Writing with the keyboard up: the question stays whole and the field shows, nothing scrolls.
     @Test fun `writing with the keyboard open`() {
         assumeTrue("Checked on a phone with bars and a sideways phone", "${widthDp}x$heightDp$bars" in KEYBOARD_SIZES && fontScale == 1f)
-        show(mutableStateOf(later.copy(aiCustomInputText = "Long drives and old mysteries")), ime = true)
+        // A question long enough to wrap, so it can't take the field's room.
+        val long = later.aiGuidedTurn?.copy(question = "Which of these would you happily hear about on a long drive with friends?")
+        show(mutableStateOf(later.copy(aiCustomInputText = "Long drives and old mysteries", aiGuidedTurn = long)), ime = true)
         assertTrue("something scrolls", compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).fetchSemanticsNodes().isEmpty())
         val question = compose.onAllNodesWithTag("echo_question").fetchSemanticsNodes().single()
         textLayouts(question).forEach { assertTrue("the question is cut off with the keyboard open", !it.hasVisualOverflow) }
         val field = bounds("echo_answer_input")!!
         assertTrue("the answer field is squeezed (${field.height})", field.height >= 48f)
-        val keyboardTop = compose.onNodeWithTag("echo_onboarding_screen").fetchSemanticsNode().boundsInRoot.bottom - ImeHeight
+        val keyboardTop = compose.onNodeWithTag("echo_onboarding_screen").fetchSemanticsNode().boundsInRoot.bottom - imeHeight()
         assertTrue("the answer field is under the keyboard ($field, $keyboardTop)", field.top + 48f <= keyboardTop + 1f)
     }
 
@@ -211,12 +215,14 @@ class EchoConversationFitTest(
         assertTrue("something scrolls on $label", compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).fetchSemanticsNodes().isEmpty())
         val root = compose.onNodeWithTag("echo_onboarding_screen").fetchSemanticsNode().boundsInRoot
         // A show card answers with its own buttons; every other turn has a main button.
-        bounds("echo_primary")?.let { assertTrue("the main button is cut off on $label", it.bottom <= root.bottom + 1f) }
-        if (isDeck) checkDeck(label, root) else checkQuestionAndAnswers(label, root)
+        unclipped("echo_primary")?.let { assertTrue("the main button is cut off on $label", it.bottom <= root.bottom + 1f) }
+        if (isDeck) checkDeck(label, root, state.aiDeck.current?.question.orEmpty()) else checkQuestionAndAnswers(label, root)
         checkReadingOrder(label)
     }
 
     /** The screen at this size and text size, with the bars this size has (and the keyboard, when [ime]), settled. */
+    private fun imeHeight() = if (widthDp > heightDp) SidewaysImeHeight else ImeHeight
+
     private fun show(state: State<OnboardingUiState>, ime: Boolean = false) {
         compose.mainClock.autoAdvance = false
         WindowCompat.setDecorFitsSystemWindows(compose.activity.window, false)
@@ -238,7 +244,7 @@ class EchoConversationFitTest(
                 }
             }
         }
-        val keyboard = if (ime) ImeHeight.toInt() else 0
+        val keyboard = if (ime) imeHeight().toInt() else 0
         when (bars) {
             BARS -> compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets.PHONE_BARS.copy(imeBottom = keyboard)) }
             SIDEWAYS -> compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets.SIDEWAYS_3_BUTTON.copy(imeBottom = keyboard)) }
@@ -263,8 +269,11 @@ class EchoConversationFitTest(
     }
 
     /** The show card stays inside the screen above its reactions, and neither its pitch nor its question is cut short. */
-    private fun checkDeck(label: String, root: Rect) {
-        bounds("echo_deck_reactions")?.let { reactions ->
+    private fun checkDeck(label: String, root: Rect, question: String) {
+        // A blank deck fails: the card, its reactions and its question must all be there.
+        assertTrue("the card is missing on $label", bounds("echo_deck_card") != null)
+        assertTrue("the card's question is missing on $label", compose.onAllNodes(hasText(question, substring = true), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
+        requireNotNull(unclipped("echo_deck_reactions")) { "the card's reactions are missing on $label" }.let { reactions ->
             assertTrue("the reactions are cut off on $label", reactions.bottom <= root.bottom + 1f)
             assertTrue("the card runs into the reactions on $label", bounds("echo_deck_card")!!.bottom <= reactions.top + 1f)
             val card = bounds("echo_deck_card")!!
@@ -312,13 +321,14 @@ class EchoConversationFitTest(
             // At default text the question keeps to three lines; larger text may take a fourth at its smallest size.
             if (fontScale == 1f) assertTrue("the question runs past three lines on $label (${it.lineCount})", it.lineCount <= 3)
         }
-        val questionBounds = question.single().boundsInRoot
+        val questionBounds = question.single().let { Rect(it.positionInRoot, it.size.toSize()) }
         assertTrue("the question runs off the screen on $label", questionBounds.top >= root.top - 1f && questionBounds.bottom <= root.bottom + 1f)
         val primary = bounds("echo_primary")!!
         val answers = bounds("echo_topics") ?: bounds("echo_choices")!!
         assertTrue("the answers run under the main button on $label ($answers vs $primary)", answers.bottom <= primary.top + 1f)
         assertTrue("the question overlaps the answers on $label ($questionBounds vs $answers)", !questionBounds.overlaps(answers.deflate(1f)))
-        val somethingElse = bounds("echo_something_else")!!
+        // Unclipped: a button cut off by the screen's edge must not pass as on screen.
+        val somethingElse = unclipped("echo_something_else")!!
         assertTrue("Something else is off screen on $label", somethingElse.top >= root.top - 1f && somethingElse.bottom <= root.bottom + 1f)
         assertTrue("Something else sits under the main button on $label", !somethingElse.overlaps(primary.deflate(1f)))
         assertTrue("the question runs into the footer on $label", questionBounds.bottom <= minOf(primary.top, somethingElse.top) + 1f)
@@ -352,14 +362,20 @@ class EchoConversationFitTest(
 
     private fun bounds(tag: String): Rect? = compose.onAllNodesWithTag(tag).fetchSemanticsNodes().firstOrNull()?.boundsInRoot
 
+    /** Where [tag] really is, ignoring a parent's clipping, for checks that it sits on screen. */
+    private fun unclipped(tag: String): Rect? = compose.onAllNodesWithTag(tag).fetchSemanticsNodes().firstOrNull()?.let { Rect(it.positionInRoot, it.size.toSize()) }
+
     companion object {
         private const val BARS = "-bars"
         private const val SIDEWAYS = "-sideways"
         private val LONG_TEXT_SIZES = setOf("412x915-bars", "475x695-bars", "915x412-sideways", "360x800-bars", "475x330", "673x410", "740x360", "695x475")
         private val WAITING_SIZES = setOf("412x915-bars", "932x314")
-        private val KEYBOARD_SIZES = setOf("412x915-bars")
+        private val KEYBOARD_SIZES = setOf("412x915-bars", "915x412$SIDEWAYS")
 
         private const val ImeHeight = 300f
+
+        /** A sideways phone's keyboard is shorter. */
+        private const val SidewaysImeHeight = 180f
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}x{1}{4} font {2}")

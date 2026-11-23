@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -108,7 +109,7 @@ internal fun GenrePickerScreen(
             Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberPickerScroll())
                 .padding(horizontal = 24.dp),
         ) {
             Text(
@@ -264,7 +265,7 @@ internal fun SubGenrePickerScreen(
             Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberPickerScroll())
                 .padding(horizontal = 24.dp),
         ) {
             Text(
@@ -453,7 +454,7 @@ internal fun ActivityPickerScreen(
             Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberPickerScroll())
                 .padding(horizontal = 24.dp),
         ) {
             Text(
@@ -552,7 +553,7 @@ internal fun LengthPickerScreen(
             Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberPickerScroll())
                 .padding(horizontal = 24.dp),
         ) {
             Text(
@@ -607,9 +608,42 @@ private fun rememberPickerScrollBehavior(): TopAppBarScrollBehavior {
     return behavior
 }
 
-/** Room above and below the pickers' main button: less in a short space. */
+/**
+ * The pickers' scroll, which keeps the listener's place through the 480dp height gate. Entering a
+ * short space trims the footer, the list's room grows, and the scroll's maximum (so its place) drops;
+ * leaving it restores the room, and this brings the place back with it. A scroll by the listener
+ * while the maximum is low becomes the new place.
+ */
 @Composable
-private fun pickerFooterPadding(): Dp = if (boxloreIsShortPane()) 12.dp else 24.dp
+private fun rememberPickerScroll(): ScrollState {
+    val scroll = rememberScrollState()
+    var wanted by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(scroll) {
+        var last = scroll.value
+        var held = false
+        snapshotFlow { scroll.value to scroll.maxValue }.collect { (value, max) ->
+            when {
+                // Cut short by a lower maximum: keep the place.
+                value == max && wanted > max -> held = true
+                // The room came back and the listener hasn't scrolled since: return to the place.
+                held && value == last && max > value -> {
+                    held = false
+                    scroll.scrollTo(minOf(wanted, max))
+                }
+                else -> {
+                    held = false
+                    wanted = value
+                }
+            }
+            last = value
+        }
+    }
+    return scroll
+}
+
+/** Room above and below the pickers' main button: less in a short space, so two choices show whole above it. */
+@Composable
+private fun pickerFooterPadding(): Dp = if (boxloreIsShortPane()) 8.dp else 24.dp
 
 /** The large title sits 16dp in; this lines it up with the 24dp subtitle and choices under it. */
 private val PickerTitleInset = 8.dp

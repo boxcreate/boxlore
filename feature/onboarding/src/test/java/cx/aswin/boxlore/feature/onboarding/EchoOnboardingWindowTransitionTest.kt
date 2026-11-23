@@ -10,10 +10,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -29,6 +33,7 @@ import cx.aswin.boxlore.core.network.model.OnboardingPart
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.walkWindows
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -176,6 +181,24 @@ class EchoOnboardingWindowTransitionTest {
 
         assertEquals(listOf("find"), calls)
         compose.onNodeWithTag("echo_finish_confirmation").assertDoesNotExist()
+    }
+
+    @Test
+    fun `an error is announced from one place only while Echo folds away and comes back`() {
+        state = laterTurn.copy(onboardingError = "offline")
+        show()
+        val announcing = SemanticsMatcher.keyIsDefined(SemanticsProperties.LiveRegion) and (hasTestTag("echo_error") or hasAnyDescendant(hasTestTag("echo_error")))
+        val seen = mutableSetOf<Boolean>()
+        compose.walkWindows(window, *walk) { step ->
+            // Midway through the hand-off both the leaving and the arriving error are on screen.
+            compose.mainClock.advanceTimeBy(120)
+            val midway = compose.onAllNodes(announcing, useUnmergedTree = true).fetchSemanticsNodes().size
+            assertTrue("$midway places announce the error midway to $step", midway <= 1)
+            settle()
+            assertEquals("places announcing the error at $step", 1, compose.onAllNodes(announcing, useUnmergedTree = true).fetchSemanticsNodes().size)
+            seen += compose.onAllNodesWithTag("echo_onboarding_avatar", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        assertEquals("the walk both shows and folds Echo away", setOf(true, false), seen)
     }
 
     @Test

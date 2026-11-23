@@ -242,7 +242,7 @@ private fun PrismCompactFace(card: OnboardingProbeCard, title: String, index: In
                 Modifier.padding(start = if (plan.art > 0) EchoPrismLayout.CompactGap.dp else 0.dp),
                 verticalArrangement = Arrangement.spacedBy(EchoPrismLayout.TagGap.dp),
             ) {
-                PrismTag(card, index, count, sticker = false)
+                if (plan.showTag) PrismTag(card, index, count, sticker = false)
                 PrismTitle(title, card.title, plan, TextAlign.Start)
             }
         }

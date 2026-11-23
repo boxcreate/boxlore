@@ -68,12 +68,13 @@ internal object OnboardingSuggestionsLanes {
             if (lane.isCharts) return@mapNotNull lane
             if (repeatsChartsTop(lane, charts)) return@mapNotNull null
             val fresh = lane.podcasts.filter { it.id !in seen }
-            seen += fresh.map { it.id }
-            when {
+            val kept = when {
                 fresh.size == lane.podcasts.size -> lane
                 fresh.size < MinLaneShows -> null
                 else -> lane.copy(podcasts = fresh)
             }
+            // Only a lane that stays claims its shows; a hidden one leaves them to the lanes below.
+            kept?.also { seen += fresh.map { it.id } }
         }
     }
 

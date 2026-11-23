@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
@@ -14,11 +15,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -31,12 +33,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.R as DesignR
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLogo
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.foldSafeRegions
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 
 /** The opening screens' panel colours: a rich panel that keeps the brand in dark mode without a pale billboard. */
@@ -127,7 +133,13 @@ internal fun OnboardingOpeningFrame(
     panelContent: @Composable ColumnScope.(PaneSize) -> Unit,
     content: @Composable ColumnScope.(PaneSize) -> Unit,
 ) {
-    val panelWidth = width * OpeningPanelPaneShare
+    // A vertical fold or hinge splits the window (the shared hinge-split policy): the panel takes the
+    // start half and the content the end half, so nothing lies across the fold.
+    val window = LocalBoxloreWindowLayout.current
+    val halves = window.foldSafeRegions().sortedBy { it.left }.takeIf { window.usesHingeSplit && it.size == 2 }
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val panelWidth = halves?.let { (if (rtl) it.last() else it.first()).width.dp } ?: (width * OpeningPanelPaneShare)
+    val hingeGap = halves?.let { (it.last().left - it.first().right).coerceAtLeast(0f).dp } ?: 0.dp
     Row(Modifier.fillMaxSize()) {
         OpeningPanel(
             colors,
@@ -135,16 +147,19 @@ internal fun OnboardingOpeningFrame(
             bottomPadding = panelBottomPadding,
             modifier = Modifier.width(panelWidth).fillMaxHeight(),
             verticalArrangement = Arrangement.SpaceBetween,
-            // A camera cutout at the start edge: the panel's colour runs behind it, its logo and content don't.
-            contentInsets = WindowInsets.displayCutout.only(WindowInsetsSides.Start),
+            // A cutout or the navigation buttons at the start edge: the panel's colour runs behind them, its logo and content don't.
+            contentInsets = WindowInsets.displayCutout.union(WindowInsets.navigationBars).only(WindowInsetsSides.Start),
         ) {
             panelContent(PaneSize(panelWidth, height))
         }
+        if (hingeGap > 0.dp) Spacer(Modifier.width(hingeGap))
         BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
             val pane = PaneSize(maxWidth, maxHeight)
             Column(
                 Modifier.fillMaxSize().verticalScroll(scroll).heightIn(min = pane.height)
-                    .statusBarsPadding().navigationBarsPadding()
+                    .statusBarsPadding()
+                    // The end edge's cutout and buttons, and the bottom's; the start edge belongs to the panel.
+                    .windowInsetsPadding(WindowInsets.displayCutout.union(WindowInsets.navigationBars).only(WindowInsetsSides.End + WindowInsetsSides.Bottom))
                     .padding(horizontal = 32.dp, vertical = 24.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,

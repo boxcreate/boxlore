@@ -178,6 +178,37 @@ class OpeningHandoffTest {
     }
 
     @Test
+    fun `turning across the two-pane gate during the hand-off ends it once and shows Welcome`() {
+        window = BoxloreTestWindows.PHONE
+        show()
+        pick("Deutsch")
+        frame()
+        advance(100)
+        // The question's arrangement no longer matches Welcome's: Welcome drops the hand-off and shows as usual.
+        window = BoxloreTestWindows.PHONE_LAND
+        advance(1_600)
+        assertEquals("hand-offs ended", 1, handoffsDone)
+        assertEquals(OnboardingStep.WELCOME, state.currentStep)
+        assertEquals("one panel", 1, count(OpeningPanelTag))
+        compose.onNode(hasText("Find shows for me") and hasClickAction()).assertExists()
+    }
+
+    @Test
+    fun `a resize while the panel settles ends the hand-off at the panel's new height`() {
+        window = BoxloreTestWindows.PHONE
+        show()
+        pick("Deutsch")
+        frame()
+        advance(200)
+        window = BoxloreTestWindows.PHONE_SMALL
+        repeat(400) { if (handoffsDone == 0) frame() }
+        assertEquals("hand-offs ended", 1, handoffsDone)
+        val ended = single(OpeningPanelTag)
+        advance(500)
+        assertEquals("the panel jumps once the hand-off ends", ended.height, single(OpeningPanelTag).height, 1f)
+    }
+
+    @Test
     fun `on a phone the panel and logo stay put, then the panel settles at Welcome's height`() = handsOver(BoxloreTestWindows.PHONE)
 
     @Test

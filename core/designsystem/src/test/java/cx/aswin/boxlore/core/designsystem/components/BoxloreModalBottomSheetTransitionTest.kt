@@ -33,7 +33,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
+import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.analytics.ScreenViews
+import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -206,6 +208,31 @@ class BoxloreModalBottomSheetTransitionTest {
 
         assertEquals(1, dismissals)
         assertFalse(sheetState!!.isVisible)
+    }
+
+    @Test
+    fun `the country picker stays open when the activity is recreated, from the chip and from the card`() {
+        val restoration = StateRestorationTester(compose)
+        restoration.setContent {
+            BoxLoreTheme(darkTheme = false, dynamicColor = false) {
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                    Column {
+                        RegionSegmentedSelector("us", {}, Modifier.testTag("region_chip"), compact = true)
+                        RegionSegmentedSelector("us", {}, Modifier.testTag("region_card"))
+                    }
+                }
+            }
+        }
+        val body = ApplicationProvider.getApplicationContext<Application>().getString(R.string.content_region_sheet_body)
+        for (trigger in listOf("region_chip", "region_card")) {
+            compose.onNodeWithTag(trigger).performClick()
+            compose.waitForIdle()
+            restoration.emulateSavedInstanceStateRestore()
+            compose.waitForIdle()
+            compose.onNodeWithText(body).assertExists("the picker opened from $trigger closed on recreation")
+            compose.runOnUiThread { (ShadowDialog.getLatestDialog() as ComponentDialog).onBackPressedDispatcher.onBackPressed() }
+            compose.waitForIdle()
+        }
     }
 
     @Test

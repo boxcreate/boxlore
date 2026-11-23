@@ -8,9 +8,11 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 
 /**
- * Keeps the import picker open when the activity is recreated (a fold, an unfold, a display-size
- * change). Only the picker is kept: it holds no live objects. Running work and its results are owned
- * by the import itself, so every other state comes back as [OpmlImportState.Idle].
+ * Keeps the import picker open when the activity is recreated (a language, text-size or density
+ * change, or the app coming back after the system closed it). Folds, unfolds and display-size changes
+ * don't recreate it (`MainActivity` handles them), so every state survives those. Only the picker is
+ * kept here: it holds no live objects. Running work and its results are owned by the import itself,
+ * so on recreation every other state comes back as [OpmlImportState.Idle].
  */
 internal val OpmlImportStateSaver: Saver<OpmlImportState, Boolean> = Saver(
     save = { state -> state is OpmlImportState.ShowSelector },

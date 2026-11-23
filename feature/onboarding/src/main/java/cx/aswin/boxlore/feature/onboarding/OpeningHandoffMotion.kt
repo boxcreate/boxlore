@@ -99,9 +99,12 @@ internal fun rememberOpeningHandoffMotion(from: OpeningHandoff?, startPx: Float,
             launch { motion.content.animateTo(1f, tween(HandoffContentMillis, delayMillis = HandoffContentDelayMillis, easing = WelcomeEntryTiming.Easing)) },
             launch { motion.shift.animateTo(0f, ExpressiveMotion.FormalSpring) },
         )
-        // Welcome's own height can still change while the panel settles (a resize); follow it.
-        while (panel != null && panel.value != motion.natural) panel.animateTo(motion.natural, ExpressiveMotion.FormalSpring)
-        parts.forEach { it.join() }
+        // Welcome's own height can still change while the panel settles or the other parts finish (a
+        // resize); follow it until the panel matches, so the hand-off never ends at an old height.
+        do {
+            while (panel != null && panel.value != motion.natural) panel.animateTo(motion.natural, ExpressiveMotion.FormalSpring)
+            parts.forEach { it.join() }
+        } while (panel != null && panel.value != motion.natural)
         done()
     }
     return motion

@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.state.ToggleableState
@@ -14,15 +15,19 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
@@ -39,6 +44,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -59,6 +65,7 @@ class OnboardingSearchLayoutTest {
     private val picked = mutableStateOf(setOf<String>())
     private val loading = mutableStateOf(false)
     private val genre = mutableStateOf<String?>(null)
+    private val failed = mutableStateOf(false)
     private val toggles = mutableListOf<String>()
     private var done = 0
     private val shows = (1..30).map { Podcast(id = "$it", title = "Show $it", artist = "Host $it", imageUrl = "") }
@@ -70,7 +77,8 @@ class OnboardingSearchLayoutTest {
                 Box(Modifier.requiredSize(window.value.widthDp.dp, window.value.heightDp.dp)) {
                     OnboardingSearchScreen(
                         query = query.value,
-                        results = if (query.value.isEmpty()) emptyList() else shows,
+                        results = if (query.value.isEmpty() || failed.value) emptyList() else shows,
+                        searchFailed = failed.value,
                         isSearching = false,
                         subscribedIds = picked.value,
                         selectedPodcasts = shows.associateBy { it.id },
@@ -131,6 +139,15 @@ class OnboardingSearchLayoutTest {
             val bar = compose.onNodeWithTag(SEARCH_PICKS_BAR_TAG).fetchSemanticsNode().boundsInRoot
             assertTrue("no second row of shows at ${next.widthDp}x${next.heightDp}", rowTops().getOrElse(1) { Float.MAX_VALUE } < bar.top)
         }
+        // The chips keep their scroll as a shorter window moves them from pinned to scrolling with the shows, and back.
+        val last = RuntimeEnvironment.getApplication().getString(SEARCH_CATEGORIES.last().labelRes)
+        compose.onAllNodesWithTag(SEARCH_CATEGORIES_TAG).onFirst().performScrollToNode(hasText(last))
+        compose.waitForIdle()
+        listOf(BoxloreTestWindows.SPLIT_HALF, BoxloreTestWindows.PHONE).forEach { next ->
+            resize(next)
+            val chip = compose.onAllNodes(hasText(last) and hasClickAction()).fetchSemanticsNodes().map { it.boundsInRoot }
+            assertTrue("$last went off screen at ${next.widthDp}x${next.heightDp}", chip.any { it.width > 0f && it.left < next.widthDp })
+        }
     }
 
     @Test
@@ -189,6 +206,20 @@ class OnboardingSearchLayoutTest {
             resize(next)
             assertEquals("the first show at ${next.widthDp}x${next.heightDp}", first, firstShow(SEARCH_GRID_TAG))
         }
+        // On the cover the chips scroll with the shows. With the first row on top they stay away through a turn.
+        resize(BoxloreTestWindows.COVER_443)
+        compose.onNodeWithTag(SEARCH_GRID_TAG).performScrollToIndex(SearchGridHeaderItems)
+        compose.waitForIdle()
+        assertEquals("Show 1", firstShow(SEARCH_GRID_TAG))
+        resize(BoxloreTestWindows.PHONE_LAND)
+        assertEquals("the first show after turning, with the chips scrolled away", "Show 1", firstShow(SEARCH_GRID_TAG))
+        assertFalse("the chips came back", chipsInGrid && compose.onAllNodes(hasTestTag(SEARCH_CATEGORIES_TAG)).fetchSemanticsNodes().any { it.boundsInRoot.height > 0f })
+        // A row partly scrolled past still holds the place: the next row doesn't take over.
+        resize(BoxloreTestWindows.COVER_443)
+        compose.onNodeWithTag(SEARCH_GRID_TAG).performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 20f) }
+        compose.waitForIdle()
+        resize(BoxloreTestWindows.PHONE)
+        compose.onNodeWithText("Show 1").assertIsDisplayed()
     }
 
     /** The shows (one checkbox each) inside [tag] whose own top (not the part left showing) is on screen inside it. */
@@ -221,6 +252,12 @@ class OnboardingSearchLayoutTest {
         compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets(statusTop = 24, navBottom = 24)) }
         compose.waitForIdle()
         compose.onNodeWithTag(SEARCH_PICKS_BAR_TAG).assertIsDisplayed()
+        // A failed search keeps Try again above the keyboard too.
+        failed.value = true
+        compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets(statusTop = 24, navBottom = 24, imeBottom = 300)) }
+        compose.waitForIdle()
+        val retry = compose.onNode(hasText(RuntimeEnvironment.getApplication().getString(R.string.onboarding_search_try_again)) and hasClickAction()).fetchSemanticsNode().boundsInRoot
+        assertTrue("Try again is under the keyboard (${retry.bottom})", retry.bottom <= window.value.heightDp - 300f + 1f)
     }
 
     @Test

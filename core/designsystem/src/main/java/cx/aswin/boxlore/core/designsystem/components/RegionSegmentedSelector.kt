@@ -30,7 +30,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,7 +67,8 @@ fun RegionSegmentedSelector(
 ) {
     val selected = ContentRegions.canonicalize(activeRegion)
     val label = contentRegionName(selected, currentLocale())
-    var showSheet by remember { mutableStateOf(false) }
+    // Saved, so the picker stays open when the activity is recreated (a language or text-size change).
+    var showSheet by rememberSaveable { mutableStateOf(false) }
 
     if (compact) {
         RegionPickerChip(label = label, onClick = { showSheet = true }, modifier = modifier)

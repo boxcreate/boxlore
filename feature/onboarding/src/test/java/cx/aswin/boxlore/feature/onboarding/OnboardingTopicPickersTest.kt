@@ -6,17 +6,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -139,9 +142,26 @@ class OnboardingTopicPickersTest {
         listOf(BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND).forEach { size ->
             compose.runOnIdle { window.value = size }
             compose.waitForIdle()
-            assertWholeCards("Continue (2 selected)", size)
+            // The picked card opens with its genres, so it shows whole and the next choice starts on screen.
+            assertWholeCards("Continue (2 selected)", size, atLeast = 1)
         }
         assertEquals(setOf("commuting", "working"), picked.value)
+        // At the end of the list, across the 480dp height gate and back: the place and the card's chosen genres stay.
+        compose.runOnIdle { window.value = BoxloreWindowLayout(840f, 480f) }
+        compose.waitForIdle()
+        val list = compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange))[0]
+        list.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 10_000f) }
+        compose.waitForIdle()
+        fun scrolled() = list.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+        val place = scrolled()
+        assertTrue("the list scrolled", place > 0f)
+        listOf(BoxloreWindowLayout(840f, 479f), BoxloreWindowLayout(840f, 480f)).forEach { size ->
+            compose.runOnIdle { window.value = size }
+            compose.waitForIdle()
+            val science = compose.onAllNodes(hasText("Science") and SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
+            assertTrue("Science is no longer chosen at ${size.widthDp}x${size.heightDp}", science.fetchSemanticsNodes().isNotEmpty())
+        }
+        assertEquals("the list's place after the short window", place, scrolled(), 1f)
     }
 
     @Test
@@ -169,14 +189,21 @@ class OnboardingTopicPickersTest {
         }
     }
 
-    /** At least two listening moments show whole between the top of the window and the main button. */
-    private fun assertWholeCards(footerText: String, size: BoxloreWindowLayout) {
-        val footer = compose.onNodeWithText(footerText).fetchSemanticsNode().boundsInRoot
-        val whole = listOf("Commuting", "Working", "Relaxing", "Winding down", "Working out", "Doing chores").count { label ->
-            val card = compose.onNode(hasText(label) and SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState)).fetchSemanticsNode().boundsInRoot
-            card.top >= 0f && card.bottom <= footer.top - 8f
+    /**
+     * At least two listening moments show whole inside the scrolling list, above the main button. Each
+     * card's own bounds count, not the part the list leaves showing, so a cut card isn't whole.
+     */
+    private fun assertWholeCards(footerText: String, size: BoxloreWindowLayout, atLeast: Int = 2) {
+        val viewport = compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).fetchSemanticsNodes().first().boundsInRoot
+        val button = compose.onNode(hasText(footerText) and hasClickAction()).fetchSemanticsNode().boundsInRoot
+        val bottom = minOf(viewport.bottom, button.top)
+        val cards = listOf("Commuting", "Working", "Relaxing", "Winding down", "Working out", "Doing chores").map { label ->
+            compose.onNode(hasText(label) and SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState)).fetchSemanticsNode()
         }
-        assertTrue("only $whole cards show whole at ${size.widthDp}x${size.heightDp}", whole >= 2)
+        val whole = cards.count { it.positionInRoot.y >= viewport.top - 0.5f && it.positionInRoot.y + it.size.height <= bottom + 0.5f }
+        val started = cards.count { it.positionInRoot.y >= viewport.top - 0.5f && it.positionInRoot.y < bottom }
+        assertTrue("only $whole cards show whole at ${size.widthDp}x${size.heightDp}", whole >= atLeast)
+        assertTrue("only $started cards start on screen at ${size.widthDp}x${size.heightDp}", started >= 2)
     }
 
     @Test

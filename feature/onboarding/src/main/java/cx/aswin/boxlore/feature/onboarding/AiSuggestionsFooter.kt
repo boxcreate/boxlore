@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 /** The footer for [uiState]: the similar-shows choice, loading, a failed load ([failed]), adding, or Add N shows. */
@@ -134,16 +135,19 @@ private fun SuggestionsFooterLabel(state: SuggestionsFooterState) {
         SuggestionsFooterState.Loading -> EchoThinkingLabel(stringArrayResource(R.array.suggestions_finding_words))
         SuggestionsFooterState.Adding -> EchoThinkingLabel(arrayOf(stringResource(R.string.suggestions_adding)))
         SuggestionsFooterState.Retry -> Text(stringResource(R.string.suggestions_try_again), style = MaterialTheme.typography.titleMedium)
+        // Labels wrap rather than lose their last words at 320dp with large text; the button grows.
         is SuggestionsFooterState.Choice -> Text(
             stringResource(if (state.homeFirst) R.string.similar_choice_home else R.string.similar_choice_see),
             style = MaterialTheme.typography.titleMedium,
-            maxLines = 1,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.testTag("suggestions_finish_label"),
         )
         is SuggestionsFooterState.Finish -> Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 if (state.count > 0) pluralStringResource(R.plurals.suggestions_add_shows, state.count, state.count) else stringResource(R.string.suggestions_start_without),
                 style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f, fill = false).testTag("suggestions_finish_label"),
             )
             Spacer(Modifier.width(8.dp))
             Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, Modifier.size(20.dp))

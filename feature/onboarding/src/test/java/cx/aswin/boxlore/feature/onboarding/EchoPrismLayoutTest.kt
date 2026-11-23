@@ -98,6 +98,13 @@ class EchoPrismLayoutTest {
         val tiny = plan("Bloomberg Intelligence: Tech Disruptors", 272, 60, pitch = long)
         assertFalse(tiny.showHook)
         assertEquals(0, tiny.art)
+        assertTrue("the card is ${tiny.height}px in a 60px slot", tiny.height <= 60)
+    }
+
+    @Test fun `the art steps down to its smallest size before it goes`() {
+        // A short name and pitch fit beside the smallest art in a 166px slot; the art never skipped past it to none.
+        val fit = plan("Serial", 272, 166, pitch = "A short pitch.")
+        assertTrue("the art went (${fit.art}px) where the smallest fits", fit.art > 0)
     }
 
     @Test fun `a long name is never cut while the art or the pitch can give way`() {

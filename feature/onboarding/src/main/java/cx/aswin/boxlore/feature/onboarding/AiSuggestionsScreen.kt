@@ -18,11 +18,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
@@ -46,6 +49,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -289,6 +293,10 @@ private fun SuggestionLane(lane: OnboardingSuggestionsLane, index: Int, uiState:
     val picks = lane.id == OnboardingSuggestionsPresentation.PICKS_LANE_ID
     val shows = lane.podcasts
     val allSelected = shows.isNotEmpty() && shows.all { it.id in selectedIds }
+    // Held above the width switch, so the row's scroll and the grid's Show all both survive a lane
+    // turning from a sideways row into a grid and back.
+    val rowState = rememberSaveable(lane.id, saver = LazyListState.Saver) { LazyListState() }
+    val gridOpen = rememberSaveable(lane.id) { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().testTag("suggestions_lane_${lane.id}")) {
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -325,10 +333,11 @@ private fun SuggestionLane(lane: OnboardingSuggestionsLane, index: Int, uiState:
         } else {
             BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 12.dp)) {
                 if (maxWidth >= SuggestionGridMinWidth) {
-                    SuggestionLaneGrid(lane, index, shows, selectedIds, maxWidth, callbacks.onToggle, onDetails)
+                    SuggestionLaneGrid(lane, index, shows, selectedIds, maxWidth, gridOpen, callbacks.onToggle, onDetails)
                 } else {
                     LazyRow(
-                        Modifier.fillMaxWidth(),
+                        Modifier.fillMaxWidth().testTag("suggestions_row_${lane.id}"),
+                        state = rowState,
                         contentPadding = PaddingValues(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
@@ -344,20 +353,22 @@ private fun SuggestionLane(lane: OnboardingSuggestionsLane, index: Int, uiState:
 
 /**
  * A lane on a wide column: its shows in rows, as many across as fit, two rows deep, then "Show all"
- * for the rest. Whether a lane is open is kept through window changes.
+ * for the rest. Whether a lane is open ([openState]) belongs to the lane, so it is kept through window changes.
  */
 @Composable
-@Suppress("LongParameterList")
+// The lane's parts, its open state and its two actions; grouping them would only rename them.
+@Suppress("LongParameterList", "kotlin:S107")
 private fun SuggestionLaneGrid(
     lane: OnboardingSuggestionsLane,
     index: Int,
     shows: List<Podcast>,
     selectedIds: Set<String>,
     width: Dp,
+    openState: MutableState<Boolean>,
     onToggle: (String) -> Unit,
     onDetails: (Podcast) -> Unit,
 ) {
-    var open by rememberSaveable(lane.id) { mutableStateOf(false) }
+    var open by openState
     val columns = suggestionGridColumns(width.value)
     // Short windows keep the smallest cards, so the first row stays above the footer.
     val cardWidth = if (boxloreIsShortPane()) SuggestionCardWidth else suggestionGridCardWidth(width.value, columns).dp
@@ -476,47 +487,50 @@ private fun SuggestionCardsSkeleton(modifier: Modifier = Modifier) {
 private fun SuggestionsProblem(error: Boolean, kind: OnboardingErrorKind) {
     val skipped = error && kind == OnboardingErrorKind.VerificationSkipped
     val colors = MaterialTheme.colorScheme
-    Column(
-        Modifier.fillMaxSize().padding(32.dp).testTag("suggestions_problem"),
-        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(Modifier.size(72.dp).clip(MaterialShapes.Cookie9Sided.toShape()).background(colors.secondaryContainer), contentAlignment = Alignment.Center) {
-            Icon(
-                when {
-                    skipped -> Icons.Rounded.Shield
-                    error -> Icons.Rounded.CloudOff
-                    else -> Icons.Rounded.Grain
-                },
-                null,
-                Modifier.size(32.dp),
-                tint = colors.onSecondaryContainer,
+    // Centred while it fits; in a short window (a sideways phone above its footer) it scrolls instead of cutting the words.
+    BoxWithConstraints(Modifier.fillMaxSize().testTag("suggestions_problem")) {
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight).padding(32.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(Modifier.size(72.dp).clip(MaterialShapes.Cookie9Sided.toShape()).background(colors.secondaryContainer), contentAlignment = Alignment.Center) {
+                Icon(
+                    when {
+                        skipped -> Icons.Rounded.Shield
+                        error -> Icons.Rounded.CloudOff
+                        else -> Icons.Rounded.Grain
+                    },
+                    null,
+                    Modifier.size(32.dp),
+                    tint = colors.onSecondaryContainer,
+                )
+            }
+            Text(
+                stringResource(
+                    when {
+                        skipped -> R.string.suggestions_check_title
+                        error -> R.string.suggestions_error_title
+                        else -> R.string.suggestions_empty_title
+                    },
+                ),
+                Modifier.semantics { heading() },
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                stringResource(
+                    when {
+                        skipped -> R.string.suggestions_check_body
+                        error -> R.string.suggestions_error_body
+                        else -> R.string.suggestions_empty_body
+                    },
+                ),
+                style = MaterialTheme.typography.bodyLarge,
+                color = colors.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
         }
-        Text(
-            stringResource(
-                when {
-                    skipped -> R.string.suggestions_check_title
-                    error -> R.string.suggestions_error_title
-                    else -> R.string.suggestions_empty_title
-                },
-            ),
-            Modifier.semantics { heading() },
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            stringResource(
-                when {
-                    skipped -> R.string.suggestions_check_body
-                    error -> R.string.suggestions_error_body
-                    else -> R.string.suggestions_empty_body
-                },
-            ),
-            style = MaterialTheme.typography.bodyLarge,
-            color = colors.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
     }
 }
 

@@ -298,6 +298,7 @@ private fun ColumnScope.EchoConversationBody(
         EchoBodyLayout(
             fit = fit,
             stretch = stretch,
+            reserve = if (kind == EchoScreenKind.Writing) EchoWritingFieldFloor else 0.dp,
             modifier = Modifier.fillMaxSize(),
             header = {
                 // The body's own slot, not the screen column's.
@@ -362,12 +363,13 @@ private fun EchoFinishConfirmation(onConfirm: () -> Unit, onDismiss: () -> Unit)
  * middle. Beside the answers ([EchoFit.sideBySide]), Echo and the question stand centred in a start
  * column. The three slots stay the same in both arrangements, so focus, drafts and the keyboard
  * survive a switch. [stretch] is false when the answer slot holds a text box or nothing, which keeps
- * its own height.
+ * its own height; a text box still gets [reserve] under the question, so a long question can't squeeze it.
  */
 @Composable
 private fun EchoBodyLayout(
     fit: EchoFit,
     stretch: Boolean,
+    reserve: Dp,
     modifier: Modifier,
     header: @Composable () -> Unit,
     question: @Composable () -> Unit,
@@ -397,7 +399,7 @@ private fun EchoBodyLayout(
         val beforeQuestion = headerHeight + if (headerHeight > 0) gapPx else 0
         val minAnswers = fit.answersMinHeight?.takeIf { stretch }?.roundToPx()
         // The question gets its planned height first, then whatever the answers leave.
-        val besideQuestion = if (fit.sideBySide) 0 else (minAnswers ?: 0) + gapPx
+        val besideQuestion = if (fit.sideBySide) 0 else (minAnswers ?: reserve.roundToPx()) + gapPx
         val questionRoom = maxOf(height - beforeQuestion - besideQuestion, fit.questionHeight.roundToPx()).coerceIn(0, height)
         val questions = questionParts.map { it.measure(loose.copy(maxHeight = questionRoom)) }
         val questionHeight = questions.maxOfOrNull { it.height } ?: 0
@@ -435,6 +437,9 @@ private val EchoDeckBesideBelow = 400.dp
 
 /** Beside a show card the question and its clip button take a little more of the width than answers leave them. */
 private const val EchoDeckStartShare = 0.45f
+
+/** The writing field's own room under the question: its 48dp touch height and a little air. */
+private val EchoWritingFieldFloor = 56.dp
 
 /** Test tags of the body's three slots, in reading order. */
 internal val EchoBodySlotTags = listOf("echo_slot_header", "echo_slot_question", "echo_slot_answers")

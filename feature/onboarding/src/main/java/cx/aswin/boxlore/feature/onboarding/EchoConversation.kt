@@ -132,8 +132,14 @@ internal fun EchoHeader(state: OnboardingUiState, kind: EchoScreenKind, metrics:
                 if (line != null) {
                     val current = speech?.takeIf { it.line == line }
                     val bubble = @Composable { EchoBubble(line, current?.detail, metrics.bubbleLines, emphasis = current?.emphasis == true) }
-                    // An error is announced as it appears.
-                    if (current?.error == true) Box(Modifier.testTag("echo_error").semantics { liveRegion = LiveRegionMode.Polite }) { bubble() } else bubble()
+                    // An error is announced as it appears, by this bubble only while Echo is shown: a header
+                    // leaving as Echo folds away hands the announcement to the error in the question's place.
+                    if (current?.error == true) {
+                        val announce = if (metrics.showEcho) Modifier.semantics { liveRegion = LiveRegionMode.Polite } else Modifier
+                        Box(Modifier.testTag("echo_error").then(announce)) { bubble() }
+                    } else {
+                        bubble()
+                    }
                 }
             }
         }
@@ -365,9 +371,11 @@ internal fun EchoQuestionArea(
         EchoScreenKind.Deck -> if (metrics.showEcho) "deck" else "deck:${state.aiDeck.current?.id}"
         else -> "question:${state.aiCurrentTurn}:${question.orEmpty()}"
     }
+    // Questions are announced as they change; an error announces itself, once, from wherever it stands.
+    val announce = if (kind == EchoScreenKind.Error) Modifier else Modifier.semantics { liveRegion = LiveRegionMode.Polite }
     AnimatedContent(
         targetState = key,
-        modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+        modifier = modifier.fillMaxWidth().then(announce),
         transitionSpec = EchoMotion.handoff(),
         contentAlignment = Alignment.TopStart,
         label = "echoQuestion",
@@ -375,7 +383,7 @@ internal fun EchoQuestionArea(
         when {
             target == "waiting" -> EchoWaiting()
             target == "error" -> Box(Modifier.fillMaxWidth())
-            target == "error:plain" -> EchoErrorText()
+            target == "error:plain" -> EchoErrorText(announce = !metrics.showEcho)
             target == "deck" -> Box(Modifier.fillMaxWidth())
             target.startsWith("deck:") -> EchoDeckQuestion(state.aiDeck.current?.question.orEmpty(), metrics)
             else -> EchoQuestion(state, kind, question, metrics, onSearchSuggestion)
@@ -442,11 +450,11 @@ internal fun EchoSkeleton(modifier: Modifier, shape: androidx.compose.ui.graphic
     Box(modifier.m3Shimmer(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.surfaceContainerHighest, shape))
 }
 
-/** The error on its own, centred, when Echo is folded away on the smallest windows. */
+/** The error on its own, centred, when Echo is folded away on the smallest windows; it [announce]s itself only then. */
 @Composable
-private fun EchoErrorText() {
+private fun EchoErrorText(announce: Boolean) {
     Column(
-        Modifier.fillMaxWidth().testTag("echo_error").semantics { liveRegion = LiveRegionMode.Polite },
+        Modifier.fillMaxWidth().testTag("echo_error").then(if (announce) Modifier.semantics { liveRegion = LiveRegionMode.Polite } else Modifier),
         verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

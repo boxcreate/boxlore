@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.items
@@ -102,6 +103,8 @@ internal fun OnboardingSearchScreen(
     val picks = remember(subscribedIds, selectedPodcasts) {
         LazyListKeyPolicy.deduplicateById(subscribedIds.mapNotNull { selectedPodcasts[it] }) { it.id }
     }
+    // One scroll for the topic chips, pinned above the shows or scrolling with them in a short window.
+    val chips = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val width = onboardingSearchGridWidth(boxloreContentWidthDp(), tablet)
         val columns = boxlorePosterColumns(window, width)
@@ -116,10 +119,10 @@ internal fun OnboardingSearchScreen(
                 .then(if (tablet) Modifier.imePadding() else Modifier),
         ) {
             SearchBoxRow(query, onQueryChange, onBack)
-            if (query.isEmpty() && !compactHeader) SearchCategoryRow(selectedSearchGenre, onGenreSelect)
+            if (query.isEmpty() && !compactHeader) SearchCategoryRow(selectedSearchGenre, onGenreSelect, chips)
             SearchBody(
                 SearchBodyState(query, results, alsoFoundResults, isSearching, searchFailed, popularPodcasts, isPopularLoading, selectedSearchGenre, subscribedIds),
-                SearchLayout(columns, compactHeader, listBottom, trendingAsRows = shortPane),
+                SearchLayout(columns, compactHeader, listBottom, trendingAsRows = shortPane, chips),
                 SearchBodyActions(onRetrySearch, onSubscribe, onGenreSelect),
                 Modifier.fillMaxWidth().weight(1f),
             )
@@ -172,7 +175,7 @@ private class SearchBodyState(
  * short windows ([trendingAsRows]) the trending shows are set as result rows, several across, so
  * a few rows of shows and their names show at once.
  */
-private class SearchLayout(val columns: Int, val compactHeader: Boolean, val listBottom: Dp, val trendingAsRows: Boolean)
+private class SearchLayout(val columns: Int, val compactHeader: Boolean, val listBottom: Dp, val trendingAsRows: Boolean, val chips: LazyListState)
 
 private class SearchBodyActions(val onRetrySearch: () -> Unit, val onSubscribe: (Podcast) -> Unit, val onGenreSelect: (String?) -> Unit)
 
@@ -191,12 +194,13 @@ private fun SearchBody(state: SearchBodyState, layout: SearchLayout, actions: Se
                 subscribedIds = state.subscribedIds,
                 onSubscribe = actions.onSubscribe,
                 bottomPadding = layout.listBottom,
-                header = if (layout.compactHeader) SearchGridHeader(state.selectedSearchGenre, actions.onGenreSelect) else null,
+                header = if (layout.compactHeader) SearchGridHeader(state.selectedSearchGenre, actions.onGenreSelect, layout.chips) else null,
                 modifier = Modifier.fillMaxWidth().weight(1f),
             )
         }
-        nothing && state.searchFailed -> OnboardingSearchFailed(actions.onRetrySearch, modifier.padding(horizontal = 24.dp))
-        nothing -> OnboardingSearchEmpty(modifier.padding(horizontal = 24.dp))
+        // Centred above the keyboard, as the results lists keep clear of it, so Retry stays reachable.
+        nothing && state.searchFailed -> OnboardingSearchFailed(actions.onRetrySearch, modifier.padding(start = 24.dp, end = 24.dp, bottom = layout.listBottom))
+        nothing -> OnboardingSearchEmpty(modifier.padding(start = 24.dp, end = 24.dp, bottom = layout.listBottom))
         else -> SearchResultsList(state.query, state.results, state.alsoFoundResults, state.subscribedIds, actions.onSubscribe, layout.listBottom, modifier)
     }
 }
@@ -229,8 +233,9 @@ internal val OnboardingSearchRowMinWidth = 280.dp
 private val OnboardingSearchListPadding = 8.dp
 
 @Composable
-internal fun SearchCategoryRow(selected: String?, onSelect: (String?) -> Unit) {
+internal fun SearchCategoryRow(selected: String?, onSelect: (String?) -> Unit, state: LazyListState = rememberLazyListState()) {
     LazyRow(
+        state = state,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 6.dp),
         modifier = Modifier.fillMaxWidth().testTag(SEARCH_CATEGORIES_TAG),

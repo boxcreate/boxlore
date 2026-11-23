@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -99,7 +100,7 @@ internal fun PopularShowsGrid(
             modifier = modifier.testTag(SEARCH_GRID_TAG),
         ) {
             if (header != null) {
-                item(key = "search_categories", span = { GridItemSpan(maxLineSpan) }) { Box(Modifier.bleedSideways(16.dp)) { SearchCategoryRow(header.selectedGenre, header.onGenreSelect) } }
+                item(key = "search_categories", span = { GridItemSpan(maxLineSpan) }) { Box(Modifier.bleedSideways(16.dp)) { SearchCategoryRow(header.selectedGenre, header.onGenreSelect, header.chips) } }
                 item(key = "search_heading", span = { GridItemSpan(maxLineSpan) }) { Box(Modifier.bleedSideways(16.dp)) { SearchSectionTitle(header.selectedGenre) } }
             }
             when {
@@ -126,10 +127,10 @@ internal fun PopularShowsGrid(
 
 private const val SkeletonPosterCount = 6
 private const val PopularShowKeyPrefix = "popular_show"
-private const val SearchGridHeaderItems = 2
+internal const val SearchGridHeaderItems = 2
 
 /** On short windows the topic chips and the heading ride at the top of the grid. */
-internal class SearchGridHeader(val selectedGenre: String?, val onGenreSelect: (String?) -> Unit)
+internal class SearchGridHeader(val selectedGenre: String?, val onGenreSelect: (String?) -> Unit, val chips: LazyListState)
 
 /** A trending poster's shape while the shows load: the square art and its two lines of text. */
 @Composable
@@ -220,16 +221,29 @@ private fun Modifier.bleedSideways(by: Dp): Modifier = layout { measurable, cons
  */
 @Composable
 private fun KeepTopShow(grid: LazyGridState, shows: List<Podcast>, headerItems: Int, arrangement: Any) {
-    // Read while composing, before the new layout moves anything.
+    // Read while composing, before the new layout moves anything: the show on top, even one partly
+    // scrolled past, and the share of it scrolled past; none at the very top (the header shows there)
+    // or while a header row is on top.
     val anchor = remember(arrangement) {
         Snapshot.withoutReadObservation {
-            grid.layoutInfo.visibleItemsInfo.firstOrNull { it.offset.y >= 0 && (it.key as? String)?.startsWith(PopularShowKeyPrefix) == true }?.key
+            val atTop = grid.firstVisibleItemIndex == 0 && grid.firstVisibleItemScrollOffset == 0
+            // The grid also lists items kept just above the top; the first on screen is the first that ends below it.
+            grid.layoutInfo.visibleItemsInfo.firstOrNull { it.offset.y + it.size.height > 0 }
+                ?.takeIf { !atTop && (it.key as? String)?.startsWith(PopularShowKeyPrefix) == true }
+                ?.let { it.key to (-it.offset.y).coerceAtLeast(0).toFloat() / it.size.height.coerceAtLeast(1) }
         }
     }
     LaunchedEffect(arrangement) {
-        val index = shows.indexOfFirst { LazyListKeyPolicy.safeKey(it.id, prefix = PopularShowKeyPrefix) == anchor }
+        val index = anchor?.let { (key, _) -> shows.indexOfFirst { LazyListKeyPolicy.safeKey(it.id, prefix = PopularShowKeyPrefix) == key } } ?: -1
         when {
-            index > 0 -> grid.scrollToItem(index + headerItems)
+            // The first show too: once the header has scrolled away it stays away.
+            anchor != null && index >= 0 -> {
+                val target = index + headerItems
+                grid.scrollToItem(target)
+                // The same share of the show stays scrolled past at its new size.
+                val height = grid.layoutInfo.visibleItemsInfo.firstOrNull { it.index == target }?.size?.height ?: 0
+                if (anchor.second > 0f && height > 0) grid.scrollToItem(target, (anchor.second * height).toInt())
+            }
             grid.firstVisibleItemIndex in 1..headerItems -> grid.scrollToItem(0)
         }
     }

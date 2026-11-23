@@ -36,6 +36,8 @@ internal data class PrismPlan(
     val showHook: Boolean = true,
     /** True only for a slot smaller than any card with the whole name: no art, no pitch, and the name ends in "…". */
     val titleCut: Boolean = false,
+    /** False only on a slot too short for the tag and a line of the name: the name keeps the room. */
+    val showTag: Boolean = true,
 )
 
 /**
@@ -167,7 +169,9 @@ internal object EchoPrismLayout {
         val inner = width - px.dp((Border + Padding) * 2)
         val tag = max(px.dp(TagMinHeight), px.sp(TagLineSp) + px.dp(8f))
         val frame = px.dp((Border + Padding) * 2)
-        private val arts = generateSequence(CompactMaxArt) { (it - CompactArtStep).takeIf { next -> next >= CompactMinArt } }.toList() + 0f
+
+        // The steps down from the largest art end on the smallest even when the step skips past it, then no art.
+        private val arts = (generateSequence(CompactMaxArt) { (it - CompactArtStep).takeIf { next -> next >= CompactMinArt } }.toList() + CompactMinArt).distinct() + 0f
 
         fun nameFit(artPx: Int, tight: Boolean): TitleFit {
             val nameWidth = inner - artPx - (if (artPx > 0) px.dp(CompactGap) else 0)
@@ -213,8 +217,11 @@ internal object EchoPrismLayout {
             }
             val fit = nameFit(0, tight = true)
             val lineHeight = fit.box.height / fit.box.lines.coerceAtLeast(1)
-            val lines = ((maxHeight - frame - tag - px.dp(TagGap)) / lineHeight.coerceAtLeast(1)).coerceIn(1, fit.box.lines)
-            return PrismPlan(true, width, 0, fit.sizeSp, lines, false, frame + row(0, lineHeight * lines), CompactHookSizes.last(), showHook = false, titleCut = lines < fit.box.lines)
+            // The tag gives way too when it leaves no room for a line of the name.
+            val showTag = frame + tag + px.dp(TagGap) + lineHeight <= maxHeight
+            val chrome = frame + if (showTag) tag + px.dp(TagGap) else 0
+            val lines = ((maxHeight - chrome) / lineHeight.coerceAtLeast(1)).coerceIn(1, fit.box.lines)
+            return PrismPlan(true, width, 0, fit.sizeSp, lines, false, chrome + lineHeight * lines, CompactHookSizes.last(), showHook = false, titleCut = lines < fit.box.lines, showTag = showTag)
         }
 
         private fun row(artPx: Int, nameHeight: Int): Int = max(artPx, tag + px.dp(TagGap) + nameHeight)

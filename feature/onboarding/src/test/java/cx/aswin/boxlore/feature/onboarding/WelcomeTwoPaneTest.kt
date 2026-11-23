@@ -16,6 +16,10 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldState
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -114,6 +118,20 @@ class WelcomeTwoPaneTest {
     }
 
     @Test
+    fun `a fold down the middle splits the panel from the content, and buttons at the start never cover the logo`() {
+        window.value = FoldedSideways
+        show(SystemInsets(statusTop = 24, navStart = 48))
+        compose.mainClock.advanceTimeBy(500)
+        compose.waitForIdle()
+        val panel = compose.onAllNodesWithTag(OpeningPanelTag).fetchSemanticsNodes().single().boundsInRoot
+        assertEquals("the panel ends at the fold", 548f, panel.right, 0.5f)
+        val find = way("Find shows for me").fetchSemanticsNode().boundsInRoot
+        assertTrue("Find shows for me lies across the fold ($find)", find.left >= 552f - 0.5f)
+        val logo = compose.onAllNodesWithTag(OpeningLogoTag).fetchSemanticsNodes().single().boundsInRoot
+        assertTrue("the logo is under the navigation buttons ($logo)", logo.left >= 48f - 0.5f)
+    }
+
+    @Test
     fun `portrait windows keep the stacked page`() {
         show()
         compose.walkWindows(window, BoxloreTestWindows.PHONE, BoxloreTestWindows.COVER_475, BoxloreTestWindows.TABLET_PORTRAIT, BoxloreTestWindows.UPRIGHT_BOOK) { step ->
@@ -149,9 +167,16 @@ class WelcomeTwoPaneTest {
         val clock = requireNotNull(clock)
         var elapsed = clock.elapsedMillis.value
         assertTrue("mid-reveal", elapsed > 0 && !clock.revealComplete.value)
+        // A turn while the entrance plays carries it on: it never goes back, and it still finishes.
+        compose.walkWindows(window, BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE) { step ->
+            val now = clock.elapsedMillis.value
+            assertTrue("the entrance went back mid-reveal on $step ($now < $elapsed)", now >= elapsed)
+            elapsed = now
+        }
         compose.mainClock.advanceTimeBy(2_000)
         compose.waitForIdle()
         assertTrue(clock.revealComplete.value)
+        elapsed = clock.elapsedMillis.value
 
         val walk = arrayOf(BoxloreTestWindows.COVER_475, BoxloreTestWindows.PIXEL_FOLD, BoxloreTestWindows.COVER_475, BoxloreTestWindows.PHONE)
         compose.walkWindows(window, *walk) { step ->
@@ -212,5 +237,12 @@ class WelcomeTwoPaneTest {
 
     private companion object {
         val SIDEWAYS_SMALL = BoxloreWindowLayout(740f, 360f)
+
+        /** A book foldable held sideways: a 4dp hinge down the middle of a 1100x840 window. */
+        val FoldedSideways = BoxloreWindowLayout(
+            1_100f,
+            840f,
+            listOf(BoxloreFold(BoxloreFoldState.HalfOpened, BoxloreFoldOrientation.Vertical, BoxloreLayoutBounds(548f, 0f, 552f, 840f), isSeparating = true, isOccluding = true)),
+        )
     }
 }

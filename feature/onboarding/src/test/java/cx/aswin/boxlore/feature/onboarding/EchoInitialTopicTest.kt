@@ -47,6 +47,9 @@ class EchoInitialTopicTest {
         assertEquals(setOf("Science", "True Crime"), EchoInitialTopic.genres(OnboardingUiState(aiSelectedOptions = setOf("Science", "True crime"))))
         val sent = OnboardingUiState(aiHistory = listOf(OnboardingHistoryEntry("user", listOf(OnboardingPart("True crime. History")))))
         assertEquals(setOf("True Crime", "History"), EchoInitialTopic.genres(sent))
+        // A written answer that names topics picks none of them.
+        val written = OnboardingUiState(aiHistory = listOf(OnboardingHistoryEntry("user", listOf(OnboardingPart("I dislike Science, Comedy")))))
+        assertEquals(emptySet<String>(), EchoInitialTopic.genres(written))
         // Every Echo topic has a picker genre.
         val pickerGenres = ONBOARDING_GENRES.map { it.value }.toSet()
         EchoInitialTopic.entries.forEach { assertTrue(it.genre in pickerGenres, it.name) }

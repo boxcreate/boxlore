@@ -114,7 +114,7 @@ private class EchoFitPlanner(
         if (roomierBubble && base.showEcho && base.bubbleLines < RoomyBubbleLines) {
             // Today's layout or shorter answers, with a three-line bubble, before anything else.
             val roomy = base.copy(bubbleLines = RoomyBubbleLines)
-            (listOf(EchoFitLevel.Today to roomy) + echoAnswerSteps(topics, roomy).map { EchoFitLevel.Shrunk to it }).forEach { (level, metrics) ->
+            (listOf(EchoFitLevel.Today to roomy) + answerSteps(topics, roomy).map { EchoFitLevel.Shrunk to it }).forEach { (level, metrics) ->
                 accept(level, metrics)?.let { return it }
             }
         }
@@ -143,13 +143,7 @@ private class EchoFitPlanner(
                 current = next
             }
         }
-        if (topics) {
-            TileSteps.filter { it.height < current.tileHeight }.forEach { tile ->
-                step(current.copy(tileHeight = tile.height, tileStacked = tile.stacked, badgeSize = tile.badge))
-            }
-        } else {
-            RowSteps.filter { it.height < current.rowHeight }.forEach { row -> step(current.copy(rowHeight = row.height, badgeSize = row.badge)) }
-        }
+        answerSteps(topics, current).forEach(::step)
         if (current.showEcho) {
             AvatarSteps.filter { it < current.avatarWidth }.forEach { avatar -> step(current.copy(avatarWidth = avatar)) }
             (current.bubbleLines - 1 downTo 1).forEach { lines -> step(current.copy(bubbleLines = lines)) }
@@ -368,6 +362,13 @@ private class EchoFitPlanner(
         /** The tiers' tiles, tallest first (Spacious, Roomy, Regular, Compact). */
         private val TileSteps = listOf(TileStep(96.dp, true, 48.dp), TileStep(80.dp, true, 42.dp), TileStep(58.dp, false, 36.dp), TileStep(50.dp, false, 32.dp))
         private val RowSteps = listOf(RowStep(72.dp, 48.dp), RowStep(64.dp, 42.dp), RowStep(58.dp, 36.dp), RowStep(50.dp, 32.dp))
+
+        /** The answers' own shrink steps from [base], one table for every path: smaller tiles for [topics], or rows. */
+        private fun answerSteps(topics: Boolean, base: EchoLayoutMetrics): List<EchoLayoutMetrics> = if (topics) {
+            TileSteps.filter { it.height < base.tileHeight }.map { base.copy(tileHeight = it.height, tileStacked = it.stacked, badgeSize = it.badge) }
+        } else {
+            RowSteps.filter { it.height < base.rowHeight }.map { base.copy(rowHeight = it.height, badgeSize = it.badge) }
+        }
         private val AvatarSteps = listOf(168.dp, 132.dp, 112.dp, 84.dp)
         private val TouchFloor = 48.dp
         private val CompactGap = 8.dp
@@ -384,14 +385,6 @@ private class EchoFitPlanner(
         /** Until the last resort the question keeps at least this share of its tier's largest size. */
         private const val QuestionFloorShare = 0.75f
     }
-}
-
-/** The answers' own shrink steps: the smaller tiers' tiles for [topics], or rows. */
-private fun echoAnswerSteps(topics: Boolean, base: EchoLayoutMetrics): List<EchoLayoutMetrics> = if (topics) {
-    listOf(80.dp to (true to 42.dp), 58.dp to (false to 36.dp), 50.dp to (false to 32.dp))
-        .filter { it.first < base.tileHeight }.map { (height, rest) -> base.copy(tileHeight = height, tileStacked = rest.first, badgeSize = rest.second) }
-} else {
-    listOf(64.dp to 42.dp, 58.dp to 36.dp, 50.dp to 32.dp).filter { it.first < base.rowHeight }.map { (height, badge) -> base.copy(rowHeight = height, badgeSize = badge) }
 }
 
 /** Beside the answers, Echo and the question take this share of the width. */

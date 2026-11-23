@@ -36,7 +36,11 @@ internal enum class EchoInitialTopic(val answer: String, @StringRes val labelRes
 
         /** The Pick topics genres for the topics picked with Echo, picked now or already sent. */
         fun genres(state: OnboardingUiState): Set<String> {
-            val sent = state.aiHistory.firstOrNull { it.role == "user" }?.parts.orEmpty().flatMap { part -> part.text.split('.', ',') }
+            val sent = state.aiHistory.firstOrNull { it.role == "user" }?.parts.orEmpty().flatMap { part ->
+                val pieces = part.text.split('.', ',').map(String::trim).filter(String::isNotEmpty)
+                // Only an answer made of topics alone counts; a written one that names a topic ("I dislike Science, Comedy") doesn't.
+                pieces.takeIf { it.all { piece -> fromAnswer(piece) != null } }.orEmpty()
+            }
             return (state.aiSelectedOptions + sent).mapNotNull { fromAnswer(it.trim())?.genre }.toSet()
         }
     }
