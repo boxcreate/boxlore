@@ -1,10 +1,14 @@
 package cx.aswin.boxlore.core.playback.service.auto
 
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import java.io.File
+import java.util.concurrent.CopyOnWriteArrayList
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -72,6 +76,34 @@ class AutoArtworkRepositoryTest {
 
         assertEquals(showOnly, AutoArtworkRepository.remoteUri(context, null, "https://cdn.example/show.jpg"))
         assertEquals(showOnly, AutoArtworkRepository.remoteUri(context, "https://cdn.example/show.jpg", "https://cdn.example/show.jpg"))
+    }
+
+    @Test
+    fun theCastCoverLookupReadsSavedAddressesWithoutTouchingTheDiskOnItsThread() {
+        // Regression: Cast converts on the main thread, and the lookup read preferences there, where a prune
+        // can hold the store's lock across a disk write.
+        val cover = "https://cdn.example/cover.jpg"
+        val link = AutoArtworkRepository.remoteUri(context, cover)!!
+        AutoArtworkSourceStore.flushPersistsForTests()
+        AutoArtworkSourceStore.clearMemoryForTests() // A later run: the address is only on disk.
+        val diskReads = CopyOnWriteArrayList<Thread>()
+        val recording =
+            object : ContextWrapper(context) {
+                override fun getApplicationContext(): Context = this
+
+                override fun getSharedPreferences(name: String?, mode: Int): SharedPreferences {
+                    diskReads += Thread.currentThread()
+                    return super.getSharedPreferences(name, mode)
+                }
+            }
+
+        val lookup = AutoArtworkRepository.castCoverLookup(recording)
+        AutoArtworkSourceStore.flushPersistsForTests()
+        val readAhead = diskReads.toList()
+
+        assertTrue(readAhead.none { it == Thread.currentThread() })
+        assertEquals(listOf(cover), lookup(link))
+        assertEquals(readAhead, diskReads.toList())
     }
 
     @Test

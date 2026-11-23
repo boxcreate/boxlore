@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.playback
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.media3.cast.DefaultMediaItemConverter
 import androidx.media3.cast.MediaItemConverter
@@ -26,14 +27,34 @@ internal object CastMediaMetadata {
 
     fun effectiveUri(mediaItem: MediaItem): String? = remoteUri(mediaItem)
         ?: mediaItem.localConfiguration?.uri?.toString()
+
+    /**
+     * The cover a Cast receiver can load: the item's artwork when it is a public web address, else
+     * the real address behind the in-app link the player gives Android Auto, from the sources saved on
+     * the item or [linkOriginals]. Null when there is none; the receiver can't open in-app links.
+     */
+    fun castArtwork(mediaItem: MediaItem, linkOriginals: (Uri) -> List<String>,): Uri? {
+        val metadata = mediaItem.mediaMetadata
+        val artwork = metadata.artworkUri
+        if (artwork != null && CastMediaEligibility.isCastable(artwork.toString())) return artwork
+        val saved = metadata.extras?.getStringArrayList(PlaybackArtworkMetadata.SOURCES).orEmpty()
+        val original =
+            saved.firstOrNull(CastMediaEligibility::isCastable)
+                ?: artwork?.let { link -> linkOriginals(link).firstOrNull(CastMediaEligibility::isCastable) }
+        return original?.let(Uri::parse)
+    }
 }
 
 /**
  * Keeps local/download playback URIs on-device while sending the original public stream URL
- * to a Cast receiver. Regular streaming items pass through unchanged.
+ * to a Cast receiver, and sends each cover's web address instead of an in-app cover link
+ * ([coverLinkOriginals] reads the addresses behind such a link). Regular streaming items pass
+ * through unchanged.
  */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-internal class BoxLoreCastMediaItemConverter : MediaItemConverter {
+internal class BoxLoreCastMediaItemConverter(
+    private val coverLinkOriginals: (Uri) -> List<String> = { emptyList() },
+) : MediaItemConverter {
     private val delegate = DefaultMediaItemConverter()
     private val contextKey = "boxlore.queue.context"
 
@@ -43,12 +64,14 @@ internal class BoxLoreCastMediaItemConverter : MediaItemConverter {
         require(CastMediaEligibility.isCastable(effectiveUri)) {
             "Cast media URI must be public HTTP(S)"
         }
+        val cover = CastMediaMetadata.castArtwork(mediaItem, coverLinkOriginals)
         val castItem =
-            if (remoteUri == null) {
-                mediaItem
-            } else {
-                mediaItem.buildUpon().setUri(remoteUri).build()
-            }
+            mediaItem.buildUpon().apply {
+                if (remoteUri != null) setUri(remoteUri)
+                if (cover != mediaItem.mediaMetadata.artworkUri) {
+                    setMediaMetadata(mediaItem.mediaMetadata.buildUpon().setArtworkUri(cover).build())
+                }
+            }.build()
         val converted = delegate.toMediaQueueItem(castItem)
         val context = PlaybackQueueContext.contextEntryPoint(castItem) ?: return converted
         // Media3's default converter does not serialize MediaMetadata.extras.

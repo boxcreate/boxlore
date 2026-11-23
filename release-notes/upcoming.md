@@ -39,6 +39,9 @@ Announcement title:
 - Importing an OPML file that lists a show twice now adds every show in the file in one go.
 - When you use boxlore on more than one device, one that was offline or signed out no longer sets your progress or likes back to an older point, and devices that showed different progress now agree.
 - Shows you unfollow on another device or on your watch are now cleared from this phone's saved shows, just as when you unfollow them here.
+- Casting to a TV or speaker no longer leaves your phone on "Connecting…" once the episode is playing there. The device list now shows which one you're casting to.
+- Reopening boxlore while it's casting no longer pauses the episode on your TV, jumps it back or resets its speed.
+- An episode boxlore picked up where you left off now shows its cover when you cast it to a TV, instead of a placeholder.
 - Turning your phone sideways and back, unfolding it or resizing boxlore's window no longer opens the full player by itself.
 - Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.

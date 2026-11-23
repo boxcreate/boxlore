@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.playback
 
+import androidx.media3.common.DeviceInfo
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
@@ -61,6 +62,7 @@ class PlaybackShowPlaybackActivationTest {
         val player = mock(Player::class.java)
         `when`(player.duration).thenReturn(100_000L)
         `when`(player.playbackState).thenReturn(Player.STATE_READY)
+        `when`(player.deviceInfo).thenReturn(DeviceInfo.UNKNOWN)
         val controller = PlaybackIntroOutroController(
             scope = this, database = db,
             globalSkipBeginningMs = { 0L }, globalSkipEndingMs = { 0L },

@@ -23,6 +23,7 @@ import cx.aswin.boxlore.core.downloads.DownloadRepository
 import cx.aswin.boxlore.core.playback.BoxLoreCastMediaItemConverter
 import cx.aswin.boxlore.core.playback.PlaybackPowerPolicy
 import cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
+import cx.aswin.boxlore.core.playback.service.auto.AutoArtworkRepository
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseContract
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryCallback
 import kotlinx.coroutines.CoroutineScope
@@ -112,7 +113,7 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
         val remotePlayer =
             RemoteCastPlayer
                 .Builder(context)
-                .setMediaItemConverter(BoxLoreCastMediaItemConverter())
+                .setMediaItemConverter(BoxLoreCastMediaItemConverter(AutoArtworkRepository.castCoverLookup(context)))
                 .build()
         return CastPlayer
             .Builder(context)

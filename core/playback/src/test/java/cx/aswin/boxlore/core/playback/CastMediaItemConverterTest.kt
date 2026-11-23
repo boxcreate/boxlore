@@ -65,6 +65,30 @@ class CastMediaItemConverterTest {
         assertEquals(remoteUrl, converter.toMediaQueueItem(mediaItem).media?.contentUrl)
     }
 
+    @Test
+    fun sendsTheCoversWebAddressInsteadOfTheInAppLink() {
+        // Regression: the TV got the Android Auto cover link (content://<app>.collage/art/...) and showed no cover.
+        val inAppLink = "content://cx.aswin.boxlore.collage/art/abc"
+        val saved = "https://cdn.example.com/episode-cover.jpg"
+        fun item(artwork: String?, sources: List<String> = emptyList()) = MediaItem.Builder()
+            .setUri("https://cdn.example.com/episode.mp3")
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setArtworkUri(artwork?.let(android.net.Uri::parse))
+                    .setExtras(Bundle().apply { putStringArrayList(PlaybackArtworkMetadata.SOURCES, ArrayList(sources)) })
+                    .build(),
+            ).build()
+        fun BoxLoreCastMediaItemConverter.cover(item: MediaItem) =
+            toMediaQueueItem(item).media?.metadata?.images?.firstOrNull()?.url?.toString()
+
+        assertEquals(saved, converter.cover(item(inAppLink, listOf(inAppLink, saved))))
+        assertEquals(saved, converter.cover(item(saved)))
+        assertNull(converter.cover(item(inAppLink)))
+        // An item restored with only the link: the address registered behind it.
+        val registered = BoxLoreCastMediaItemConverter { link -> if (link.toString() == inAppLink) listOf(saved) else emptyList() }
+        assertEquals(saved, registered.cover(item(inAppLink)))
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun rejectsAnIneligibleEffectiveUri() {
         converter.toMediaQueueItem(

@@ -23,12 +23,14 @@ import cx.aswin.boxlore.core.playback.CastSkippedEpisodes
  */
 internal class BoxLoreCastTransferCallback : CastPlayer.TransferCallback {
     override fun transferState(sourcePlayer: Player, targetPlayer: Player,) {
+        val targetIsRemote = CastQueueGuard.isRemote(targetPlayer)
+        if (!CastTransferPolicy.shouldTransfer(sourceItemCount = sourcePlayer.mediaItemCount, targetIsRemote = targetIsRemote)) return
         var transferState = PlayerTransferState.fromPlayer(sourcePlayer)
         val sanitized =
             CastTransferPolicy.sanitize(
                 mediaItems = transferState.mediaItems,
                 currentIndex = transferState.currentMediaItemIndex,
-                targetIsRemote = CastQueueGuard.isRemote(targetPlayer),
+                targetIsRemote = targetIsRemote,
             )
 
         if (sanitized.mediaItems.size < transferState.mediaItems.size) {
@@ -49,6 +51,13 @@ internal class BoxLoreCastTransferCallback : CastPlayer.TransferCallback {
 internal data class SanitizedCastTransfer(val mediaItems: List<MediaItem>, val currentIndex: Int, val resetPosition: Boolean,)
 
 internal object CastTransferPolicy {
+    /**
+     * False when an empty phone player would be handed to Cast. A session that resumes or joins
+     * after the playback service started (reopening boxlore while it casts) switches to Cast with
+     * nothing loaded on the phone; passing that on would pause the receiver and reset its speed.
+     */
+    fun shouldTransfer(sourceItemCount: Int, targetIsRemote: Boolean): Boolean = !targetIsRemote || sourceItemCount > 0
+
     /**
      * Drops the rows the target cannot play and keeps the current row selected.
      *

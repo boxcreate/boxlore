@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.playback
 
+import androidx.media3.common.DeviceInfo
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
@@ -54,6 +55,7 @@ class PlaybackIntroOutroControllerTest {
         val onExhausted: (Player) -> Boolean = { false },
     )
 
+    @Suppress("LongParameterList")
     private suspend fun TestScope.fixture(
         positionMs: Long = 100L,
         saved: ListeningHistoryEntity = history(),
@@ -62,6 +64,7 @@ class PlaybackIntroOutroControllerTest {
         entryPoint: String? = null,
         resolvePodcast: suspend () -> String? = { null },
         callbacks: CompletionCallbacks = CompletionCallbacks(),
+        playbackType: Int = DeviceInfo.PLAYBACK_TYPE_LOCAL,
     ): Pair<PlaybackIntroOutroController, Player> {
         val dao = mock(ListeningHistoryDao::class.java)
         val db = mock(BoxLoreDatabase::class.java)
@@ -73,6 +76,7 @@ class PlaybackIntroOutroControllerTest {
         `when`(player.currentPosition).thenReturn(positionMs)
         `when`(player.duration).thenReturn(100_000L)
         `when`(player.playbackState).thenReturn(Player.STATE_READY)
+        `when`(player.deviceInfo).thenReturn(DeviceInfo.Builder(playbackType).build())
         val controller = PlaybackIntroOutroController(
             scope = this, database = db,
             globalSkipBeginningMs = { trimMs }, globalSkipEndingMs = { 0L },
@@ -101,6 +105,16 @@ class PlaybackIntroOutroControllerTest {
     @Test fun `automatic activation at one millisecond restores saved progress`() = checkActivation(1L)
 
     @Test fun `automatic activation at one hundred milliseconds restores saved progress`() = checkActivation(100L)
+
+    @Test fun `reopening boxlore keeps the position of the episode a Cast receiver is playing`() = runTest {
+        // Regression: after a fresh start the TV's episode was sought back to the last saved progress.
+        val (_, tv) = fixture(positionMs = 60_000L, playbackType = DeviceInfo.PLAYBACK_TYPE_REMOTE)
+        // An episode Cast starts from the beginning still resumes from history.
+        val (_, fromStart) = fixture(positionMs = 0L, playbackType = DeviceInfo.PLAYBACK_TYPE_REMOTE)
+        advanceUntilIdle()
+        verify(tv, never()).seekTo(50_000L)
+        verify(fromStart).seekTo(50_000L)
+    }
 
     @Test fun `implicit seven day boundary is correct`() {
         val now = 1_700_000_000_000L
