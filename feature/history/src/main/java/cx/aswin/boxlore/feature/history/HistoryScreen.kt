@@ -26,12 +26,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,10 +50,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTab
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTabSwitcher
 import cx.aswin.boxlore.core.designsystem.components.discoveryTabSwitcherHeight
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreMiniPlayerVisible
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.share.ShareManager
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -107,7 +110,6 @@ fun HistoryScreen(
 
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             HistoryTopBar(
                 tab = tab,
@@ -149,6 +151,10 @@ fun HistoryScreen(
                 Modifier.align(Alignment.BottomCenter).adaptivePlayerOverlayOffset(isMiniPlayerVisible).padding(bottom = switcherBottom),
                 viewModel::selectTab,
             )
+            // Undo sits 8dp above the switcher, which already clears the bar and the mini player.
+            CompositionLocalProvider(LocalBoxloreMiniPlayerVisible provides isMiniPlayerVisible) {
+                BoxloreSnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter), extraBottom = 16.dp + discoveryTabSwitcherHeight())
+            }
         }
     }
 
@@ -259,6 +265,9 @@ private fun HistoryTopBar(
     )
 }
 
+/** The Insights | Timeline switcher's test tag. */
+const val HISTORY_TABS_TAG = "history_tabs"
+
 /** Insights | Timeline: the floating switcher Explore uses, centred at the foot of the page. */
 @Composable
 private fun HistoryTabs(tab: HistoryTab, modifier: Modifier, onSelect: (HistoryTab) -> Unit) {
@@ -273,7 +282,7 @@ private fun HistoryTabs(tab: HistoryTab, modifier: Modifier, onSelect: (HistoryT
         },
         selectedIndex = tab.ordinal,
         onTabSelected = { onSelect(HistoryTab.entries[it]) },
-        modifier = modifier,
+        modifier = modifier.testTag(HISTORY_TABS_TAG),
     )
 }
 

@@ -72,7 +72,6 @@ class SharedHostUsageTest {
             replacement = "the shared snackbar host in :core:designsystem",
             skipDesignSystem = true,
             allowed = mapOf(
-                "feature/history/src/main/java/cx/aswin/boxlore/feature/history/HistoryScreen.kt" to 1,
                 "feature/home/src/main/java/cx/aswin/boxlore/feature/home/HomeScreen.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoScreen.kt" to 1,
                 "feature/library/src/main/java/cx/aswin/boxlore/feature/library/SubscriptionsScreen.kt" to 1,
