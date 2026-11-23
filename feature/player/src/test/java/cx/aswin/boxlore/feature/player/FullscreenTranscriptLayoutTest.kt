@@ -126,7 +126,8 @@ class FullscreenTranscriptLayoutTest {
         assertTrue("some transcript shows", lines.isNotEmpty())
         lines.forEach { assertTrue("a transcript line at ${it.boundsInRoot} crosses the hinge", it.boundsInRoot.bottom <= 480f) }
         val play = composeRule.onNodeWithContentDescription("Play").getUnclippedBoundsInRoot()
-        assertTrue("play at ${play.top} sits just below the hinge", play.top.value >= 500f && play.bottom.value <= 800f)
+        // The controls sit in the middle of the lower half, not pressed against the hinge.
+        assertTrue("play at $play sits in the middle of the lower half", play.top.value >= 700f && play.bottom.value <= 960f)
         composeRule.runOnIdle { window.value = cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(400f, 1_000f) }
         composeRule.waitForIdle()
         assertTrue("flat: controls at the foot", playBottom() > 900f)
