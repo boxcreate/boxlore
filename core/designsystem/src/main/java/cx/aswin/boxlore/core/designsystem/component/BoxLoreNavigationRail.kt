@@ -16,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +39,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.components.WordSafeAutoSize
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -79,7 +80,7 @@ fun BoxLoreNavigationRail(currentRoute: String, onNavigate: (String) -> Unit, mo
     // Where each icon sits in the rail, measured, so the indicator follows items that grow for long labels.
     val iconTops = remember { mutableStateListOf<Float>() }
     NavigationRail(modifier, containerColor = scheme.surface, windowInsets = WindowInsets(0, 0, 0, 0)) {
-        Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 8.dp).selectableGroup()) {
+        Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = RailSidePadding, vertical = 8.dp).selectableGroup()) {
             if (selectedIndex >= 0) {
                 Surface(
                     modifier = Modifier.size(width = 64.dp, height = RailIndicatorHeight).offset {
@@ -122,27 +123,34 @@ fun BoxLoreNavigationRail(currentRoute: String, onNavigate: (String) -> Unit, mo
 }
 
 /**
- * A rail label that fits its 64dp cell in every language and text size: it shrinks a little (down
- * to 11sp) to stay on one line, and when that is not enough it wraps to a second line, the cell
- * growing to hold it. An ellipsis is the last resort.
+ * A rail label that fits the rail's inner width (wider than its 64dp cell, which keeps the
+ * indicator's size) in every language and text size. It shrinks (down to 11sp) until every word
+ * is whole on one line, or, when that is not enough, on two lines in a cell that grows to hold
+ * them. Only a single word too long even at 11sp breaks, hyphenated; an ellipsis is the last resort.
  */
 @Composable
 private fun RailLabel(text: String, color: Color) {
     val style = MaterialTheme.typography.labelMedium
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    val widthPx = with(density) { RailItemSize.roundToPx() }
+    val widthPx = with(density) { RailLabelWidth.roundToPx() }
     val oneLine = remember(text, style, density, widthPx) {
         !measurer.measure(text, style.copy(fontSize = RailLabelMinSize), maxLines = 1, softWrap = false, constraints = Constraints(maxWidth = widthPx)).didOverflowWidth
     }
     Text(
         text,
+        modifier = Modifier.layout { measurable, constraints ->
+            // Measured against the rail's inner width and centred on the cell, overhanging its side padding.
+            val label = measurable.measure(Constraints(maxWidth = widthPx, maxHeight = constraints.maxHeight))
+            val width = label.width.coerceAtMost(constraints.maxWidth)
+            layout(width, label.height) { label.place((width - label.width) / 2, 0) }
+        },
         color = color,
         style = style.copy(textAlign = TextAlign.Center, hyphens = Hyphens.Auto, lineBreak = LineBreak.Paragraph),
         maxLines = if (oneLine) 1 else 2,
         softWrap = !oneLine,
         overflow = TextOverflow.Ellipsis,
-        autoSize = TextAutoSize.StepBased(minFontSize = RailLabelMinSize, maxFontSize = style.fontSize, stepSize = 0.5.sp),
+        autoSize = WordSafeAutoSize(min = RailLabelMinSize, max = style.fontSize),
     )
 }
 
@@ -169,6 +177,10 @@ internal fun railIndicatorTop(position: Float, iconTops: List<Float>, fallbackIc
 }
 
 private val RailItemSize = 64.dp
+private val RailSidePadding = 8.dp
+
+/** The rail's inner width: the cell and the side padding either side of it. */
+private val RailLabelWidth = RailItemSize + RailSidePadding * 2
 private val RailLabelMinSize = 11.sp
 private val RailIconBoxHeight = 36.dp
 private val RailIndicatorHeight = 32.dp

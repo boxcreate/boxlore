@@ -3,6 +3,7 @@ package cx.aswin.boxlore.ui
 import android.app.Application
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
@@ -14,7 +15,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.component.BoxLoreNavigationRail
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
@@ -30,7 +36,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Rail labels fit their cells in long languages and at large text: none overflows, the selection
+ * Rail labels fit the rail in long languages and at large text: none overflows or splits a word, the selection
  * highlight lines up with the item it marks, and Lore stays reachable on a short tablet window.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
@@ -54,6 +60,12 @@ class TabletNavigationRailLabelsTest(private val configuration: PhoneGoldenConfi
             val layout = textLayout(label)
             assertFalse("$label overflows at ${configuration.fontScale}", layout.hasVisualOverflow)
             assertTrue("$label is cut", layout.lineCount <= 2)
+            // Names never break inside a word ("Bibliothèq|ue" reads as two words), unless one word is
+            // wider than the rail even at the smallest size; then it may wrap, hyphenated on devices.
+            val breaks = (0 until layout.lineCount - 1).map { layout.getLineEnd(it) }
+            val wholeWords = breaks.all { end -> end >= label.length || label[end - 1].isWhitespace() || label[end].isWhitespace() }
+            assertTrue("$label breaks inside a word at ${configuration.fontScale}: $breaks", wholeWords || (' ' !in label && !fitsRailAtSmallestSize(label)))
+            assertFalse("$label is shortened", layout.isLineEllipsized(layout.lineCount - 1))
         }
         listOf(2 to "library", 3 to "learn", 0 to "home").forEach { (index, route) ->
             fixture.compose.onNodeWithText(names[index]).performClick()
@@ -85,11 +97,21 @@ class TabletNavigationRailLabelsTest(private val configuration: PhoneGoldenConfi
         fixture.prepare()
         fixture.setContent {
             BoxLoreTheme(dynamicColor = false) {
+                measurer = rememberTextMeasurer()
+                labelStyle = MaterialTheme.typography.labelMedium
                 BoxLoreNavigationRail(selected.value, {}, Modifier.width(80.dp).height(railHeight.dp))
             }
         }
         advance()
     }
+
+    private var measurer: TextMeasurer? = null
+    private var labelStyle = TextStyle.Default
+
+    /** Whether [label] fits the rail's 80dp inner width on one line at the labels' smallest size, 11sp. */
+    private fun fitsRailAtSmallestSize(label: String): Boolean = !requireNotNull(measurer)
+        .measure(label, labelStyle.copy(fontSize = 11.sp), maxLines = 1, softWrap = false, constraints = Constraints(maxWidth = 80))
+        .didOverflowWidth
 
     private fun textLayout(label: String): TextLayoutResult {
         val node = fixture.compose.onNodeWithText(label, useUnmergedTree = true).fetchSemanticsNode()
