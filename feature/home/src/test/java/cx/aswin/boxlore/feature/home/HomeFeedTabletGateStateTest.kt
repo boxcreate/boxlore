@@ -123,6 +123,13 @@ class HomeFeedTabletGateStateTest {
             val shown = composeRule.onNodeWithTag("home_filtered_episodes").fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
             assertEquals("${layout.widthDp}x${layout.heightDp}: the list on screen", scrolled.toFloat(), shown, 0.5f)
         }
+        // A sideways phone caps the list well inside the window (it was almost as tall as the window).
+        window.value = BoxloreTestWindows.PHONE_LAND
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(GRID).performScrollToKey("your_shows")
+        val list = composeRule.onNodeWithTag("home_filtered_episodes").fetchSemanticsNode().boundsInRoot
+        assertTrue("The list is ${list.height}dp tall in a 412dp window", list.height <= 412f * 0.6f + 0.5f)
+        assertEquals("the list's scroll after turning", scrolled, sections.showListScroll(podcasts[1].id).value)
     }
 
     /**

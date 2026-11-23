@@ -46,6 +46,7 @@ import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentHeightDp
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -343,7 +344,8 @@ private fun SelectedShowEpisodes(
             modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(max = 356.dp)
+                // A sideways phone caps the list well inside the window, so Home's own scroll stays easy to reach.
+                .heightIn(max = minOf(356.dp, (boxloreContentHeightDp() * 0.6f).dp))
                 .testTag("home_filtered_episodes")
                 .observeEpisodeListGestures(scrollConnection)
                 .nestedScroll(scrollConnection)
