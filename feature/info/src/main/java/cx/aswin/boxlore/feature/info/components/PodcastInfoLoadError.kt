@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudOff
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,7 +66,8 @@ internal fun ShowPageLoadFailedRow(
             textAlign = TextAlign.Center,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
-        FilledTonalButton(onClick = onRetry) {
+        // The same filled Try again as the page's other messages.
+        Button(onClick = onRetry) {
             Text(stringResource(R.string.podcast_info_retry))
         }
     }

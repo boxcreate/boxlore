@@ -8,10 +8,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -21,11 +19,11 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -35,8 +33,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.model.Episode
@@ -55,6 +53,9 @@ import cx.aswin.boxlore.feature.info.components.EpisodeListSkeleton
 import cx.aswin.boxlore.feature.info.components.EpisodePlayStateWrapper
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionUi
 import cx.aswin.boxlore.feature.info.components.EpisodeToolbar
+import cx.aswin.boxlore.feature.info.components.EpisodeViewChoices
+import cx.aswin.boxlore.feature.info.components.InfoStatusAction
+import cx.aswin.boxlore.feature.info.components.InfoStatusCard
 import cx.aswin.boxlore.feature.info.components.PodcastEpisodeActionsCallbacks
 import cx.aswin.boxlore.feature.info.components.PodcastEpisodeActionsState
 import cx.aswin.boxlore.feature.info.components.PodcastInfoEpisodeSearch
@@ -97,6 +98,8 @@ internal data class EpisodeListContentState(
     val isHidden: Boolean = false,
     /** Episode titles only: short title rows and matching loading rows. */
     val titlesOnly: Boolean = false,
+    /** What the sort button's Sort and view menu offers. */
+    val viewChoices: EpisodeViewChoices? = null,
 )
 
 internal data class EpisodeListContentCallbacks(
@@ -153,9 +156,9 @@ internal fun PodcastInfoEpisodeList(
                             focusRequester = contentState.searchFocusRequester,
                         )
                         if (contentState.state.isSearching) {
-                            LinearProgressIndicator(
+                            BoxLoreLoader.LinearWavy(
                                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                                    .padding(horizontal = 40.dp, vertical = 2.dp).height(2.dp),
+                                    .padding(horizontal = 40.dp, vertical = 2.dp).testTag(PODCAST_INFO_SEARCH_PROGRESS_TAG),
                             )
                         }
                     }
@@ -177,6 +180,7 @@ internal fun PodcastInfoEpisodeList(
                 onAutoDownloadToggle = callbacks.onAutoDownloadToggle,
                 genre = contentState.state.podcast.genre,
                 onSearchFocused = callbacks.onSearchFocused,
+                viewChoices = contentState.viewChoices,
             )
                 }
             }
@@ -228,29 +232,30 @@ internal fun PodcastInfoEpisodeList(
         }
 
         searchFailedItem(contentState, callbacks)
-        searchNoResultsItem(contentState)
+        searchNoResultsItem(contentState, callbacks)
     }
 }
 
-/** A finished search with no matches. */
-private fun LazyListScope.searchNoResultsItem(contentState: EpisodeListContentState) {
+/** A finished search with no matches: Clear search empties the query and keeps search open. */
+private fun LazyListScope.searchNoResultsItem(contentState: EpisodeListContentState, callbacks: EpisodeListContentCallbacks) {
     val state = contentState.state
     if (!podcastSearchHasNoResults(contentState.isSearchActive, state.searchQuery, state.isSearching, state.searchResults, state.searchFailed)) return
-    item {
-        Box(
-            modifier = Modifier.fillMaxWidth().padding(48.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = stringResource(R.string.podcast_info_no_search_results),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+    item(key = "search_no_results") {
+        InfoStatusCard(
+            icon = Icons.Rounded.SearchOff,
+            title = stringResource(R.string.podcast_info_no_matches_title),
+            body = stringResource(R.string.podcast_info_no_matches_body),
+            action = InfoStatusAction(stringResource(R.string.podcast_info_clear_search)) { callbacks.onSearchChange("") },
+            filled = false,
+            modifier = Modifier.padding(top = 8.dp),
+        )
     }
 }
 
 private const val LOADING_CARDS = 2
+
+/** Test tag on the wave under the search field while a search runs. */
+internal const val PODCAST_INFO_SEARCH_PROGRESS_TAG = "podcast_info_search_progress"
 
 /** A search of a show longer than the server lists: says how many of the newest episodes it covered, above its results. */
 private fun LazyListScope.searchCoverageItem(contentState: EpisodeListContentState) {
@@ -272,21 +277,12 @@ private fun LazyListScope.searchFailedItem(contentState: EpisodeListContentState
     val state = contentState.state
     if (!podcastSearchShowsFailure(contentState.isSearchActive, state.searchQuery, state.isSearching, state.searchFailed)) return
     item(key = "search_failed") {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp, vertical = 40.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.podcast_info_search_failed),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-            TextButton(onClick = { callbacks.onSearchChange(state.searchQuery) }) {
-                Text(stringResource(R.string.podcast_info_retry))
-            }
-        }
+        InfoStatusCard(
+            icon = Icons.Rounded.CloudOff,
+            body = stringResource(R.string.podcast_info_search_failed),
+            action = InfoStatusAction(stringResource(R.string.podcast_info_retry)) { callbacks.onSearchChange(state.searchQuery) },
+            modifier = Modifier.padding(top = 8.dp),
+        )
     }
 }
 

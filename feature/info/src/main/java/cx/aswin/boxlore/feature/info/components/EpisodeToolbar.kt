@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -77,8 +78,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
 import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
 import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltipPosition
+import cx.aswin.boxlore.core.designsystem.components.rememberBoxloreMenuState
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.contrastColor
 import cx.aswin.boxlore.feature.info.EpisodeSort
@@ -117,6 +120,8 @@ internal fun EpisodeToolbar(
     onSearchFocused: () -> Unit = {},
     modifier: Modifier = Modifier,
     subscribeInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    /** The list's view choices; with them the sort button opens Sort and view instead of flipping the order. */
+    viewChoices: EpisodeViewChoices? = null,
 ) {
     val branded = LocalBrandedPage.current?.style?.toolbar
     val subscribe = rememberToolbarSubscribeMoment(
@@ -142,9 +147,10 @@ internal fun EpisodeToolbar(
 
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val compact = maxWidth < 360.dp
+        // On wide pages the group keeps to the start, in line with the cards, instead of stretching.
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = if (compact) 12.dp else 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp, Alignment.Start),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SubscribeButton(
@@ -156,7 +162,7 @@ internal fun EpisodeToolbar(
                 genre = genre,
                 style = branded,
                 interactionSource = subscribeInteractionSource,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f, fill = false).widthIn(max = SubscribeMaxWidth).testTag(SUBSCRIBE_BUTTON_TAG),
             )
             SubscriptionAutomationSlot(automationReveal, automationEnabled) {
                 SubscriptionAutomationToggles(
@@ -170,12 +176,13 @@ internal fun EpisodeToolbar(
                     onAutoDownloadToggle = onAutoDownloadToggle,
                 )
             }
-            ConnectedToolbarAction(
-                icon = Icons.AutoMirrored.Rounded.Sort,
-                label = stringResource(R.string.podcast_info_sort),
-                onClick = onSortToggle,
-                modifier = Modifier.padding(start = 3.dp).graphicsLayer { rotationX = sortRotation },
+            SortAndViewAction(
+                currentSort = currentSort,
+                onSortToggle = onSortToggle,
+                viewChoices = viewChoices,
                 style = branded,
+                modifier = Modifier.padding(start = 3.dp),
+                iconModifier = Modifier.graphicsLayer { rotationX = sortRotation },
             )
             ConnectedToolbarAction(
                 icon = Icons.Rounded.Search,
@@ -268,8 +275,8 @@ private fun SubscribeButton(
 ) {
     val subscribeLabel = stringResource(R.string.podcast_info_subscribe)
     val unsubscribeLabel = stringResource(R.string.podcast_info_unsubscribe)
-    // Showcase pages put a check before Subscribed when there's room; plain show pages keep the word alone.
-    val labels = BrandedSubscribeLabels(subscribeLabel, stringResource(R.string.podcast_info_subscribed), compact, subscribedCheck = style != null && !compact)
+    // A check before Subscribed when there's room, so it reads as on rather than greyed out.
+    val labels = BrandedSubscribeLabels(subscribeLabel, stringResource(R.string.podcast_info_subscribed), compact, subscribedCheck = !compact)
     val moment = subscribe.moment
     val playing = subscribe.playing
     // The button morphs to its pressed shape and back on its own clock: Material's built-in morph
@@ -388,6 +395,7 @@ private fun SubscriptionAutomationToggles(
     )
 }
 
+@Suppress("LongParameterList")
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ConnectedToolbarAction(
@@ -397,6 +405,8 @@ private fun ConnectedToolbarAction(
     modifier: Modifier = Modifier,
     trailing: Boolean = false,
     style: BrandedToolbarStyle? = null,
+    state: String? = null,
+    iconModifier: Modifier = Modifier,
 ) {
     // Long-press or hover names the icon-only button.
     Box(modifier) {
@@ -416,9 +426,12 @@ private fun ConnectedToolbarAction(
             contentColor = style?.actionContent ?: MaterialTheme.colorScheme.onSurfaceVariant,
         ),
         contentPadding = PaddingValues(0.dp),
-        modifier = Modifier.size(48.dp).semantics { contentDescription = label },
+        modifier = Modifier.size(48.dp).semantics {
+            contentDescription = label
+            if (state != null) stateDescription = state
+        },
     ) {
-        Icon(icon, null, Modifier.size(21.dp))
+        Icon(icon, null, iconModifier.size(21.dp))
     }
     }
     }
@@ -481,6 +494,72 @@ private fun SubscriptionToggle(
     }
     }
 }
+
+/** How the episode list looks, chosen from the sort button's Sort and view menu. */
+internal data class EpisodeViewChoices(
+    val hideCompleted: Boolean,
+    val onToggleHideCompleted: () -> Unit,
+    val archive: PodcastInfoArchiveMenu = PodcastInfoArchiveMenu(),
+    val titlesOnly: Boolean = false,
+    val onToggleTitlesOnly: () -> Unit = {},
+)
+
+/**
+ * The sort button. It says which order the list is in; with [viewChoices] it opens a small menu:
+ * newest or oldest first as a choice, then what the list shows as on/off rows that keep the menu
+ * open. Without them it flips the order, as before.
+ */
+@Suppress("LongParameterList")
+@Composable
+private fun SortAndViewAction(
+    currentSort: EpisodeSort,
+    onSortToggle: () -> Unit,
+    viewChoices: EpisodeViewChoices?,
+    style: BrandedToolbarStyle?,
+    modifier: Modifier = Modifier,
+    iconModifier: Modifier = Modifier,
+) {
+    val newest = stringResource(R.string.podcast_info_sort_newest)
+    val oldest = stringResource(R.string.podcast_info_sort_oldest)
+    val order = if (currentSort == EpisodeSort.NEWEST) newest else oldest
+    if (viewChoices == null) {
+        ConnectedToolbarAction(Icons.AutoMirrored.Rounded.Sort, stringResource(R.string.podcast_info_sort), onSortToggle, modifier, style = style, state = order, iconModifier = iconModifier)
+        return
+    }
+    val menu = rememberBoxloreMenuState()
+    val hideCompleted = stringResource(R.string.podcast_info_hide_completed)
+    val archived = if (viewChoices.archive.archivedCount > 0) {
+        stringResource(R.string.podcast_info_show_archived, viewChoices.archive.archivedCount)
+    } else {
+        stringResource(R.string.podcast_info_show_archived_none)
+    }
+    val titlesOnly = stringResource(R.string.podcast_info_episode_titles_only)
+    Box(modifier) {
+        ConnectedToolbarAction(Icons.AutoMirrored.Rounded.Sort, stringResource(R.string.podcast_info_sort_and_view), menu::open, style = style, state = order, iconModifier = iconModifier)
+        BoxloreDropdownMenu(menu) {
+            group {
+                selectableItem(newest, selected = currentSort == EpisodeSort.NEWEST, onClick = {
+                    menu.dismiss()
+                    if (currentSort != EpisodeSort.NEWEST) onSortToggle()
+                })
+                selectableItem(oldest, selected = currentSort == EpisodeSort.OLDEST, onClick = {
+                    menu.dismiss()
+                    if (currentSort != EpisodeSort.OLDEST) onSortToggle()
+                })
+            }
+            group {
+                checkableItem(hideCompleted, viewChoices.hideCompleted) { viewChoices.onToggleHideCompleted() }
+                if (viewChoices.archive.offered) checkableItem(archived, viewChoices.archive.showArchived) { viewChoices.archive.onToggle() }
+                checkableItem(titlesOnly, viewChoices.titlesOnly) { viewChoices.onToggleTitlesOnly() }
+            }
+        }
+    }
+}
+
+/** Subscribe stops here on wide pages, beside its toggles; phones are narrower than this. */
+internal val SubscribeMaxWidth = 320.dp
+
+internal const val SUBSCRIBE_BUTTON_TAG = "podcast_info_subscribe"
 
 /** The Subscribe button's shape: rounded on the leading side, joined to the buttons after it. */
 internal val SubscribeButtonShape = RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 8.dp, bottomStart = 24.dp)
