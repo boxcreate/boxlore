@@ -36,7 +36,6 @@ import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing
 import cx.aswin.boxlore.feature.home.components.HomeLoadingHandoffMillis
 import cx.aswin.boxlore.feature.home.components.HomeLoadingReveal
 import cx.aswin.boxlore.feature.home.components.HomeRecommendationLayout
-import cx.aswin.boxlore.feature.home.components.bleed
 import cx.aswin.boxlore.feature.home.logic.shouldAnimateHomeShimmer
 import cx.aswin.boxlore.feature.home.logic.showHomeDiscoveryContent
 import kotlinx.coroutines.delay
@@ -313,8 +312,16 @@ internal fun PinnedGridItemContent(modifier: Modifier = Modifier, content: @Comp
     androidx.compose.foundation.layout.Box(modifier) { content() }
 }
 
-/** The feed's side padding, which Marquee's hero and the side rails run past to reach the screen edges. */
-private val GridSidePadding = HomeFeedSpacing.GridSide
+/** The feed's side padding, which Marquee's hero runs past to reach both screen edges. */
+private val GridSidePadding = 16.dp
+
+/** Lays the content out [start] and [end] wider than the item on each side, so it reaches past the grid's padding. */
+private fun Modifier.bleed(start: androidx.compose.ui.unit.Dp, end: androidx.compose.ui.unit.Dp): Modifier = layout { measurable, constraints ->
+    val startPx = start.roundToPx()
+    val width = constraints.maxWidth + startPx + end.roundToPx()
+    val placeable = measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
+    layout(constraints.maxWidth, placeable.height) { placeable.placeRelative(-startPx, 0) }
+}
 
 @Composable
 private fun SmartHeroCarousel(

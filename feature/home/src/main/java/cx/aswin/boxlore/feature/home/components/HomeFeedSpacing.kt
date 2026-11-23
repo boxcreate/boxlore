@@ -1,16 +1,11 @@
 package cx.aswin.boxlore.feature.home.components
 
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.FeedPosterSpacing
 
 /** Shared Home discovery spacing — rails, grids, and card feet. */
 internal object HomeFeedSpacing {
-    /** Home's side gutter: the grid's padding at each side, which full-width rails run past. */
-    val GridSide = 16.dp
-
     /** Phone time rails expose a partial second card to make horizontal scrolling visible. */
     const val RAIL_CARD_WIDTH_FRACTION = 0.52f
     val RailCardMaxWidth = 208.dp
@@ -45,13 +40,4 @@ internal object HomeFeedSpacing {
         val rows = ((ExploreGridCap + columns - 1) / columns).coerceAtMost(2)
         return columns * rows
     }
-}
-
-
-/** Lays the content out [start] and [end] wider than its slot on each side, so it reaches past the grid's padding. */
-internal fun Modifier.bleed(start: Dp, end: Dp = start): Modifier = layout { measurable, constraints ->
-    val startPx = start.roundToPx()
-    val width = constraints.maxWidth + startPx + end.roundToPx()
-    val placeable = measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
-    layout(constraints.maxWidth, placeable.height) { placeable.placeRelative(-startPx, 0) }
 }

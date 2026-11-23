@@ -114,10 +114,7 @@ fun GenreSelector(
             modifier =
             modifier
                 .fillMaxWidth()
-                // Runs to the screen edge, with the gutter inside the scroll, so chips slide off the edge.
-                .bleed(HomeFeedSpacing.GridSide)
-                .horizontalScroll(scrollState)
-                .padding(horizontal = HomeFeedSpacing.GridSide),
+                .horizontalScroll(scrollState),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             HomeGenreFilterChip(

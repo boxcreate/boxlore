@@ -3,7 +3,6 @@ package cx.aswin.boxlore.feature.home.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -32,8 +31,7 @@ internal fun TabletRecommendationRail(
             val posterWidth = if (maxWidth < 840.dp) 160.dp else 184.dp
             val cardHeight = expressivePosterCardHeight(posterWidth)
             LazyRow(
-                modifier = Modifier.fillMaxWidth().bleed(HomeFeedSpacing.GridSide).height(cardHeight).testTag("tablet_recommendation_rail"),
-                contentPadding = PaddingValues(horizontal = HomeFeedSpacing.GridSide),
+                modifier = Modifier.fillMaxWidth().height(cardHeight).testTag("tablet_recommendation_rail"),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 if (episodes.isEmpty()) {
