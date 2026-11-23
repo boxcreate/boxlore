@@ -76,7 +76,7 @@ internal object OnboardingSuggestionsPresentation {
     /**
      * Lanes in order. In Echo's flow the shows picked before the build (a positive taste-test
      * answer, or a search mid-chat) lead in their own lane, selected, and leave the other lanes so
-     * nothing shows twice; no other lane repeats the charts or an earlier lane either. Nothing else
+     * nothing shows twice; no other lane repeats an earlier lane or the top of the charts. Nothing else
      * starts selected.
      */
     fun lanes(uiState: OnboardingUiState): List<OnboardingSuggestionsLane> {

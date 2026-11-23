@@ -54,14 +54,19 @@ internal object OnboardingSuggestionsLanes {
         cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy.deduplicateById(lanes) { it.id }
 
     /**
-     * The charts lane stays whole (it is a ranking with its own region); every other lane leaves out
-     * shows the charts or an earlier lane already offer. A lane that loses shows that way and has
-     * fewer than [MinLaneShows] left is hidden.
+     * Repeats are removed in display order. The charts lane stays whole (it is a ranking with its
+     * own region); every other lane leaves out shows a lane above it already offers, and a lane
+     * that loses shows that way and has fewer than [MinLaneShows] left is hidden. A lane that is
+     * the top of the charts again (at least [ChartsRepeatShare] of its shows among the charts'
+     * leading shows, as the server's genre fallback is) is hidden too; a lane that only shares a
+     * few popular shows with the charts stays.
      */
     fun withoutRepeats(lanes: List<OnboardingSuggestionsLane>): List<OnboardingSuggestionsLane> {
-        val seen = lanes.filter { it.isCharts }.flatMap { lane -> lane.podcasts.map { it.id } }.toMutableSet()
+        val charts = lanes.filter { it.isCharts }.flatMap { lane -> lane.podcasts.map { it.id } }
+        val seen = mutableSetOf<String>()
         return lanes.mapNotNull { lane ->
             if (lane.isCharts) return@mapNotNull lane
+            if (repeatsChartsTop(lane, charts)) return@mapNotNull null
             val fresh = lane.podcasts.filter { it.id !in seen }
             seen += fresh.map { it.id }
             when {
@@ -71,6 +76,18 @@ internal object OnboardingSuggestionsLanes {
             }
         }
     }
+
+    private fun repeatsChartsTop(lane: OnboardingSuggestionsLane, charts: List<String>): Boolean {
+        if (charts.isEmpty() || lane.podcasts.isEmpty()) return false
+        val top = charts.take(lane.podcasts.size + ChartsTopSlack).toSet()
+        return lane.podcasts.count { it.id in top } >= lane.podcasts.size * ChartsRepeatShare
+    }
+
+    /** The share of a lane's shows among the charts' leading shows that makes it the charts again. */
+    private const val ChartsRepeatShare = 0.8f
+
+    /** How far past the lane's own length the charts' leading shows reach. */
+    private const val ChartsTopSlack = 2
 
     const val MinLaneShows = 3
 
