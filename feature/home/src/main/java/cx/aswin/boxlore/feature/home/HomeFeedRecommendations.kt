@@ -168,7 +168,7 @@ private fun LazyStaggeredGridScope.discoverHeaderItem(
             selectedCategory = feedState.selectedCategory,
             onCategorySelected = callbacks.onSelectCategory,
             onHeaderClick = { callbacks.onNavigateToExplore?.invoke(feedState.selectedCategory ?: "All", "home_discover_header", null) },
-            modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap).testTag("home_discovery_greeting"),
+            modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap).testTag("home_discover_header"),
         )
     }
 }
