@@ -36,6 +36,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -116,6 +117,8 @@ fun EpisodeInfoScreen(
     val density = LocalDensity.current
     val watchActions = cx.aswin.boxlore.core.designsystem.components.LocalWatchEpisodeActions.current
     var watchMessage by remember { mutableStateOf<Int?>(null) }
+    // Saved, so an open Share sheet survives recreation (a keyboard attached, a display size change).
+    var showShareSheet by rememberSaveable { mutableStateOf(false) }
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -390,48 +393,12 @@ fun EpisodeInfoScreen(
                         }
 
                         // Share Button
-                        var showShareSheet by remember { mutableStateOf(false) }
                         cx.aswin.boxlore.feature.info.components.EpisodeInfoHeaderButton(
                             icon = Icons.Rounded.Share,
                             label = androidx.compose.ui.res.stringResource(R.string.episode_info_share),
                             onClick = { showShareSheet = true },
                             modifier = Modifier.align(Alignment.CenterEnd).padding(end = EpisodeHeaderButtonInset),
                         )
-
-                        if (showShareSheet) {
-                            val currentSuccessState = uiState as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
-                            val shareEpisode =
-                                currentSuccessState?.let(EpisodeLoadRequests::shareEpisode) ?: cx.aswin.boxlore.core.model.Episode(
-                                    id = episodeId,
-                                    title = episodeTitle,
-                                    description = episodeDescription,
-                                    audioUrl = episodeAudioUrl,
-                                    imageUrl = episodeImageUrl,
-                                    duration = episodeDuration,
-                                    podcastId = podcastId.takeIf(String::isNotBlank),
-                                )
-                            cx.aswin.boxlore.core.designsystem.components.ShareBottomSheet(
-                                id = shareEpisode.id,
-                                type = "episode",
-                                title = shareEpisode.title,
-                                subtitle = shownPodcastTitle,
-                                imageUrl = shareEpisode.imageUrl ?: shareEpisode.podcastImageUrl,
-                                onDismissRequest = { showShareSheet = false },
-                                durationMs = shareEpisode.duration * 1000L,
-                                currentPositionMs = currentSuccessState?.resumePositionMs ?: 0L,
-                                showTimestampOption = false,
-                                episode = shareEpisode,
-                                onShare = { _, _, timestamp, target ->
-                                    cx.aswin.boxlore.core.designsystem.share.ShareManager.shareEpisode(
-                                        context = context,
-                                        episode = shareEpisode,
-                                        podcastTitle = shownPodcastTitle,
-                                        timestampMs = timestamp,
-                                        target = target,
-                                    )
-                                },
-                            )
-                        }
                     }
 
                     // FLOATING TITLE - physically moves from body to header
@@ -467,6 +434,42 @@ fun EpisodeInfoScreen(
                     }
                 }
             }
+        }
+
+        // Outside the page states, so a reload or a window change never closes an open sheet.
+        if (showShareSheet) {
+            val currentSuccessState = uiState as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
+            val shareEpisode =
+                currentSuccessState?.let(EpisodeLoadRequests::shareEpisode) ?: cx.aswin.boxlore.core.model.Episode(
+                    id = episodeId,
+                    title = episodeTitle,
+                    description = episodeDescription,
+                    audioUrl = episodeAudioUrl,
+                    imageUrl = episodeImageUrl,
+                    duration = episodeDuration,
+                    podcastId = podcastId.takeIf(String::isNotBlank),
+                )
+            cx.aswin.boxlore.core.designsystem.components.ShareBottomSheet(
+                id = shareEpisode.id,
+                type = "episode",
+                title = shareEpisode.title,
+                subtitle = shownPodcastTitle,
+                imageUrl = shareEpisode.imageUrl ?: shareEpisode.podcastImageUrl,
+                onDismissRequest = { showShareSheet = false },
+                durationMs = shareEpisode.duration * 1000L,
+                currentPositionMs = currentSuccessState?.resumePositionMs ?: 0L,
+                showTimestampOption = false,
+                episode = shareEpisode,
+                onShare = { _, _, timestamp, target ->
+                    cx.aswin.boxlore.core.designsystem.share.ShareManager.shareEpisode(
+                        context = context,
+                        episode = shareEpisode,
+                        podcastTitle = shownPodcastTitle,
+                        timestampMs = timestamp,
+                        target = target,
+                    )
+                },
+            )
         }
 
         if (showRemoveDownloadDialog) {

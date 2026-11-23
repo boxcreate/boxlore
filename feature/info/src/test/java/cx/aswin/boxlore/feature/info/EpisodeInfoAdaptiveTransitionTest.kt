@@ -293,6 +293,39 @@ class EpisodeInfoAdaptiveTransitionTest {
         assertTrue("Play is on the first screen of the lower half", playBounds().bottom.value <= lowerHalf.height)
     }
 
+    @Test
+    fun `an open Share sheet stays open through window changes, a reload and recreation`() {
+        window.value = BoxloreTestWindows.W599_H900
+        render()
+        showEpisode()
+        fixture.compose.onNodeWithContentDescription(SHARE).performClick()
+        fixture.compose.waitForIdle()
+        assertTrue(shareSheetShown())
+        fixture.compose.walkWindows(
+            window,
+            BoxloreTestWindows.W600_H900,
+            BoxloreTestWindows.W599_H900,
+            BoxloreWindowLayout(839f, 600f),
+            BoxloreWindowLayout(841f, 600f),
+            BoxloreWindowLayout(839f, 600f),
+            BoxloreTestWindows.FOLD_FLAT,
+            BoxloreTestWindows.FOLD_TABLETOP,
+            BoxloreTestWindows.FOLD_FLAT,
+        ) { size -> assertTrue("the sheet stays open at $size", shareSheetShown()) }
+
+        // A reload passes through Loading; the sheet doesn't close with the loaded page.
+        val loaded = uiState.value
+        uiState.value = EpisodeInfoUiState.Loading
+        fixture.compose.waitForIdle()
+        assertTrue("open while loading", shareSheetShown())
+        uiState.value = loaded
+        fixture.compose.waitForIdle()
+        assertTrue("open after loading", shareSheetShown())
+
+        recreate(BoxloreTestWindows.W600_H900)
+        assertTrue("open after recreation", shareSheetShown())
+    }
+
     private fun playBounds() = fixture.compose.onNode(hasText(PLAY) and hasClickAction()).getBoundsInRoot()
 
     private fun listScroll(): Float =
