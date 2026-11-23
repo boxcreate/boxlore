@@ -470,6 +470,75 @@ class SharedControlsLongTextTest {
         }
     }
 
+    @Test
+    fun `cards without a show name keep their height and the show name line matches its skeleton`() {
+        val expected = mutableMapOf<Boolean, Float>()
+        compose.setContent {
+            Page(BoxloreTestWindows.PHONE) {
+                expected[false] = expressivePosterCardHeight(160.dp).value
+                expected[true] = expressivePosterCardHeight(160.dp, withSubtitle = true).value
+                Column {
+                    Row {
+                        FeedMediaCard("", "Title", null, {}, Modifier.width(160.dp).testTag("plain"), presentation = FeedMediaCardPresentation.ExpressivePoster)
+                        FeedMediaCardSkeleton(Modifier.width(160.dp).testTag("plain-skeleton")) { Box(it) }
+                    }
+                    Row {
+                        FeedMediaCard("", "Title", "Show", {}, Modifier.width(160.dp).testTag("named"), presentation = FeedMediaCardPresentation.ExpressivePoster)
+                        FeedMediaCardSkeleton(Modifier.width(160.dp).testTag("named-skeleton"), showSubtitle = true) { Box(it) }
+                    }
+                }
+            }
+        }
+        fun height(tag: String) = compose.onNodeWithTag(tag).fetchSemanticsNode().size.height.toFloat()
+        assertEquals(expected.getValue(false), height("plain"), 0.5f)
+        assertEquals(height("plain"), height("plain-skeleton"), 0.5f)
+        assertTrue("the show name adds a line", height("named") > height("plain"))
+        assertEquals(height("named"), height("named-skeleton"), 0.5f)
+        assertEquals(expected.getValue(true), height("named"), 0.5f)
+    }
+
+    @Test
+    fun `a long German show name stays on one line at 360dp and large text`() {
+        val show = "Die wöchentliche Wissenschaftssendung für Neugierige"
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, fontScale = 1.3f)) {
+                Page(BoxloreTestWindows.PHONE_SMALL) {
+                    FeedMediaCard("", "Folge 12", show, {}, Modifier.width(156.dp), presentation = FeedMediaCardPresentation.ExpressivePoster)
+                }
+            }
+        }
+        val layout = textLayout(show)
+        assertEquals(1, layout.lineCount)
+        assertTrue("a long show name shortens", layout.isLineEllipsized(0))
+    }
+
+    @Test
+    fun `the featured title leads on tablets with room and stays small on phones and narrow columns`() {
+        val window = mutableStateOf(BoxloreTestWindows.PHONE)
+        val width = mutableStateOf(380.dp)
+        val typography = mutableListOf<Typography>()
+        compose.setContent {
+            Page(window.value) {
+                typography += MaterialTheme.typography
+                FeedMediaCard("", "Featured", null, {}, Modifier.width(width.value), presentation = FeedMediaCardPresentation.ExpressiveFeatured)
+            }
+        }
+        val titleLarge = typography.last().titleLarge.fontSize
+        val steps = listOf(
+            Triple(BoxloreTestWindows.PHONE, 380.dp, 16.sp),
+            Triple(BoxloreWindowLayout(600f, 960f), 560.dp, titleLarge),
+            Triple(BoxloreWindowLayout(600f, 960f), 400.dp, 16.sp),
+            Triple(BoxloreWindowLayout(600f, 960f), 560.dp, titleLarge),
+            Triple(BoxloreTestWindows.W599_H900, 560.dp, 16.sp),
+        )
+        steps.forEach { (step, cardWidth, expected) ->
+            window.value = step
+            width.value = cardWidth
+            compose.waitForIdle()
+            assertEquals("$step at $cardWidth", expected, textLayout("Featured").layoutInput.style.fontSize)
+        }
+    }
+
     private fun textLayout(text: String): TextLayoutResult {
         val results = mutableListOf<TextLayoutResult>()
         compose.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode().config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)

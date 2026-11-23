@@ -42,6 +42,10 @@ enum class FeedMediaCardPresentation {
     ExpressiveFeatured,
 }
 
+/**
+ * A discovery card. [subtitle] is one line under the title, such as the show an episode comes from;
+ * null keeps the title alone and the card's usual height.
+ */
 @Composable
 @Suppress("LongParameterList") // Keep the opt-in presentation alongside the existing source-compatible parameters.
 fun FeedMediaCard(
@@ -59,7 +63,7 @@ fun FeedMediaCard(
         if (presentation == FeedMediaCardPresentation.ExpressiveFeatured) BoxloreCardFamily.Hero else BoxloreCardFamily.Poster,
     )
     if (presentation != FeedMediaCardPresentation.Default) {
-        ExpressiveFeedMediaCard(imageUrl, title, onClick, presentation, boundedModifier, imageChrome, fallbackImageUrls)
+        ExpressiveFeedMediaCard(imageUrl, title, onClick, presentation, boundedModifier, imageChrome, fallbackImageUrls, subtitle)
         return
     }
     val lines = titleMaxLines.coerceAtLeast(1)
