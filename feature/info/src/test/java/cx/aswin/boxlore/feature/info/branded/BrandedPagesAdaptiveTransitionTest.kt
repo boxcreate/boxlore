@@ -36,7 +36,9 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneSpec
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.core.testing.SystemInsets
@@ -345,7 +347,42 @@ class DarkOnlyPageStatusBarTest {
 
     @Test
     fun `a dark-only page keeps white status bar icons in light mode and restores them when it leaves`() {
-        val shown = mutableStateOf(true)
+        render()
+        assertFalse("White icons over the dark page", lightStatusBarIcons())
+
+        fixture.compose.runOnIdle { shown.value = false }
+        fixture.compose.waitForIdle()
+        assertTrue("The light theme's dark icons return", lightStatusBarIcons())
+    }
+
+    @Test
+    fun `white icons only while the dark page fills the top of the screen`() {
+        val tabletSpec = boxlorePaneSpec(BoxloreTestWindows.TABLET, contextOpen = true)
+        val tabletopSpec = boxlorePaneSpec(BoxloreTestWindows.FOLD_TABLETOP, contextOpen = true)
+        window.value = BoxloreTestWindows.TABLET
+        pane.value = tabletSpec.context
+        render()
+        listOf(
+            Triple(BoxloreTestWindows.TABLET, tabletSpec.context, true),
+            Triple(BoxloreWindowLayout(599f, 800f), null, false),
+            Triple(BoxloreTestWindows.TABLET, tabletSpec.context, true),
+            Triple(BoxloreTestWindows.FOLD_TABLETOP, tabletopSpec.primary, true),
+            Triple(BoxloreTestWindows.FOLD_FLAT, null, false),
+        ).forEach { (size, bounds, lightIcons) ->
+            fixture.compose.runOnIdle {
+                window.value = size
+                pane.value = bounds
+            }
+            fixture.compose.waitForIdle()
+            assertEquals("Light-theme icons at $size in $bounds", lightIcons, lightStatusBarIcons())
+        }
+    }
+
+    private val shown = mutableStateOf(true)
+    private val window = mutableStateOf(BoxloreWindowLayout.Unspecified)
+    private val pane = mutableStateOf<BoxloreLayoutBounds?>(null)
+
+    private fun render() {
         val podcast = TestFixtures.podcast(id = WaveformPage.ids.podcastIndexId, title = "Waveform", imageUrl = PhoneGoldenRule.ARTWORK_URL)
         val model = mock(PodcastInfoViewModel::class.java)
         `when`(model.uiState).thenReturn(MutableStateFlow<PodcastInfoUiState>(PodcastInfoUiState.Success(podcast, emptyList(), isSubscribed = false)))
@@ -370,16 +407,13 @@ class DarkOnlyPageStatusBarTest {
         fixture.prepare()
         fixture.compose.mainClock.autoAdvance = true
         fixture.compose.setContent {
-            BoxLoreTheme(darkTheme = false, dynamicColor = false) {
-                if (shown.value) Surface { PodcastInfoScreen(podcast.id, model, {}, { _, _, _ -> }, {}, {}) }
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value, LocalBoxlorePaneBounds provides pane.value) {
+                BoxLoreTheme(darkTheme = false, dynamicColor = false) {
+                    if (shown.value) Surface { PodcastInfoScreen(podcast.id, model, {}, { _, _, _ -> }, {}, {}) }
+                }
             }
         }
         fixture.compose.waitForIdle()
-        assertFalse("White icons over the dark page", lightStatusBarIcons())
-
-        fixture.compose.runOnIdle { shown.value = false }
-        fixture.compose.waitForIdle()
-        assertTrue("The light theme's dark icons return", lightStatusBarIcons())
     }
 
     private fun lightStatusBarIcons(): Boolean {

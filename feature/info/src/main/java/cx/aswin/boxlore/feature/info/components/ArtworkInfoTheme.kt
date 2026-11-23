@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneOwnsStatusBar
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkColorTransitionMillis
@@ -157,10 +158,14 @@ private fun pageDark(systemDark: Boolean, branded: BrandedShowPage?): Boolean = 
 @Composable
 private fun rememberBrandedHeaderMotion(branded: BrandedShowPage?): BrandedHeaderMotion? = remember(branded) { branded?.let { BrandedHeaderMotion() } }
 
-/** White status bar icons over a dark-only page; the app's own setting returns when the page leaves. */
+/**
+ * White status bar icons over a dark-only page while it fills the top of the screen; the app's own
+ * setting returns when the page leaves, or when it sits beside another pane or below a tabletop hinge.
+ */
 @Composable
 private fun DarkPageStatusBar(enabled: Boolean, systemDark: Boolean) {
-    if (!enabled) return
+    // Leaving composition on either condition runs the restore below.
+    if (!enabled || !boxlorePaneOwnsStatusBar()) return
     val view = LocalView.current
     val window = (view.context as? Activity)?.window ?: return
     val controller = WindowCompat.getInsetsController(window, view)
