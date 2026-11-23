@@ -113,7 +113,7 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
         val remotePlayer =
             RemoteCastPlayer
                 .Builder(context)
-                .setMediaItemConverter(BoxLoreCastMediaItemConverter { link -> AutoArtworkRepository.originalsOf(context, link) })
+                .setMediaItemConverter(BoxLoreCastMediaItemConverter(AutoArtworkRepository.castCoverLookup(context)))
                 .build()
         return CastPlayer
             .Builder(context)

@@ -40,11 +40,22 @@ internal object AutoArtworkRepository {
     fun sourcesOf(saved: String): List<String> = saved.split(SOURCE_SEPARATOR).filter { it.isNotBlank() }
 
     /** The real addresses behind [link] when it is one of this app's cover links, in the order to try them. */
-    fun originalsOf(context: Context, link: Uri?): List<String> {
-        if (link?.scheme != "content" || link.authority != "${context.packageName}.collage") return emptyList()
+    fun originalsOf(context: Context, link: Uri?): List<String> =
+        artKey(context, link)?.let { sourcesOf(AutoArtworkSourceStore.get(context, it).orEmpty()) }.orEmpty()
+
+    /**
+     * [originalsOf] for Cast, which converts items on the main thread: starts reading the saved addresses
+     * into memory off that thread, and the lookup it returns reads memory only, never the disk.
+     */
+    fun castCoverLookup(context: Context): (Uri) -> List<String> {
+        AutoArtworkSourceStore.preload(context)
+        return { link -> artKey(context, link)?.let { sourcesOf(AutoArtworkSourceStore.peek(it).orEmpty()) }.orEmpty() }
+    }
+
+    private fun artKey(context: Context, link: Uri?): String? {
+        if (link?.scheme != "content" || link.authority != "${context.packageName}.collage") return null
         val segments = link.pathSegments
-        if (segments.size != 2 || segments[0] != "art") return emptyList()
-        return sourcesOf(AutoArtworkSourceStore.get(context, segments[1]).orEmpty())
+        return segments.getOrNull(1)?.takeIf { segments.size == 2 && segments[0] == "art" }
     }
 
     private fun String.toHttps(): String? = replaceFirst("http://", "https://").takeIf { it.startsWith("https://") }
