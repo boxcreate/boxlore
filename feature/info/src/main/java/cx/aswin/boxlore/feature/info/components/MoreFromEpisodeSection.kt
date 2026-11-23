@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -12,9 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -26,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
@@ -40,6 +40,8 @@ import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.info.R
+import cx.aswin.boxlore.feature.info.logic.MoreFromArt
+import cx.aswin.boxlore.feature.info.logic.moreFromRowArt
 
 @Composable
 internal fun MoreFromEpisodeSection(
@@ -67,14 +69,6 @@ internal fun MoreFromEpisodeSection(
                     modifier = Modifier.padding(vertical = 16.dp),
                 )
             }
-        }
-        FilledTonalButton(
-            onClick = onShowClick,
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-        ) {
-            Text(stringResource(R.string.episode_info_explore_podcast))
-            Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, modifier = Modifier.padding(start = 8.dp).size(20.dp))
         }
     }
 }
@@ -113,6 +107,8 @@ private fun MoreFromShowRow(showName: String, imageUrl: String?, joined: Boolean
                 Text(stringResource(R.string.episode_info_more_from_label), style = MaterialTheme.typography.labelMedium)
                 Text(showName, style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
+            // The one way to open the show from here, said in words as well as with the arrow.
+            Text(stringResource(R.string.episode_info_see_all), style = MaterialTheme.typography.labelLarge, maxLines = 1)
             Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, modifier = Modifier.size(22.dp))
         }
     }
@@ -141,14 +137,7 @@ private fun MoreFromEpisodeRow(episode: Episode, showName: String, fallbackImage
             .expressiveClickable(shape = shape, onClick = onClick),
     ) {
         Row(Modifier.heightIn(min = 88.dp).padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OptimizedImage(
-                url = episode.imageUrl,
-                fallbackUrls = listOf(episode.podcastImageUrl, fallbackImageUrl),
-                proxyWidth = 240,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.size(60.dp).clip(RoundedCornerShape(14.dp)),
-            )
+            MoreFromRowArt(episode, fallbackImageUrl)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(episode.title, style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (metadata.isNotEmpty()) Text(metadata, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -163,4 +152,35 @@ private fun MoreFromRowSkeleton(shape: RoundedCornerShape) {
     val base = MaterialTheme.colorScheme.surfaceContainer
     val highlight = MaterialTheme.colorScheme.surfaceContainerHighest
     Box(Modifier.fillMaxWidth().height(88.dp).clip(shape).background(base).m3Shimmer(base, highlight))
+}
+
+/** The row's own picture, or a date or number tile where it would only repeat the show's cover. */
+@Composable
+private fun MoreFromRowArt(episode: Episode, showImageUrl: String?) {
+    val tile = Modifier.size(60.dp).clip(RoundedCornerShape(14.dp))
+    when (val art = moreFromRowArt(episode, showImageUrl)) {
+        is MoreFromArt.Date, is MoreFromArt.Number -> {
+            val locale = currentLocale()
+            val (top, main) = when (art) {
+                is MoreFromArt.Date -> LocaleFormats.date(art.epochSeconds * 1_000L, LocaleFormats.DateStyle.SHORT_MONTH, locale) to
+                    LocaleFormats.number(java.util.Calendar.getInstance().apply { timeInMillis = art.epochSeconds * 1_000L }.get(java.util.Calendar.DAY_OF_MONTH).toLong(), locale)
+                is MoreFromArt.Number -> stringResource(R.string.episode_info_number_short) to LocaleFormats.number(art.number.toLong(), locale)
+                else -> "" to ""
+            }
+            Surface(tile.clearAndSetSemantics {}, color = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
+                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    Text(top, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(main, style = MaterialTheme.typography.titleLarge, fontWeight = GoogleSansWeight.bold, maxLines = 1)
+                }
+            }
+        }
+        else -> OptimizedImage(
+            url = (art as? MoreFromArt.Image)?.url ?: episode.imageUrl,
+            fallbackUrls = listOf(episode.podcastImageUrl, showImageUrl),
+            proxyWidth = 240,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = tile,
+        )
+    }
 }

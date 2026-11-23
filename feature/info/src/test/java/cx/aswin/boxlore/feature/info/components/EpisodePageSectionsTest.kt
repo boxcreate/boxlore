@@ -99,6 +99,14 @@ class EpisodePageSectionsTest {
     }
 
     @Test
+    fun `More from opens the show from its header only`() {
+        render()
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("more_from_podcast")
+        assertTrue(fixture.compose.onAllNodesWithText("See all").fetchSemanticsNodes().isNotEmpty())
+        assertEquals("no second Explore button", 0, fixture.compose.onAllNodesWithText("Explore podcast").fetchSemanticsNodes().size)
+    }
+
+    @Test
     fun `recommended episodes from other shows name their show`() {
         render()
         fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("more_like_this")

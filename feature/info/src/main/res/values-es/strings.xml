@@ -64,6 +64,8 @@
     <string name="episode_info_more_like_this">Prueba estos episodios</string>
     <string name="episode_info_more_from">Más de %1$s</string>
     <string name="episode_info_more_from_label">Más de</string>
+    <string name="episode_info_see_all">Ver todo</string>
+    <string name="episode_info_number_short">Ep.</string>
     <string name="episode_info_explore_podcast">Explorar podcast</string>
     <string name="episode_info_no_more">No hay más episodios disponibles</string>
     <string name="episode_info_people">Personas en este episodio</string>

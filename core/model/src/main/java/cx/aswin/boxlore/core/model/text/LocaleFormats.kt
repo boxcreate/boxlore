@@ -48,6 +48,9 @@ object LocaleFormats {
         /** "March" (standalone month name) */
         MONTH("LLLL"),
 
+        /** "Mar" (standalone short month name) */
+        SHORT_MONTH("LLL"),
+
         /** "Thursday" (standalone weekday name) */
         WEEKDAY("cccc"),
 

@@ -66,6 +66,8 @@
     <string name="episode_info_more_from">Mehr von %1$s</string>
     <!-- Small label above the show name in the show row that heads the More from list. -->
     <string name="episode_info_more_from_label">Mehr von</string>
+    <string name="episode_info_see_all">Alle ansehen</string>
+    <string name="episode_info_number_short">Folge</string>
     <string name="episode_info_explore_podcast">Podcast entdecken</string>
     <string name="episode_info_no_more">Keine weiteren Folgen verfügbar</string>
     <string name="episode_info_people">Personen in dieser Folge</string>
