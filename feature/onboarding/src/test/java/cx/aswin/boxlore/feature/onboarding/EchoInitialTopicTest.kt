@@ -43,6 +43,18 @@ class EchoInitialTopicTest {
     }
 
     @Test
+    fun `Pick topics starts with the topics picked with Echo, picked or already sent`() {
+        assertEquals(setOf("Science", "True Crime"), EchoInitialTopic.genres(OnboardingUiState(aiSelectedOptions = setOf("Science", "True crime"))))
+        val sent = OnboardingUiState(aiHistory = listOf(OnboardingHistoryEntry("user", listOf(OnboardingPart("True crime. History")))))
+        assertEquals(setOf("True Crime", "History"), EchoInitialTopic.genres(sent))
+        // Every Echo topic has a picker genre.
+        val pickerGenres = ONBOARDING_GENRES.map { it.value }.toSet()
+        EchoInitialTopic.entries.forEach { assertTrue(it.genre in pickerGenres, it.name) }
+        // A written answer is not a topic.
+        assertEquals(emptySet<String>(), EchoInitialTopic.genres(OnboardingUiState(aiHistory = listOf(OnboardingHistoryEntry("user", listOf(OnboardingPart("Long drives")))))))
+    }
+
+    @Test
     fun `written answers and later guided choices keep their original text`() {
         assertEquals("தமிழில் அறிவியல்", GuidedOnboardingLogic.submittedAnswer(OnboardingUiState(aiCustomInputText = "தமிழில் அறிவியல்")))
         assertEquals("Calm contemplation", GuidedOnboardingLogic.submittedAnswer(OnboardingUiState(aiSelectedOptions = setOf("Calm contemplation"))))
