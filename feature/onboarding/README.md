@@ -26,7 +26,7 @@ Owns first-run onboarding: the Welcome screen, Echo (the AI-guided conversation 
 - **Manual topics**: `GenrePickerScreen`, `SubGenrePickerScreen`, `ActivityPickerScreen` and `LengthPickerScreen`, limited by `OnboardingGenreLimits`.
 - **Search** (`OnboardingSearchScreen`): progressive typeahead through `searchPodcastsGrouped`, kept at the top by `ProgressiveSearchScrollLogic`. Picks gather in the Continue bar, which opens them in a sheet, and are followed at the handoff.
 - **Similar-shows choice** (`SimilarShowsChoice`, `SimilarShowsChoiceContent`): after search or import the listener chooses **See similar shows** or **Go to Home** before any request is made. Import leads with Go to Home, search with See similar shows; a late answer after skipping is dropped (`acceptsResult`).
-- **Suggestions** (`AiSuggestionsScreen`, shared by every path): lanes of `SuggestionShowCard`s, a row each on narrow windows and rows of cards (then **Show all**) on wide ones; a show appears in one lane only (`OnboardingSuggestionsLanes.withoutRepeats`), and **Popular now** picks its country from a compact `RegionSegmentedSelector`. Nothing starts selected except Echo's **Your picks** lane; `OnboardingSuggestionsPresentation` decides the origin (`SuggestionsOrigin`), loading state and what **Add N shows** counts. A similar-shows request the API refuses for a skipped or failed human check says so (`OnboardingErrorKind.VerificationSkipped`) instead of blaming the connection.
+- **Suggestions** (`AiSuggestionsScreen`, shared by every path): lanes of `SuggestionShowCard`s, a row each on narrow windows and rows of cards (then **Show all**) on wide ones; no lane repeats a lane above it or the top of the charts (`OnboardingSuggestionsLanes.withoutRepeats`), and **Popular now** picks its country from a compact `RegionSegmentedSelector`. Nothing starts selected except Echo's **Your picks** lane; `OnboardingSuggestionsPresentation` decides the origin (`SuggestionsOrigin`), loading state and what **Add N shows** counts. A similar-shows request the API refuses for a skipped or failed human check says so (`OnboardingErrorKind.VerificationSkipped`) instead of blaming the connection.
 - Back restores the previous question with its answer still picked, cancels requests in flight, and from loaded Echo suggestions shows `EchoReadyStage`. **Change my answers** drops results and their picks (`OnboardingAiStart.withoutResults`).
 
 ## Client contracts
@@ -53,13 +53,14 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
   EchoInitialTopic.kt, EchoChoiceIcons.kt, EchoLanguageHint.kt, EchoPrivacyNotice.kt
   EchoRequestLifecycle.kt              # request jobs, question snapshots, EchoRequestPolicy
   EchoWaitMessages.kt                  # slow-request lines and countdowns
-  EchoShowDeck.kt, EchoDeckViews.kt, EchoDeckPhysics.kt, EchoShowPreview.kt  # deck state, views, clips
+  EchoShowDeck.kt, EchoDeckViews.kt, EchoDeckReactionLabels.kt, EchoDeckPhysics.kt, EchoShowPreview.kt  # deck state, views, answer labels, clips
   EchoPrism{Card,Layout,Foil,Support}.kt                                     # the deck's show card
   GuidedOnboardingLogic.kt, OnboardingAiStart.kt, OnboardingFallback.kt
   GenreOnboardingScreen.kt, OnboardingTopicCatalog.kt, OnboardingGenreLimits.kt, OnboardingCurriculumLogic.kt
-  SearchOnboardingScreen.kt, OnboardingSearchBackStep.kt, OnboardingShowSearchCombine.kt
+  SearchOnboardingScreen.kt, OnboardingSearchGrid.kt, OnboardingSearchPicks.kt  # search box, trending grid, picks bar and sheet
+  OnboardingSearchBackStep.kt, OnboardingShowSearchCombine.kt
   SimilarShowsChoice.kt, SimilarShowsChoiceView.kt
-  AiSuggestionsScreen.kt, AiSuggestionCards.kt, AiSuggestionIcons.kt
+  AiSuggestionsScreen.kt, AiSuggestionsFooter.kt, AiSuggestionCards.kt, AiSuggestionIcons.kt
   OnboardingSuggestionsLanes.kt, OnboardingSuggestionsPresentation.kt, OnboardingDiscoveryLocale.kt
   AiOnboardingScreen.kt                # delegates to EchoOnboardingScreen
   OnboardingAppLanguage.kt, OnboardingViewModelLanguage.kt, AppLanguageQuestionView.kt  # language question
