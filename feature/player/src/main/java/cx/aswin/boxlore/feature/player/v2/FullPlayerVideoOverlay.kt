@@ -41,22 +41,30 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.player.R
+import cx.aswin.boxlore.feature.player.fitVisibleHeight
 import cx.aswin.boxlore.feature.player.formatTime
+import cx.aswin.boxlore.feature.player.v2.logic.FullscreenVideoPhase
+import cx.aswin.boxlore.feature.player.v2.logic.fullscreenVideoOrientation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 
@@ -167,14 +175,12 @@ internal fun FullscreenVideoSystemUi(
     onExit: () -> Unit
 ) {
     if (!visible) return
-    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val tablet by rememberUpdatedState(LocalBoxloreWindowLayout.current.usesTabletLayout)
+    // Read once per full-screen session, before this overlay requests anything.
     val originalOrientation = remember(activity) { activity?.requestedOrientation }
     DisposableEffect(isLandscape) {
-        activity?.requestedOrientation = if (isLandscape) {
-            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-        } else {
-            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        }
+        fullscreenVideoOrientation(FullscreenVideoPhase.Enter, isLandscape, tablet, originalOrientation)
+            ?.let { activity?.requestedOrientation = it }
         val window = activity?.window
         if (window != null) {
             val controller = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
@@ -183,7 +189,8 @@ internal fun FullscreenVideoSystemUi(
                 androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
         onDispose {
-            activity?.requestedOrientation = if (tablet) originalOrientation ?: android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            fullscreenVideoOrientation(FullscreenVideoPhase.Exit, isLandscape, tablet, originalOrientation)
+                ?.let { activity?.requestedOrientation = it }
             if (window != null) {
                 androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
                     .show(videoOverlayBarTypes())
