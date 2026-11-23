@@ -3,6 +3,7 @@ package cx.aswin.boxlore.tv.cloud
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import cx.aswin.boxlore.core.network.model.TvSignInStartResponse
 import cx.aswin.boxlore.tv.data.TvLibraryStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -122,17 +123,26 @@ internal class LiveTvAccount(
                         return@launch
                     }
                     state.value = TvSignIn.ShowingCode(started.code)
-                    val runsOutAt = clock() + started.expiresInSeconds.coerceAtLeast(MIN_LIFE_SECONDS) * MILLIS
-                    val everyMs = started.intervalSeconds.coerceIn(MIN_POLL_SECONDS, MAX_POLL_SECONDS) * MILLIS
-                    while (isActive && clock() < runsOutAt) {
-                        delay(everyMs)
-                        val check = api.poll(started.code, started.pair)
-                        if (check is CodeCheck.Approved) return@launch signedIn(check.token, check.account)
-                        if (check == CodeCheck.Expired) break
-                    }
-                    // The code ran out with nobody approving it: a fresh one takes its place.
+                    // A code that runs out with nobody approving it gives way to a fresh one.
+                    val approved = approval(started) ?: continue
+                    return@launch signedIn(approved.token, approved.account)
                 }
             }
+    }
+
+    /** Asks about [started] until a phone approves it, or null once it runs out. */
+    private suspend fun approval(started: TvSignInStartResponse): CodeCheck.Approved? {
+        val runsOutAt = clock() + started.expiresInSeconds.coerceAtLeast(MIN_LIFE_SECONDS) * MILLIS
+        val everyMs = started.intervalSeconds.coerceIn(MIN_POLL_SECONDS, MAX_POLL_SECONDS) * MILLIS
+        while (clock() < runsOutAt) {
+            delay(everyMs)
+            when (val check = api.poll(started.code, started.pair)) {
+                is CodeCheck.Approved -> return check
+                CodeCheck.Expired -> return null
+                else -> Unit
+            }
+        }
+        return null
     }
 
     override fun cancelSignIn() {

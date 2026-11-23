@@ -170,7 +170,7 @@ internal object TvCloudRules {
         return base.copy(
             title = base.title.ifBlank { row.episodeTitle.orEmpty() },
             showTitle = base.showTitle.ifBlank { row.podcastName.orEmpty() },
-            artworkUrl = base.artworkUrl ?: row.episodeImageUrl ?: row.podcastImageUrl,
+            artworkUrl = listOfNotNull(base.artworkUrl, row.episodeImageUrl, row.podcastImageUrl).firstOrNull(),
             durationMinutes = if (base.durationMinutes > 0) base.durationMinutes else TvLibraryState.wholeMinutes(total),
             audioUrl = base.audioUrl ?: row.episodeAudioUrl,
             catalogKey = base.catalogKey ?: row.catalogKey,
