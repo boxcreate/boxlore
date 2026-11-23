@@ -118,4 +118,6 @@
     <string name="explore_chart_rank_description">Numéro %1$d, %2$s</string>
     <string name="explore_topic_empty_body">Rien ici pour votre région et vos langues pour le moment. Essayez une autre collection.</string>
     <string name="explore_topic_failed_title">Impossible de charger cette collection</string>
+    <string name="explore_concept_example_dreams">Pourquoi rêvons-nous ?</string>
+    <string name="explore_concept_example_pyramids">Comment les pyramides ont-elles été construites ?</string>
 </resources>

@@ -117,4 +117,6 @@
     <string name="explore_chart_rank_description">Platz %1$d, %2$s</string>
     <string name="explore_topic_empty_body">Für deine Region und Sprachen gibt es hier noch nichts. Probier eine andere Sammlung.</string>
     <string name="explore_topic_failed_title">Diese Sammlung konnte nicht geladen werden</string>
+    <string name="explore_concept_example_dreams">Warum träumen wir?</string>
+    <string name="explore_concept_example_pyramids">Wie wurden die Pyramiden gebaut?</string>
 </resources>

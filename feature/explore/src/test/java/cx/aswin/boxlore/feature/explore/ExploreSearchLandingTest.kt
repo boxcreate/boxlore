@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +42,7 @@ import cx.aswin.boxlore.feature.explore.components.ExploreBrowseChromeState
 import cx.aswin.boxlore.feature.explore.components.ExploreEpisodesSearchIdleState
 import cx.aswin.boxlore.feature.explore.components.ExploreFloatingHeader
 import cx.aswin.boxlore.feature.explore.components.SearchTabSelector
+import cx.aswin.boxlore.feature.explore.components.conceptExampleIcon
 import cx.aswin.boxlore.feature.explore.logic.ConceptSearchIdleLogic
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -96,6 +99,12 @@ class ExploreSearchLandingTest {
         composeRule.onNode(hasText("Ask anything") and isSelectable()).performClick()
         assertTrue("Ask anything", hint("Ask about any idea or topic"))
         assertTrue("no second Ask anything in the box", !hint("Search podcasts"))
+    }
+
+    @Test fun `each example has its own icon and none looks like the Ask anything tab`() {
+        val icons = ConceptSearchIdleLogic.examples.indices.map { conceptExampleIcon(it) }
+        assertEquals(icons.size, icons.toSet().size)
+        assertTrue(Icons.Rounded.AutoAwesome !in icons)
     }
 
     @Test fun `both search headings and their hints align to the center of the feed`() {

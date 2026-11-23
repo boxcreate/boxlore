@@ -15,8 +15,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
-import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.Landscape
 import androidx.compose.material.icons.rounded.Psychology
+import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -24,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -34,9 +37,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentHeightDp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.explore.R
 import cx.aswin.boxlore.feature.explore.SearchTab
+import cx.aswin.boxlore.feature.explore.logic.ConceptSearchExample
 import cx.aswin.boxlore.feature.explore.logic.ConceptSearchIdleLogic
 
 /** Shared, scrollable orientation for search suggestions and recovery. */
@@ -87,15 +93,34 @@ internal fun ExploreSearchLoadingState(searchTab: SearchTab, modifier: Modifier 
     }
 }
 
-/** Questions retain their exact query strings and ordering; only presentation belongs here. */
+/**
+ * Questions retain their exact query strings and ordering; only presentation belongs here. Each has
+ * its own icon (none borrows Ask anything's sparkle). Tall phones and tablets show all six; tablets
+ * set them in two columns.
+ */
 @Composable
 internal fun ConceptQuestionList(onExampleClick: (String) -> Unit, modifier: Modifier = Modifier) {
-    val icons = listOf(Icons.Rounded.AccountBalance, Icons.Rounded.AutoAwesome, Icons.Rounded.Psychology, Icons.Rounded.AccountBalanceWallet)
-    val examples = ConceptSearchIdleLogic.examples
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        examples.forEachIndexed { index, example ->
-            val top = if (index == 0) 24.dp else 6.dp
-            val bottom = if (index == examples.lastIndex) 24.dp else 6.dp
+    val window = LocalBoxloreWindowLayout.current
+    val count = ConceptSearchIdleLogic.visibleExampleCount(boxloreContentHeightDp(), window.usesTabletLayout)
+    val examples = ConceptSearchIdleLogic.examples.take(count).mapIndexed { index, example -> index to example }
+    if (window.usesTabletLayout) {
+        val half = (examples.size + 1) / 2
+        Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            listOf(examples.take(half), examples.drop(half)).forEach { column ->
+                ConceptQuestionColumn(column, onExampleClick, Modifier.weight(1f))
+            }
+        }
+    } else {
+        ConceptQuestionColumn(examples, onExampleClick, modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+private fun ConceptQuestionColumn(examples: List<Pair<Int, ConceptSearchExample>>, onExampleClick: (String) -> Unit, modifier: Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        examples.forEachIndexed { position, (index, example) ->
+            val top = if (position == 0) 24.dp else 6.dp
+            val bottom = if (position == examples.lastIndex) 24.dp else 6.dp
             Surface(
                 onClick = { onExampleClick(example.query) },
                 modifier = Modifier.fillMaxWidth().testTag("concept_suggestion_$index"),
@@ -107,7 +132,7 @@ internal fun ConceptQuestionList(onExampleClick: (String) -> Unit, modifier: Mod
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Icon(icons.getOrElse(index) { Icons.Rounded.AutoAwesome }, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                    Icon(conceptExampleIcon(index), contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     Text(
                         stringResource(example.label),
                         style = MaterialTheme.typography.titleSmall,
@@ -128,3 +153,15 @@ internal fun ConceptQuestionList(onExampleClick: (String) -> Unit, modifier: Mod
         }
     }
 }
+
+/** Rome, black holes, conspiracies, money, dreams, pyramids. */
+internal fun conceptExampleIcon(index: Int): ImageVector = ConceptExampleIcons.getOrElse(index) { Icons.Rounded.Public }
+
+private val ConceptExampleIcons = listOf(
+    Icons.Rounded.AccountBalance,
+    Icons.Rounded.Public,
+    Icons.Rounded.Psychology,
+    Icons.Rounded.AccountBalanceWallet,
+    Icons.Rounded.Bedtime,
+    Icons.Rounded.Landscape,
+)

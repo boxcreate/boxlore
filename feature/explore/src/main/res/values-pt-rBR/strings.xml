@@ -130,4 +130,6 @@
     <string name="explore_chart_rank_description">Número %1$d, %2$s</string>
     <string name="explore_topic_empty_body">Ainda não há nada aqui para sua região e idiomas. Experimente outra coleção.</string>
     <string name="explore_topic_failed_title">Não foi possível carregar esta coleção</string>
+    <string name="explore_concept_example_dreams">Por que sonhamos?</string>
+    <string name="explore_concept_example_pyramids">Como as pirâmides foram construídas?</string>
 </resources>

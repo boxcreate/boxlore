@@ -141,4 +141,6 @@
     <string name="explore_topic_empty_body">Nothing here for your region and languages yet. Try another collection.</string>
     <!-- Mood collection page when its shows couldn't be read. -->
     <string name="explore_topic_failed_title">Couldn’t load this collection</string>
+    <string name="explore_concept_example_dreams">Why do we dream?</string>
+    <string name="explore_concept_example_pyramids">How were the pyramids built?</string>
 </resources>
