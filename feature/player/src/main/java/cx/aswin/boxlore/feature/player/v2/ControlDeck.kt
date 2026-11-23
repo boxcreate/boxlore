@@ -43,6 +43,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -397,8 +398,8 @@ fun SecondaryRail(
     clickActions: SecondaryClickActions,
     modifier: Modifier = Modifier
 ) {
-    var controlMode by rememberSaveable { mutableStateOf(QuickControlMode.ACTIONS) }
-    SecondaryRail(playback, availability, library, colorScheme, selectionActions, clickActions, controlMode, { controlMode = it }, modifier)
+    val controlMode = rememberSaveable { mutableStateOf(QuickControlMode.ACTIONS) }
+    Box(modifier) { SecondaryRail(playback, availability, library, colorScheme, selectionActions, clickActions, controlMode) }
 }
 
 /** [SecondaryRail] with its open panel held by the caller, so it survives a layout change. */
@@ -410,80 +411,13 @@ internal fun SecondaryRail(
     colorScheme: ColorScheme,
     selectionActions: SecondarySelectionActions,
     clickActions: SecondaryClickActions,
-    controlMode: QuickControlMode,
-    onControlModeChange: (QuickControlMode) -> Unit,
-    modifier: Modifier = Modifier
+    controlModeState: MutableState<QuickControlMode>
 ) {
-    val groupTrayShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 32.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 32.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 32.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 32.dp,
-        smoothnessAsPercentBR = 60
-    )
-    val groupTopStartShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 24.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 9.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 9.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 9.dp,
-        smoothnessAsPercentBR = 60
-    )
-    val groupMiddleShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 9.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 9.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 9.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 9.dp,
-        smoothnessAsPercentBR = 60
-    )
-    val groupTopEndShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 9.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 24.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 9.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 9.dp,
-        smoothnessAsPercentBR = 60
-    )
-    val groupBottomStartShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 9.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 9.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 24.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 9.dp,
-        smoothnessAsPercentBR = 60
-    )
-    val groupBottomEndShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 9.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 9.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 9.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 24.dp,
-        smoothnessAsPercentBR = 60
-    )
-    val selectorShapes = QuickControlShapes(
-        topStart = groupTopStartShape,
-        topEnd = groupTopEndShape,
-        middle = groupMiddleShape,
-        bottomStart = groupBottomStartShape,
-        bottomEnd = groupBottomEndShape
-    )
-
+    var controlMode by controlModeState
+    val onControlModeChange: (QuickControlMode) -> Unit = { controlMode = it }
+    val (groupTrayShape, selectorShapes) = quickControlTrayShapes()
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .clip(groupTrayShape)
             .background(colorScheme.primary.copy(alpha = 0.12f))
@@ -681,4 +615,76 @@ fun SleepSheet(
             }
         }
     }
+}
+
+/** The tray's outer shape and its tiles' corner shapes (rounder at the tray's outer corners). */
+private fun quickControlTrayShapes(): Pair<AbsoluteSmoothCornerShape, QuickControlShapes> {
+    val groupTrayShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 32.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 32.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 32.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 32.dp,
+        smoothnessAsPercentBR = 60
+    )
+    val groupTopStartShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 24.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 9.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 9.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 9.dp,
+        smoothnessAsPercentBR = 60
+    )
+    val groupMiddleShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 9.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 9.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 9.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 9.dp,
+        smoothnessAsPercentBR = 60
+    )
+    val groupTopEndShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 9.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 24.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 9.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 9.dp,
+        smoothnessAsPercentBR = 60
+    )
+    val groupBottomStartShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 9.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 9.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 24.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 9.dp,
+        smoothnessAsPercentBR = 60
+    )
+    val groupBottomEndShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 9.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 9.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 9.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 24.dp,
+        smoothnessAsPercentBR = 60
+    )
+    val selectorShapes = QuickControlShapes(
+        topStart = groupTopStartShape,
+        topEnd = groupTopEndShape,
+        middle = groupMiddleShape,
+        bottomStart = groupBottomStartShape,
+        bottomEnd = groupBottomEndShape
+    )
+    return groupTrayShape to selectorShapes
 }

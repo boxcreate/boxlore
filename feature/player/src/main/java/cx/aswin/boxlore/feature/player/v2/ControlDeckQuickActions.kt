@@ -447,7 +447,6 @@ internal fun LabelAction(
     colorScheme: ColorScheme,
     shape: androidx.compose.ui.graphics.Shape,
     active: Boolean = false,
-    enabled: Boolean = true,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     /** Set for one choice among several (a speed or sleep length): announced as selected or not. */
@@ -467,8 +466,8 @@ internal fun LabelAction(
     Box(
         modifier = modifier
             .height(56.dp)
-            .quickActionPress(enabled = enabled, shape = shape, onClick = onClick)
-            .then(if (selected != null) Modifier.semantics { this.selected = selected; role = Role.RadioButton } else Modifier)
+            .quickActionPress(enabled = true, shape = shape, onClick = onClick)
+            .then(if (selected != null) Modifier.choiceSemantics(selected) else Modifier)
             .clip(shape)
             .background(container)
             .padding(horizontal = 4.dp),
@@ -647,3 +646,9 @@ internal fun SleepAction(
 @Composable
 private fun sleepChipLabel(minutes: Int): String =
     LocaleFormats.duration(minutes * 60L, currentLocale(), LocaleFormats.DurationWidth.NARROW)
+
+/** One choice among several: announced as a radio button that is selected or not. */
+private fun Modifier.choiceSemantics(isSelected: Boolean): Modifier = semantics {
+    selected = isSelected
+    role = Role.RadioButton
+}

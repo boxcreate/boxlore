@@ -131,7 +131,8 @@ internal class FullPlayerUiState {
     var restoreSupportingContentOnCompact by mutableStateOf(false)
 
     /** The quick-action tray's open panel, kept when the player moves between phone and tablet layouts. */
-    var quickControlMode by mutableStateOf(QuickControlMode.ACTIONS)
+    val quickControlModeState = mutableStateOf(QuickControlMode.ACTIONS)
+    var quickControlMode by quickControlModeState
 
     /** Whether the Cast hero shows receiver controls, and the route it last followed ([castRouteRemote]). */
     var showCastControls by mutableStateOf(false)

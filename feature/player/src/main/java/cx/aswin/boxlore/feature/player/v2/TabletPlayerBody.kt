@@ -322,9 +322,7 @@ private fun TabletPlayerControls(
     val columns = regions.arrangement == TabletPlayerArrangement.Columns
     Column(
         Modifier.fillMaxWidth().nestedScroll(display.sheetNestedScrollConnection)
-            .then(if (scrollContent) Modifier.fillMaxSize().verticalScroll(rememberScrollState()) else Modifier)
-            // Beside the supporting panel the player sits in the middle of its column, top to bottom.
-            .then(if (columns) Modifier.heightIn(min = regions.controls.height.dp) else Modifier)
+            .tabletControlsFrame(scrollContent, centeredHeight = regions.controls.height.dp.takeIf { columns })
             .boxloreCardWidth(BoxloreCardFamily.Hero).padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = if (columns) Arrangement.Center else Arrangement.Top,
@@ -392,6 +390,13 @@ private fun TabletPlayerControls(
         }
     }
 }
+
+/** Scrolls when the controls own a region; with [centeredHeight] the column is at least that tall so its content can sit in the middle. */
+@Composable
+private fun Modifier.tabletControlsFrame(scrollContent: Boolean, centeredHeight: androidx.compose.ui.unit.Dp?): Modifier =
+    then(if (scrollContent) Modifier.fillMaxSize().verticalScroll(rememberScrollState()) else Modifier)
+        // Beside the supporting panel the player sits in the middle of its column, top to bottom.
+        .then(if (centeredHeight != null) Modifier.heightIn(min = centeredHeight) else Modifier)
 
 /** Reserve the real text and controls before choosing artwork, including the safe bottom inset. */
 @Composable

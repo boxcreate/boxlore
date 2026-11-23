@@ -270,8 +270,7 @@ internal fun FullPlayerSecondaryControls(
         colorScheme = model.colorScheme,
         selectionActions = fullPlayerSelectionActions(dependencies.playbackRepository),
         clickActions = fullPlayerClickActions(model, dependencies, ui, scope, inlineSupportingContent),
-        controlMode = ui.quickControlMode,
-        onControlModeChange = { ui.quickControlMode = it }
+        controlModeState = ui.quickControlModeState
     )
 }
 
