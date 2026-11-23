@@ -262,8 +262,9 @@ private fun HaloGridTile(
     val title = podcast.latestEpisode?.title?.ifEmpty { podcast.title } ?: podcast.title
     val titleStyle = haloTileTitleStyle(stacked, rows)
     val textReserve = with(LocalDensity.current) { titleStyle.lineHeight.toDp() * 2 + 16.sp.toDp() } + 12.dp
+    val peek = heroPeekContent()
     BoxWithConstraints(
-        modifier.clip(HaloTileShape).testTag(tag).expressiveClickable(shape = HaloTileShape) { currentOnClick(currentPodcast) },
+        modifier.clip(HaloTileShape).testTag(tag).expressiveClickable(enabled = peek.shown, shape = HaloTileShape) { currentOnClick(currentPodcast) },
     ) {
         val ring = if (stacked) {
             minOf(maxWidth * 0.78f, maxHeight - textReserve, HaloStackedRingMax)
@@ -276,7 +277,7 @@ private fun HaloGridTile(
             }
         }
         val copy: @Composable (TextAlign, Modifier) -> Unit = { align, copyModifier ->
-            HaloTileCopy(title, meta, titleStyle, haloTileTitleLines(stacked, rows), align, card, tag, copyModifier)
+            HaloTileCopy(title, meta, titleStyle, haloTileTitleLines(stacked, rows), align, card, tag, copyModifier.heroPeekFade(peek))
         }
         if (stacked) {
             Column(Modifier.fillMaxSize().padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
@@ -365,13 +366,14 @@ private fun HaloTileCover(
     val label = stringResource(if (playing) R.string.home_hero_pause else R.string.home_hero_play)
     val hasEpisode = podcast.latestEpisode != null
     val interaction = remember { MutableInteractionSource() }
+    val peek = heroPeekContent()
     // The press scales the whole cover without clipping it, so the button over the ring's corner stays
     // whole; only the ripple is kept inside the ring.
-    val playModifier = if (hasEpisode) {
+    val playModifier = if (hasEpisode && peek.shown) {
         Modifier.testTag("${tag}_play").semantics {
             contentDescription = label
             role = Role.Button
-        }.expressiveClickable(interaction, indication = null, feedback = ExpressivePressFeedback.Control, onClick = onPlay)
+        }.expressiveClickable(interaction, enabled = peek.shown, indication = null, feedback = ExpressivePressFeedback.Control, onClick = onPlay)
     } else {
         Modifier
     }
@@ -404,7 +406,7 @@ private fun HaloTileCover(
         )
         if (hasEpisode) {
             Box(
-                Modifier.align(Alignment.BottomEnd).size(HaloTileBadge).background(shade.accent, CircleShape)
+                Modifier.align(Alignment.BottomEnd).heroPeekFade(peek).size(HaloTileBadge).background(shade.accent, CircleShape)
                     .border(3.dp, card.deep, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {

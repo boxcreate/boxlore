@@ -122,7 +122,7 @@ internal val BlockShortBodyHeight = 240.dp
 private fun ShortHeroBody(item: SmartHeroItem, foreground: Color) {
     Row(Modifier.fillMaxSize().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
         HeroArtwork(item, Modifier.size(80.dp))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.weight(1f).heroPeekFade(heroPeekContent()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(heroTitle(item), color = foreground, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("home_hero_title").semantics { heading() })
             Text(heroSupportingName(item), color = foreground, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             HeroCardContext(item, foreground, wide = true, modifier = Modifier.fillMaxWidth())
@@ -197,7 +197,8 @@ internal fun heroArtworkSources(item: SmartHeroItem): List<String?> =
 @Composable
 private fun HeroCopy(item: SmartHeroItem, foreground: Color, titleStyle: TextStyle, progressState: HeroProgressState?, modifier: Modifier) {
     val supportingName = heroSupportingName(item)
-    Column(modifier.padding(horizontal = 16.dp).testTag("home_hero_copy"), verticalArrangement = Arrangement.Center) {
+    val peek = heroPeekContent()
+    Column(modifier.heroPeekFade(peek).padding(horizontal = 16.dp).testTag("home_hero_copy"), verticalArrangement = Arrangement.Center) {
         Text(
             text = heroTitle(item),
             style = titleStyle,
@@ -268,13 +269,14 @@ internal fun HeroActions(
     val actionStyle = HeroContextTypography.action()
     val labelHeight = rememberTextMeasurer().measure(actionLabel, actionStyle, maxLines = 1).size.height
     val actionHeight = (with(LocalDensity.current) { labelHeight.toDp() } + 20.dp).coerceAtLeast(48.dp)
-    Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+    val peek = heroPeekContent()
+    Row(Modifier.heroPeekFade(peek), horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
         Surface(
             color = colors.play,
             contentColor = colors.onPlay,
             shape = playShape,
             modifier = Modifier.weight(1f).height(actionHeight).testTag("home_hero_play")
-                .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = playShape, onClick = if (hasEpisode) onPlayClick else onDetailsClick),
+                .expressiveClickable(enabled = peek.shown, feedback = ExpressivePressFeedback.Control, shape = playShape, onClick = if (hasEpisode) onPlayClick else onDetailsClick),
         ) {
             Row(
                 Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -308,7 +310,7 @@ internal fun HeroActions(
             contentColor = colors.onDetails,
             shape = detailsShape,
             modifier = Modifier.size(actionHeight).testTag("home_hero_details")
-                .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = detailsShape, onClick = onDetailsClick),
+                .expressiveClickable(enabled = peek.shown, feedback = ExpressivePressFeedback.Control, shape = detailsShape, onClick = onDetailsClick),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(

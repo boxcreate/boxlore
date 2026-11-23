@@ -72,7 +72,7 @@ internal fun heroWideContextHeight(item: SmartHeroItem, width: Dp): Dp {
 @Composable
 internal fun HeroCardContext(item: SmartHeroItem, foreground: Color, wide: Boolean, modifier: Modifier) {
     val context = remember(item.label, item.podcast.genre) { heroSpotlightContext(item.label, item.podcast.genre) }
-    val group = modifier.testTag("home_hero_context_group").semantics(mergeDescendants = true) {}
+    val group = modifier.heroPeekFade(heroPeekContent()).testTag("home_hero_context_group").semantics(mergeDescendants = true) {}
     if (item.type == HeroType.SPOTLIGHT) {
         SpotlightContext(context, foreground, wide, group)
     } else {

@@ -156,7 +156,7 @@ internal fun CoverCopy(
     val baseStyle = heroTitleStyle()
     val title = heroTitle(item)
     val supportingName = heroSupportingName(item)
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
+    BoxWithConstraints(Modifier.fillMaxWidth().heroPeekFade(heroPeekContent())) {
         val width = constraints.maxWidth
         // A tall card has room above the words, so the title takes the largest size that fits two lines.
         val titleRoom = if (short) shortTitleRoom else Int.MAX_VALUE
@@ -303,7 +303,7 @@ internal fun CoverHeroGridCard(
 @Composable
 internal fun HeroCollectionHeading(title: String, count: Int, countColor: Color) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        Modifier.fillMaxWidth().heroPeekFade(heroPeekContent()).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -357,9 +357,10 @@ private fun CoverGridTile(
     val shade = rememberCoverShade(podcast.imageUrl)
     val resume = mode == HeroGridMode.Resume
     val duration = HomeHeroStyle.minutes(podcast, resume)?.let { heroDurationText(it) }
+    val peek = heroPeekContent()
     Box(
         modifier.clip(CoverTileShape).background(shade.deep).testTag(tag)
-            .expressiveClickable(shape = CoverTileShape) { currentOnClick(currentPodcast) },
+            .expressiveClickable(enabled = peek.shown, shape = CoverTileShape) { currentOnClick(currentPodcast) },
     ) {
         OptimizedImage(
             url = podcast.imageUrl,
@@ -371,10 +372,12 @@ private fun CoverGridTile(
         )
         // A new episode's length sits on its cover; Resume tiles keep time left beside their progress.
         if (!resume && duration != null) {
-            CoverTileLength(duration, shade, Modifier.align(Alignment.TopStart).padding(10.dp).testTag("${tag}_time"))
+            CoverTileLength(duration, shade, Modifier.align(Alignment.TopStart).heroPeekFade(peek).padding(10.dp).testTag("${tag}_time"))
         }
         if (podcast.latestEpisode != null) {
-            CoverTilePlayback(nowPlaying, shade, Modifier.align(Alignment.TopEnd).testTag("${tag}_play")) { currentOnPlayback(currentPodcast) }
+            CoverTilePlayback(nowPlaying, shade, peek.shown, Modifier.align(Alignment.TopEnd).heroPeekFade(peek).testTag("${tag}_play")) {
+                currentOnPlayback(currentPodcast)
+            }
         }
         CoverTileCopy(
             title = podcast.latestEpisode?.title?.ifEmpty { podcast.title } ?: podcast.title,
@@ -384,7 +387,7 @@ private fun CoverGridTile(
             timeLeft = if (resume) duration?.let { stringResource(R.string.home_hero_remaining, it) } else null,
             nowPlaying = nowPlaying,
             tag = tag,
-            modifier = Modifier.align(Alignment.BottomStart),
+            modifier = Modifier.align(Alignment.BottomStart).heroPeekFade(peek),
         )
     }
 }
@@ -462,7 +465,7 @@ private fun CoverTileLength(length: String, shade: ArtworkShade, modifier: Modif
 
 /** Play or Pause on the tile's cover, a 32dp button in the tile's shade inside a 48dp target. */
 @Composable
-private fun CoverTilePlayback(playing: Boolean, shade: ArtworkShade, modifier: Modifier, onClick: () -> Unit) {
+private fun CoverTilePlayback(playing: Boolean, shade: ArtworkShade, enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val label = stringResource(if (playing) R.string.home_hero_pause else R.string.home_hero_play)
     Box(
         modifier.size(48.dp)
@@ -470,7 +473,7 @@ private fun CoverTilePlayback(playing: Boolean, shade: ArtworkShade, modifier: M
                 contentDescription = label
                 role = Role.Button
             }
-            .expressiveClickable(shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick),
+            .expressiveClickable(enabled = enabled, shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(32.dp).background(shade.accent, CircleShape), contentAlignment = Alignment.Center) {

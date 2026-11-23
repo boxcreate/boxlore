@@ -95,6 +95,8 @@ fun HeroCarousel(
             onDispose {}
         }
 
+        // A peeking card shows its artwork or colour; its words and buttons fade in as it slides into place.
+        ProvideHeroPeekReveal(carouselItemDrawInfo) {
         when {
             HeroCardStyle.usesArtworkColors(style) ->
                 FullArtworkHeroItem(style, item, i, onCollectionPlayback, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, playing)
@@ -128,6 +130,7 @@ fun HeroCarousel(
                     modifier = Modifier.maskClip(HomeHeroStyle.CardShape),
                 )
             }
+        }
         }
     }
     // Position dots are off for now; the strip keeps the 12dp gap to Your shows either way.

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.carousel.CarouselItemDrawInfo
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
@@ -17,6 +18,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -28,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.StableHeroList
@@ -167,6 +170,65 @@ class HomeHeroPeekTest {
         assertTrue(peekBounds().height > peekBounds().width)
     }
 
+    @Test fun `every style's peeking card shows only its artwork until it slides into place`() {
+        val style = mutableStateOf(HeroCardStyle.BLOCK)
+        val collection = mutableStateOf(false)
+        var played = 0
+        composeRule.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                val first = Podcast("show", "Radiolab", "Creator", "", latestEpisode = Episode("episode", "Focal episode", "", "", duration = 3600))
+                val second = first.copy(id = "show_2", latestEpisode = first.latestEpisode!!.copy(id = "episode_2", title = "Peeking episode"))
+                val grid = (0 until 4).map { index -> first.copy(id = "grid_$index", latestEpisode = first.latestEpisode!!.copy(id = "grid_episode_$index", title = "Grid episode $index")) }
+                val next = if (collection.value) SmartHeroItem(HeroType.RESUME_GRID, grid.first(), "", gridItems = grid) else SmartHeroItem(HeroType.RESUME, second, "")
+                CompositionLocalProvider(LocalHeroCardStyle provides style.value) {
+                    key(style.value, collection.value) {
+                        HeroCarousel(
+                            heroItems = StableHeroList(listOf(SmartHeroItem(HeroType.RESUME, first, ""), next)),
+                            onPlayClick = { _, _ -> played++ },
+                            onDetailsClick = {},
+                            onArrowClick = { _, _ -> },
+                            onToggleSubscription = {},
+                            onTogglePlayback = {},
+                            modifier = Modifier.width(380.dp).testTag("carousel"),
+                        )
+                    }
+                }
+            }
+        }
+        val styles = listOf(HeroCardStyle.BLOCK, HeroCardStyle.COVER, HeroCardStyle.DUOTONE, HeroCardStyle.HALO, HeroCardStyle.TIDE)
+        for ((name, grid) in styles.flatMap { listOf(it to false, it to true) }) {
+            style.value = name
+            collection.value = grid
+            composeRule.waitForIdle()
+            val words = if (grid) "Grid episode 0" else "Peeking episode"
+            assertEquals("$name focal card keeps its words", 1, composeRule.onAllNodesWithText("Focal episode", substring = true).fetchSemanticsNodes().size)
+            assertEquals("$name peek hides its words ($grid)", 0, wordNodes(words))
+            if (!grid) {
+                val plays = composeRule.onAllNodesWithTag("home_hero_play").fetchSemanticsNodes()
+                assertEquals("$name peek has no Play target: ${plays.map { it.boundsInRoot }}", 1, plays.size)
+            }
+            composeRule.onNodeWithTag("carousel").performTouchInput { swipeLeft() }
+            composeRule.waitForIdle()
+            assertTrue("$name card shows its words once in place ($grid)", wordNodes(words) > 0)
+        }
+        assertEquals(0, played)
+    }
+
+    @Test fun `words fade in across the swipe and stay put outside the carousel`() {
+        val reveal = HeroPeekReveal(info, minimumPeekWidth = 40f)
+        size.floatValue = 40f
+        assertEquals(0f, reveal.alpha, 0f)
+        // Mid-fade: the words come in over the first half of the slide (HeroPeekMotion).
+        size.floatValue = 80f
+        assertTrue("Mid-fade ${reveal.alpha}", reveal.alpha > 0f && reveal.alpha < 1f)
+        size.floatValue = 320f
+        assertEquals(1f, reveal.alpha, 0f)
+        size.floatValue = 80f
+        assertTrue(reveal.alpha > 0f && reveal.alpha < 1f)
+        size.floatValue = 40f
+        assertEquals(0f, reveal.alpha, 0f)
+    }
+
     @Test
     @Config(qualifiers = "w400dp-h850dp-520dpi")
     fun `phone density peek retains readable typography instead of scaling to the offscreen anchor`() {
@@ -201,6 +263,11 @@ class HomeHeroPeekTest {
             }
         }
     }
+
+    /** Nodes that show or read out [words]: Tide's square collection names its covers instead of printing titles. */
+    private fun wordNodes(words: String): Int =
+        composeRule.onAllNodesWithText(words, substring = true).fetchSemanticsNodes().size +
+            composeRule.onAllNodesWithContentDescription(words, substring = true).fetchSemanticsNodes().size
 
     private fun headingBounds(): Rect = textBounds("home_hero_collection_heading")
 

@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
@@ -235,7 +236,8 @@ val LocalHeroTideProgress = staticCompositionLocalOf { HeroTideProgress.DEFAULT 
 private fun TidePlayDisc(icon: TideDiscIcon, label: String, progress: HeroProgressState?, shade: ArtworkShade, ground: Color, onClick: () -> Unit) {
     val description = stringResource(R.string.home_hero_listening_progress)
     val animated by animateFloatAsState(progress?.value ?: 0f, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "tideProgress")
-    Box(Modifier.size(TideDiscSize).background(ground, CircleShape), contentAlignment = Alignment.Center) {
+    val peek = heroPeekContent()
+    Box(Modifier.heroPeekFade(peek).size(TideDiscSize).background(ground, CircleShape), contentAlignment = Alignment.Center) {
         if (progress != null) {
             val ring = Modifier.size(76.dp).testTag("home_hero_progress").semantics { contentDescription = description }
             if (HeroTideProgress.sanitize(LocalHeroTideProgress.current) == HeroTideProgress.CIRCLE) {
@@ -267,7 +269,7 @@ private fun TidePlayDisc(icon: TideDiscIcon, label: String, progress: HeroProgre
                     contentDescription = label
                     role = Role.Button
                 }
-                .expressiveClickable(shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick)
+                .expressiveClickable(enabled = peek.shown, shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick)
                 .background(shade.accent, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
@@ -333,7 +335,7 @@ internal fun TideHeroGridCard(
             },
             panel = { TidePanel(shade.deep) },
             copy = {
-                Column {
+                Column(Modifier.heroPeekFade(heroPeekContent())) {
                     Text(
                         title,
                         style = MaterialTheme.typography.headlineSmall.copy(
@@ -444,10 +446,11 @@ private fun TideCoverTile(
     val title = podcast.latestEpisode?.title?.ifEmpty { podcast.title } ?: podcast.title
     val duration = HomeHeroStyle.minutes(podcast, resume)?.let { heroDurationText(it) }
     val progress = HomeHeroStyle.progress(podcast).takeIf { resume && it > 0f }
+    val peek = heroPeekContent()
     Box(
         Modifier.background(shade.deep).testTag(tag)
-            .semantics { contentDescription = title }
-            .expressiveClickable { currentOnClick(currentPodcast) },
+            .then(if (peek.shown) Modifier.semantics { contentDescription = title } else Modifier.clearAndSetSemantics {})
+            .expressiveClickable(enabled = peek.shown) { currentOnClick(currentPodcast) },
     ) {
         OptimizedImage(
             url = podcast.imageUrl,
@@ -463,11 +466,13 @@ private fun TideCoverTile(
                 progress = progress,
                 shade = shade,
                 tag = tag,
-                modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
+                modifier = Modifier.align(Alignment.TopStart).heroPeekFade(peek).padding(8.dp),
             )
         }
         if (podcast.latestEpisode != null) {
-            TideCoverPlayback(nowPlaying, shade, Modifier.align(Alignment.TopEnd).testTag("${tag}_play")) { currentOnPlayback(currentPodcast) }
+            TideCoverPlayback(nowPlaying, shade, peek.shown, Modifier.align(Alignment.TopEnd).heroPeekFade(peek).testTag("${tag}_play")) {
+                currentOnPlayback(currentPodcast)
+            }
         }
     }
 }
@@ -511,7 +516,7 @@ private fun TideCoverStatus(text: String, progress: Float?, shade: ArtworkShade,
 
 /** Play or Pause on a cover: a 28dp button in the cover's accent inside a 48dp target. */
 @Composable
-private fun TideCoverPlayback(playing: Boolean, shade: ArtworkShade, modifier: Modifier, onClick: () -> Unit) {
+private fun TideCoverPlayback(playing: Boolean, shade: ArtworkShade, enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val label = stringResource(if (playing) R.string.home_hero_pause else R.string.home_hero_play)
     Box(
         modifier.size(48.dp)
@@ -519,7 +524,7 @@ private fun TideCoverPlayback(playing: Boolean, shade: ArtworkShade, modifier: M
                 contentDescription = label
                 role = Role.Button
             }
-            .expressiveClickable(shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick),
+            .expressiveClickable(enabled = enabled, shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(28.dp).background(shade.accent, CircleShape), contentAlignment = Alignment.Center) {
@@ -547,7 +552,7 @@ private fun TideEpisodeRow(
     val duration = HomeHeroStyle.minutes(podcast, resume)?.let { heroDurationText(it) }
     val progress = HomeHeroStyle.progress(podcast).takeIf { resume && it > 0f }
     Column(
-        Modifier.fillMaxWidth().testTag("${tag}_row").expressiveClickable { currentOnClick(currentPodcast) }.padding(vertical = 10.dp),
+        Modifier.fillMaxWidth().testTag("${tag}_row").expressiveClickable(enabled = heroPeekContent().shown) { currentOnClick(currentPodcast) }.padding(vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
