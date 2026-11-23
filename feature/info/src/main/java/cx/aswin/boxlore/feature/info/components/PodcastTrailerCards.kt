@@ -35,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -157,7 +158,8 @@ internal fun TrailerStackCard(
     selection: EpisodeSelectionUi = EpisodeSelectionUi(),
     modifier: Modifier = Modifier,
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
+    // Saved per group, so an open stack stays open through a fold that recreates the page.
+    var isExpanded by rememberSaveable(group.id) { mutableStateOf(false) }
     val selectedCount = group.trailers.count { (episode, _) -> episode.id in selection.selectedEpisodeIds }
     val selected = episodeSelectionColors()
     Surface(
