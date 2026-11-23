@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -69,7 +70,9 @@ internal fun ExpandableInfoTitle(
     baseStyle: TextStyle = MaterialTheme.typography.headlineMedium,
 ) {
     var expanded by expandedState
-    val style = baseStyle.copy(fontWeight = GoogleSansWeight.bold, textAlign = textAlign)
+    // Heading breaks split a two-line title into lines of similar length (Android 13 and later).
+    // The measurer uses the same style, so it decides the overflow the drawn text has.
+    val style = baseStyle.copy(fontWeight = GoogleSansWeight.bold, textAlign = textAlign, lineBreak = LineBreak.Heading)
     val measurer = rememberTextMeasurer()
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val textConstraints = Constraints(maxWidth = constraints.maxWidth)
