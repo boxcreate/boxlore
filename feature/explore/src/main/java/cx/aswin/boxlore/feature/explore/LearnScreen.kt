@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.explore
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -182,11 +183,14 @@ fun LearnScreen(
                     .lorePlayerClearance(bottomContentPadding + 16.dp, playerState.currentEpisode != null)
             ) {
                 // One header for every state, so the logo and History never move when the state changes.
+                // On tablets the header and deck sit together in the middle of a tall pane.
+                val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .statusBarsPadding(),
                     horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = if (tablet) Arrangement.Center else Arrangement.Top,
                 ) {
                     Spacer(modifier = Modifier.height(6.dp))
                     LoreDeckHeader(
@@ -202,7 +206,7 @@ fun LearnScreen(
                                 accentColor = fallbackAccent,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .weight(1f)
+                                    .weight(1f, fill = !tablet)
                                     .padding(horizontal = if (compactSpacing) 12.dp else 20.dp)
                             )
                         }
@@ -247,7 +251,7 @@ fun LearnScreen(
                                 artworkAccentColors = artworkColors,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .weight(1f)
+                                    .weight(1f, fill = !tablet)
                                     .padding(horizontal = if (compactSpacing) 12.dp else 20.dp)
                             )
                         }

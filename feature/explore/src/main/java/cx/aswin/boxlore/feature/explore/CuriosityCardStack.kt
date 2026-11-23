@@ -130,11 +130,13 @@ fun CuriosityCardStack(
  */
 @Composable
 internal fun LoreDeckFrame(modifier: Modifier = Modifier, content: @Composable BoxScope.(short: Boolean) -> Unit) {
-    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val window = LocalBoxloreWindowLayout.current
+    val tablet = window.usesTabletLayout
+    val paneHeight = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current?.height ?: window.heightDp
     BoxWithConstraints(
         modifier = modifier
             .boxloreCardWidth(BoxloreCardFamily.Reading, maximumWidthDp = 520f)
-            .then(if (tablet) Modifier.wrapContentHeight(Alignment.Top).heightIn(max = 640.dp) else Modifier)
+            .then(if (tablet) Modifier.wrapContentHeight(Alignment.Top).heightIn(max = loreTabletDeckHeightDp(paneHeight).dp) else Modifier)
             .fillMaxSize()
             // Centred and capped on every window, so a sideways phone gets the cover's card, not the full width.
             .wrapContentWidth()
@@ -149,6 +151,17 @@ internal fun LoreDeckFrame(modifier: Modifier = Modifier, content: @Composable B
         ) { content(short) }
     }
 }
+
+/**
+ * The tallest a tablet deck gets: about 60% of the pane, so a tall upright tablet grows the card a
+ * little, never under the 640dp landscape tablets have always had and never over 760dp.
+ */
+internal fun loreTabletDeckHeightDp(paneHeightDp: Float): Float =
+    (paneHeightDp * LORE_TABLET_DECK_SHARE).coerceIn(LORE_TABLET_DECK_MIN_DP, LORE_TABLET_DECK_MAX_DP)
+
+private const val LORE_TABLET_DECK_SHARE = 0.62f
+private const val LORE_TABLET_DECK_MIN_DP = 640f
+private const val LORE_TABLET_DECK_MAX_DP = 760f
 
 /** Below this deck height the card drops its bottom rest and uses its tightest padding. */
 internal val LoreShortDeckHeight = 260.dp

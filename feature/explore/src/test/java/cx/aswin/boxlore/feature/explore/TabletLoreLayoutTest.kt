@@ -12,6 +12,7 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -25,11 +26,18 @@ import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.COVER_443
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.COVER_475
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.DESKTOP
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.FOLD_FLAT
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.FOLD_TABLETOP
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.PHONE
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.PHONE_LAND
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.SPLIT_HALF
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.TABLET
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.TABLET_PORTRAIT
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.W599_H900
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.W600_H900
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.W900_H479
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.W900_H480
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import org.junit.Assert.assertEquals
@@ -145,6 +153,37 @@ class TabletLoreLayoutTest {
         }
         assertEquals(0, dismissals(host))
     }
+
+    @Test
+    fun `on tall tablet panes the header and card sit together in the middle`() {
+        val host = LoreDeckHost(fixture)
+        host.render()
+        host.moveTo(TABLET)
+        val landscapeGap = gap(host)
+        for (window in listOf(BoxloreWindowLayout(600f, 960f), TABLET_PORTRAIT, DESKTOP)) {
+            host.moveTo(window)
+            val card = host.bounds(host.activeCard())
+            val root = host.rootBounds()
+            val third = (root.bottom - root.top) / 3
+            val middle = (card.top + card.bottom) / 2
+            assertTrue("$window: card centre $middle in the middle third of $root", middle >= root.top + third && middle <= root.bottom - third)
+            assertEquals("$window: header to card gap", landscapeGap, gap(host), 1f)
+            assertTrue("$window: the card grows no taller than 760dp", (card.bottom - card.top).value <= 760.5f)
+            host.play().assertIsDisplayed()
+        }
+        // Each pair crosses a gate both ways; the active card and the gap under the header stay.
+        for (pair in listOf(listOf(TABLET, TABLET_PORTRAIT, TABLET), listOf(W599_H900, W600_H900, W599_H900), listOf(W900_H479, W900_H480, W900_H479))) {
+            val gaps = pair.map { window ->
+                host.moveTo(window)
+                host.activeText(host.questionOf(0)).assertExists()
+                gap(host)
+            }
+            gaps.forEach { assertEquals("$pair: header to card gap", gaps.first(), it, 1f) }
+        }
+    }
+
+    private fun gap(host: LoreDeckHost): Float =
+        (host.bounds(host.activeCard()).top - host.bounds(fixture.compose.onNode(hasTestTag(LORE_DECK_HEADER_TAG))).bottom).value
 
     private fun LoreDeckHost.questionOf(index: Int) = "Why do familiar places feel different when we return? ($index)"
 
