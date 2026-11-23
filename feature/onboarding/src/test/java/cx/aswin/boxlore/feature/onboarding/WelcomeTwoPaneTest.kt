@@ -24,6 +24,7 @@ import cx.aswin.boxlore.core.testing.SystemInsets
 import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import cx.aswin.boxlore.core.testing.walkWindows
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -46,25 +47,28 @@ class WelcomeTwoPaneTest {
 
     private val window = mutableStateOf(BoxloreTestWindows.PHONE)
     private val calls = mutableListOf<String>()
-    private lateinit var clock: WelcomeMotionClock
+    private var clock: WelcomeMotionClock? = null
 
     private val ways = listOf("Find shows for me", "Search podcasts", "Import library", "Skip setup")
 
-    private fun show(insets: SystemInsets? = null) {
+    /** Welcome as the app shows it, with its own clock, or with one the test reads ([sharedClock]). */
+    private fun show(insets: SystemInsets? = null, sharedClock: Boolean = false, darkTheme: Boolean = false) {
         compose.mainClock.autoAdvance = false
         WindowCompat.setDecorFitsSystemWindows(compose.activity.window, false)
         compose.setContent {
-            clock = rememberWelcomeMotionClock()
-            BoxLoreTheme {
+            val testClock = if (sharedClock) rememberWelcomeMotionClock().also { clock = it } else null
+            BoxLoreTheme(darkTheme = darkTheme, dynamicColor = false) {
                 CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
                     Box(Modifier.requiredSize(window.value.widthDp.dp, window.value.heightDp.dp)) {
-                        WelcomeScreen(
-                            onHelpMeFind = { calls += "find" },
-                            onSearch = { calls += "search" },
-                            onSkip = { calls += "skip" },
-                            onImportClick = { calls += "import" },
-                            clock = clock,
-                        )
+                        val onHelpMeFind = { calls += "find" }
+                        val onSearch = { calls += "search" }
+                        val onSkip = { calls += "skip" }
+                        val onImport = { calls += "import" }
+                        if (testClock != null) {
+                            WelcomeScreen(onHelpMeFind, onSearch, onSkip, onImport, clock = testClock)
+                        } else {
+                            WelcomeScreen(onHelpMeFind, onSearch, onSkip, onImport)
+                        }
                     }
                 }
             }
@@ -120,28 +124,74 @@ class WelcomeTwoPaneTest {
     }
 
     @Test
-    fun `turning mid-reveal carries the entrance on and each way in calls once`() {
+    fun `turning keeps Welcome's entrance where it was and each way in calls once`() {
+        // Welcome's own clock, so a clock started inside one arrangement would show as Echo dropping back.
         show()
-        compose.mainClock.advanceTimeBy(500)
+        compose.mainClock.advanceTimeBy(2_500)
         compose.waitForIdle()
-        var elapsed = clock.elapsedMillis.value
-        assertTrue("mid-reveal", elapsed > 0 && !clock.revealComplete.value)
-        var completions = 0
-        var wasComplete = false
+        assertTrue("Echo has risen", echoRisen() == true)
 
         val turns = with(BoxloreTestWindows) { arrayOf(PHONE_LAND, PHONE, TABLET_PORTRAIT, TABLET, TABLET_PORTRAIT, PHONE) }
         compose.walkWindows(window, *turns) { step ->
-            compose.mainClock.advanceTimeBy(300)
-            val now = clock.elapsedMillis.value
-            assertTrue("the entrance went back on $step ($now < $elapsed)", now > elapsed)
-            elapsed = now
-            if (clock.revealComplete.value && !wasComplete) completions++
-            wasComplete = clock.revealComplete.value
+            // The first frame after the turn: Echo, where it shows, is still up, not rising again.
+            assertTrue("Welcome's entrance started again on $step", echoRisen() != false)
         }
-        assertEquals("the reveal completes once", 1, completions)
 
         ways.forEach { way(it).performClick() }
         assertEquals(listOf("find", "search", "import", "skip"), calls)
+    }
+
+    @Test
+    fun `turning mid-reveal carries the entrance on and resizing never jumps the covers`() {
+        show(sharedClock = true)
+        compose.mainClock.advanceTimeBy(500)
+        compose.waitForIdle()
+        val clock = requireNotNull(clock)
+        var elapsed = clock.elapsedMillis.value
+        assertTrue("mid-reveal", elapsed > 0 && !clock.revealComplete.value)
+        compose.mainClock.advanceTimeBy(2_000)
+        compose.waitForIdle()
+        assertTrue(clock.revealComplete.value)
+
+        val walk = arrayOf(BoxloreTestWindows.COVER_475, BoxloreTestWindows.PIXEL_FOLD, BoxloreTestWindows.COVER_475, BoxloreTestWindows.PHONE)
+        compose.walkWindows(window, *walk) { step ->
+            // Settled on the first frame of each size: nothing moves on the next.
+            val panel = compose.onAllNodesWithTag(OpeningPanelTag).fetchSemanticsNodes().single().boundsInRoot
+            val reel = compose.onAllNodesWithTag("welcome_cover_reel").fetchSemanticsNodes().single().boundsInRoot
+            val find = way("Find shows for me").fetchSemanticsNode().boundsInRoot
+            compose.mainClock.advanceTimeByFrame()
+            compose.waitForIdle()
+            assertEquals("the panel jumps on $step", panel, compose.onAllNodesWithTag(OpeningPanelTag).fetchSemanticsNodes().single().boundsInRoot)
+            assertEquals("the covers jump on $step", reel.height, compose.onAllNodesWithTag("welcome_cover_reel").fetchSemanticsNodes().single().boundsInRoot.height, 0.5f)
+            assertEquals("the ways in jump on $step", find, way("Find shows for me").fetchSemanticsNode().boundsInRoot)
+            val now = clock.elapsedMillis.value
+            assertTrue("the entrance went back on $step ($now < $elapsed)", now >= elapsed)
+            elapsed = now
+            assertTrue("the reveal stays complete on $step", clock.revealComplete.value)
+        }
+    }
+
+    @Test
+    fun `beside the panel the clock icons are light, and the panel reaches the edge behind a cutout`() {
+        window.value = BoxloreTestWindows.PHONE_LAND
+        show(SystemInsets.SIDEWAYS_3_BUTTON)
+        compose.mainClock.advanceTimeBy(500)
+        compose.waitForIdle()
+
+        val panel = compose.onAllNodesWithTag(OpeningPanelTag).fetchSemanticsNodes().single().boundsInRoot
+        assertEquals("the panel starts at the window's edge", screen().left, panel.left, 0.5f)
+        val logo = compose.onAllNodesWithTag(OpeningLogoTag).fetchSemanticsNodes().single().boundsInRoot
+        assertTrue("the logo keeps clear of the cutout", logo.left >= screen().left + SystemInsets.SIDEWAYS_3_BUTTON.cutoutStart - 0.5f)
+        compose.walkWindows(window, BoxloreWindowLayout(840f, 600f), BoxloreTestWindows.PHONE_LAND) { step ->
+            val controller = WindowCompat.getInsetsController(compose.activity.window, compose.activity.window.decorView)
+            assertFalse("dark clock icons over the panel on $step", controller.isAppearanceLightStatusBars)
+        }
+    }
+
+    /** Whether Echo's peek stands above Find shows for me, or null where Echo doesn't show. */
+    private fun echoRisen(): Boolean? {
+        val echo = compose.onAllNodesWithTag("welcome_echo").fetchSemanticsNodes().singleOrNull()?.boundsInRoot ?: return null
+        return way("Find shows for me").fetchSemanticsNode().boundsInRoot.top - echo.top > 30f
     }
 
     private companion object {

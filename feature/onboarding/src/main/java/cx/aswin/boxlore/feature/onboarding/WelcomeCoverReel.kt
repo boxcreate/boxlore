@@ -52,8 +52,15 @@ private val LowerCovers = listOf(
 internal val WelcomeCoverGap = 12.dp
 private val CoverGap = WelcomeCoverGap
 
-/** A third row for tall side panels: the two rows' covers interleaved, so no row repeats another. */
-private val ThirdRowCovers = LowerCovers.reversed().zip(UpperCovers.reversed()) { lower, upper -> listOf(lower, upper) }.flatten()
+/** A third row for tall side panels: six other covers, so no cover shows twice on the panel at once. */
+private val ThirdRowCovers = listOf(
+    DesignR.drawable.pod_cover_97, // Science Friday
+    DesignR.drawable.pod_cover_63, // Curiosity Weekly
+    DesignR.drawable.pod_cover_29, // The Weirdest Thing I Learned This Week
+    DesignR.drawable.pod_cover_98, // Unexplainable
+    DesignR.drawable.pod_cover_96, // Stuff To Blow Your Mind
+    DesignR.drawable.pod_cover_42, // Overheard at National Geographic
+)
 
 /**
  * Bundled, sharp artwork; only the row layers move, with no per-frame recomposition. Two rows, or

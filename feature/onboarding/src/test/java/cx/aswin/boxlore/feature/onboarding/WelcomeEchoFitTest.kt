@@ -70,6 +70,16 @@ class WelcomeEchoFitTest(
         compose.onNode(hasText("Skip setup") and hasClickAction()).assertExists()
     }
 
+    @Test fun `on the cover the ways in are in place from the first frame`() {
+        assumeTrue("Checked on the cover with its bars", widthDp == 443 && bars && fontScale == 1f)
+        show(settle = false)
+        val find = { compose.onNode(hasText("Find shows for me") and hasClickAction()).fetchSemanticsNode().boundsInRoot }
+        val first = find()
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitForIdle()
+        assertEquals("Find shows for me moves after the first frame", first, find())
+    }
+
     @Test fun `common phones keep their covers' size`() {
         assumeTrue("Checked on common phones", "${widthDp}x$heightDp" in COMMON_PHONES && fontScale == 1f && !bars)
         show()
@@ -85,7 +95,7 @@ class WelcomeEchoFitTest(
         return Rect(left, top, left + widthDp, top + heightDp)
     }
 
-    private fun show() {
+    private fun show(settle: Boolean = true) {
         compose.mainClock.autoAdvance = false
         WindowCompat.setDecorFitsSystemWindows(compose.activity.window, false)
         compose.setContent {
@@ -98,6 +108,10 @@ class WelcomeEchoFitTest(
             }
         }
         if (bars) compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets.PHONE_BARS) }
+        // The first frame with the bars in place.
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitForIdle()
+        if (!settle) return
         compose.mainClock.advanceTimeBy(2_500)
         compose.waitForIdle()
     }

@@ -72,10 +72,14 @@ internal fun OpeningPanel(
     bottomPadding: Dp,
     modifier: Modifier = Modifier,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
+    contentInsets: WindowInsets? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
-        modifier.testTag(OpeningPanelTag).clip(shape).background(colors.container).statusBarsPadding().padding(top = 16.dp, bottom = bottomPadding),
+        // The colour reaches the window's edges; only the logo row and the content keep clear of the insets.
+        modifier.testTag(OpeningPanelTag).clip(shape).background(colors.container)
+            .then(if (contentInsets != null) Modifier.windowInsetsPadding(contentInsets) else Modifier)
+            .statusBarsPadding().padding(top = 16.dp, bottom = bottomPadding),
         verticalArrangement = verticalArrangement,
     ) {
         Row(
@@ -112,8 +116,10 @@ internal fun OnboardingOpeningFrame(
             colors,
             shape = RoundedCornerShape(topEnd = 46.dp, bottomEnd = 46.dp),
             bottomPadding = panelBottomPadding,
-            modifier = Modifier.width(panelWidth).fillMaxHeight().windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Start)),
+            modifier = Modifier.width(panelWidth).fillMaxHeight(),
             verticalArrangement = Arrangement.SpaceBetween,
+            // A camera cutout at the start edge: the panel's colour runs behind it, its logo and content don't.
+            contentInsets = WindowInsets.displayCutout.only(WindowInsetsSides.Start),
         ) {
             panelContent(PaneSize(panelWidth, height))
         }
