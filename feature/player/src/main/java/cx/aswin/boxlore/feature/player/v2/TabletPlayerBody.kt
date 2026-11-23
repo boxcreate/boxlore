@@ -26,7 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -133,7 +132,7 @@ internal fun TabletFullPlayerBody(
                 },
                 support = { TabletPlayerSupport(model, dependencies, display, actions, flows, ui, resources) },
             )
-            SnackbarHost(resources.body.snackbarHostState, Modifier.align(Alignment.BottomCenter).padding(bottom = resources.body.navBarPadding))
+            PlayerSnackbarHost(resources.body.snackbarHostState, display.visibleHeight, resources.body.navBarPadding)
         }
     }
 }

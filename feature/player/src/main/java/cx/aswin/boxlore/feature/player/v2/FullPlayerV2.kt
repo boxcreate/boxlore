@@ -11,16 +11,14 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -32,7 +30,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -58,6 +55,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreConfigurationWindowSize
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneBottomInset
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -265,8 +265,9 @@ fun FullPlayerV2(
     val context = LocalContext.current
     val window = (context as? android.app.Activity)?.window
 
-    val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    // Measured from the pane the player is in, so insets the shell already reserves are not added twice.
+    val statusBarPadding = boxlorePaneTopInset()
+    val navBarPadding = boxlorePaneBottomInset()
 
     val localUi = rememberSaveable(episode.id, saver = FullPlayerUiStateSaver) { FullPlayerUiState() }
     val ui = LocalPlayerPresentationStore.current?.uiFor(episode.id, localUi) ?: localUi
@@ -340,9 +341,7 @@ fun FullPlayerV2(
                 actions = minimalPlayerActions(dependencies, state, ui, playerActions),
                 modifier = modifier,
             )
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-                SnackbarHost(queueSnackbarHostState, Modifier.padding(bottom = navBarPadding))
-            }
+            PlayerSnackbarHost(queueSnackbarHostState, display.visibleHeight, navBarPadding)
         } else {
             FullPlayerBody(
                 model =
@@ -494,7 +493,9 @@ private fun FullPlayerBody(
             modifier =
             Modifier
                 .fillMaxSize()
-                .padding(top = resources.statusBarPadding, bottom = resources.navBarPadding),
+                .padding(top = resources.statusBarPadding, bottom = resources.navBarPadding)
+                // Sideways phones: Share, Cast and the controls stay clear of side system buttons and cutouts.
+                .boxloreHorizontalSafePadding(),
         ) {
             PlayerTopBar(
                 colorScheme = display.colorScheme,
@@ -535,13 +536,7 @@ private fun FullPlayerBody(
                 )
             }
         }
-        SnackbarHost(
-            hostState = resources.snackbarHostState,
-            modifier =
-            Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp),
-        )
+        PlayerSnackbarHost(resources.snackbarHostState, display.visibleHeight, resources.navBarPadding)
     }
 }
 

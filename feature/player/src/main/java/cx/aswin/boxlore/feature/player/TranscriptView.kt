@@ -46,6 +46,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneBottomInset
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.delay
 
@@ -315,10 +318,9 @@ fun FullscreenTranscriptScreen(
         modifier = modifier
             .fillMaxSize()
             .background(containerColor)
-            .padding(
-                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            )
+            .padding(top = boxlorePaneTopInset(), bottom = boxlorePaneBottomInset())
+            // Sideways phones: the close button and transport stay clear of side system buttons and cutouts.
+            .boxloreHorizontalSafePadding()
     ) {
         // Top bar
         Row(

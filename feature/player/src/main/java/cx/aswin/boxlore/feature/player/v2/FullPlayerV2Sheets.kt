@@ -51,7 +51,8 @@ internal fun FullPlayerFullscreenOverlays(
             seekBackwardSeconds = (model.state.seekBackwardMs / 1_000L).toInt(),
             seekForwardSeconds = (model.state.seekForwardMs / 1_000L).toInt(),
             positionFlow = model.positionFlow,
-            controller = dependencies.playbackRepository.controller
+            controller = dependencies.playbackRepository.controller,
+            visibleHeight = display.visibleHeight
         ),
         colorScheme = model.colorScheme,
         actions = VideoFullscreenActions(

@@ -9,18 +9,20 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -77,7 +79,9 @@ internal data class VideoFullscreenContent(
     val seekBackwardSeconds: Int,
     val seekForwardSeconds: Int,
     val positionFlow: kotlinx.coroutines.flow.Flow<Long>,
-    val controller: androidx.media3.common.Player?
+    val controller: androidx.media3.common.Player?,
+    /** The part of the player's container on screen; the overlay fits it so its controls stay visible. */
+    val visibleHeight: androidx.compose.ui.unit.Dp = androidx.compose.ui.unit.Dp.Unspecified
 )
 
 internal data class VideoFullscreenActions(
@@ -109,7 +113,7 @@ internal fun VideoFullscreenOverlay(
         visible = content.visible,
         enter = fadeIn(tween(400)) + scaleIn(initialScale = 0.95f, animationSpec = tween(400)),
         exit = fadeOut(tween(300)) + scaleOut(targetScale = 0.95f, animationSpec = tween(300)),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fitVisibleHeight(content.visibleHeight).fillMaxSize()
     ) {
         LaunchedEffect(controlsVisible, content.isPlaying) {
             if (controlsVisible && content.isPlaying) {
@@ -139,6 +143,8 @@ internal fun VideoFullscreenOverlay(
                             .boxloreFoldSafeViewport()
                             .fillMaxSize()
                             .background(Color.Black.copy(alpha = 0.5f))
+                            // Bars are hidden here, but a camera cutout still sits over the picture.
+                            .windowInsetsPadding(WindowInsets.displayCutout)
                     ) {
                         VideoHudTopBar(
                             episodeTitle = content.episodeTitle,
@@ -242,9 +248,7 @@ internal fun VideoHudTopBar(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
             IconButton(
                 onClick = onExit,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                modifier = Modifier.background(Color.White.copy(alpha = 0.2f), CircleShape)
             ) {
                 Icon(Icons.Rounded.FullscreenExit, contentDescription = stringResource(R.string.player_exit_fullscreen), tint = Color.White)
             }
@@ -259,9 +263,7 @@ internal fun VideoHudTopBar(
         }
         IconButton(
             onClick = onRotate,
-            modifier = Modifier
-                .size(40.dp)
-                .background(Color.White.copy(alpha = 0.2f), CircleShape)
+            modifier = Modifier.background(Color.White.copy(alpha = 0.2f), CircleShape)
         ) {
             Icon(Icons.Rounded.ScreenRotation, contentDescription = stringResource(R.string.player_toggle_orientation), tint = Color.White)
         }
@@ -295,9 +297,8 @@ internal fun VideoTransportControls(
         Box(
             modifier = Modifier
                 .size(72.dp)
-                .clip(CircleShape)
-                .background(colorScheme.primaryContainer)
-                .clickable(onClick = actions.onPlayPause),
+                .expressiveClickable(shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = actions.onPlayPause)
+                .background(colorScheme.primaryContainer, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -353,6 +354,7 @@ internal fun VideoProgressControls(
     val positionMs by content.positionFlow.collectAsStateWithLifecycle(initialValue = 0L)
     var draggedPosition by remember { mutableStateOf<Float?>(null) }
     val displayedPosition = draggedPosition?.toLong() ?: positionMs
+    val seekLabel = stringResource(R.string.player_seek)
     if (content.durationMs <= 0) return
     Column(
         modifier = modifier
@@ -367,12 +369,18 @@ internal fun VideoProgressControls(
                 draggedPosition = null
             },
             valueRange = 0f..content.durationMs.toFloat(),
+            // Named like the player's seekbar, with the time instead of a bare percentage.
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    contentDescription = seekLabel
+                    stateDescription = "${formatTime(displayedPosition)} / ${formatTime(content.durationMs)}"
+                },
             colors = SliderDefaults.colors(
                 thumbColor = colorScheme.primary,
                 activeTrackColor = colorScheme.primary,
                 inactiveTrackColor = Color.White.copy(alpha = 0.24f)
-            ),
-            modifier = Modifier.fillMaxWidth()
+            )
         )
         Row(
             modifier = Modifier
