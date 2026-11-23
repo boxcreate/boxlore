@@ -37,9 +37,6 @@ Announcement title:
 
 ## Fixed
 
-- On the Galaxy Z Fold cover screen and in split-screen windows, Home's top cards now show one full card and a peek of the next, instead of squeezed cards with broken titles.
-- On a phone turned sideways, Home's buttons and cards stay clear of the navigation buttons and camera, and Home keeps your place when you turn the phone.
-- The message that you can't pin another show now appears above the bottom bar instead of behind it.
 - Importing an OPML file that lists a show you already follow no longer turns off that show's new-episode notifications and auto-download.
 - Importing an OPML file that lists a show twice now adds every show in the file in one go.
 - When you use boxlore on more than one device, one that was offline or signed out no longer sets your progress or likes back to an older point, and devices that showed different progress now agree.
@@ -51,3 +48,6 @@ Announcement title:
 - Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.
+- On the Galaxy Z Fold cover screen and in split-screen windows, Home's top cards now show one full card and a peek of the next, instead of squeezed cards with broken titles.
+- On a phone turned sideways, Home's buttons and cards stay clear of the navigation buttons and camera, and Home keeps your place when you turn the phone.
+- The message that you can't pin another show now appears above the bottom bar instead of behind it.
