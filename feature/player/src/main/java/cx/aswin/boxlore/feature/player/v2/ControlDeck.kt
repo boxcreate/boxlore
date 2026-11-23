@@ -344,7 +344,9 @@ data class SecondaryPlaybackState(
     val playbackSpeed: Float,
     val sleepTimerEnd: Long?,
     val sleepAtEndOfEpisode: Boolean,
-    val audio: PlayerSpeedAudio = PlayerSpeedAudio()
+    val audio: PlayerSpeedAudio = PlayerSpeedAudio(),
+    /** The length the listener picked for a running fixed timer, so its tile stays selected. */
+    val sleepTimerPresetMinutes: Int? = null
 )
 
 data class SecondaryAvailabilityState(
@@ -549,6 +551,7 @@ internal fun SecondaryRail(
                 QuickControlMode.SLEEP -> InlineSleepSelector(
                     sleepTimerEnd = playback.sleepTimerEnd,
                     sleepAtEndOfEpisode = playback.sleepAtEndOfEpisode,
+                    presetMinutes = playback.sleepTimerPresetMinutes,
                     colorScheme = colorScheme,
                     shapes = selectorShapes,
                     onBack = { onControlModeChange(QuickControlMode.ACTIONS) },

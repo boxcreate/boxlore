@@ -252,7 +252,8 @@ internal fun FullPlayerSecondaryControls(
             model.state.playbackSpeed,
             model.state.sleepTimerEnd,
             model.state.sleepAtEndOfEpisode,
-            audio = PlayerSpeedAudio.from(model.state)
+            audio = PlayerSpeedAudio.from(model.state),
+            sleepTimerPresetMinutes = model.state.sleepTimerPresetMinutes
         ),
         availability = SecondaryAvailabilityState(
             hasChapters = !model.episode.chaptersUrl.isNullOrEmpty() ||

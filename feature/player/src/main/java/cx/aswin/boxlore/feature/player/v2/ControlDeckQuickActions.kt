@@ -1,13 +1,8 @@
 package cx.aswin.boxlore.feature.player.v2
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.automirrored.outlined.QueueMusic
@@ -36,7 +32,6 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,16 +40,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.AutoTranscriptState
 import cx.aswin.boxlore.core.model.SleepTimerConstants
 import cx.aswin.boxlore.core.model.text.LocaleFormats
@@ -63,7 +69,6 @@ import cx.aswin.boxlore.feature.player.formatTime
 import cx.aswin.boxlore.feature.player.v2.logic.downloadLabel
 import cx.aswin.boxlore.feature.player.v2.logic.formatSpeedLabel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 
 @Composable
@@ -259,13 +264,10 @@ internal fun InlineSpeedSelector(
                 onClick = { onSpeedSelected(speeds[(currentIndex - 1).coerceAtLeast(0)]) },
                 modifier = Modifier.weight(1f)
             )
-            LabelAction(
+            CurrentSpeedLabel(
                 label = formatSpeedLabel(currentSpeed),
-                active = true,
-                enabled = false,
                 colorScheme = colorScheme,
                 shape = shapes.middle,
-                onClick = {},
                 modifier = Modifier.weight(1f)
             )
             UtilityAction(
@@ -290,6 +292,7 @@ internal fun InlineSpeedSelector(
                 LabelAction(
                     label = formatSpeedLabel(speed),
                     active = kotlin.math.abs(currentSpeed - speed) < 0.001f,
+                    selected = kotlin.math.abs(currentSpeed - speed) < 0.001f,
                     colorScheme = colorScheme,
                     shape = shapes.middle,
                     onClick = {
@@ -318,14 +321,14 @@ internal fun InlineSleepSelector(
     colorScheme: ColorScheme,
     shapes: QuickControlShapes,
     onBack: () -> Unit,
-    onDurationSelected: (Int) -> Unit
+    onDurationSelected: (Int) -> Unit,
+    presetMinutes: Int? = null
 ) {
     TrackScreenView("player_sleep_timer")
     val timerActive = sleepAtEndOfEpisode ||
         (sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis())
-    val remainingMinutes = sleepTimerEnd
-        ?.let { kotlin.math.round((it - System.currentTimeMillis()) / 60_000.0).toInt() }
-        ?.coerceAtLeast(0)
+    // The length the listener picked stays selected while it counts down; no guessing from what is left.
+    val remainingMinutes = presetMinutes.takeIf { timerActive && !sleepAtEndOfEpisode }
     val selectDurationAndBack: (Int) -> Unit = { minutes ->
         onDurationSelected(minutes)
         onBack()
@@ -347,6 +350,7 @@ internal fun InlineSleepSelector(
             LabelAction(
                 label = stringResource(R.string.player_off),
                 active = !timerActive,
+                selected = !timerActive,
                 colorScheme = colorScheme,
                 shape = shapes.middle,
                 onClick = { selectDurationAndBack(0) },
@@ -429,6 +433,7 @@ internal fun SleepDurationAction(
     LabelAction(
         label = label,
         active = active,
+        selected = active,
         colorScheme = colorScheme,
         shape = shape,
         onClick = { onDurationSelected(minutes) },
@@ -444,7 +449,9 @@ internal fun LabelAction(
     active: Boolean = false,
     enabled: Boolean = true,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Set for one choice among several (a speed or sleep length): announced as selected or not. */
+    selected: Boolean? = null
 ) {
     val container by animateColorAsState(
         targetValue = if (active) colorScheme.primary else colorScheme.surfaceContainerHigh,
@@ -456,20 +463,57 @@ internal fun LabelAction(
         animationSpec = tween(180),
         label = "labelActionContent"
     )
+    val labelStyle = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold)
+    Box(
+        modifier = modifier
+            .height(56.dp)
+            .quickActionPress(enabled = enabled, shape = shape, onClick = onClick)
+            .then(if (selected != null) Modifier.semantics { this.selected = selected; role = Role.RadioButton } else Modifier)
+            .clip(shape)
+            .background(container)
+            .padding(horizontal = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // Long names in some languages shrink a little, and end with "…" only as a last resort.
+        Text(
+            text = label,
+            style = labelStyle,
+            color = content,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            autoSize = TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = labelStyle.fontSize)
+        )
+    }
+}
+
+/** The current speed between Slower and Faster: a value that screen readers announce as it changes, not a button. */
+@Composable
+internal fun CurrentSpeedLabel(
+    label: String,
+    colorScheme: ColorScheme,
+    shape: androidx.compose.ui.graphics.Shape,
+    modifier: Modifier = Modifier
+) {
+    val description = stringResource(R.string.player_playback_speed)
     Box(
         modifier = modifier
             .height(56.dp)
             .clip(shape)
-            .background(container)
-            .quickActionClickable(enabled = enabled, shape = shape, onClick = onClick)
+            .background(colorScheme.primary)
+            .semantics(mergeDescendants = true) {
+                contentDescription = description
+                stateDescription = label
+                liveRegion = LiveRegionMode.Polite
+            }
             .padding(horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold),
-            color = content,
-            maxLines = 1
+            color = colorScheme.onPrimary,
+            maxLines = 1,
+            modifier = Modifier.clearAndSetSemantics {}
         )
     }
 }
@@ -511,9 +555,9 @@ internal fun UtilityAction(
     Column(
         modifier = modifier
             .height(56.dp)
+            .quickActionPress(enabled = state.enabled, shape = shape, onClick = onClick)
             .clip(shape)
             .background(container)
-            .quickActionClickable(enabled = state.enabled, shape = shape, onClick = onClick)
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -532,62 +576,29 @@ internal fun UtilityAction(
                 modifier = Modifier.size(if (state.status == null) 27.dp else 21.dp)
             )
             if (state.status != null) {
+                val statusStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.bold)
                 Text(
                     text = state.status,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.bold),
+                    style = statusStyle,
                     color = content,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = statusStyle.fontSize)
                 )
             }
         }
     }
 }
 
-internal fun Modifier.quickActionClickable(
+/**
+ * A tray tile's press: the whole tile (its background comes after this in the chain) presses with the
+ * shared control feedback, with hover and keyboard focus on tablets like other boxlore controls.
+ */
+internal fun Modifier.quickActionPress(
     enabled: Boolean,
     shape: androidx.compose.ui.graphics.Shape,
     onClick: () -> Unit
-): Modifier = composed {
-    val interactionSource = remember { MutableInteractionSource() }
-    val scale = remember { Animatable(1f) }
-    LaunchedEffect(interactionSource) {
-        interactionSource.interactions.collectLatest { interaction ->
-            when (interaction) {
-                is PressInteraction.Press -> scale.snapTo(0.92f)
-                is PressInteraction.Release,
-                is PressInteraction.Cancel -> {
-                    scale.animateTo(
-                        targetValue = 1.035f,
-                        animationSpec = spring(
-                            dampingRatio = 0.62f,
-                            stiffness = 420f
-                        )
-                    )
-                    scale.animateTo(
-                        targetValue = 1f,
-                        animationSpec = spring(
-                            dampingRatio = 0.72f,
-                            stiffness = 280f
-                        )
-                    )
-                }
-            }
-        }
-    }
-    this
-        .graphicsLayer {
-            scaleX = scale.value
-            scaleY = scale.value
-            clip = true
-            this.shape = shape
-        }
-        .clickable(
-            interactionSource = interactionSource,
-            indication = ripple(),
-            enabled = enabled,
-            onClick = onClick
-        )
-}
+): Modifier = expressiveClickable(enabled = enabled, shape = shape, feedback = ExpressivePressFeedback.Control, onClick = onClick)
 
 @Composable
 internal fun SleepAction(
