@@ -421,8 +421,10 @@ private fun LoreCardSource(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                // How long the episode is comes first, so it shows whole; a long title shortens instead.
+                val minutes = loreDurationMinutes(daily.duration)
                 Text(
-                    text = daily.episodeTitle,
+                    text = if (minutes == null) daily.episodeTitle else "${stringResource(R.string.explore_duration_minutes, minutes)} · ${daily.episodeTitle}",
                     style = MaterialTheme.typography.labelMedium,
                     color = Color.White.copy(alpha = 0.66f),
                     maxLines = 1,
@@ -450,6 +452,12 @@ private fun LoreCardSource(
         }
     }
 }
+
+/** An episode's length in whole minutes, rounded up (never 0), or null when it isn't known. */
+internal fun loreDurationMinutes(durationSeconds: Int): Int? =
+    if (durationSeconds <= 0) null else (durationSeconds + SECONDS_PER_MINUTE - 1) / SECONDS_PER_MINUTE
+
+private const val SECONDS_PER_MINUTE = 60
 
 /** The source row's height. */
 internal fun loreBarHeight(compactSpacing: Boolean) = if (compactSpacing) 48.dp else 52.dp

@@ -45,9 +45,11 @@ internal data class LoreCardTextSpec(
     val gap: Int,
 )
 
-internal data class LoreMeasuredCardText(val spec: LoreCardTextSpec, val heightPx: Int)
+internal data class LoreMeasuredCardText(val spec: LoreCardTextSpec, val heightPx: Int, val headingLines: Int = 1)
 
+/** Largest first: the 32sp step is for short and medium questions on tall cards only. */
 internal val loreTextSpecs = listOf(
+    LoreCardTextSpec(32, 24, 20, 16),
     LoreCardTextSpec(28, 24, 18, 16),
     LoreCardTextSpec(28, 20, 12, 12),
     LoreCardTextSpec(26, 20, 12, 12),
@@ -78,9 +80,18 @@ internal fun measureLoreCardText(
         } else {
             measurer.measure(AnnotatedString(explanation), bodyStyle, constraints = constraints).size.height + spec.gap.dp.roundToPx()
         }
-        LoreMeasuredCardText(spec, heading.size.height + bodyHeight + 2 * spec.verticalPadding.dp.roundToPx())
+        val height = heading.size.height + bodyHeight + 2 * spec.verticalPadding.dp.roundToPx()
+        // A long question stays at today's sizes: the large step never fits past four lines.
+        val eligible = spec.headingSp < LORE_LARGE_HEADING_SP || heading.lineCount <= LORE_LARGE_HEADING_MAX_LINES
+        LoreMeasuredCardText(spec, if (eligible) height else Int.MAX_VALUE, heading.lineCount)
     }
 }
+
+private const val LORE_LARGE_HEADING_SP = 32
+
+/** The heading size the bar's position rule is measured at. */
+private const val LORE_LIFT_RULE_MAX_SP = 28
+private const val LORE_LARGE_HEADING_MAX_LINES = 4
 
 /**
  * The text size picked for a card: the first candidate that fits. [overflows] is true only when even
@@ -164,10 +175,13 @@ internal fun LoreCardTextWithFooter(
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer()
     BoxWithConstraints(modifier) {
-        val fullText = remember(question, explanation, headingStyle, bodyStyle, density, maxWidth, measurer) {
-            measureLoreCardText(measurer, question, explanation, headingStyle, bodyStyle, density, with(density) { maxWidth.roundToPx() }).first()
+        val candidates = remember(question, explanation, headingStyle, bodyStyle, density, maxWidth, measurer) {
+            measureLoreCardText(measurer, question, explanation, headingStyle, bodyStyle, density, with(density) { maxWidth.roundToPx() })
         }
+        // The bar keeps the rule it always had: raised when the full text fits at 28sp. The larger
+        // step is picked inside that room, so it never moves the bar.
         val roomWithLift = with(density) { (maxHeight - footerHeight - lift).roundToPx() }
+        val fullText = candidates.first { it.spec.headingSp <= LORE_LIFT_RULE_MAX_SP }
         val appliedLift = if (fullText.heightPx <= roomWithLift) lift else 0.dp
         Column(Modifier.fillMaxSize()) {
             LoreCardText(question = question, explanation = explanation, modifier = Modifier.fillMaxWidth().weight(1f))

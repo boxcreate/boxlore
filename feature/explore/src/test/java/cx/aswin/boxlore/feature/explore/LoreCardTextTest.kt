@@ -69,7 +69,7 @@ class LoreCardTextTest {
         val candidates = measure(width = 353)
         val selected = selectLoreCardText(candidates, candidates[1].heightPx)
         assertEquals(28, selected.spec.headingSp)
-        assertTrue(measure(width = 353, body = null).first().heightPx < candidates.first().heightPx)
+        assertTrue(measure(width = 353, body = null)[1].heightPx < candidates[1].heightPx)
     }
 
     @Test
@@ -88,5 +88,28 @@ class LoreCardTextTest {
         assertFalse(selectLoreCardText(candidates, candidates.first().heightPx).overflows)
         assertFalse(selectLoreCardText(candidates, candidates.last().heightPx).overflows)
         assertTrue(selectLoreCardText(candidates, candidates.last().heightPx - 1).overflows)
+    }
+
+    @Test
+    fun `tall cards give short and medium questions the larger heading, long ones keep today's sizes`() {
+        // A medium question on a 412x915 phone card (372dp wide, about 540dp of room for text).
+        val tall = measure(width = 372, heading = "Why do familiar places feel different when we return?")
+        assertTrue("fits a phone card", tall.first().heightPx <= 540)
+        assertEquals(32, selectLoreCardText(tall, heightPx = 540).spec.headingSp)
+        val long = "Why did a single faulty relay in a quiet substation leave fifty million people in the dark for days, and what did it teach the engineers who rebuilt the grid afterwards?"
+        val candidates = measure(width = 300, heading = long)
+        assertTrue("five lines at 32sp", candidates.first().headingLines > 4)
+        assertEquals(28, selectLoreCardText(candidates, heightPx = 2_000).spec.headingSp)
+        // Short rooms pick what they always did.
+        assertEquals(selectLoreCardText(measure(width = 353).drop(1), heightPx = 250).spec, selectLoreCardText(measure(width = 353), heightPx = 250).spec)
+    }
+
+    @Test
+    fun `episode length rounds up to whole minutes and is left out when unknown`() {
+        assertEquals(60, loreDurationMinutes(3_600))
+        assertEquals(1, loreDurationMinutes(1))
+        assertEquals(2, loreDurationMinutes(61))
+        assertEquals(null, loreDurationMinutes(0))
+        assertEquals(null, loreDurationMinutes(-5))
     }
 }
