@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.Work
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -60,6 +61,9 @@ import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.feature.explore.R
+
+/** Related show covers in Ask anything. */
+private val RelatedShowCover = 104.dp
 
 /** Cap for By-concept podcast-vector rail — keep episodes as the primary feed. */
 private const val RELATED_SHOWS_RAIL_MAX = 8
@@ -86,7 +90,8 @@ fun ExploreRelatedShowsRail(
             icon = Icons.Rounded.Podcasts,
         )
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            // The items' own 6dp padding makes up the rest of the 12dp gap.
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
             contentPadding = PaddingValues(bottom = 4.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -94,15 +99,15 @@ fun ExploreRelatedShowsRail(
                 railItems,
                 key = { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "related_show") }
             ) { index, podcast ->
-                // Clickable without a clip shape — clipping the whole column was eating title glyphs
-                // at the bottom-left of the rounded bounds.
+                // The press follows a rounded shape; the inner padding keeps the caption clear of its corners.
                 Column(
                     modifier =
                     Modifier
-                        .width(104.dp)
-                        .expressiveClickable {
+                        .width(RelatedShowCover + 12.dp)
+                        .expressiveClickable(shape = RoundedCornerShape(16.dp)) {
                             onPodcastClick(podcast, index)
-                        },
+                        }
+                        .padding(6.dp),
                 ) {
                     OptimizedImage(
                         url = podcast.imageUrl,
@@ -120,12 +125,11 @@ fun ExploreRelatedShowsRail(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = podcast.title,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = GoogleSansWeight.semiBold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 2.dp),
                     )
                 }
             }
@@ -237,6 +241,7 @@ fun ExploreVibeChipRow(
 /**
  * Connected topic shortcuts: strong standalone icons, curved outer ends and tight inner corners.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ExploreVibeChip(
     vibe: Pair<String, String>,
@@ -248,12 +253,17 @@ fun ExploreVibeChip(
     val icon = remember(vibe.first) { vibeCatcherIcon(vibe.first) }
     FilledTonalButton(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 52.dp).widthIn(max = 248.dp),
-        shape = RoundedCornerShape(
-            topStart = if (first) 26.dp else 8.dp,
-            bottomStart = if (first) 26.dp else 8.dp,
-            topEnd = if (last) 26.dp else 8.dp,
-            bottomEnd = if (last) 26.dp else 8.dp,
+        // As tall as a genre chip, so the header keeps its height when swiping between For you and Top.
+        modifier = modifier.heightIn(min = 48.dp).widthIn(max = 248.dp),
+        // Connected outer curves at rest; tighter corners while pressed, like boxlore's other button groups.
+        shapes = ButtonDefaults.shapes(
+            shape = RoundedCornerShape(
+                topStart = if (first) 24.dp else 8.dp,
+                bottomStart = if (first) 24.dp else 8.dp,
+                topEnd = if (last) 24.dp else 8.dp,
+                bottomEnd = if (last) 24.dp else 8.dp,
+            ),
+            pressedShape = RoundedCornerShape(12.dp),
         ),
         colors = ButtonDefaults.filledTonalButtonColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
