@@ -9,10 +9,13 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -22,9 +25,12 @@ import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.home.components.DailyBriefingCardState
+import cx.aswin.boxlore.feature.home.components.LocalHeroCardStyle
+import cx.aswin.boxlore.feature.home.components.homeHeroStyle
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -51,6 +57,7 @@ class HomeFeedTabletGateStateTest {
     }
     private val brief = Briefing("2026-11-20", "us", "The world this morning", "", "", "")
     private val window = mutableStateOf(BoxloreTestWindows.W599_H900)
+    private val style = mutableStateOf(HeroCardStyle.COVER)
     private val uiState = mutableStateOf(state())
     private val sections = HomeSectionsUiState.initial()
 
@@ -116,6 +123,40 @@ class HomeFeedTabletGateStateTest {
         }
     }
 
+    /**
+     * With Marquee (the style the issue-1254 reporter uses), unfolding switches Home to the tablet
+     * look. That used to rebuild all of Home: the hero went back to its first card and Your shows reset.
+     */
+    @Test
+    fun `Marquee users keep their hero card and Your shows when folding and unfolding`() {
+        style.value = HeroCardStyle.MARQUEE
+        window.value = BoxloreWindowLayout(412f, 900f)
+        uiState.value = state().copy(heroItems = podcasts.take(4).map { SmartHeroItem(HeroType.RESUME, it, "Continue listening") })
+        render()
+        composeRule.onNodeWithTag("home_hero_marquee").performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home_hero_marquee").performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+        assertEquals("Marquee's card after two swipes", 2, sections.heroIndex.intValue)
+        composeRule.onNodeWithTag(GRID).performScrollToKey("your_shows")
+        composeRule.runOnIdle { runBlocking { sections.dailyRail.scrollToItem(3) } }
+        click("home_mix_mode_trigger")
+        for (layout in listOf(BoxloreTestWindows.PIXEL_FOLD, BoxloreWindowLayout(412f, 900f), BoxloreTestWindows.PIXEL_FOLD, BoxloreWindowLayout(412f, 900f))) {
+            window.value = layout
+            composeRule.waitForIdle()
+            val label = "${layout.widthDp}x${layout.heightDp}"
+            assertEquals("$label: hero card", 2, sections.heroIndex.intValue)
+            assertMenuAndRail(label)
+            composeRule.onNodeWithTag(GRID).performScrollToKey("hero")
+            composeRule.waitForIdle()
+            val hero = composeRule.onNodeWithTag(GRID).fetchSemanticsNode().boundsInRoot
+            val shown = composeRule.onAllNodesWithText("Daily 2", useUnmergedTree = true).fetchSemanticsNodes().any { it.boundsInRoot.left >= hero.left - 0.5f && it.boundsInRoot.right <= hero.right + 0.5f }
+            assertTrue("$label: the third card isn't on show", shown)
+            composeRule.onNodeWithTag(GRID).performScrollToKey("your_shows")
+            composeRule.waitForIdle()
+        }
+    }
+
     private fun assertMenuAndRail(label: String) {
         assertTrue("$label: the mix menu closed", exists("home_mix_menu_offline"))
         assertEquals("$label: the Daily Mix rail moved", 3, sections.dailyRail.firstVisibleItemIndex)
@@ -132,7 +173,11 @@ class HomeFeedTabletGateStateTest {
     private fun render() {
         composeRule.setContent {
             val layout: BoxloreWindowLayout = window.value
-            CompositionLocalProvider(LocalBoxloreWindowLayout provides layout, LocalHomeSectionsUiState provides sections) {
+            CompositionLocalProvider(
+                LocalBoxloreWindowLayout provides layout,
+                LocalHomeSectionsUiState provides sections,
+                LocalHeroCardStyle provides homeHeroStyle(style.value, layout.usesTabletLayout),
+            ) {
                 BoxLoreTheme(dynamicColor = false) {
                     Box(Modifier.size(layout.widthDp.dp, layout.heightDp.dp)) {
                         HomeScreen(

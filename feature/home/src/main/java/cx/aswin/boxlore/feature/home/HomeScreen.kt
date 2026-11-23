@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,8 +18,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
@@ -37,6 +38,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.Episode
@@ -618,13 +620,17 @@ fun HomeScreen(
         }
     }
     CompositionLocalProvider(LocalHomeSectionsUiState provides sections) {
+    // One feed moves between the Marquee layout (phones) and the plain column (tablets), so folding or
+    // unfolding keeps Your shows, the Brief and the rest as they were instead of building them again.
+    val currentFeed by rememberUpdatedState(feed)
+    val movableFeed = remember { movableContentOf { currentFeed() } }
     Box(modifier = modifier.fillMaxSize()) {
         if (HeroCardStyle.sanitize(LocalHeroCardStyle.current) == HeroCardStyle.MARQUEE) {
             MarqueeHomeLayout(
                 gridState = gridState,
                 // Keep the expanded height: the bar shrinks as Home scrolls, the hero must not.
                 barExpanded = { scrollFraction == 0f },
-                feed = feed,
+                feed = movableFeed,
                 topBar = { overArtwork, tone, barModifier ->
                     HomeTopBar(
                         scrollFractionProvider = { scrollFraction },
@@ -639,7 +645,7 @@ fun HomeScreen(
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
                 HomeTopBar({ scrollFraction }, showTopBarShortcuts, callbacks)
-                feed()
+                movableFeed()
             }
         }
     }

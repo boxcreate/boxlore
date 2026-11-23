@@ -3,9 +3,11 @@ package cx.aswin.boxlore.feature.home
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -31,6 +33,7 @@ internal class HomeSectionsUiState(
     briefExpanded: Boolean,
     mixMenuOpen: Boolean,
     pinMenuShowId: String?,
+    heroIndex: Int = 0,
 ) {
     /** Most recently used last; at most [MaxShowLists] shows, so unsubscribed shows don't pile up. */
     private val showLists = object : LinkedHashMap<String, ScrollState>(16, 0.75f, true) {
@@ -43,6 +46,12 @@ internal class HomeSectionsUiState(
 
     /** Whether the Daily/Offline mix menu is open. */
     val mixMenu: MutableState<Boolean> = mutableStateOf(mixMenuOpen)
+
+    /**
+     * The hero card the listener is on. Marquee's pager (phones) and the carousel (tablets) are
+     * different views of the same items, so both start from it and write back when they settle.
+     */
+    val heroIndex: MutableIntState = mutableIntStateOf(heroIndex)
 
     /** The show whose Pin/Unpin menu is open, or null. */
     val pinMenu: MutableState<String?> = mutableStateOf(pinMenuShowId)
@@ -87,7 +96,7 @@ internal class HomeSectionsUiState(
                     state.dailyRail.firstVisibleItemIndex, state.dailyRail.firstVisibleItemScrollOffset,
                     state.offlineRail.firstVisibleItemIndex, state.offlineRail.firstVisibleItemScrollOffset,
                     ArrayList(state.showLists.keys), ArrayList(state.showLists.values.map { it.value }),
-                    state.briefFor, state.step.name, state.expanded, state.mixMenu.value, state.pinMenu.value,
+                    state.briefFor, state.step.name, state.expanded, state.mixMenu.value, state.pinMenu.value, state.heroIndex.intValue,
                 )
             },
             restore = { saved ->
@@ -104,6 +113,7 @@ internal class HomeSectionsUiState(
                     briefExpanded = list[8] as Boolean,
                     mixMenuOpen = list[9] as Boolean,
                     pinMenuShowId = list[10] as String?,
+                    heroIndex = list[11] as Int,
                 )
             },
         )

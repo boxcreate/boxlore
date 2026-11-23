@@ -61,6 +61,7 @@ import cx.aswin.boxlore.core.designsystem.theme.loadArtworkPalette
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.HeroCoverShade
 import cx.aswin.boxlore.feature.home.HeroType
+import cx.aswin.boxlore.feature.home.LocalHomeSectionsUiState
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.StableHeroList
@@ -172,7 +173,12 @@ internal fun MarqueeHero(
     modifier: Modifier = Modifier,
 ) {
     val items = heroItems.list
-    val pager = rememberPagerState { items.size }
+    // The card the listener is on, shared with the tablet carousel so folding or unfolding keeps it.
+    val heroIndex = LocalHomeSectionsUiState.current?.heroIndex
+    val pager = rememberPagerState(initialPage = (heroIndex?.intValue ?: 0).coerceIn(0, (items.size - 1).coerceAtLeast(0))) { items.size }
+    if (heroIndex != null) {
+        LaunchedEffect(pager, heroIndex) { snapshotFlow { pager.settledPage }.collect { heroIndex.intValue = it } }
+    }
     val scope = rememberCoroutineScope()
     val currentOnPageShown by rememberUpdatedState(onPageShown)
     LaunchedEffect(pager) { snapshotFlow { pager.settledPage }.collect { currentOnPageShown(it) } }

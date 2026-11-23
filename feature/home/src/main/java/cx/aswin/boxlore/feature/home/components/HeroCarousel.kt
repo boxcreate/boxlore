@@ -15,6 +15,8 @@ import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -23,11 +25,13 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
+import cx.aswin.boxlore.feature.home.LocalHomeSectionsUiState
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.StableHeroList
 import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
 import kotlin.math.floor
+import kotlinx.coroutines.flow.drop
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +56,16 @@ fun HeroCarousel(
         MarqueeCarousel(heroItems, playing, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, maxScrolledIndex, modifier)
         return
     }
-    val carouselState = rememberCarouselState { heroItems.list.size }
+    // The card the listener is on, shared with Marquee's pager so folding or unfolding keeps it.
+    val heroIndex = LocalHomeSectionsUiState.current?.heroIndex
+    val carouselState = rememberCarouselState(initialItem = (heroIndex?.intValue ?: 0).coerceIn(0, heroItems.list.lastIndex)) { heroItems.list.size }
+    if (heroIndex != null) {
+        // Only a scroll the listener makes moves it: a row that can't bring the card to its start (the
+        // last cards of a wide row) still shows it, and keeps it for Marquee when the phone folds again.
+        LaunchedEffect(carouselState, heroIndex) {
+            snapshotFlow { carouselState.isScrollInProgress }.drop(1).collect { scrolling -> if (!scrolling) heroIndex.intValue = carouselState.currentItem }
+        }
+    }
 
     Column(modifier.fillMaxWidth()) {
     ResponsiveHeroCarousel(
