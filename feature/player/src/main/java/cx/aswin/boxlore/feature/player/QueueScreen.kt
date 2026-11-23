@@ -8,11 +8,11 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Close
@@ -20,6 +20,9 @@ import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -30,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -205,7 +209,7 @@ private fun QueueSheetHeader(visible: Boolean, count: Int, colorScheme: ColorSch
             }
 
             HorizontalDivider(
-                color = colorScheme.outlineVariant.copy(alpha = 0.3f),
+                color = colorScheme.outlineVariant,
                 modifier = Modifier.padding(horizontal = 20.dp)
             )
         }
@@ -237,13 +241,16 @@ private fun QueueEmptyState(
                 color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
             )
-            TextButton(
+            FilledTonalButton(
                 onClick = onEnableSmartQueue,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                shape = CircleShape,
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = colorScheme.secondaryContainer,
+                    contentColor = colorScheme.onSecondaryContainer,
+                ),
             ) {
                 Text(
                     text = stringResource(R.string.player_turn_on),
-                    color = colorScheme.primary,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = GoogleSansWeight.medium,
                 )
@@ -262,18 +269,21 @@ fun QueueItemRow(
 ) {
     val episode = display.episode
     val podcast = display.podcast
+    val dragShape = MaterialTheme.shapes.large
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(
+            .heightIn(min = 72.dp)
+            // A dragged row lifts as a solid rounded card; at rest the row is the sheet itself.
+            .then(
                 if (display.isDragging) {
-                    colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    Modifier.shadow(6.dp, dragShape).background(colorScheme.surfaceContainerHighest, dragShape)
                 } else {
-                    colorScheme.surface.copy(alpha = 0f)
+                    Modifier
                 }
             )
             .expressiveClickable { onClick() }
-            .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            .padding(start = 20.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         OptimizedImage(
@@ -298,12 +308,14 @@ fun QueueItemRow(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = GoogleSansWeight.medium,
                 color = colorScheme.onSurface,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(2.dp))
+            val showName = (episode.podcastTitle ?: podcast?.title ?: stringResource(R.string.player_unknown_podcast)).replace("+", " ")
+            val length = SameShowContinuationBannerDefaults.formatDuration(episode.duration, currentLocale())
             Text(
-                text = (episode.podcastTitle ?: podcast?.title ?: stringResource(R.string.player_unknown_podcast)).replace("+", " "),
+                text = if (length.isBlank()) showName else "$showName · $length",
                 style = MaterialTheme.typography.bodySmall,
                 color = colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -314,7 +326,7 @@ fun QueueItemRow(
                 Text(
                     text = sourceLabel,
                     style = MaterialTheme.typography.labelSmall,
-                    color = colorScheme.primary.copy(alpha = 0.85f),
+                    color = colorScheme.primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -322,15 +334,12 @@ fun QueueItemRow(
         }
 
         if (onRemove != null) {
-            IconButton(
-                onClick = onRemove,
-                modifier = Modifier.size(40.dp)
-            ) {
+            IconButton(onClick = onRemove) {
                 Icon(
                     Icons.Rounded.Close,
                     contentDescription = stringResource(R.string.player_remove_from_queue),
-                    tint = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.size(18.dp)
+                    tint = colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -339,10 +348,10 @@ fun QueueItemRow(
             Icon(
                 Icons.Rounded.DragHandle,
                 contentDescription = stringResource(R.string.player_reorder),
-                tint = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                tint = colorScheme.onSurfaceVariant,
                 modifier = dragHandleModifier
-                    .size(40.dp)
-                    .padding(8.dp)
+                    .size(48.dp)
+                    .padding(12.dp)
             )
         }
     }
@@ -394,10 +403,7 @@ private fun SameShowContinuationBannerHeader(
                 .basicMarquee(),
         )
         Spacer(modifier = Modifier.width(8.dp))
-        IconButton(
-            onClick = onDismiss,
-            modifier = Modifier.size(32.dp),
-        ) {
+        IconButton(onClick = onDismiss) {
             Icon(
                 imageVector = Icons.Rounded.Close,
                 contentDescription = stringResource(R.string.player_dismiss),
@@ -424,10 +430,10 @@ private fun SameShowContinuationPreviewList(
                 modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(MaterialTheme.shapes.medium)
                     .background(
                         color = colorScheme.surfaceContainerHighest,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = MaterialTheme.shapes.medium,
                     )
                     .expressiveClickable { onEpisodeClick(episode) }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -442,7 +448,7 @@ private fun SameShowContinuationPreviewList(
                     modifier =
                     Modifier
                         .size(40.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(MaterialTheme.shapes.small)
                         .background(colorScheme.surfaceVariant),
                     contentScale = ContentScale.Crop,
                 )
@@ -515,17 +521,14 @@ fun SameShowContinuationBanner(
     var isExpanded by rememberSaveable { mutableStateOf(false) }
     val buttonText = SameShowContinuationBannerDefaults.buttonText(state.availableCount).asString()
 
-    Card(
+    Surface(
         modifier =
         modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 8.dp),
-        colors =
-        CardDefaults.cardColors(
-            containerColor = colorScheme.surfaceContainerHigh,
-            contentColor = colorScheme.onSurface,
-        ),
-        shape = RoundedCornerShape(20.dp),
+        color = colorScheme.surfaceContainerHigh,
+        contentColor = colorScheme.onSurface,
+        shape = cx.aswin.boxlore.feature.player.v2.PlayerCardShape,
     ) {
         Column(
             modifier =

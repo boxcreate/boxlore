@@ -56,16 +56,7 @@ fun UpNextCard(
 ) {
     if (queuedEpisodes.isEmpty()) return
 
-    val cardShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 28.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 28.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 28.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 28.dp,
-        smoothnessAsPercentBR = 60
-    )
+    val cardShape = PlayerCardShape
 
     Surface(
         modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxWidth(),
@@ -220,3 +211,15 @@ private fun QueuePreviewRow(
         }
     }
 }
+
+/** The player's below-the-fold cards (Up next, the same-show banner): 28dp smooth corners. */
+internal val PlayerCardShape = AbsoluteSmoothCornerShape(
+    cornerRadiusTL = 28.dp,
+    smoothnessAsPercentTL = 60,
+    cornerRadiusTR = 28.dp,
+    smoothnessAsPercentTR = 60,
+    cornerRadiusBL = 28.dp,
+    smoothnessAsPercentBL = 60,
+    cornerRadiusBR = 28.dp,
+    smoothnessAsPercentBR = 60
+)
