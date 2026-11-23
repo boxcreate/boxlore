@@ -27,9 +27,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -66,39 +68,40 @@ fun UpNextCard(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.minimal_up_next),
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
-                        color = colorScheme.onSurface
-                    )
-                    Text(
-                        text = pluralStringResource(R.plurals.player_episodes_queued, queuedEpisodes.size, queuedEpisodes.size),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = colorScheme.onSurfaceVariant
-                    )
+            UpNextHeaderLayout(
+                title = {
+                    Column {
+                        Text(
+                            text = stringResource(R.string.minimal_up_next),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
+                            color = colorScheme.onSurface
+                        )
+                        Text(
+                            text = pluralStringResource(R.plurals.player_episodes_queued, queuedEpisodes.size, queuedEpisodes.size),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                action = {
+                    FilledTonalButton(
+                        onClick = onOpenQueue,
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = colorScheme.primaryContainer,
+                            contentColor = colorScheme.onPrimaryContainer
+                        ),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.QueueMusic,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(stringResource(R.string.player_view_queue), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
-                FilledTonalButton(
-                    onClick = onOpenQueue,
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = colorScheme.primaryContainer,
-                        contentColor = colorScheme.onPrimaryContainer
-                    ),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.QueueMusic,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.player_view_queue))
-                }
-            }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -223,3 +226,39 @@ internal val PlayerCardShape = AbsoluteSmoothCornerShape(
     cornerRadiusBR = 28.dp,
     smoothnessAsPercentBR = 60
 )
+
+/**
+ * The card's title beside its button, or the button on its own line under the title (end-aligned)
+ * when the title's longest word would not fit beside it, so the title never breaks inside a word.
+ */
+@Composable
+internal fun UpNextHeaderLayout(title: @Composable () -> Unit, action: @Composable () -> Unit) {
+    Layout(
+        content = {
+            title()
+            action()
+        },
+        modifier = Modifier.fillMaxWidth(),
+    ) { measurables, constraints ->
+        val width = constraints.maxWidth
+        val gap = 12.dp.roundToPx()
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val button = measurables[1].measure(loose)
+        val sideBySide = measurables[0].minIntrinsicWidth(Constraints.Infinity) + gap + button.width <= width
+        if (sideBySide) {
+            val text = measurables[0].measure(loose.copy(maxWidth = width - gap - button.width))
+            val height = maxOf(text.height, button.height)
+            layout(width, height) {
+                text.placeRelative(0, (height - text.height) / 2)
+                button.placeRelative(width - button.width, (height - button.height) / 2)
+            }
+        } else {
+            val text = measurables[0].measure(loose)
+            val below = 8.dp.roundToPx()
+            layout(width, text.height + below + button.height) {
+                text.placeRelative(0, 0)
+                button.placeRelative(width - button.width, text.height + below)
+            }
+        }
+    }
+}
