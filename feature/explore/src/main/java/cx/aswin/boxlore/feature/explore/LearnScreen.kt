@@ -232,6 +232,8 @@ fun LearnScreen(
                             Box(
                                 modifier = Modifier
                                     .boxloreCardWidth(BoxloreCardFamily.Reading, maximumWidthDp = 560f)
+                                    // boxloreCardWidth leaves compact windows alone; a sideways phone still caps here.
+                                    .widthIn(max = 560.dp)
                                     .fillMaxWidth()
                                     .padding(horizontal = 20.dp, vertical = if (compactSpacing) 0.dp else 4.dp)
                             ) {

@@ -91,13 +91,20 @@ fun CuriosityCardStack(
     val visibleCards = questions.take(LoreDeckDepth + 1)
 
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .boxloreCardWidth(BoxloreCardFamily.Reading, maximumWidthDp = 520f)
             .then(if (tablet) Modifier.wrapContentHeight(Alignment.Top).heightIn(max = 640.dp) else Modifier)
             .fillMaxSize()
-            .widthIn(max = 520.dp)
-            .padding(bottom = 28.dp),
+            // Centred and capped on every window, so a sideways phone gets the cover's card, not the full width.
+            .wrapContentWidth()
+            .widthIn(max = 520.dp),
+    ) {
+    // A deck this short (tabletop lower half, sideways phone, split-screen half) gives its rest and
+    // padding to the question instead.
+    val short = maxHeight < LoreShortDeckHeight
+    Box(
+        modifier = Modifier.fillMaxSize().padding(bottom = if (short) 0.dp else 28.dp),
         contentAlignment = Alignment.TopCenter
     ) {
         visibleCards.asReversed().forEach { card ->
@@ -114,6 +121,7 @@ fun CuriosityCardStack(
                     isCurrentlyLoading = isCurrent && playerState.isLoading,
                     accentColor = artworkAccentColors[card.artworkSources]?.let { Color(it) } ?: accentColor,
                     interactive = isActive && swipeState.phase != LoreSwipePhase.Exiting,
+                    tight = short,
                     modifier = cardModifier,
                     onAction = { action ->
                         if (isActive && swipeState.phase != LoreSwipePhase.Exiting) {
@@ -129,7 +137,11 @@ fun CuriosityCardStack(
             accentColor = artworkAccentColors[questions.first().artworkSources]?.let { Color(it) } ?: accentColor,
         )
     }
+    }
 }
+
+/** Below this deck height the card drops its bottom rest and uses its tightest padding. */
+internal val LoreShortDeckHeight = 260.dp
 
 /** Skip and Add to queue leave the deck the same way a swipe does; other actions run directly. */
 private fun routeCardAction(
@@ -230,6 +242,7 @@ private fun CuriosityCardContent(
     isCurrentlyLoading: Boolean,
     accentColor: Color,
     interactive: Boolean = true,
+    tight: Boolean = false,
     onAction: (CardAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -291,13 +304,14 @@ private fun CuriosityCardContent(
                     accentColor = accentColor,
                     enabled = interactive,
                     compactSpacing = compactSpacing,
+                    tight = tight,
                     onPodcast = { onAction(CardAction.PodcastClick) },
                     onDetails = { onAction(CardAction.Click) },
                 )
                 LoreCardTextWithFooter(
                     question = daily.question,
                     explanation = daily.explanation,
-                    footerHeight = loreActionBarHeight(compactSpacing) + loreActionBarPadding(compactSpacing) * 2,
+                    footerHeight = loreActionBarHeight(compactSpacing) + loreActionBarPadding(compactSpacing, tight) * 2,
                     lift = if (compactSpacing) 6.dp else 10.dp,
                     modifier = Modifier.fillMaxWidth().weight(1f),
                 ) {
@@ -308,6 +322,7 @@ private fun CuriosityCardContent(
                         accentColor = accentColor,
                         enabled = interactive,
                         compactSpacing = compactSpacing,
+                        tight = tight,
                         onAction = onAction,
                     )
                 }
@@ -326,6 +341,7 @@ private fun LoreCardSource(
     accentColor: Color,
     enabled: Boolean,
     compactSpacing: Boolean,
+    tight: Boolean,
     onPodcast: () -> Unit,
     onDetails: () -> Unit,
 ) {
@@ -337,7 +353,7 @@ private fun LoreCardSource(
     val detailsLabel = stringResource(R.string.lore_action_details)
     Row(
         modifier = Modifier.fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = if (compactSpacing) 8.dp else 12.dp)
+            .padding(start = if (tight) 8.dp else 16.dp, end = if (tight) 8.dp else 16.dp, top = if (compactSpacing) 8.dp else 12.dp)
             .height(height),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
@@ -408,7 +424,11 @@ private fun loreBarHeight(compactSpacing: Boolean) = if (compactSpacing) 48.dp e
 /** The action bar is taller than the source row, so Play and its neighbours are easy targets. */
 private fun loreActionBarHeight(compactSpacing: Boolean) = if (compactSpacing) 52.dp else 60.dp
 
-private fun loreActionBarPadding(compactSpacing: Boolean) = if (compactSpacing) 8.dp else 10.dp
+private fun loreActionBarPadding(compactSpacing: Boolean, tight: Boolean = false) = when {
+    tight -> 4.dp
+    compactSpacing -> 8.dp
+    else -> 10.dp
+}
 
 private val ActionBarInnerCorner = 8.dp
 
@@ -425,6 +445,7 @@ private fun LoreCardActionBar(
     accentColor: Color,
     enabled: Boolean,
     compactSpacing: Boolean,
+    tight: Boolean,
     onAction: (CardAction) -> Unit,
 ) {
     val height = loreActionBarHeight(compactSpacing)
@@ -434,7 +455,7 @@ private fun LoreCardActionBar(
     val sideWidth = height + 12.dp
     Row(
         modifier = Modifier.fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = loreActionBarPadding(compactSpacing))
+            .padding(horizontal = if (tight) 8.dp else 16.dp, vertical = loreActionBarPadding(compactSpacing, tight))
             .height(height),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {

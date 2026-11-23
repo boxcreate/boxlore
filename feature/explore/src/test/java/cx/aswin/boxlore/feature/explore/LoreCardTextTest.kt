@@ -8,6 +8,7 @@ import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.designsystem.theme.buildBoxLoreTypography
 import org.json.JSONArray
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,5 +78,15 @@ class LoreCardTextTest {
         val selected = selectLoreCardText(candidates, heightPx = 272)
         assertTrue(selected.heightPx > 272)
         assertEquals(24, selected.spec.headingSp)
+        // Nothing fits, so the card scrolls its text instead of cutting it off.
+        assertTrue(selected.overflows)
+    }
+
+    @Test
+    fun `text only scrolls when even the smallest size is too tall`() {
+        val candidates = measure(width = 353)
+        assertFalse(selectLoreCardText(candidates, candidates.first().heightPx).overflows)
+        assertFalse(selectLoreCardText(candidates, candidates.last().heightPx).overflows)
+        assertTrue(selectLoreCardText(candidates, candidates.last().heightPx - 1).overflows)
     }
 }

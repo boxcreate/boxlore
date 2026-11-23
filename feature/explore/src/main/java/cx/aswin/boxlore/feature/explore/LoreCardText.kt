@@ -1,20 +1,29 @@
 package cx.aswin.boxlore.feature.explore
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -73,8 +82,19 @@ internal fun measureLoreCardText(
     }
 }
 
-internal fun selectLoreCardText(candidates: List<LoreMeasuredCardText>, heightPx: Int): LoreMeasuredCardText =
-    candidates.firstOrNull { it.heightPx <= heightPx } ?: candidates.last()
+/**
+ * The text size picked for a card: the first candidate that fits. [overflows] is true only when even
+ * the smallest one is taller than the room, so the text scrolls instead of being cut off.
+ */
+internal data class LoreTextSelection(val measured: LoreMeasuredCardText, val overflows: Boolean) {
+    val spec: LoreCardTextSpec get() = measured.spec
+    val heightPx: Int get() = measured.heightPx
+}
+
+internal fun selectLoreCardText(candidates: List<LoreMeasuredCardText>, heightPx: Int): LoreTextSelection {
+    val fitting = candidates.firstOrNull { it.heightPx <= heightPx }
+    return LoreTextSelection(fitting ?: candidates.last(), overflows = fitting == null)
+}
 
 @Composable
 internal fun LoreCardText(question: String, explanation: String?, modifier: Modifier = Modifier) {
@@ -86,9 +106,13 @@ internal fun LoreCardText(question: String, explanation: String?, modifier: Modi
         val candidates = remember(question, explanation, headingStyle, bodyStyle, density, maxWidth, measurer) {
             measureLoreCardText(measurer, question, explanation, headingStyle, bodyStyle, density, with(density) { maxWidth.roundToPx() })
         }
-        val spec = selectLoreCardText(candidates, with(density) { maxHeight.roundToPx() }).spec
+        val selection = selectLoreCardText(candidates, with(density) { maxHeight.roundToPx() })
+        val spec = selection.spec
+        // Too long for this card even at the smallest size: the text scrolls, never clips.
+        val scroll = if (selection.overflows) rememberScrollState() else null
         Column(
             modifier = Modifier.align(Alignment.Center).fillMaxWidth()
+                .then(if (scroll != null) Modifier.fillMaxHeight().loreScrollFade(scroll).verticalScroll(scroll) else Modifier)
                 .padding(horizontal = spec.horizontalPadding.dp, vertical = spec.verticalPadding.dp),
             verticalArrangement = Arrangement.Center,
         ) {
@@ -105,6 +129,21 @@ internal fun LoreCardText(question: String, explanation: String?, modifier: Modi
         }
     }
 }
+
+/** Fades the edge where more text waits, read in draw so scrolling doesn't recompose the card. */
+private fun Modifier.loreScrollFade(scroll: ScrollState): Modifier =
+    graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }.drawWithContent {
+        drawContent()
+        val fade = LoreScrollFade.toPx().coerceAtMost(size.height / 2)
+        if (scroll.canScrollBackward) {
+            drawRect(Brush.verticalGradient(0f to Color.Transparent, 1f to Color.Black, startY = 0f, endY = fade), blendMode = BlendMode.DstIn)
+        }
+        if (scroll.canScrollForward) {
+            drawRect(Brush.verticalGradient(0f to Color.Black, 1f to Color.Transparent, startY = size.height - fade, endY = size.height), blendMode = BlendMode.DstIn)
+        }
+    }
+
+private val LoreScrollFade = 16.dp
 
 /**
  * The card's text with its action bar below. When the full text has room to spare, the bar is
