@@ -68,7 +68,8 @@ class PlayerAuditCaptureTest(private val scene: String, configuration: PhoneGold
         val prefs = mock(UserPreferencesRepository::class.java)
         `when`(prefs.fullPlayerStyleStream).thenReturn(flowOf(style))
         `when`(prefs.cachedFullPlayerStyle).thenReturn(style)
-        `when`(prefs.sameShowQueueOnlyStream).thenReturn(flowOf(false))
+        // The empty queue with Smart Queue off offers to turn it on.
+        `when`(prefs.sameShowQueueOnlyStream).thenReturn(flowOf(scene == "player-queue-empty"))
         val store = PlayerPresentationStore(episodeId = episode.id, ui = sceneUi(), expanded = true, tabletUsed = true)
         fixture.setContent {
             BoxLoreTheme(darkTheme = fixture.configuration.dark, dynamicColor = false) {
@@ -107,10 +108,16 @@ class PlayerAuditCaptureTest(private val scene: String, configuration: PhoneGold
     private fun sceneUi() = FullPlayerUiState().apply {
         when (scene) {
             "player-speed-sheet", "player-bunpod-speed-sheet" -> showSpeedSheet = true
-            "player-sleep-sheet" -> showSleepSheet = true
-            "player-queue-sheet", "player-queue-empty" -> showQueueSheet = true
-            "player-chapters-sheet" -> showChaptersSheet = true
-            "player-transcript-fullscreen" -> showFullscreenTranscript = true
+            "player-sleep-sheet", "player-bunpod-sleep-sheet" -> showSleepSheet = true
+            "player-queue-sheet", "player-queue-empty", "player-continuation-banner" -> showQueueSheet = true
+            "player-chapters-sheet", "player-chapters-loading" -> showChaptersSheet = true
+            "player-transcript-fullscreen", "player-transcript-loading" -> showFullscreenTranscript = true
+            "player-transcript-fullscreen-sync-off" -> {
+                showFullscreenTranscript = true
+                isSyncEnabled = false
+            }
+            "player-tray-speed" -> quickControlMode = QuickControlMode.SPEED
+            "player-tray-sleep" -> quickControlMode = QuickControlMode.SLEEP
             "player-tablet-tabs-chapters" -> supportingTab = PlayerSupportingTab.Chapters
             "player-tablet-tabs-transcript" -> supportingTab = PlayerSupportingTab.Transcript
             "player-tablet-tabs-notes" -> supportingTab = PlayerSupportingTab.Notes
@@ -118,6 +125,7 @@ class PlayerAuditCaptureTest(private val scene: String, configuration: PhoneGold
     }
 
     private fun fixtureEpisode() = Episode(
+        transcriptUrl = "https://transcripts.example.invalid/episode.vtt".takeIf { scene == "player-transcript-loading" },
         id = "audit-episode",
         title = LONG_TITLE,
         description = NOTES,
@@ -143,9 +151,22 @@ class PlayerAuditCaptureTest(private val scene: String, configuration: PhoneGold
             duration = DURATION_MS,
             position = POSITION_MS,
             queue = queue,
-            currentChapters = if (scene == "player-queue-empty") emptyList() else CHAPTERS,
-            currentTranscript = TRANSCRIPT,
-            sleepTimerEnd = if (scene == "player-sleep-sheet") System.currentTimeMillis() + 25 * 60_000L else null,
+            currentChapters = if (scene in setOf("player-queue-empty", "player-chapters-loading")) emptyList() else CHAPTERS,
+            isChaptersLoading = scene == "player-chapters-loading",
+            currentTranscript = if (scene == "player-transcript-loading") emptyList() else TRANSCRIPT,
+            // A 30-minute timer set five minutes ago.
+            sleepTimerEnd = if (scene in SLEEP_SCENES) System.currentTimeMillis() + 25 * 60_000L else null,
+            sleepTimerPresetMinutes = if (scene in SLEEP_SCENES) 30 else null,
+            sameShowContinuation = if (scene == "player-continuation-banner") {
+                cx.aswin.boxlore.core.playback.SameShowContinuationState(
+                    visible = true,
+                    podcastTitle = SHOW_TITLE,
+                    availableCount = 3,
+                    nextEpisodes = List(3) { index -> episode.copy(id = "more-$index", title = QUEUE_TITLES[index]) },
+                )
+            } else {
+                cx.aswin.boxlore.core.playback.SameShowContinuationState.HIDDEN
+            },
             playbackRoute = if (scene == "full-player-casting") {
                 PlaybackRouteState(isRemote = true, deviceName = "Living room speaker", volume = 8, maximumVolume = 20)
             } else {
@@ -179,13 +200,17 @@ class PlayerAuditCaptureTest(private val scene: String, configuration: PhoneGold
         private val TRANSCRIPT = List(40) { index ->
             TranscriptSegment(index * 45_000L, index * 45_000L + 44_000L, "Line ${index + 1}. We talk about the shopping list, the oven timing and what to make the day before.")
         }
+        private val SLEEP_SCENES = setOf("player-sleep-sheet", "player-bunpod-sleep-sheet", "player-tray-sleep")
         private val SHEET_SCENES = setOf(
             "player-speed-sheet",
             "player-bunpod-speed-sheet",
             "player-sleep-sheet",
+            "player-bunpod-sleep-sheet",
             "player-queue-sheet",
             "player-queue-empty",
+            "player-continuation-banner",
             "player-chapters-sheet",
+            "player-chapters-loading",
         )
         private val SCENES = listOf(
             "full-player-rich",
@@ -202,6 +227,13 @@ class PlayerAuditCaptureTest(private val scene: String, configuration: PhoneGold
             "player-tablet-tabs-chapters",
             "player-tablet-tabs-transcript",
             "player-tablet-tabs-notes",
+            "player-tray-speed",
+            "player-tray-sleep",
+            "player-bunpod-sleep-sheet",
+            "player-continuation-banner",
+            "player-chapters-loading",
+            "player-transcript-loading",
+            "player-transcript-fullscreen-sync-off",
         )
 
         @JvmStatic
