@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -60,6 +61,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
@@ -70,6 +72,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -257,6 +260,7 @@ fun BoxLoreNavigationBar(
     initialContentReady: Boolean,
     modifier: Modifier = Modifier,
     compactProgress: State<Float>? = null,
+    floatingSideOffsets: Pair<Dp, Dp>? = null,
 ) {
     when (style) {
         NavigationStyle.Floating ->
@@ -266,6 +270,7 @@ fun BoxLoreNavigationBar(
                 initialContentReady = initialContentReady,
                 modifier = modifier,
                 compactProgress = compactProgress,
+                sideOffsets = floatingSideOffsets,
             )
         NavigationStyle.Classic ->
             ClassicNavigationBar(
@@ -290,6 +295,7 @@ private fun FloatingNavigationBar(
     initialContentReady: Boolean,
     modifier: Modifier = Modifier,
     compactProgress: State<Float>? = null,
+    sideOffsets: Pair<Dp, Dp>? = null,
 ) {
     val selectedIndex = navigationIndicatorSelectedIndex(currentRoute)
     val lastSelectedIndex = remember { mutableIntStateOf(selectedIndex.coerceAtLeast(0)) }
@@ -354,7 +360,7 @@ private fun FloatingNavigationBar(
                 modifier = Modifier.fillMaxSize(),
             )
         },
-        modifier = modifier.floatingNavigationBarPlacement().selectableGroup(),
+        modifier = modifier.floatingNavigationBarPlacement(sideOffsets).selectableGroup(),
     ) { measurables, constraints ->
         val width = constraints.maxWidth
         val height = constraints.maxHeight
@@ -386,14 +392,28 @@ private fun FloatingNavigationBar(
     }
 }
 
-/** Clear of side system buttons and the camera cutout, and a centred bar on wide, short windows. */
+/**
+ * Clear of side system buttons and the camera cutout, and a centred bar on wide, short windows.
+ * [sideOffsets] (left, right, from [floatingChromeSideOffsets]) are the ones the mini player uses,
+ * so both line up; without them the bar clears this layout's own horizontal safe insets.
+ */
 @Composable
-private fun Modifier.floatingNavigationBarPlacement(): Modifier = fillMaxWidth()
-    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+private fun Modifier.floatingNavigationBarPlacement(sideOffsets: Pair<Dp, Dp>?): Modifier = fillMaxWidth()
+    .then(
+        if (sideOffsets != null) {
+            Modifier.absolutePadding(left = sideOffsets.first, right = sideOffsets.second)
+        } else {
+            Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+        },
+    )
     .padding(start = AppNavigationBarHorizontalInset, end = AppNavigationBarHorizontalInset, bottom = AppNavigationBarBottomInset)
     .wrapContentWidth()
     .widthIn(max = AppFloatingChromeMaxWidth)
     .height(AppNavigationBarHeight)
+    .testTag(FLOATING_NAVIGATION_BAR_TAG)
+
+/** The floating bar's own bounds (pill and Lore circle) in tests. */
+const val FLOATING_NAVIGATION_BAR_TAG = "floating_navigation_bar"
 
 @Composable
 private fun FloatingPrimaryNavItem(

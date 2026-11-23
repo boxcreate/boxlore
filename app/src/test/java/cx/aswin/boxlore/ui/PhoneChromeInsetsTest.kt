@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
@@ -32,6 +33,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import cx.aswin.boxlore.core.designsystem.component.AppLoreNavigationActionSize
 import cx.aswin.boxlore.core.designsystem.component.AppNavigationBarHorizontalInset
+import cx.aswin.boxlore.core.designsystem.component.FLOATING_NAVIGATION_BAR_TAG
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.appMiniPlayerTopOffset
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
@@ -79,12 +81,38 @@ class PhoneChromeInsetsTest {
             listOf(lore(), play()).forEach { bounds ->
                 assertTrue("$size $bounds", bounds.left >= 32f && bounds.right <= size.widthDp - 48f)
             }
+            assertLinedUp(size)
         }
         fixture.compose.onNodeWithContentDescription("Lore").assertHasClickAction().performClick()
         advance()
         fixture.compose.onNodeWithContentDescription("Lore").assertIsSelected()
         fixture.compose.onNodeWithText("Lore page").assertExists()
     }
+
+    @Test
+    fun `with system buttons on one side only, the bar and the mini player share both edges`() {
+        render(SystemInsets(statusTop = 24, navEnd = 48))
+        listOf(BoxloreTestWindows.PHONE_LAND, BoxloreWindowLayout(620f, 400f), BoxloreTestWindows.COVER_LAND).forEach { size ->
+            fixture.compose.runOnIdle { window.value = size }
+            advance()
+            assertLinedUp(size)
+            // Lore keeps its 16dp gutter clear of the buttons, wherever the 560dp cap centres the bar.
+            assertTrue("$size ${lore()} offsets $sideOffsets", lore().right <= size.widthDp - 48f - 16f + 0.5f)
+        }
+    }
+
+    /** The mini player and the floating bar start and end at the same x, so the blur strip under both matches. */
+    private fun assertLinedUp(size: BoxloreWindowLayout) {
+        val bar = fixture.compose.onNodeWithTag(FLOATING_NAVIGATION_BAR_TAG).fetchSemanticsNode().boundsInRoot
+        val mini = miniPlayer()
+        assertEquals("$size bar $bar mini $mini", bar.left, mini.left, 1f)
+        assertEquals("$size bar $bar mini $mini", lore().right, mini.right, 1f)
+        assertEquals("$size bar $bar", bar.right, lore().right, 1f)
+    }
+
+    private var sideOffsets: Pair<androidx.compose.ui.unit.Dp, androidx.compose.ui.unit.Dp>? = null
+
+    private fun miniPlayer(): Rect = fixture.compose.onNodeWithText(episode.title).fetchSemanticsNode().boundsInRoot
 
     @Test
     fun `wide short windows centre the bar and the mini player at 560dp`() {
@@ -148,9 +176,12 @@ class PhoneChromeInsetsTest {
                 }
             }
         }
-        insets?.let { fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, it) } }
+        systemInsets = insets
         advance()
     }
+
+    /** The fake system bars and cutout, sent again after each change, as the window would. */
+    private var systemInsets: SystemInsets? = null
 
     /** The phone root's bottom bar and player sheet, placed as `BoxLoreAppRoot` places them. */
     @Composable
@@ -166,10 +197,11 @@ class PhoneChromeInsetsTest {
                 listOf("home", "explore", "library").forEach { route -> composable(route) { Text("Page $route") } }
                 composable("learn") { Text("Lore page") }
             }
-            PhoneBottomNavigation(primary, navigation, entry?.destination?.route ?: "home", NavigationStyle.Floating, null, true, compactProgress)
+            val (leftInset, rightInset) = phoneChromeSideOffsets(NavigationStyle.Floating, maxWidth)
+            sideOffsets = leftInset to rightInset
+            PhoneBottomNavigation(primary, navigation, entry?.destination?.route ?: "home", NavigationStyle.Floating, null, true, compactProgress, leftInset to rightInset)
             val systemNavigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
             val metrics = navigationChromeMetrics(NavigationStyle.Floating)
-            val (leftInset, rightInset) = phoneChromeSideOffsets(NavigationStyle.Floating, maxWidth)
             PlayerSheetScaffold(
                 playbackRepository = dependencies.playbackRepository,
                 downloadRepository = dependencies.downloadRepository,
@@ -192,6 +224,7 @@ class PhoneChromeInsetsTest {
     }
 
     private fun advance() {
+        systemInsets?.let { insets -> fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, insets) } }
         Snapshot.sendApplyNotifications()
         fixture.compose.mainClock.advanceTimeByFrame()
         fixture.compose.mainClock.advanceTimeBy(1_600)

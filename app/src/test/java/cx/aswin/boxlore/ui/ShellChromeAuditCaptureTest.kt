@@ -135,12 +135,12 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         val density = LocalDensity.current
         BoxWithConstraints(Modifier.fillMaxSize()) {
             content()
-            PhoneBottomNavigation(primary, navigation, "home", NavigationStyle.Floating, null, true, compactProgress)
+            val (leftInset, rightInset) = phoneChromeSideOffsets(NavigationStyle.Floating, maxWidth)
+            PhoneBottomNavigation(primary, navigation, "home", NavigationStyle.Floating, null, true, compactProgress, leftInset to rightInset)
             if (playing) {
                 // The placement BoxLoreAppRoot gives the phone player sheet.
                 val systemNavigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 val metrics = navigationChromeMetrics(NavigationStyle.Floating)
-                val (leftInset, rightInset) = phoneChromeSideOffsets(NavigationStyle.Floating, maxWidth)
                 PlayerSheetScaffold(
                     playbackRepository = dependencies.playbackRepository,
                     downloadRepository = dependencies.downloadRepository,

@@ -826,7 +826,16 @@ fun BoxLoreAppRoot(
 
                 if (showBottomNav && !windowLayout.usesTabletLayout) {
                     val activeTab = resolveBottomNavTab(currentRoute, remember(navBackStackEntry) { snapshotNavBackStack(navController) })
-                    PhoneBottomNavigation(navController, tabletNavigation, activeTab, navigationStyle, navigationColors, isInitialHomeContentReady, adaptivePlayer.progress)
+                    PhoneBottomNavigation(
+                        navController,
+                        tabletNavigation,
+                        activeTab,
+                        navigationStyle,
+                        navigationColors,
+                        isInitialHomeContentReady,
+                        adaptivePlayer.progress,
+                        chromeLeftInset to chromeRightInset,
+                    )
                 }
 
                 AppPlaybackNotices(
