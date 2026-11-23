@@ -143,7 +143,19 @@ class HeroCarouselEndTest {
         assertEquals(CARD_WIDTH, width(1315f), 0.01f)
         // Panes narrower than a card and its gap: one card fills the pane.
         listOf(280f, 297f, 307f, 335f, 360f, 375f).forEach { available -> assertEquals("$available", available, width(available), 0.01f) }
-        assertEquals(CARD_WIDTH, width(376f), 0.01f) // a card and a 40dp peek of the next
+        // material3 draws each card one gap wider than asked: the next card's drawn edge shows nothing or
+        // at least 40dp, never a sliver (a card and 24dp at 376dp; two cards and 13dp on a book's 717dp row).
+        fun nextShows(available: Float): Float {
+            val stride = width(available) + SPACING * 2
+            val whole = floor((available + SPACING) / stride).coerceAtLeast(1f)
+            return available - stride * whole
+        }
+        (376..1400).map { it.toFloat() }.forEach { available ->
+            val next = nextShows(available)
+            assertTrue("Next card at ${available}dp shows ${next}dp", next <= 0.5f || next >= 40f - 0.5f)
+        }
+        assertEquals(CARD_WIDTH, width(400f), 0.01f) // a card and a 48dp peek of the next
+        assertEquals(CARD_WIDTH, width(1015f), 0.01f)
     }
 
     /**
@@ -151,10 +163,11 @@ class HeroCarouselEndTest {
      * card and a gap. The card used to stay 320dp and run past the pane's edge, or leave a hairline
      * sliver of the next card. Now the first card fits whole and the next one shows 0 or at least 40dp.
      */
-    @Test fun `narrow tablet panes fit a whole card and never a sliver of the next`() {
+    @Test fun `narrow tablet panes and book windows fit whole cards and never a sliver of the next`() {
         window.value = BoxloreTestWindows.TABLET
         render()
-        for (width in listOf(280f, 297f, 307f, 340f, 352f, 360f, 375f, 385f, 400f)) {
+        // Narrow panes, and the two-card band of a half-open book's window (about 700-730dp of row).
+        for (width in listOf(280f, 297f, 307f, 340f, 352f, 360f, 375f, 385f, 400f, 700f, 710f, 718f, 730f, 734f)) {
             pane.value = width
             composeRule.waitForIdle()
             composeRule.runOnIdle { runBlocking { state.scrollToItem(0) } }
@@ -162,8 +175,10 @@ class HeroCarouselEndTest {
             val hero = composeRule.onNodeWithTag("hero").fetchSemanticsNode().boundsInRoot
             val first = composeRule.onNodeWithTag("card_0").fetchSemanticsNode().let { Rect(it.positionInRoot, it.size.toSize()) }
             assertTrue("Card at ${width}dp: $first in $hero", first.left >= hero.left - 0.5f && first.right <= hero.right + 0.5f)
-            val next = composeRule.onAllNodesWithTag("card_1").fetchSemanticsNodes().firstOrNull()
-            val nextVisible = next?.let { (minOf(it.positionInRoot.x + it.size.width, hero.right) - maxOf(it.positionInRoot.x, hero.left)).coerceAtLeast(0f) } ?: 0f
+            // The first card that isn't whole shows nothing or at least 40dp.
+            val cut = (1 until CARDS).asSequence().mapNotNull { index -> composeRule.onAllNodesWithTag("card_$index").fetchSemanticsNodes().firstOrNull() }
+                .firstOrNull { it.positionInRoot.x + it.size.width > hero.right + 0.5f }
+            val nextVisible = cut?.let { (minOf(it.positionInRoot.x + it.size.width, hero.right) - maxOf(it.positionInRoot.x, hero.left)).coerceAtLeast(0f) } ?: 0f
             assertTrue("Next card at ${width}dp shows ${nextVisible}dp", nextVisible < 0.5f || nextVisible >= 40f - 0.5f)
             scrollToEndAndBack(width)
         }

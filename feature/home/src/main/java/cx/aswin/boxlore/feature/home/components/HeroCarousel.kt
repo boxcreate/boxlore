@@ -444,14 +444,33 @@ internal val UncontainedEndPadding = 1.dp
  * [ResponsiveHeroCarousel]). A narrow pane (a half-open book foldable, a split view beside the
  * player) that can't show a card and at least [HeroMinPeek] of the next gets one card filling it, so
  * the card is never cut at the pane's edge and no sliver of the next one shows; material3 draws it at
- * most the row's width. Every other width keeps [preferred].
+ * most the row's width. Wider rows that would end in a sliver widen their whole cards to fill the row
+ * ([wholeCardsWithoutSliver]). Every other width keeps [preferred].
  */
 internal fun heroTabletItemWidth(available: Dp, preferred: Dp, spacing: Dp): Dp {
     val slot = preferred + spacing
     if (available < slot + HeroMinPeek) return available
     val whole = floor(available / slot).toInt().coerceAtLeast(1)
     val rest = available - slot * whole
-    return if (whole == 1 && rest >= slot * NearlyAnotherCard) available / 2 - spacing else preferred
+    if (whole == 1 && rest >= slot * NearlyAnotherCard) return available / 2 - spacing
+    return wholeCardsWithoutSliver(available, preferred, spacing)
+}
+
+/**
+ * material3 draws each uncontained card one gap wider than asked, so a row can end in a sliver of the
+ * next card (13dp on a half-open book's 718dp row: two whole cards, then the third's edge). When the
+ * next card would show less than [HeroMinPeek], the whole cards widen to fill the row instead.
+ */
+private fun wholeCardsWithoutSliver(available: Dp, preferred: Dp, spacing: Dp): Dp {
+    val drawnStride = preferred + spacing * 2
+    val whole = floor((available + spacing) / drawnStride).toInt().coerceAtLeast(1)
+    val nextShows = available - drawnStride * whole
+    return when {
+        nextShows <= 0.dp || nextShows >= HeroMinPeek -> preferred
+        // One card fills the row as on the narrowest panes; material3 draws it at most the row's width.
+        whole == 1 -> available
+        else -> (available - spacing * (whole - 1)) / whole - spacing
+    }
 }
 
 /** How much of another card's space counts as "almost a second card" for [heroTabletItemWidth]. */
