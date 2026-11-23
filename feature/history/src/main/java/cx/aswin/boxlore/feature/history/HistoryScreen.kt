@@ -143,7 +143,7 @@ fun HistoryScreen(
                             navigation = HistoryNavigation(onEpisodeClick, onExploreClick, onPlayEpisode, onOpenShow),
                             onOpenCalendar = { showCalendar = true },
                         )
-                    HistoryTab.INSIGHTS -> HistoryInsightsContent(insights, viewModel, bottom, insightsListState, earlierExpanded) { earlierExpanded = it }
+                    HistoryTab.INSIGHTS -> HistoryInsightsContent(insights, viewModel, bottom, insightsListState, earlierExpanded, onExploreClick) { earlierExpanded = it }
                 }
             }
             HistoryTabs(
@@ -308,7 +308,7 @@ private fun HistoryTimelineContent(
         TimelineUiState.Loading -> HistoryLoading()
         is TimelineUiState.Ready ->
             if (state.content.isHistoryEmpty) {
-                HistoryEmptyState(onExploreClick = navigation.onExploreClick)
+                HistoryEmptyState(onExploreClick = navigation.onExploreClick, contentPadding = PaddingValues(bottom = bottomPadding + 16.dp))
             } else {
                 TimelineTab(
                     state = state.tabState,
@@ -354,11 +354,16 @@ private fun HistoryInsightsContent(
     bottomPadding: androidx.compose.ui.unit.Dp,
     listState: androidx.compose.foundation.lazy.LazyListState,
     earlierExpanded: Boolean,
+    onExploreClick: () -> Unit,
     onExpandEarlier: (Boolean) -> Unit,
 ) {
     when (state) {
         InsightsUiState.Loading -> HistoryLoading()
-        is InsightsUiState.Ready ->
+        is InsightsUiState.Ready -> if (state.content.isEmptyHistory) {
+            // The same page view as the Insights list sends.
+            TrackScreenView("history_insights")
+            HistoryEmptyState(onExploreClick = onExploreClick, contentPadding = PaddingValues(bottom = bottomPadding + 16.dp))
+        } else {
             InsightsTab(
                 content = state.content,
                 period = state.period,
@@ -386,5 +391,6 @@ private fun HistoryInsightsContent(
                     },
                 ),
             )
+        }
     }
 }

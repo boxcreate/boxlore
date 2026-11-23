@@ -92,6 +92,39 @@ class HistoryTabsStateTest {
         assertEquals(listOf("diginotar"), board.restored)
     }
 
+    @Test fun `with no history both tabs show one empty page whose Explore button is always reachable`() {
+        history.render(BoardHistory(empty = true), tab = HistoryTab.INSIGHTS)
+        for (tab in listOf(HistoryTab.INSIGHTS, HistoryTab.TIMELINE)) {
+            history.select(tab)
+            compose.walkWindows(
+                history.window,
+                BoxloreTestWindows.COVER_443,
+                BoxloreTestWindows.PHONE_LAND,
+                BoxloreTestWindows.SPLIT_HALF,
+                BoxloreTestWindows.COVER_475,
+                BoxloreTestWindows.PHONE,
+            ) { window ->
+                compose.onNodeWithTag(HISTORY_EMPTY_TAG).assertExists()
+                compose.onNodeWithTag(INSIGHTS_LIST_TAG).assertDoesNotExist()
+                val explore = exploreAtEnd()
+                assertTrue("$tab at $window: Explore sits under the switcher", explore.bounds().bottom <= history.switcher().top)
+                assertEquals("$tab at $window: the selected tab changed", tab, history.viewModel.selectedTab.value)
+            }
+            // Large text on the cover still leaves Explore above the switcher.
+            history.window.value = BoxloreTestWindows.COVER_475
+            history.fontScale.value = 1.3f
+            compose.waitForIdle()
+            assertTrue(exploreAtEnd().bounds().bottom <= history.switcher().top)
+            history.fontScale.value = 1f
+            history.window.value = BoxloreTestWindows.PHONE
+            compose.waitForIdle()
+        }
+        // On a phone the page fits: nothing to scroll.
+        assertEquals(0f, emptyPage().maxScroll(), 0f)
+        compose.onNodeWithText("Explore podcasts").performClick()
+        assertEquals(1, history.explores.size)
+    }
+
     /** The snackbar's card: Material pads it 12dp inside the tagged node. */
     private fun snackbarCard() = compose.onNodeWithTag(BOXLORE_SNACKBAR_TAG).bounds().deflate(12f)
 

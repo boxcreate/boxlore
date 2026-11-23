@@ -141,7 +141,7 @@ private fun EarlyHeroCard(early: EarlyInsights) {
                 )
             }
             FlowRow(modifier = Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                InsightsPill(null, stringResource(R.string.history_early_in_progress, early.inProgress))
+                if (early.inProgress > 0) InsightsPill(null, stringResource(R.string.history_early_in_progress, early.inProgress))
                 if (early.playedDaysThisMonth > 0) {
                     InsightsPill(null, pluralStringResource(R.plurals.history_early_played_days, early.playedDaysThisMonth, early.playedDaysThisMonth))
                 }

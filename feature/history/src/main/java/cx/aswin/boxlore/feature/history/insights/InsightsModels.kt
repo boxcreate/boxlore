@@ -125,4 +125,8 @@ data class InsightsContent(
     val sources: ListeningSources?,
     val milestone: FinishedMilestone,
     val inProgress: InProgress,
-)
+) {
+    /** Nothing played yet: no timing, nothing finished or in progress, no shows. Insights then shows History's empty page. */
+    val isEmptyHistory: Boolean
+        get() = !hasEnoughTiming && early.finished == 0 && early.inProgress == 0 && early.showsByEpisodes.isEmpty()
+}
