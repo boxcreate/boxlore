@@ -133,12 +133,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handlePlayerIntent(intent: android.content.Intent, restored: Boolean = false) {
-        val shouldOpenPlayer = intent.getBooleanExtra("EXTRA_OPEN_PLAYER", false)
-        if (shouldOpenPlayer) {
-            // A restored activity's launch intent still carries the tap that already opened the player.
-            if (!restored) expandPlayerTrigger = System.currentTimeMillis()
-            intent.removeExtra("EXTRA_OPEN_PLAYER")
-        }
+        takePlayerOpenRequest(intent, restored, System.currentTimeMillis())?.let { expandPlayerTrigger = it }
         if (intent.getBooleanExtra("from_push", false)) {
             intent.removeExtra("from_push")
             AnalyticsHelper.trackNotificationTapped(
@@ -320,4 +315,14 @@ private fun androidx.core.splashscreen.SplashScreen.holdBriefly(coldStart: Boole
             .withEndAction { provider.remove() }
             .start()
     }
+}
+
+/**
+ * Takes a notification's open-player flag off [intent] and returns the open request it makes, or null.
+ * A restored activity's launch intent still carries the tap that already opened the player, so it makes none.
+ */
+internal fun takePlayerOpenRequest(intent: android.content.Intent, restored: Boolean, now: Long): Long? {
+    if (!intent.getBooleanExtra("EXTRA_OPEN_PLAYER", false)) return null
+    intent.removeExtra("EXTRA_OPEN_PLAYER")
+    return now.takeUnless { restored }
 }

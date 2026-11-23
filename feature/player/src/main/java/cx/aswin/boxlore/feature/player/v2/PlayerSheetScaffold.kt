@@ -88,6 +88,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -808,10 +809,16 @@ private fun PlayerSheetExternalExpansion(
     val currentOnHandled by rememberUpdatedState(onHandled)
     LaunchedEffect(expandTrigger) {
         if (expandTrigger > 0L) {
-            // The host then clears the request, so a sheet composed again never replays it. That
-            // restarts this effect, so the expansion runs in the sheet's own scope.
-            scope.launch { sheetState.animateTo(PlayerSheetValue.Expanded) }
-            currentOnHandled(expandTrigger)
+            // The expansion runs in the sheet's own scope: clearing the request restarts this effect.
+            scope.launch {
+                try {
+                    sheetState.animateTo(PlayerSheetValue.Expanded)
+                } finally {
+                    // Handled once it settles or a drag takes over. A sheet that leaves composition
+                    // first keeps the request, so the sheet composed next opens the player instead.
+                    if (scope.isActive) currentOnHandled(expandTrigger)
+                }
+            }
         }
     }
 }

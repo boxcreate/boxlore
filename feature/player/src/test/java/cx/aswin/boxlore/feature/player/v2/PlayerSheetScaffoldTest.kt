@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -86,6 +87,28 @@ class PlayerSheetScaffoldTest {
         assertEquals(listOf(1_000L, 2_000L), handled)
     }
 
+    @Test
+    fun `a sheet removed before its expansion settles leaves the request to the next sheet`() {
+        render()
+        compose.mainClock.autoAdvance = false
+        compose.runOnUiThread { openRequest.longValue = 1_000L }
+        Snapshot.sendApplyNotifications()
+        compose.mainClock.advanceTimeBy(EXPANSION_UNDER_WAY_MS)
+        assertFalse("The sheet is still opening", store.expanded)
+        assertTrue("The request stays pending while the sheet is still opening", handled.isEmpty())
+
+        // A rotation or window change replaces the sheet mid-expansion.
+        compose.runOnUiThread { shown.value = false }
+        Snapshot.sendApplyNotifications()
+        compose.mainClock.advanceTimeByFrame()
+        assertTrue(handled.isEmpty())
+        compose.runOnUiThread { shown.value = true }
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        assertTrue("The notification tap still opens the player", store.expanded)
+        assertEquals(listOf(1_000L), handled)
+    }
+
     private fun rotate(expanded: Boolean) {
         listOf(LANDSCAPE, PORTRAIT, LANDSCAPE, PORTRAIT).forEach { height ->
             compose.runOnIdle { windowHeight.value = height }
@@ -141,5 +164,6 @@ class PlayerSheetScaffoldTest {
     private companion object {
         val PORTRAIT = 914.dp
         val LANDSCAPE = 411.dp
+        const val EXPANSION_UNDER_WAY_MS = 64L
     }
 }
