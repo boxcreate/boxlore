@@ -264,8 +264,8 @@ private fun HeroCollectionRow(
             } else {
                 Modifier.size(artworkSize)
             }
-            Box(target.testTag("${tag}_target").then(artworkAction), contentAlignment = Alignment.CenterStart) {
-            Box(Modifier.size(artworkSize).testTag("${tag}_artwork")) {
+            Box(target.testTag("${tag}_artwork").then(artworkAction), contentAlignment = Alignment.CenterStart) {
+            Box(Modifier.size(artworkSize)) {
                 OptimizedImage(
                     url = podcast.imageUrl,
                     fallbackUrls = podcast.artworkUrls(),

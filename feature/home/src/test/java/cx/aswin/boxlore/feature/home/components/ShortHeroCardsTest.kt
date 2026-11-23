@@ -116,7 +116,9 @@ class ShortHeroCardsTest {
     /** Every collection row that shows keeps its Play target whole inside the card and at least 48dp each way. */
     private fun collectionFailures(label: String): List<String> {
         val hero = rect("short_hero")
-        val targets = (0 until 4).mapNotNull { index -> rectOrNull("home_hero_collection_${index}_target") ?: rectOrNull("home_hero_collection_${index}_play") }
+        // Block and Duotone rows play from their whole cover; the other styles from a Play button on it.
+        val target = if (style.value == HeroCardStyle.BLOCK || style.value == HeroCardStyle.DUOTONE) "artwork" else "play"
+        val targets = (0 until 4).mapNotNull { index -> rectOrNull("home_hero_collection_${index}_$target") }
         val failures = mutableListOf<String>()
         if (targets.isEmpty()) failures += "$label: no Play target shows"
         targets.forEach { target ->
