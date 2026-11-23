@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +43,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -209,8 +211,10 @@ private fun RowScope.DenseEpisodeDetails(
     val density = LocalDensity.current
     BoxWithConstraints(Modifier.weight(1f)) {
         val inProgress = rowState.isInProgress && rowState.progress > 0f
-        // Narrow columns and large text leave the meta line too full for the bar: it gets its own line.
-        val stackedBar = inProgress && denseRowStacksProgress(maxWidth, density.fontScale)
+        // Narrow columns, large text, and a date and time left too long to leave the bar 24dp (long
+        // languages) leave the meta line too full for the bar: it gets its own line.
+        val metaWords = denseMetaWordsWidth(episode, rowState.progress, inProgress)
+        val stackedBar = inProgress && (denseRowStacksProgress(maxWidth, density.fontScale) || metaWords + DenseInlineBarRoom > maxWidth)
         Column(
             modifier = Modifier.fillMaxWidth().height(denseRowDetailsHeight(stackedBar)),
             verticalArrangement = Arrangement.spacedBy(RowMetaGap, Alignment.CenterVertically),
@@ -228,10 +232,40 @@ private fun RowScope.DenseEpisodeDetails(
                 isEligibleForNewTag = isEligibleForNewTag,
                 inlineBar = !stackedBar,
             )
-            if (stackedBar) DenseProgressBar(rowState.progress, Modifier.fillMaxWidth().testTag("home_dense_row_progress"))
+            if (stackedBar) {
+                // A little apart from the bold time left, on a track that shows against the row, so it
+                // reads as progress across the row rather than an underline.
+                DenseProgressBar(
+                    rowState.progress,
+                    Modifier.padding(top = StackedBarExtraGap).fillMaxWidth().testTag("home_dense_row_progress"),
+                    trackColor = MaterialTheme.colorScheme.outlineVariant,
+                )
+            }
         }
     }
 }
+
+/** The meta line's date and time left side by side, as [DenseEpisodeMetadataRow] sets them. */
+@Composable
+private fun denseMetaWordsWidth(episode: Episode, progress: Float, inProgress: Boolean): Dp {
+    if (!inProgress) return 0.dp
+    val date = formatRelativeDate(episode.publishedDate)
+    val time = denseDurationText(episode.duration, progress, isInProgress = true).orEmpty()
+    val style = MaterialTheme.typography.bodySmall
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    return remember(date, time, style, density) {
+        val dateWidth = if (date.isEmpty()) 0 else measurer.measure(date, style, maxLines = 1).size.width
+        val timeWidth = measurer.measure(time, style.copy(fontWeight = GoogleSansWeight.bold), maxLines = 1).size.width
+        with(density) { (dateWidth + timeWidth).toDp() }
+    }
+}
+
+/** What the inline bar needs beside the date and time left: its 24dp and the two 6dp gaps. */
+private val DenseInlineBarRoom = 36.dp
+
+/** The stacked bar's extra room above it, so it sits 6dp under the meta line. */
+private val StackedBarExtraGap = 2.dp
 
 @Composable
 private fun denseRowTitleStyle() = MaterialTheme.typography.titleSmall.copy(
@@ -245,20 +279,20 @@ private fun denseRowTitleStyle() = MaterialTheme.typography.titleSmall.copy(
 private fun denseRowDetailsHeight(stackedBar: Boolean): Dp {
     val metaLineHeight = MaterialTheme.typography.bodySmall.lineHeight.takeIf { it.isSp } ?: 16.sp
     val base = with(LocalDensity.current) { (RowTitleLineHeight * ROW_TITLE_LINES).toDp() + RowMetaGap + metaLineHeight.toDp() }
-    return if (stackedBar) base + RowMetaGap + DenseProgressHeight else base
+    return if (stackedBar) base + RowMetaGap + StackedBarExtraGap + DenseProgressHeight else base
 }
 
 /** Whether an in-progress row's bar moves under its meta line: a column under 260dp, or text above 115%. */
 internal fun denseRowStacksProgress(columnWidth: Dp, fontScale: Float): Boolean = columnWidth < 260.dp || fontScale > 1.15f
 
 @Composable
-private fun DenseProgressBar(progress: Float, modifier: Modifier) {
+private fun DenseProgressBar(progress: Float, modifier: Modifier, trackColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest) {
     val progressLabel = stringResource(R.string.home_hero_listening_progress)
     LinearProgressIndicator(
         progress = { progress.coerceIn(0f, 1f) },
         modifier = modifier.height(DenseProgressHeight).semantics { contentDescription = progressLabel },
         color = MaterialTheme.colorScheme.primary,
-        trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        trackColor = trackColor,
         drawStopIndicator = {},
         gapSize = 2.dp,
     )
@@ -319,7 +353,7 @@ private fun DenseEpisodeMetadataRow(
         }
         val date = formatRelativeDate(episode.publishedDate)
         // Without the bar beside it, the date gives way first, so the time left stays whole.
-        DenseMetaText(date, modifier = if (inProgress && inlineBar) Modifier else Modifier.weight(1f, fill = false))
+        DenseMetaText(date, modifier = (if (inProgress && inlineBar) Modifier else Modifier.weight(1f, fill = false)).testTag("home_dense_row_date"))
         if (inProgress && inlineBar) {
             // Never squeezed out of sight: the bar keeps at least 24dp and the words give way.
             DenseProgressBar(rowState.progress, Modifier.weight(1f).widthIn(min = 24.dp).testTag("home_dense_row_progress"))
