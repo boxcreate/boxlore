@@ -32,6 +32,8 @@ internal data class PrismPlan(
     val showPublisher: Boolean,
     val height: Int,
     val hookSp: Float = EchoPrismLayout.HookSp,
+    /** False only on the shortest slots, where the pitch gives way so the name and art still show whole. */
+    val showHook: Boolean = true,
 )
 
 /**
@@ -82,6 +84,7 @@ internal object EchoPrismLayout {
     private val StackedSmallSizes = listOf(18f, 17f, 16f)
     private val CompactSizes = listOf(18f, 17f, 16f, 15f)
     private val CompactSmallSizes = listOf(15f, 14f, 13f)
+    private val CompactTightSizes = listOf(15f, 14f, 13f, 12f)
 
     data class TitleFit(val sizeSp: Float, val box: PrismTextBox, val publisher: Boolean)
 
@@ -135,8 +138,9 @@ internal object EchoPrismLayout {
 
     /**
      * Art beside the tag and name, the pitch underneath. When even that is too tall, the art
-     * shrinks, then the pitch steps down a size or two, and as a last resort the art goes; the
-     * pitch is never cut.
+     * shrinks, then the pitch steps down a size or two, and then the art goes; the pitch is never
+     * cut. On slots shorter still the pitch is left out, then the art comes back at its smallest
+     * beside a name that may go down to 12sp, so the card is never taller than its slot.
      */
     private fun compact(title: String, hook: String, width: Int, maxHeight: Int, px: Px, measure: PrismTextMeasure): PrismPlan {
         val inner = width - px.dp((Border + Padding) * 2)
@@ -156,7 +160,25 @@ internal object EchoPrismLayout {
                 if (art == CompactMinArt && hookSp != CompactHookSizes.last()) break
             }
         }
+        for (art in listOf(CompactMinArt, 0f)) {
+            val artPx = px.dp(art)
+            val gap = if (artPx > 0) px.dp(CompactGap) else 0
+            val fit = fitTightTitle(title, inner - artPx - gap, measure)
+            val row = max(artPx, tag + px.dp(TagGap) + fit.box.height)
+            val bare = PrismPlan(true, width, artPx, fit.sizeSp, fit.box.lines, false, px.dp((Border + Padding) * 2) + row, CompactHookSizes.last(), showHook = false)
+            if (bare.height <= maxHeight) return bare
+        }
         return plan!!
+    }
+
+    /** The name in at most three lines, down to 12sp, for the shortest slots. */
+    private fun fitTightTitle(text: String, widthPx: Int, measure: PrismTextMeasure): TitleFit {
+        for (size in CompactTightSizes) {
+            val box = measure.title(text, size, widthPx)
+            if (box.lines <= MaxTitleLines) return TitleFit(size, box, false)
+        }
+        val box = measure.title(text, CompactTightSizes.last(), widthPx)
+        return TitleFit(CompactTightSizes.last(), PrismTextBox(MaxTitleLines, box.height * MaxTitleLines / box.lines.coerceAtLeast(1)), false)
     }
 
     private fun hookBox(hook: String, sizeSp: Float, inner: Int, px: Px, measure: PrismTextMeasure): Int =

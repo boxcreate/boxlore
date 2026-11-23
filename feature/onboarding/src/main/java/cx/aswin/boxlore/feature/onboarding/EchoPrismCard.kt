@@ -239,7 +239,7 @@ private fun PrismCompactFace(card: OnboardingProbeCard, title: String, index: In
                 PrismTitle(title, card.title, plan, TextAlign.Start)
             }
         }
-        PrismHook(card.hook, plan.hookSp, TextAlign.Start)
+        if (plan.showHook) PrismHook(card.hook, plan.hookSp, TextAlign.Start)
     }
 }
 

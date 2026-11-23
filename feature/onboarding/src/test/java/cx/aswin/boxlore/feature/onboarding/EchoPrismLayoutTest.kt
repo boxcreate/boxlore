@@ -86,6 +86,14 @@ class EchoPrismLayoutTest {
         assertEquals(EchoPrismLayout.HookSp, roomier.hookSp)
     }
 
+    @Test fun `on the shortest slots the pitch gives way, so the card is never taller than its slot`() {
+        val long = List(3) { hook }.joinToString(" ")
+        val short = plan("Bloomberg Intelligence: Tech Disruptors", 272, 180, pitch = long)
+        assertTrue("height ${short.height}", short.height <= 180)
+        assertFalse(short.showHook)
+        assertTrue("the pitch shows wherever it fits", plan("Bloomberg Intelligence: Tech Disruptors", 272, 300, pitch = hook).showHook)
+    }
+
     @Test fun `the card hugs its art and never grows past its widest`() {
         val roomy = plan("Good Hang with Amy Poehler", 625, 430)
         assertTrue(roomy.width <= EchoPrismLayout.MaxWidth)
