@@ -31,7 +31,7 @@ Announcement title:
 - In Android Auto, a show's page now lists its episodes from newest to oldest. Episodes you've started stay in their place and show the time left.
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.
-- On a phone turned sideways, show posters fit more across at a comfortable size, and the bottom bar and mini player stay clear of the navigation buttons and camera.
+- On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.
 
 ## Fixed
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns boxlore's shared Compose visuals: theme, type, shapes, motion and press feedback, window and pane layout, shared components, navigation chrome, artwork loading, the Echo mascot, share cards and the page-view helper. It owns no navigation graphs, repositories, network, Room or business workflows; callers pass data and callbacks in.
+Owns boxlore's shared Compose visuals: theme, type, shapes, motion, press feedback, window and pane layout, shared components, navigation chrome, artwork loading, Echo, share cards and the page-view helper. It owns no navigation graphs, repositories, network, Room or business workflows; callers pass data and callbacks in.
 
 ## Public API
 
@@ -115,7 +115,10 @@ Owns boxlore's shared Compose visuals: theme, type, shapes, motion and press fee
 - Use the bundled logo and wordmark vectors (`ic_boxlore_logo`, `ic_lore_brand`, `logo_lore`, `ic_boxlore_brief_logo`) through `BoxLoreLogo` and the shared components; never redraw or retype them.
 - Write the product name as lowercase **boxlore**, including the brief's show name.
 - The brand display font appears only in logo and wordmark artwork; all UI text uses Google Sans Flex.
-- Wordmarks and the LORE mark stay upright, never slanted. Share cards use the plain wordmark with a "Listen on" label on the card's bar, clear of story controls.
+
+### Upright brand wordmarks
+
+- Wordmarks and the LORE mark are never slanted. Share cards use the plain wordmark with a "Listen on" label on the card's bar, clear of story controls.
 
 ## Internal structure
 
