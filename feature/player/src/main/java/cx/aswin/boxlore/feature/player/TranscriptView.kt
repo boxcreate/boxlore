@@ -9,10 +9,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -22,6 +23,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -32,9 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -252,35 +253,25 @@ private fun TranscriptSyncButton(
         exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
         modifier = modifier
     ) {
-        Box(
-            modifier = Modifier
-                .shadow(4.dp, CircleShape)
-                .clip(CircleShape)
-                .background(colorScheme.secondaryContainer)
-                .border(
-                    width = 1.dp,
-                    color = colorScheme.outlineVariant,
-                    shape = CircleShape
-                )
-                .clickable { onClick() }
-                .padding(horizontal = 14.dp, vertical = 8.dp)
+        FilledTonalButton(
+            onClick = onClick,
+            shape = CircleShape,
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = colorScheme.secondaryContainer,
+                contentColor = colorScheme.onSecondaryContainer
+            ),
+            elevation = ButtonDefaults.filledTonalButtonElevation(defaultElevation = 3.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Sync,
-                    contentDescription = null,
-                    tint = colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(
-                    text = stringResource(R.string.player_transcript_sync_scroll),
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.bold),
-                    color = colorScheme.onSecondaryContainer
-                )
-            }
+            Icon(
+                imageVector = Icons.Rounded.Sync,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.player_transcript_sync_scroll),
+                style = MaterialTheme.typography.labelLarge
+            )
         }
     }
 }
