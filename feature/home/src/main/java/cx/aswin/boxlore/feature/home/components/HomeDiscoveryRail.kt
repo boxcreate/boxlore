@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
@@ -17,7 +18,13 @@ internal fun HomeDiscoveryRail(
 ) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val cardWidth = HomeFeedSpacing.railCardWidth(maxWidth, compact)
-        LazyRow(modifier = Modifier.testTag("home_discovery_rail"), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(HomeFeedSpacing.RailItemGap)) {
+        // The rail runs past the gutter to the screen edge, so cards slide off the edge instead of
+        // being cut at an invisible line; at rest the first card still starts on the gutter.
+        LazyRow(
+            modifier = Modifier.bleed(HomeFeedSpacing.GridSide).testTag("home_discovery_rail"),
+            contentPadding = PaddingValues(horizontal = HomeFeedSpacing.GridSide),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(HomeFeedSpacing.RailItemGap),
+        ) {
             content(cardWidth)
         }
     }
