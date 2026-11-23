@@ -301,7 +301,8 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         val compose = fixture.compose
         // Sections can wait on saved preferences, so give them a moment to appear before scrolling.
         compose.waitUntil(SCENE_WAIT_MS) { keys.any { key -> runCatching { compose.onNodeWithTag(FEED_TAG).performScrollToKey(key) }.isSuccess } }
-        awaitTag(tag)
+        // Sections that arrive later can push the item back down, so keep it in view while waiting.
+        awaitTag(tag) { keys.any { key -> runCatching { compose.onNodeWithTag(FEED_TAG).performScrollToKey(key) }.isSuccess } }
         reveal(tag)
     }
 
@@ -329,11 +330,12 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     }
 
     /** Captures run on a paused clock, so step it until [tag] shows, failing after [SCENE_WAIT_MS] of app time. */
-    private fun awaitTag(tag: String) {
+    private fun awaitTag(tag: String, onStep: () -> Unit = {}) {
         val compose = fixture.compose
         var waited = 0L
         while (compose.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isEmpty()) {
             check(waited < SCENE_WAIT_MS) { "$tag never showed" }
+            onStep()
             compose.mainClock.advanceTimeBy(SCENE_STEP_MS)
             waited += SCENE_STEP_MS
         }
