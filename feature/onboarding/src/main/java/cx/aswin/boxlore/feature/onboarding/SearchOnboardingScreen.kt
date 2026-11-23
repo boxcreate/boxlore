@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
@@ -29,10 +28,8 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
@@ -45,9 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.BoxloreSearchField
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
@@ -57,7 +52,6 @@ import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
-import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -94,7 +88,7 @@ val SEARCH_CATEGORIES =
  * chips and heading scroll away with the shows. The results always scroll clear of the keyboard.
  */
 @Composable
-@Suppress("LongParameterList", "LongMethod")
+@Suppress("LongParameterList")
 internal fun OnboardingSearchScreen(
     query: String,
     results: List<Podcast>,
@@ -116,7 +110,6 @@ internal fun OnboardingSearchScreen(
 ) {
     val window = LocalBoxloreWindowLayout.current
     val tablet = window.usesTabletLayout
-    val focus = LocalFocusManager.current
     // On phones the keyboard covers the bar; the results scroll clear of it instead.
     val keyboard = with(LocalDensity.current) { WindowInsets.ime.getBottom(this).toDp() }
     val typing = !tablet && keyboard > 0.dp
@@ -137,44 +130,14 @@ internal fun OnboardingSearchScreen(
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .then(if (tablet) Modifier.imePadding() else Modifier),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = { if (query.isNotEmpty()) onQueryChange("") else onBack() }, modifier = Modifier.size(48.dp)) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.onboarding_back))
-                }
-                BoxloreSearchField(
-                    query = query,
-                    onQueryChange = onQueryChange,
-                    onSearch = { focus.clearFocus() },
-                    placeholder = stringResource(R.string.onboarding_search_placeholder),
-                    modifier = Modifier.weight(1f),
-                    maxWidth = null,
-                )
-            }
+            SearchBoxRow(query, onQueryChange, onBack)
             if (query.isEmpty() && !compactHeader) SearchCategoryRow(selectedSearchGenre, onGenreSelect)
-            val body = Modifier.fillMaxWidth().weight(1f)
-            when {
-                isSearching -> Box(body, contentAlignment = Alignment.Center) { BoxLoreLoader.Expressive(size = 100.dp) }
-                query.isEmpty() -> {
-                    if (!compactHeader) SearchSectionTitle(selectedSearchGenre)
-                    PopularShowsGrid(
-                        shows = popularPodcasts,
-                        loading = isPopularLoading,
-                        columns = columns,
-                        subscribedIds = subscribedIds,
-                        onSubscribe = onSubscribe,
-                        bottomPadding = listBottom,
-                        header = if (compactHeader) SearchGridHeader(selectedSearchGenre, onGenreSelect) else null,
-                        modifier = body,
-                    )
-                }
-                results.isEmpty() && alsoFoundResults.isEmpty() && searchFailed ->
-                    OnboardingSearchFailed(onRetrySearch, body.padding(horizontal = 24.dp))
-                results.isEmpty() && alsoFoundResults.isEmpty() -> OnboardingSearchEmpty(body.padding(horizontal = 24.dp))
-                else -> SearchResultsList(query, results, alsoFoundResults, subscribedIds, onSubscribe, listBottom, body)
-            }
+            SearchBody(
+                SearchBodyState(query, results, alsoFoundResults, isSearching, searchFailed, popularPodcasts, isPopularLoading, selectedSearchGenre, subscribedIds),
+                SearchLayout(columns, compactHeader, listBottom),
+                SearchBodyActions(onRetrySearch, onSubscribe, onGenreSelect),
+                Modifier.fillMaxWidth().weight(1f),
+            )
             if (subscribedIds.isNotEmpty() && !typing) {
                 SearchPicksBar(picks, subscribedIds.size, isAiSideTrip, onOpenPicks = { picksOpen = true }, onDone = onDone)
             }
@@ -182,6 +145,70 @@ internal fun OnboardingSearchScreen(
     }
     LaunchedEffect(picks.isEmpty()) { if (picks.isEmpty()) picksOpen = false }
     if (picksOpen && picks.isNotEmpty()) SearchPicksSheet(picks, onRemove = onSubscribe, onDismiss = { picksOpen = false })
+}
+
+/** Back (or clear the query) and the search box. */
+@Composable
+private fun SearchBoxRow(query: String, onQueryChange: (String) -> Unit, onBack: () -> Unit) {
+    val focus = LocalFocusManager.current
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = { if (query.isNotEmpty()) onQueryChange("") else onBack() }, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.onboarding_back))
+        }
+        BoxloreSearchField(
+            query = query,
+            onQueryChange = onQueryChange,
+            onSearch = { focus.clearFocus() },
+            placeholder = stringResource(R.string.onboarding_search_placeholder),
+            modifier = Modifier.weight(1f),
+            maxWidth = null,
+        )
+    }
+}
+
+/** What a search shows under the box: typed results, the trending grid, a loader, or why there is nothing. */
+private class SearchBodyState(
+    val query: String,
+    val results: List<Podcast>,
+    val alsoFoundResults: List<Podcast>,
+    val isSearching: Boolean,
+    val searchFailed: Boolean,
+    val popularPodcasts: List<Podcast>,
+    val isPopularLoading: Boolean,
+    val selectedSearchGenre: String?,
+    val subscribedIds: Set<String>,
+)
+
+/** The grid's columns, whether the chips ride in the grid, and the room left under the lists. */
+private class SearchLayout(val columns: Int, val compactHeader: Boolean, val listBottom: Dp)
+
+private class SearchBodyActions(val onRetrySearch: () -> Unit, val onSubscribe: (Podcast) -> Unit, val onGenreSelect: (String?) -> Unit)
+
+@Composable
+private fun SearchBody(state: SearchBodyState, layout: SearchLayout, actions: SearchBodyActions, modifier: Modifier) {
+    val nothing = state.results.isEmpty() && state.alsoFoundResults.isEmpty()
+    when {
+        state.isSearching -> Box(modifier, contentAlignment = Alignment.Center) { BoxLoreLoader.Expressive(size = 100.dp) }
+        state.query.isEmpty() -> Column(modifier) {
+            if (!layout.compactHeader) SearchSectionTitle(state.selectedSearchGenre)
+            PopularShowsGrid(
+                shows = state.popularPodcasts,
+                loading = state.isPopularLoading,
+                columns = layout.columns,
+                subscribedIds = state.subscribedIds,
+                onSubscribe = actions.onSubscribe,
+                bottomPadding = layout.listBottom,
+                header = if (layout.compactHeader) SearchGridHeader(state.selectedSearchGenre, actions.onGenreSelect) else null,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+            )
+        }
+        nothing && state.searchFailed -> OnboardingSearchFailed(actions.onRetrySearch, modifier.padding(horizontal = 24.dp))
+        nothing -> OnboardingSearchEmpty(modifier.padding(horizontal = 24.dp))
+        else -> SearchResultsList(state.query, state.results, state.alsoFoundResults, state.subscribedIds, actions.onSubscribe, layout.listBottom, modifier)
+    }
 }
 
 /**
@@ -406,117 +433,6 @@ private fun OnboardingSearchEmpty(modifier: Modifier) {
 }
 
 /**
- * The bar under the results once something is picked: a button with up to three of the picked
- * covers and the count, which opens them, and Continue. Opened from Echo, a note says the chat
- * carries on afterwards.
- */
-@Composable
-private fun SearchPicksBar(picks: List<Podcast>, count: Int, isAiSideTrip: Boolean, onOpenPicks: () -> Unit, onDone: () -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth().testTag(SEARCH_PICKS_BAR_TAG)) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(horizontal = 24.dp, vertical = 12.dp),
-        ) {
-            if (isAiSideTrip) {
-                Text(
-                    text = stringResource(R.string.onboarding_search_side_trip_note),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SearchPicksButton(picks, count, onOpenPicks)
-                OnboardingPrimaryButton(
-                    label = pluralStringResource(
-                        if (isAiSideTrip) R.plurals.onboarding_search_subscribe_continue_chat else R.plurals.onboarding_search_continue_with,
-                        count,
-                        count,
-                    ),
-                    enabled = true,
-                    onClick = onDone,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-    }
-}
-
-/** Up to three picked covers overlapping, then "+N" for the rest; one button that opens the picks. */
-@Composable
-private fun SearchPicksButton(picks: List<Podcast>, count: Int, onClick: () -> Unit) {
-    val label = pluralStringResource(R.plurals.onboarding_search_selected_shows, count, count)
-    val shown = picks.take(PicksCoversShown)
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        modifier = Modifier.heightIn(min = 56.dp).testTag(SEARCH_PICKS_BUTTON_TAG).clearAndSetSemantics {
-            contentDescription = label
-            role = Role.Button
-            onClick(label) {
-                onClick()
-                true
-            }
-        },
-    ) {
-        Row(Modifier.padding(horizontal = 10.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box {
-                shown.forEachIndexed { index, podcast ->
-                    OptimizedImage(
-                        url = podcast.imageUrl,
-                        fallbackUrls = podcast.artworkUrls(),
-                        proxyWidth = 150,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .padding(start = PicksCoverStep * index)
-                            .size(PicksCoverSize)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                    )
-                }
-            }
-            if (count > shown.size) {
-                Text(
-                    "+${count - shown.size}", // i18n-ignore
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = GoogleSansWeight.bold,
-                    modifier = Modifier.padding(start = 8.dp, end = 4.dp),
-                )
-            }
-        }
-    }
-}
-
-private const val PicksCoversShown = 3
-private val PicksCoverSize = 36.dp
-private val PicksCoverStep = 24.dp
-
-/** The picked shows, each with its picked mark; tapping one removes it. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SearchPicksSheet(picks: List<Podcast>, onRemove: (Podcast) -> Unit, onDismiss: () -> Unit) {
-    TrackScreenView("onboarding_search_picks")
-    BoxloreModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.fillMaxWidth().tabletSheetScroll().padding(start = 16.dp, end = 16.dp, bottom = 24.dp).testTag(SEARCH_PICKS_SHEET_TAG)) {
-            Text(
-                pluralStringResource(R.plurals.onboarding_search_selected_shows, picks.size, picks.size),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp).semantics { heading() },
-            )
-            picks.forEach { podcast ->
-                key(podcast.id) { SearchResultRow(podcast = podcast, isSubscribed = true, onSubscribe = { onRemove(podcast) }) }
-            }
-        }
-    }
-}
-
-/**
  * A trending poster. The whole tile is one checkbox; its mark is Echo's solid badge, which blooms
  * into a shape when picked.
  */
@@ -568,47 +484,6 @@ private fun PopularPodcastGridItem(podcast: Podcast, isSubscribed: Boolean, onCl
     }
 }
 
-/** A typed result: the whole row is one checkbox, marked with Echo's badge. */
-@Composable
-private fun SearchResultRow(podcast: Podcast, isSubscribed: Boolean, onSubscribe: () -> Unit) {
-    val state = stringResource(if (isSubscribed) R.string.onboarding_search_selected else R.string.onboarding_search_select)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
-            .semantics(mergeDescendants = true) {
-                role = Role.Checkbox
-                toggleableState = ToggleableState(isSubscribed)
-                stateDescription = state
-            }
-            .expressiveClickable(onClick = onSubscribe)
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        OptimizedImage(
-            url = podcast.imageUrl,
-            fallbackUrls = podcast.artworkUrls(),
-            proxyWidth = 400,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.size(56.dp).clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        )
-        Spacer(modifier = Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(podcast.title, style = MaterialTheme.typography.bodyLarge, fontWeight = GoogleSansWeight.medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(
-                podcast.artist,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        EchoSelectionBadge(selected = isSubscribed, icon = if (isSubscribed) Icons.Rounded.Check else Icons.Rounded.Add, size = 36.dp)
-    }
-}
-
 internal const val SEARCH_GRID_TAG = "onboarding_search_grid"
 internal const val SEARCH_RESULTS_TAG = "onboarding_search_results"
 internal const val SEARCH_CATEGORIES_TAG = "onboarding_search_categories"
@@ -623,7 +498,6 @@ private fun Modifier.bleedSideways(by: Dp): Modifier = layout { measurable, cons
     val placeable = measurable.measure(constraints.copy(minWidth = constraints.minWidth + extra, maxWidth = constraints.maxWidth + extra))
     layout(constraints.maxWidth, placeable.height) { placeable.place(-extra / 2, 0) }
 }
-
 
 /** A show search that couldn't be read says so and offers Try again, never "No Podcasts Found". */
 @Composable

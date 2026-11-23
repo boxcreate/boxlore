@@ -69,7 +69,26 @@ import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
  * What Echo says: a reaction, the opening line, or a slow-request line with its countdown. On a
  * show card it is the card's question, in bold, standing in for the question headline.
  */
-private data class EchoSpeech(val line: String, val detail: String?, val emphasis: Boolean = false)
+private data class EchoSpeech(val line: String, val detail: String?, val emphasis: Boolean = false, val error: Boolean = false)
+
+/** What Echo says in its bubble this turn, if anything. */
+@Composable
+private fun rememberEchoSpeech(state: OnboardingUiState, kind: EchoScreenKind): EchoSpeech? {
+    val waitKey = if (kind == EchoScreenKind.Waiting && !state.isSynthesizing) "turn:${state.aiHistory.size}" else null
+    val wait = rememberEchoWaitCopy(EchoWaitStep.NextQuestion, waitKey)
+    val intro = stringResource(R.string.echo_intro)
+    val errorTitle = stringResource(R.string.echo_error_title)
+    val errorBody = stringResource(R.string.echo_error_body)
+    return when (kind) {
+        EchoScreenKind.Asking, EchoScreenKind.Writing, EchoScreenKind.Recovery ->
+            (if (EchoScreenModel.isOpeningTurn(state)) intro else state.aiGuidedTurn?.response)?.takeIf { it.isNotBlank() }?.let { EchoSpeech(it, null) }
+        EchoScreenKind.Waiting -> wait?.let { EchoSpeech(it.line, it.detail) }
+        EchoScreenKind.Deck -> state.aiDeck.current?.let { EchoSpeech(it.question, null, emphasis = true) }
+        // A failed turn is Echo's to say, in its own bubble, like every other line.
+        EchoScreenKind.Error -> EchoSpeech(errorTitle, errorBody, error = true)
+        else -> null
+    }
+}
 
 /**
  * Echo centred like a messaging profile, with its speech bubble underneath and a small tail
@@ -79,21 +98,7 @@ private data class EchoSpeech(val line: String, val detail: String?, val emphasi
  */
 @Composable
 internal fun EchoHeader(state: OnboardingUiState, kind: EchoScreenKind, metrics: EchoLayoutMetrics, paused: Boolean = false) {
-    val opening = EchoScreenModel.isOpeningTurn(state)
-    val waitKey = if (kind == EchoScreenKind.Waiting && !state.isSynthesizing) "turn:${state.aiHistory.size}" else null
-    val wait = rememberEchoWaitCopy(EchoWaitStep.NextQuestion, waitKey)
-    val intro = stringResource(R.string.echo_intro)
-    val errorTitle = stringResource(R.string.echo_error_title)
-    val errorBody = stringResource(R.string.echo_error_body)
-    val speech = when (kind) {
-        EchoScreenKind.Asking, EchoScreenKind.Writing, EchoScreenKind.Recovery ->
-            (if (opening) intro else state.aiGuidedTurn?.response)?.takeIf { it.isNotBlank() }?.let { EchoSpeech(it, null) }
-        EchoScreenKind.Waiting -> wait?.let { EchoSpeech(it.line, it.detail) }
-        EchoScreenKind.Deck -> state.aiDeck.current?.let { EchoSpeech(it.question, null, emphasis = true) }
-        // A failed turn is Echo's to say, in its own bubble, like every other line.
-        EchoScreenKind.Error -> EchoSpeech(errorTitle, errorBody)
-        else -> null
-    }
+    val speech = rememberEchoSpeech(state, kind)
     if (kind == EchoScreenKind.Deck) {
         Row(
             Modifier.fillMaxWidth(),
@@ -124,13 +129,11 @@ internal fun EchoHeader(state: OnboardingUiState, kind: EchoScreenKind, metrics:
             label = "echoSpeech",
         ) { line ->
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                if (line != null && kind == EchoScreenKind.Error && line == errorTitle) {
-                    Box(Modifier.testTag("echo_error").semantics { liveRegion = LiveRegionMode.Polite }) {
-                        EchoBubble(line, errorBody, metrics.bubbleLines)
-                    }
-                } else if (line != null) {
+                if (line != null) {
                     val current = speech?.takeIf { it.line == line }
-                    EchoBubble(line, current?.detail, metrics.bubbleLines, emphasis = current?.emphasis == true)
+                    val bubble = @Composable { EchoBubble(line, current?.detail, metrics.bubbleLines, emphasis = current?.emphasis == true) }
+                    // An error is announced as it appears.
+                    if (current?.error == true) Box(Modifier.testTag("echo_error").semantics { liveRegion = LiveRegionMode.Polite }) { bubble() } else bubble()
                 }
             }
         }

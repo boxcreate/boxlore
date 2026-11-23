@@ -188,7 +188,8 @@ private class EchoFitPlanner(
      * full-size tiles, instead of stretching two across, when their labels fit with their icons.
      */
     private fun wideTopics(level: EchoFitLevel, metrics: EchoLayoutMetrics): EchoFit? {
-        if (!topics || width < WideTopicsMinWidth || metrics.tileHeight < WideTopicsMinTile || !labelsFit(width, WideTopicColumns, showIcons = true, metrics)) return null
+        val roomy = width >= WideTopicsMinWidth && metrics.tileHeight >= WideTopicsMinTile
+        if (!topics || !roomy || !labelsFit(width, WideTopicColumns, showIcons = true, metrics)) return null
         val question = questionHeight(metrics, width)
         val minAnswers = answersMinHeight(metrics, WideTopicColumns, inline = true)
         if (columnHeight(metrics, width, question) + minAnswers > height) return null
@@ -359,8 +360,6 @@ private class EchoFitPlanner(
         return measure.labelsFit(room, maxLines = if (topics) topicLines else 2)
     }
 
-    private fun startColumnWidth(total: Float): Float = (total - SideBySideGap) * SideBySideStartShare
-
     private data class TileStep(val height: Dp, val stacked: Boolean, val badge: Dp)
 
     private data class RowStep(val height: Dp, val badge: Dp)
@@ -408,3 +407,6 @@ internal val EchoAnswerRowEnd = 14.dp
 internal val EchoAnswerRowSpacing = 12.dp
 internal val EchoAnswerStackedPadding = 14.dp
 internal val EchoAnswerTextOnlyPadding = 16.dp
+
+/** The start column's width beside the answers, in a body [total] wide. */
+private fun startColumnWidth(total: Float): Float = (total - SideBySideGap) * SideBySideStartShare
