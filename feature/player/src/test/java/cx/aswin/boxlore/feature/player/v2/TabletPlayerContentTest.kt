@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -110,6 +112,30 @@ class TabletPlayerContentTest {
         render(contextPane = true, onOpen = { opens++ })
         fixture.compose.onNodeWithContentDescription("Open full-screen player").performClick()
         assertEquals(1, opens)
+    }
+
+    @Test
+    fun `beside a page the small cover is a plain card without the next-episode swipe`() {
+        window.value = BoxloreWindowLayout(1_280f, 800f)
+        render(contextPane = true)
+        fixture.compose.onNodeWithTag(COMPACT_PLAYER_ARTWORK_TAG).assertExists()
+        fixture.compose.onNodeWithContentDescription("Swipe for next episode").assertDoesNotExist()
+    }
+
+    @Test
+    fun `tablet tabs use the switcher and keep the picked tab across a resize`() {
+        val store = PlayerPresentationStore(episode.id, FullPlayerUiState(), tabletUsed = true)
+        window.value = BoxloreWindowLayout(1_280f, 800f)
+        render(presentationStore = store)
+        fixture.compose.onNodeWithText("Up next").assertIsSelected()
+        fixture.compose.onNodeWithText("Chapters").performClick()
+        advance()
+        listOf(BoxloreWindowLayout(800f, 1_280f), BoxloreWindowLayout(1_280f, 800f)).forEach { layout ->
+            fixture.compose.runOnIdle { window.value = layout }
+            advance()
+            fixture.compose.onNodeWithText("Chapters").assertIsSelected()
+            fixture.compose.onNodeWithText("Up next").assertIsNotSelected()
+        }
     }
 
     @Test
