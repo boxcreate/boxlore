@@ -14,15 +14,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -135,18 +140,23 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
         fixture.compose.mainClock.advanceTimeBy(1_000)
         fixture.compose.waitForIdle()
         when (view) {
-            "shows" -> fixture.compose.onNodeWithText("Shows").performClick()
+            "shows" -> {
+                val shows = text(HistoryR.string.history_group_shows)
+                timelineList().performScrollToNode(hasText(shows))
+                tap(fixture.compose.onNodeWithText(shows))
+                timelineList().performScrollToIndex(0)
+            }
             "insights-mosaic", "insights-when", "insights-records" -> {
                 val key = mapOf("insights-mosaic" to "mosaic", "insights-when" to "when", "insights-records" to "records").getValue(view)
                 fixture.compose.onNodeWithTag(INSIGHTS_LIST_TAG).performScrollToKey(key)
             }
-            "timeline-menu" -> tap(fixture.compose.onAllNodes(hasContentDescription(text(HistoryR.string.history_more_options_for, "").trim(), substring = true)).onFirst())
+            "timeline-menu" -> tap(firstRowMore())
             "history-menu", "clear-dialog" -> {
                 tap(fixture.compose.onNodeWithContentDescription(text(HistoryR.string.history_more_options)))
                 if (view == "clear-dialog") tap(fixture.compose.onNodeWithText(text(HistoryR.string.history_clear_all)))
             }
             "snackbar" -> {
-                tap(fixture.compose.onAllNodes(hasContentDescription(text(HistoryR.string.history_more_options_for, "").trim(), substring = true)).onFirst())
+                tap(firstRowMore())
                 tap(fixture.compose.onNodeWithText(text(HistoryR.string.history_remove_from_history)))
                 // Let the removal reach the view model and its message reach the host.
                 repeat(10) {
@@ -161,6 +171,17 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
             check(roots > 1) { "$view opens its own window ($roots roots)" }
         }
         fixture.capture("history-$view", allWindows = view in ALL_WINDOW_VIEWS)
+    }
+
+    /** The Timeline's own list (Jump back in scrolls sideways). */
+    private fun timelineList(): SemanticsNodeInteraction =
+        fixture.compose.onAllNodes(hasScrollToNodeAction() and SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).onFirst()
+
+    /** Today's first row's More button, scrolled into view: short windows start with the search box and Jump back in. */
+    private fun firstRowMore(): SemanticsNodeInteraction {
+        val more = hasContentDescription(text(HistoryR.string.history_more_options_for, "Was Jack the Ripper a Freemason?"))
+        timelineList().performScrollToNode(more)
+        return fixture.compose.onAllNodes(more).onFirst()
     }
 
     /** Clicks [node] through its semantics (popups open on the paused clock) and lets the result draw. */
@@ -332,7 +353,12 @@ internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE, priv
 
     override suspend fun removeHistoryItem(episodeId: String): ListeningHistoryRemoval? = history.firstOrNull { it.episodeId == episodeId }?.let { ListeningHistoryRemoval(it) }
 
-    override suspend fun restoreHistoryRemoval(removal: ListeningHistoryRemoval) = Unit
+    /** Episodes put back by Undo, in order. */
+    val restored = mutableListOf<String>()
+
+    override suspend fun restoreHistoryRemoval(removal: ListeningHistoryRemoval) {
+        restored += removal.item.episodeId
+    }
 
     override suspend fun clearHistory() = Unit
 
