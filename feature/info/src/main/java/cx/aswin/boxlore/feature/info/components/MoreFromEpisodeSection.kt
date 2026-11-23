@@ -73,7 +73,10 @@ internal fun MoreFromEpisodeSection(
     }
 }
 
-/** Opens the show. Its top corners start the group; the bottom ones join the episode rows below. */
+/**
+ * Opens the show. Its top corners start the group; the bottom ones join the episode rows below. With
+ * episodes listed under it ([joined]) it says "See all"; above "No other episodes" only the arrow shows.
+ */
 @Composable
 private fun MoreFromShowRow(showName: String, imageUrl: String?, joined: Boolean, onShowClick: () -> Unit) {
     val shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = if (joined) 6.dp else 24.dp, bottomEnd = if (joined) 6.dp else 24.dp)
@@ -107,8 +110,9 @@ private fun MoreFromShowRow(showName: String, imageUrl: String?, joined: Boolean
                 Text(stringResource(R.string.episode_info_more_from_label), style = MaterialTheme.typography.labelMedium)
                 Text(showName, style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            // The one way to open the show from here, said in words as well as with the arrow.
-            Text(stringResource(R.string.episode_info_see_all), style = MaterialTheme.typography.labelLarge, maxLines = 1)
+            // The one way to open the show from here, said in words as well as with the arrow while
+            // episodes are listed; "See all" above "No other episodes" would contradict it.
+            if (joined) Text(stringResource(R.string.episode_info_see_all), style = MaterialTheme.typography.labelLarge, maxLines = 1)
             Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, modifier = Modifier.size(22.dp))
         }
     }
