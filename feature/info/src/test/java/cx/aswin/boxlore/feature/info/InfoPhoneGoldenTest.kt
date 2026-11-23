@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -109,7 +110,10 @@ class InfoPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
 
     @Test fun episodeInfoTip() {
         golden.assumeAuditCapture()
-        render("episode-info-tip") { episodePage(richModel(), richEpisode, showTip = true) }
+        // The tip is its own window and goes after four seconds: check it is up, then capture every window.
+        render("episode-info-tip", allWindows = true, action = {
+            golden.compose.onNodeWithText(golden.compose.activity.getString(R.string.episode_info_mark_tip)).assertExists()
+        }) { episodePage(richModel(), richEpisode, showTip = true) }
     }
 
     @Test fun episodeInfoLoading() {
@@ -130,6 +134,13 @@ class InfoPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
         golden.assumeAuditCapture()
         render("episode-info-share", allWindows = true, action = {
             golden.compose.onNodeWithContentDescription(golden.compose.activity.getString(R.string.episode_info_share)).performClick()
+            // The captures hold the clock: let the sheet's window open.
+            repeat(SHEET_OPEN_STEPS) {
+                golden.compose.mainClock.advanceTimeBy(100)
+                golden.compose.waitForIdle()
+            }
+            // An empty scene fails here instead of passing as a picture of the closed page.
+            golden.compose.onNodeWithText(golden.compose.activity.getString(cx.aswin.boxlore.core.designsystem.R.string.share_sheet_title_episode)).assertExists()
         }) { episodePage(richModel(), richEpisode) }
     }
 
@@ -250,6 +261,8 @@ class InfoPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
     }
 
     companion object {
+        private const val SHEET_OPEN_STEPS = 8
+
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
         fun configurations(): List<Array<Any>> = PhoneGoldenConfiguration.matrix()

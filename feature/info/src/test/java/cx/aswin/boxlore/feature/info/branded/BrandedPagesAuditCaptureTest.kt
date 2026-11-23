@@ -12,6 +12,7 @@ import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
@@ -61,6 +62,9 @@ class BrandedPagesAuditCaptureTest(private val show: String, configuration: Phon
         assumeTrue("The © note is checked on three pages", show in CopyrightShows)
         render()
         golden.compose.onAllNodesWithContentDescription(golden.compose.activity.getString(R.string.branded_copyright_button)).onFirst().performClick()
+        golden.compose.mainClock.advanceTimeBy(600) // the captures hold the clock
+        // An empty scene fails here instead of passing as a picture of the closed page.
+        golden.compose.onNode(isPopup()).assertExists()
         golden.capture("branded-$show-copyright-open", allWindows = true)
     }
 
