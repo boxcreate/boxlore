@@ -1,31 +1,37 @@
 package cx.aswin.boxlore.feature.onboarding
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +41,7 @@ internal fun GenrePickerScreen(
     onContinue: () -> Unit,
     onBack: (() -> Unit)? = null,
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = rememberPickerScrollBehavior()
 
     Scaffold(
         modifier =
@@ -48,6 +54,7 @@ internal fun GenrePickerScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.onboarding_genres_title),
+                        modifier = Modifier.padding(start = PickerTitleInset),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         fontWeight = GoogleSansWeight.bold,
@@ -74,36 +81,25 @@ internal fun GenrePickerScreen(
         bottomBar = {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 4.dp,
-                shadowElevation = 4.dp,
             ) {
                 Column(
                     modifier =
                     Modifier
                         .fillMaxWidth()
                         .windowInsetsPadding(WindowInsets.navigationBars)
-                        .padding(24.dp),
+                        .padding(horizontal = 24.dp, vertical = pickerFooterPadding()),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Button(
-                        onClick = onContinue,
-                        enabled = selectedGenres.isNotEmpty(),
-                        modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = MaterialTheme.shapes.extraLarge,
-                    ) {
-                        Text(
-                            if (selectedGenres.isEmpty()) {
+                    OnboardingPrimaryButton(
+                        label =
+                        if (selectedGenres.isEmpty()) {
                                 stringResource(R.string.onboarding_pick_at_least_one)
                             } else {
                                 pluralStringResource(R.plurals.onboarding_continue_selected, selectedGenres.size, selectedGenres.size)
                             },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = GoogleSansWeight.semiBold,
-                        )
-                    }
+                        enabled = selectedGenres.isNotEmpty(),
+                        onClick = onContinue,
+                    )
                 }
             }
         },
@@ -168,14 +164,17 @@ private fun GenreChip(
         color = containerColor,
         contentColor = contentColor,
         shape = MaterialTheme.shapes.extraLarge,
-        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
         modifier =
         Modifier
-            .height(64.dp)
+            .heightIn(min = 64.dp)
+            .semantics {
+                role = Role.Checkbox
+                toggleableState = ToggleableState(isSelected)
+            }
             .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = MaterialTheme.shapes.extraLarge, onClick = onClick),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -189,7 +188,7 @@ private fun GenreChip(
                 stringResource(genre.labelRes),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = if (isSelected) GoogleSansWeight.bold else GoogleSansWeight.medium,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }
@@ -205,7 +204,7 @@ internal fun SubGenrePickerScreen(
     onBack: () -> Unit,
     onContinue: () -> Unit,
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = rememberPickerScrollBehavior()
 
     Scaffold(
         modifier =
@@ -218,6 +217,7 @@ internal fun SubGenrePickerScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.onboarding_subgenres_title),
+                        modifier = Modifier.padding(start = PickerTitleInset),
                         fontWeight = GoogleSansWeight.bold,
                     )
                 },
@@ -240,31 +240,21 @@ internal fun SubGenrePickerScreen(
         bottomBar = {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 4.dp,
-                shadowElevation = 4.dp,
             ) {
                 Column(
                     modifier =
                     Modifier
                         .fillMaxWidth()
                         .windowInsetsPadding(WindowInsets.navigationBars)
-                        .padding(24.dp),
+                        .padding(horizontal = 24.dp, vertical = pickerFooterPadding()),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Button(
+                    OnboardingPrimaryButton(
+                        label =
+                        stringResource(R.string.onboarding_continue),
+                        enabled = true,
                         onClick = onContinue,
-                        modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = MaterialTheme.shapes.extraLarge,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.onboarding_continue),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = GoogleSansWeight.semiBold,
-                        )
-                    }
+                    )
                 }
             }
         },
@@ -353,14 +343,17 @@ private fun SubGenreChip(
         color = containerColor,
         contentColor = contentColor,
         shape = MaterialTheme.shapes.extraLarge,
-        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
         modifier =
         Modifier
-            .height(56.dp)
+            .heightIn(min = 56.dp)
+            .semantics {
+                role = Role.Checkbox
+                toggleableState = ToggleableState(isSelected)
+            }
             .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = MaterialTheme.shapes.extraLarge, onClick = onClick),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -374,9 +367,9 @@ private fun SubGenreChip(
             }
             Text(
                 label,
-                style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp),
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = if (isSelected) GoogleSansWeight.bold else GoogleSansWeight.medium,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }
@@ -394,7 +387,7 @@ internal fun ActivityPickerScreen(
     onBack: () -> Unit,
     onContinue: () -> Unit,
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = rememberPickerScrollBehavior()
 
     val activities = ONBOARDING_ACTIVITIES
 
@@ -409,6 +402,7 @@ internal fun ActivityPickerScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.onboarding_activities_title),
+                        modifier = Modifier.padding(start = PickerTitleInset),
                         fontWeight = GoogleSansWeight.bold,
                     )
                 },
@@ -431,37 +425,25 @@ internal fun ActivityPickerScreen(
         bottomBar = {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 4.dp,
-                shadowElevation = 4.dp,
             ) {
                 Column(
                     modifier =
                     Modifier
                         .fillMaxWidth()
                         .windowInsetsPadding(WindowInsets.navigationBars)
-                        .padding(24.dp),
+                        .padding(horizontal = 24.dp, vertical = pickerFooterPadding()),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Button(
-                        onClick = onContinue,
-                        enabled = selectedActivities.isNotEmpty(),
-                        modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = MaterialTheme.shapes.extraLarge,
-                    ) {
-                        Text(
-                            text =
-                            if (selectedActivities.isEmpty()) {
+                    OnboardingPrimaryButton(
+                        label =
+                        if (selectedActivities.isEmpty()) {
                                 stringResource(R.string.onboarding_select_at_least_one)
                             } else {
                                 pluralStringResource(R.plurals.onboarding_continue_selected, selectedActivities.size, selectedActivities.size)
                             },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = GoogleSansWeight.semiBold,
-                        )
-                    }
+                        enabled = selectedActivities.isNotEmpty(),
+                        onClick = onContinue,
+                    )
                 }
             }
         },
@@ -482,165 +464,16 @@ internal fun ActivityPickerScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            activities.forEach { item ->
-                val isSelected = item.value in selectedActivities
-                val cardColor =
-                    if (isSelected) {
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerHigh
-                    }
-
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = cardColor),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    border =
-                    if (isSelected) {
-                        BorderStroke(
-                            2.dp,
-                            MaterialTheme.colorScheme.primary,
-                        )
-                    } else {
-                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                    },
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                        .animateContentSize(),
-                ) {
-                    Column(
-                        modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .expressiveClickable { onToggleActivity(item.value) }
-                            .padding(16.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Box(
-                                modifier =
-                                Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        if (isSelected) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.secondaryContainer
-                                        },
-                                        androidx.compose.foundation.shape.CircleShape,
-                                    ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    item.icon,
-                                    contentDescription = null,
-                                    tint =
-                                    if (isSelected) {
-                                        MaterialTheme.colorScheme.onPrimary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSecondaryContainer
-                                    },
-                                    modifier = Modifier.size(24.dp),
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(
-                                text = stringResource(item.labelRes),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = GoogleSansWeight.bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-
-                        if (isSelected) {
-                            val mappedGenres = activityGenreMap[item.value] ?: emptySet()
-
-                            Spacer(modifier = Modifier.height(12.dp))
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    text = stringResource(R.string.onboarding_target_genres),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = GoogleSansWeight.semiBold,
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    allSelectedGenres.forEach { genre ->
-                                        val isGenreAssigned = genre in mappedGenres
-                                        val chipContainerColor =
-                                            if (isGenreAssigned) {
-                                                MaterialTheme.colorScheme.primaryContainer
-                                            } else {
-                                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                            }
-                                        val chipContentColor =
-                                            if (isGenreAssigned) {
-                                                MaterialTheme.colorScheme.onPrimaryContainer
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                            }
-                                        val chipBorderColor =
-                                            if (isGenreAssigned) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                            }
-
-                                        Surface(
-                                            color = chipContainerColor,
-                                            contentColor = chipContentColor,
-                                            shape = RoundedCornerShape(12.dp),
-                                            border = BorderStroke(1.dp, chipBorderColor),
-                                            modifier =
-                                            Modifier
-                                                .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(12.dp)) {
-                                                    val newGenres =
-                                                        if (isGenreAssigned) {
-                                                            mappedGenres - genre
-                                                        } else {
-                                                            mappedGenres + genre
-                                                        }
-                                                    onSetGenresForActivity(item.value, newGenres)
-                                                },
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                            ) {
-                                                if (isGenreAssigned) {
-                                                    Icon(
-                                                        Icons.Rounded.Check,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(14.dp),
-                                                        tint = MaterialTheme.colorScheme.primary,
-                                                    )
-                                                }
-                                                Text(
-                                                    text = genreDisplayName(genre),
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    fontWeight = if (isGenreAssigned) GoogleSansWeight.bold else FontWeight.Normal,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            activities.forEachIndexed { index, item ->
+                ListeningChoiceCard(
+                    item = item,
+                    index = index,
+                    selected = item.value in selectedActivities,
+                    mappedGenres = activityGenreMap[item.value].orEmpty(),
+                    allSelectedGenres = allSelectedGenres,
+                    onToggle = { onToggleActivity(item.value) },
+                    onSetGenres = { onSetGenresForActivity(item.value, it) },
+                )
             }
         }
     }
@@ -657,7 +490,7 @@ internal fun LengthPickerScreen(
     onBack: () -> Unit,
     onContinue: () -> Unit,
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = rememberPickerScrollBehavior()
 
     val lengths = ONBOARDING_LENGTHS
 
@@ -672,6 +505,7 @@ internal fun LengthPickerScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.onboarding_lengths_title),
+                        modifier = Modifier.padding(start = PickerTitleInset),
                         fontWeight = GoogleSansWeight.bold,
                     )
                 },
@@ -694,32 +528,21 @@ internal fun LengthPickerScreen(
         bottomBar = {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 4.dp,
-                shadowElevation = 4.dp,
             ) {
                 Column(
                     modifier =
                     Modifier
                         .fillMaxWidth()
                         .windowInsetsPadding(WindowInsets.navigationBars)
-                        .padding(24.dp),
+                        .padding(horizontal = 24.dp, vertical = pickerFooterPadding()),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Button(
-                        onClick = onContinue,
+                    OnboardingPrimaryButton(
+                        label =
+                        stringResource(if (selectedLengths.isEmpty()) R.string.onboarding_select_at_least_one else R.string.onboarding_lengths_generate),
                         enabled = selectedLengths.isNotEmpty(),
-                        modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = MaterialTheme.shapes.extraLarge,
-                    ) {
-                        Text(
-                            text = stringResource(if (selectedLengths.isEmpty()) R.string.onboarding_select_at_least_one else R.string.onboarding_lengths_generate),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = GoogleSansWeight.semiBold,
-                        )
-                    }
+                        onClick = onContinue,
+                    )
                 }
             }
         },
@@ -740,171 +563,16 @@ internal fun LengthPickerScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            lengths.forEach { item ->
-                val isSelected = item.value in selectedLengths
-                val cardColor =
-                    if (isSelected) {
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerHigh
-                    }
-
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = cardColor),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    border =
-                    if (isSelected) {
-                        BorderStroke(
-                            2.dp,
-                            MaterialTheme.colorScheme.primary,
-                        )
-                    } else {
-                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                    },
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                        .animateContentSize(),
-                ) {
-                    Column(
-                        modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .expressiveClickable { onToggleLength(item.value) }
-                            .padding(16.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Box(
-                                modifier =
-                                Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        if (isSelected) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.secondaryContainer
-                                        },
-                                        androidx.compose.foundation.shape.CircleShape,
-                                    ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    item.icon,
-                                    contentDescription = null,
-                                    tint =
-                                    if (isSelected) {
-                                        MaterialTheme.colorScheme.onPrimary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSecondaryContainer
-                                    },
-                                    modifier = Modifier.size(24.dp),
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(item.labelRes),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = GoogleSansWeight.bold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                )
-                                Text(
-                                    text = item.descriptionRes?.let { stringResource(it) }.orEmpty(),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-
-                        if (isSelected) {
-                            val mappedGenres = lengthGenreMap[item.value] ?: emptySet()
-
-                            Spacer(modifier = Modifier.height(12.dp))
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    text = stringResource(R.string.onboarding_target_genres),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = GoogleSansWeight.semiBold,
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    allSelectedGenres.forEach { genre ->
-                                        val isGenreAssigned = genre in mappedGenres
-                                        val chipContainerColor =
-                                            if (isGenreAssigned) {
-                                                MaterialTheme.colorScheme.primaryContainer
-                                            } else {
-                                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                            }
-                                        val chipContentColor =
-                                            if (isGenreAssigned) {
-                                                MaterialTheme.colorScheme.onPrimaryContainer
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                            }
-                                        val chipBorderColor =
-                                            if (isGenreAssigned) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                            }
-
-                                        Surface(
-                                            color = chipContainerColor,
-                                            contentColor = chipContentColor,
-                                            shape = RoundedCornerShape(12.dp),
-                                            border = BorderStroke(1.dp, chipBorderColor),
-                                            modifier =
-                                            Modifier
-                                                .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(12.dp)) {
-                                                    val newGenres =
-                                                        if (isGenreAssigned) {
-                                                            mappedGenres - genre
-                                                        } else {
-                                                            mappedGenres + genre
-                                                        }
-                                                    onSetGenresForLength(item.value, newGenres)
-                                                },
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                            ) {
-                                                if (isGenreAssigned) {
-                                                    Icon(
-                                                        Icons.Rounded.Check,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(14.dp),
-                                                        tint = MaterialTheme.colorScheme.primary,
-                                                    )
-                                                }
-                                                Text(
-                                                    text = genreDisplayName(genre),
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    fontWeight = if (isGenreAssigned) GoogleSansWeight.bold else FontWeight.Normal,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            lengths.forEachIndexed { index, item ->
+                ListeningChoiceCard(
+                    item = item,
+                    index = index,
+                    selected = item.value in selectedLengths,
+                    mappedGenres = lengthGenreMap[item.value].orEmpty(),
+                    allSelectedGenres = allSelectedGenres,
+                    onToggle = { onToggleLength(item.value) },
+                    onSetGenres = { onSetGenresForLength(item.value, it) },
+                )
             }
         }
     }
@@ -913,3 +581,119 @@ internal fun LengthPickerScreen(
 /** A genre key's full name in the app's language; a key the picker doesn't know shows as it is. */
 @Composable
 private fun genreDisplayName(value: String): String = onboardingGenreNameRes(value)?.let { stringResource(it) } ?: value
+
+/**
+ * The pickers' big header. In a short space (a sideways phone, a split-screen half) it starts
+ * collapsed so the choices get the room, and it opens out again when the window grows tall; the
+ * listener's own scrolling is left alone in between.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun rememberPickerScrollBehavior(): TopAppBarScrollBehavior {
+    val behavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val short = boxloreIsShortPane()
+    var wasShort by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(short) {
+        val previous = wasShort
+        wasShort = short
+        if (previous == short) return@LaunchedEffect
+        val state = behavior.state
+        when {
+            // The bar learns its collapsed height when first laid out.
+            short -> state.heightOffset = snapshotFlow { state.heightOffsetLimit }.first { it > -Float.MAX_VALUE }
+            previous == true -> state.heightOffset = 0f
+        }
+    }
+    return behavior
+}
+
+/** Room above and below the pickers' main button: less in a short space. */
+@Composable
+private fun pickerFooterPadding(): Dp = if (boxloreIsShortPane()) 12.dp else 24.dp
+
+/** The large title sits 16dp in; this lines it up with the 24dp subtitle and choices under it. */
+private val PickerTitleInset = 8.dp
+
+/**
+ * One listening moment or length: a solid card that fills like Echo's answers when picked, pressed
+ * as a whole and read as a checkbox, with Echo's badge for its icon. A picked card opens the genres
+ * it should bring, as the app's filter chips.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+@Suppress("LongParameterList") // The choice, its state and its two callbacks.
+private fun ListeningChoiceCard(
+    item: ListeningChoiceItem,
+    index: Int,
+    selected: Boolean,
+    mappedGenres: Set<String>,
+    allSelectedGenres: Set<String>,
+    onToggle: () -> Unit,
+    onSetGenres: (Set<String>) -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val shape = MaterialTheme.shapes.extraLarge
+    Surface(
+        shape = shape,
+        color = if (selected) colors.primaryContainer else colors.surfaceContainerHigh,
+        contentColor = if (selected) colors.onPrimaryContainer else colors.onSurface,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+    ) {
+        Column(Modifier.fillMaxWidth().animateContentSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {
+                        role = Role.Checkbox
+                        toggleableState = ToggleableState(selected)
+                    }
+                    .expressiveClickable(shape = shape, onClick = onToggle)
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                EchoSelectionBadge(selected, item.icon, size = 48.dp, shapeIndex = index)
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = stringResource(item.labelRes), style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.bold)
+                    item.descriptionRes?.let {
+                        Text(text = stringResource(it), style = MaterialTheme.typography.bodyMedium, color = LocalContentColor.current.copy(alpha = 0.8f))
+                    }
+                }
+            }
+            if (selected) {
+                Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                    HorizontalDivider(color = colors.outlineVariant)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    TargetGenreChips(allSelectedGenres, mappedGenres, onSetGenres)
+                }
+            }
+        }
+    }
+}
+
+/** The genres a picked moment or length should bring; each chip adds or removes one. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TargetGenreChips(allSelectedGenres: Set<String>, mapped: Set<String>, onChange: (Set<String>) -> Unit) {
+    Text(
+        text = stringResource(R.string.onboarding_target_genres),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = GoogleSansWeight.semiBold,
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        allSelectedGenres.forEach { genre ->
+            val assigned = genre in mapped
+            PillFilterChip(
+                label = genreDisplayName(genre),
+                selected = assigned,
+                onClick = { onChange(if (assigned) mapped - genre else mapped + genre) },
+                icon = if (assigned) Icons.Rounded.Check else null,
+            )
+        }
+    }
+}
