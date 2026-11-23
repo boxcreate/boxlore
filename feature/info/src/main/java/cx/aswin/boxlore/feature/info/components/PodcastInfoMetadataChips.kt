@@ -465,7 +465,9 @@ internal fun PodcastInfoMetadataChipsRow(
         FlowRow(
             modifier = modifier.fillMaxWidth().testTag(METADATA_CHIPS_ROW_TAG),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            // Tappable chips keep a 48dp touch target around their 36dp pill: line them up by centre.
+            itemVerticalAlignment = Alignment.CenterVertically,
         ) {
             chips.forEach { chip -> chip() }
         }
