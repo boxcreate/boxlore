@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Mic
@@ -47,12 +48,13 @@ import cx.aswin.boxlore.tv.model.TvShow
 import cx.aswin.boxlore.tv.ui.TvNavigator
 import cx.aswin.boxlore.tv.ui.components.Artwork
 import cx.aswin.boxlore.tv.ui.components.ContentSurface
+import cx.aswin.boxlore.tv.ui.components.EpisodeRow
+import cx.aswin.boxlore.tv.ui.components.ListTop
 import cx.aswin.boxlore.tv.ui.components.RoundButton
 import cx.aswin.boxlore.tv.ui.components.RowPadding
 import cx.aswin.boxlore.tv.ui.components.SectionTitle
 import cx.aswin.boxlore.tv.ui.components.TvTextField
 import cx.aswin.boxlore.tv.ui.components.bleedRow
-import cx.aswin.boxlore.tv.ui.show.EpisodeRow
 import cx.aswin.boxlore.tv.ui.theme.TvColors
 import cx.aswin.boxlore.tv.ui.theme.TvSpace
 import kotlinx.coroutines.delay
@@ -85,12 +87,15 @@ fun SearchScreen(container: TvContainer, go: TvNavigator) {
         result = library.search(query)
     }
 
+    val listState = rememberLazyListState()
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = TvSpace.contentStart, end = TvSpace.safeSide, top = TvSpace.safeTop, bottom = TvSpace.safeTop),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         item(key = "field") {
+            ListTop(listState) {
             SearchBar(query, onQuery = { query = it }, micFocus = micFocus, onMic = {
                 val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 try {
@@ -99,6 +104,7 @@ fun SearchScreen(container: TvContainer, go: TvNavigator) {
                     // A TV without voice input keeps the keyboard.
                 }
             })
+            }
         }
         val found = result as? TvSearchResult.Found
         when {

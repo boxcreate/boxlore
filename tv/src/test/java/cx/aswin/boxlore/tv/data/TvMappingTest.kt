@@ -31,4 +31,11 @@ class TvMappingTest {
         assertNull(TvMapping.episode(item.copy(enclosureUrl = "ftp://example.com/7.mp3"), show = null))
         assertEquals(0, TvMapping.minutes(null))
     }
+
+    @Test
+    fun `only a short episode its feed calls a trailer counts as one`() {
+        assertTrue(TvMapping.episode(EpisodeItem(id = 1, title = "T", enclosureUrl = "https://example.com/1.mp3", duration = 120, feedId = 3, episodeType = "trailer"), show = null)!!.trailer)
+        assertEquals(false, TvMapping.trailer("trailer", durationSeconds = 3_600))
+        assertEquals(false, TvMapping.trailer("full", durationSeconds = 60))
+    }
 }

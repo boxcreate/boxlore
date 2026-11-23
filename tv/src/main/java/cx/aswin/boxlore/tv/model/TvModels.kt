@@ -38,6 +38,8 @@ data class TvEpisode(
     val audioUrl: String? = null,
     /** The feed's own key for the episode: with the show, its identity on every boxlore device. */
     val catalogKey: String? = null,
+    /** A show's short trailer, which Smart Queue never picks. */
+    val trailer: Boolean = false,
 ) {
     /** Played share of the episode, from 0 to 1; 0 before it starts. */
     val progress: Float
@@ -58,6 +60,8 @@ data class NowPlaying(
     val minutesLeft: Int,
     val speed: Float = 1f,
     val sleepTimer: SleepTimerChoice = SleepTimerChoice.Off,
+    /** False for the resting card of the last episode, before anything is loaded in the player. */
+    val loaded: Boolean = true,
 )
 
 /** The sleep timer choices the phone player offers, in the same order. */

@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.tv.data
 
+import cx.aswin.boxlore.core.model.TRAILER_MAX_DURATION_SECONDS
 import cx.aswin.boxlore.core.network.model.EpisodeItem
 import cx.aswin.boxlore.core.network.model.PodcastFeed
 import cx.aswin.boxlore.core.network.model.SearchFeed
@@ -40,6 +41,7 @@ internal object TvMapping {
             video = item.enclosureType?.startsWith("video/") == true,
             audioUrl = audio,
             catalogKey = item.catalogKey,
+            trailer = trailer(item.episodeType, item.duration),
         )
     }
 
@@ -57,7 +59,12 @@ internal object TvMapping {
             links = links(feed.notes),
             audioUrl = feed.audioUrl,
             catalogKey = feed.catalogKey,
+            trailer = feed.trailer,
         )
+
+    /** A trailer by the phone's rule: typed "trailer" by its feed and no longer than a short trailer runs. */
+    fun trailer(episodeType: String?, durationSeconds: Int?): Boolean =
+        episodeType.equals("trailer", ignoreCase = true) && (durationSeconds ?: 0) <= TRAILER_MAX_DURATION_SECONDS
 
     /** Whole minutes, rounded up, so a short episode never reads "0 min". Unknown lengths are 0. */
     fun minutes(durationSeconds: Int?): Int {

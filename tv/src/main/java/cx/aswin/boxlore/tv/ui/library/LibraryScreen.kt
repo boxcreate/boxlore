@@ -39,10 +39,10 @@ import cx.aswin.boxlore.tv.TvContainer
 import cx.aswin.boxlore.tv.model.ShowSort
 import cx.aswin.boxlore.tv.model.TvEpisode
 import cx.aswin.boxlore.tv.ui.TvNavigator
+import cx.aswin.boxlore.tv.ui.components.EpisodeRow
 import cx.aswin.boxlore.tv.ui.components.PillButton
 import cx.aswin.boxlore.tv.ui.components.TvTextField
 import cx.aswin.boxlore.tv.ui.search.ShowTile
-import cx.aswin.boxlore.tv.ui.show.EpisodeRow
 import cx.aswin.boxlore.tv.ui.theme.TvColors
 import cx.aswin.boxlore.tv.ui.theme.TvSpace
 

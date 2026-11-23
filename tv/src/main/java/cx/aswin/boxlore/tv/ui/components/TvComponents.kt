@@ -15,6 +15,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +27,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -35,6 +40,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
+import cx.aswin.boxlore.tv.R
 import cx.aswin.boxlore.tv.ui.theme.TvColors
 import cx.aswin.boxlore.tv.ui.theme.TvSpace
 
@@ -43,15 +49,25 @@ const val CONTENT_FOCUS_SCALE = 1.06f
 private const val BUTTON_FOCUS_SCALE = 1.06f
 private val FocusOutlineWidth = 3.dp
 
-/** Cover art cropped to [shape], with a quiet fill while it loads or when there is none. */
+/**
+ * Cover art cropped to [shape], on a quiet fill while it loads. A show with no cover, or one that
+ * fails to load, shows the boxlore mark on the iris container instead of an empty square.
+ */
 @Composable
 fun Artwork(url: String?, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(16.dp)) {
-    Box(modifier.clip(shape).background(TvColors.surfaceHigh)) {
-        if (url != null) {
-            AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+    var missing by remember(url) { mutableStateOf(url == null) }
+    Box(modifier.clip(shape).background(if (missing) TvColors.primaryContainer else TvColors.surfaceHigh), contentAlignment = Alignment.Center) {
+        if (url != null && !missing) {
+            AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize(), onError = { missing = true })
+        }
+        if (missing) {
+            Icon(painterResource(R.drawable.ic_boxlore_mark), contentDescription = null, tint = TvColors.onPrimaryContainer, modifier = Modifier.fillMaxSize(MARK_SHARE))
         }
     }
 }
+
+/** The mark's share of a missing cover, as on the phone. */
+private const val MARK_SHARE = 0.64f
 
 /**
  * A pill button: resting on a quiet fill, iris when the remote is on it. Every action on the TV

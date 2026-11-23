@@ -26,6 +26,9 @@ object TvColors {
     val surfaceHighest = Color(0xFF32333D)
     val onSurface = Color(0xFFE6E6EE)
     val onSurfaceVariant = Color(0xFFC8C5D3)
+
+    /** The quietest text, such as episode notes: still 4.5:1 on the focused surface. */
+    val onSurfaceMuted = Color(0xFF9F9CAA)
     val outline = Color(0xFF938F9F)
     val outlineVariant = Color(0xFF494652)
     val primary = Color(0xFF9C8CFF)

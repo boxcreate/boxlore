@@ -51,13 +51,15 @@ src/main/java/cx/aswin/boxlore/tv/
     RailScaffold.kt # the navigation rail
     TvText.kt       # time, date and sleep-timer labels
     theme/          # boxlore's dark roles, Google Sans Flex, the safe area (TvSpace)
-    components/     # artwork, pill and round buttons, content surfaces, section titles
+    components/     # artwork, episode rows, pill and round buttons, content surfaces, section titles
     home/  show/  player/  search/  library/  settings/
 src/debug/java/.../preview/  # sample shows; debug TvContainerFactory
 src/release/java/...         # release TvContainerFactory
 ```
 
-- Home is the Resume card, Jump back in and New episodes (one sliding row each, at most four;
+- Home opens on a card for the last episode (`ui.home.NowPlayingCard`): Resume starts it in place,
+  and while an episode is in the player the card is its remote (play and pause, skips, Open player).
+  Then come Jump back in and New episodes (one sliding row each, at most four;
   See all opens Library's New episodes), Your shows, Daily Mix, then charts: top shows and one row
   per genre (`ChartGenre`), each loaded as it nears the screen. Home opens with the remote on Resume;
   coming into a row lands on its first item.
@@ -69,7 +71,8 @@ src/release/java/...         # release TvContainerFactory
   its row shrink to make room, so the whole row stays on screen. The player is the
   exception, because the cover's colour already fills Play: there the control the remote is on turns
   near-white and Play takes a light ring.
-- The rail (`RailScaffold`) shows icons until the remote reaches it, then labels over a scrim. Tabs
+- The rail (`RailScaffold`) shows icons until the remote reaches it, then labels over a scrim. While
+  an episode is in the player, its cover sits at the rail's foot on every page and opens the player. Tabs
   replace each other above Home, so Back from a tab returns to Home and Back from Home leaves the
   app, as Play's TV rules ask.
 - The player is a full-screen route without the rail, coloured from the cover as on the phone:
@@ -92,7 +95,9 @@ src/release/java/...         # release TvContainerFactory
   first. Followed shows' feeds are read again, a few at a time, at most every six hours.
 - Your shows on Home use the Smart order: shows listened to most recently first, then as followed.
 - `LiveTvPlayback` talks to `TvPlaybackService` through a media controller, saves the place every
-  few seconds and on pause, and moves on to Up next when an episode ends. The service's media
+  few seconds and on pause, and moves on to Up next when an episode ends. With Up next empty,
+  `playback.TvSmartQueue` picks the show's next release, then another followed show's newest
+  unfinished episode, never a played one or a trailer. The service's media
   session takes the remote's media keys while the app is closed.
 - Signing in: `LiveTvAccount` asks the API for a code (`/auth/tv/start`), shows it, and asks every
   few seconds whether a phone approved it (`/auth/tv/poll`). A code that runs out is replaced by a

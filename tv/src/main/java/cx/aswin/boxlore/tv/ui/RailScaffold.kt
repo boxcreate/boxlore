@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Home
@@ -23,8 +24,11 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +51,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Icon
@@ -54,8 +59,13 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import cx.aswin.boxlore.tv.R
+import cx.aswin.boxlore.tv.model.NowPlaying
+import cx.aswin.boxlore.tv.ui.components.Artwork
 import cx.aswin.boxlore.tv.ui.theme.TvColors
 import cx.aswin.boxlore.tv.ui.theme.TvSpace
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 /** The rail's item for the current page, so a page can send Left straight to the rail; null outside one. */
 val LocalRailFocus = staticCompositionLocalOf<FocusRequester?> { null }
@@ -88,7 +98,7 @@ private const val SCRIM_ALPHA = 0.6f
  * it. Right or Back closes the rail and returns to the item the remote was on before.
  */
 @Composable
-fun RailScaffold(current: RailTab, go: TvNavigator, content: @Composable () -> Unit) {
+fun RailScaffold(current: RailTab, go: TvNavigator, nowPlaying: StateFlow<NowPlaying?>, atRoot: Boolean = true, content: @Composable () -> Unit) {
     var open by remember { mutableStateOf(false) }
     val currentItem = remember { FocusRequester() }
     val contentFocus = remember { FocusRequester() }
@@ -97,6 +107,12 @@ fun RailScaffold(current: RailTab, go: TvNavigator, content: @Composable () -> U
         Unit
     }
     BackHandler(enabled = open, onBack = closeToContent)
+    val rightCloses =
+        Modifier.onPreviewKeyEvent { event ->
+            val right = event.type == KeyEventType.KeyDown && event.key == Key.DirectionRight
+            if (right) closeToContent()
+            right
+        }
     Box(Modifier.fillMaxSize()) {
         Box(
             Modifier.fillMaxSize()
@@ -117,11 +133,7 @@ fun RailScaffold(current: RailTab, go: TvNavigator, content: @Composable () -> U
             Image(painterResource(R.drawable.ic_boxlore_mark), contentDescription = null, modifier = Modifier.padding(start = 16.dp, top = 4.dp).size(28.dp))
             Column(
                 // Coming into the rail lands on the current page, not the item nearest the remote.
-                Modifier.align(Alignment.CenterStart).focusRestorer(currentItem).focusGroup().onPreviewKeyEvent { event ->
-                    val right = event.type == KeyEventType.KeyDown && event.key == Key.DirectionRight
-                    if (right) closeToContent()
-                    right
-                },
+                Modifier.align(Alignment.CenterStart).focusRestorer(currentItem).focusGroup().then(rightCloses),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 RailTab.entries.forEach { tab ->
@@ -132,8 +144,77 @@ fun RailScaffold(current: RailTab, go: TvNavigator, content: @Composable () -> U
                         open = open,
                         // Closed, only the current page can take the remote, so Left from anywhere lands on it.
                         modifier = if (selected) Modifier.focusRequester(currentItem) else Modifier.focusProperties { canFocus = open },
-                        onClick = { if (!selected) go.tab(tab.route) else closeToContent() },
+                        onClick = {
+                            when {
+                                !selected -> go.tab(tab.route)
+                                // A show or episode page sits under Home: Home goes back to the top of it.
+                                !atRoot -> go.home()
+                                else -> closeToContent()
+                            }
+                        },
                     )
+                }
+            }
+            // Down from the last place, like the others only while the rail is open.
+            NowPlayingRailItem(
+                nowPlaying = nowPlaying,
+                open = open,
+                onClick = go::player,
+                modifier = Modifier.align(Alignment.BottomStart).focusProperties { canFocus = open }.then(rightCloses),
+            )
+        }
+    }
+}
+
+/** What the rail shows of the episode in the player; nothing changes it but a new episode or play and pause. */
+private data class RailNow(val title: String, val artworkUrl: String?, val isPlaying: Boolean)
+
+/**
+ * The episode in the player, kept at the foot of the rail on every page: its cover with a badge
+ * for playing or paused, and with the rail open its title. OK opens the player; the remote's own
+ * play and pause key works from anywhere.
+ */
+@Composable
+private fun NowPlayingRailItem(nowPlaying: StateFlow<NowPlaying?>, open: Boolean, onClick: () -> Unit, modifier: Modifier) {
+    val now by remember(nowPlaying) {
+        nowPlaying.map { it?.takeIf { playing -> playing.loaded }?.let { playing -> RailNow(playing.episode.title, playing.episode.artworkUrl, playing.isPlaying) } }
+            .distinctUntilChanged()
+    }.collectAsState(null)
+    val shown = now ?: return
+    Surface(
+        onClick = onClick,
+        modifier = if (open) modifier.fillMaxWidth() else modifier,
+        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(28.dp)),
+        colors =
+        ClickableSurfaceDefaults.colors(
+            containerColor = Color.Transparent,
+            contentColor = TvColors.onSurface,
+            focusedContainerColor = TvColors.primary,
+            focusedContentColor = TvColors.onPrimary,
+            pressedContainerColor = TvColors.primary,
+            pressedContentColor = TvColors.onPrimary,
+        ),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
+    ) {
+        Row(Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(40.dp)) {
+                Artwork(shown.artworkUrl, Modifier.fillMaxSize(), CircleShape)
+                Box(
+                    Modifier.align(Alignment.BottomEnd).size(18.dp).background(TvColors.surfaceHighest, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        if (shown.isPlaying) Icons.Rounded.GraphicEq else Icons.Rounded.Pause,
+                        contentDescription = null,
+                        tint = if (shown.isPlaying) TvColors.primary else TvColors.onSurface,
+                        modifier = Modifier.size(12.dp),
+                    )
+                }
+            }
+            if (open) {
+                Column(Modifier.padding(end = 8.dp)) {
+                    Text(shown.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(stringResource(if (shown.isPlaying) R.string.tv_now_playing else R.string.tv_paused), style = MaterialTheme.typography.labelSmall, maxLines = 1)
                 }
             }
         }

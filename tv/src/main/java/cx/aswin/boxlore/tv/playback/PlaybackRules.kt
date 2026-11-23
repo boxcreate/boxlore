@@ -35,7 +35,7 @@ internal object PlaybackRules {
 
     /** The paused card for the episode last played, shown before anything is loaded in the player. */
     fun resting(episode: TvEpisode, positionMs: Long): NowPlaying =
-        nowPlaying(episode, PlayerSnapshot(positionMs, episode.durationMinutes * MINUTE_MS, isPlaying = false, speed = 1f), SleepTimerChoice.Off)
+        nowPlaying(episode, PlayerSnapshot(positionMs, episode.durationMinutes * MINUTE_MS, isPlaying = false, speed = 1f), SleepTimerChoice.Off).copy(loaded = false)
 
     /** How long a timed sleep choice runs, or null for Off and End of episode. */
     fun sleepDelayMs(choice: SleepTimerChoice): Long? = choice.minutes?.times(MINUTE_MS)

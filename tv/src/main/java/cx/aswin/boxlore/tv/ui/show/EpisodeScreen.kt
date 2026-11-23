@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
@@ -46,8 +47,10 @@ import cx.aswin.boxlore.tv.model.TvEpisode
 import cx.aswin.boxlore.tv.ui.LocalRailFocus
 import cx.aswin.boxlore.tv.ui.TvNavigator
 import cx.aswin.boxlore.tv.ui.components.Artwork
+import cx.aswin.boxlore.tv.ui.components.ListTop
 import cx.aswin.boxlore.tv.ui.components.PillButton
 import cx.aswin.boxlore.tv.ui.components.RoundButton
+import cx.aswin.boxlore.tv.ui.components.entersOn
 import cx.aswin.boxlore.tv.ui.dateAndLength
 import cx.aswin.boxlore.tv.ui.leftOpens
 import cx.aswin.boxlore.tv.ui.theme.TvColors
@@ -64,14 +67,17 @@ fun EpisodeScreen(episodeId: String, container: TvContainer, go: TvNavigator) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     var openLink by rememberSaveable { mutableStateOf<String?>(null) }
     val playFocus = remember { FocusRequester() }
+    val listState = rememberLazyListState()
     val current = episode ?: return
 
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = TvSpace.contentStart, end = TvSpace.safeSide, top = TvSpace.safeTop, bottom = TvSpace.safeTop),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         item(key = "header") {
+            ListTop(listState) {
             EpisodeHeader(
                 episode = current,
                 playFocus = playFocus,
@@ -84,6 +90,7 @@ fun EpisodeScreen(episodeId: String, container: TvContainer, go: TvNavigator) {
                 onLike = { library.setLiked(current.id, !current.liked) },
                 onMarkPlayed = { library.markPlayed(current.id) },
             )
+            }
         }
         if (current.description.isNotEmpty()) {
             item(key = "about") {
@@ -142,7 +149,7 @@ private fun EpisodeHeader(
             )
             Text(episode.title, style = MaterialTheme.typography.headlineMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(dateAndLength(episode.releasedAtMillis, episode.durationMinutes), style = MaterialTheme.typography.bodyMedium, color = TvColors.onSurfaceVariant)
-            Row(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.padding(top = 14.dp).entersOn(playFocus), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 PillButton(
                     label = stringResource(if (episode.minutesLeft != null) R.string.tv_resume else R.string.tv_play),
                     onClick = onPlay,

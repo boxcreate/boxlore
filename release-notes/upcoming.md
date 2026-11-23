@@ -24,6 +24,8 @@ Announcement title:
 
 ## New
 
+- boxlore now has an Android TV app: browse charts and your shows, pick up where you left off, and keep listening as one episode leads to the next.
+
 ## Improved
 
 - The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.

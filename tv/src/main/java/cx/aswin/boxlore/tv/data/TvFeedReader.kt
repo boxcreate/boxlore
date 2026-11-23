@@ -25,6 +25,8 @@ data class TvFeedEpisode(
     val catalogKey: String,
     /** The show notes as the feed gives them, often HTML. */
     val notes: String = "",
+    /** A short trailer, by the feed's own episode type. */
+    val trailer: Boolean = false,
 )
 
 /**
@@ -104,6 +106,7 @@ internal object TvFeedItems {
             publishedAtSeconds = item.episode.publishedDate,
             catalogKey = key,
             notes = item.episode.description,
+            trailer = TvMapping.trailer(item.episode.episodeType, item.episode.duration),
         )
     }
 }

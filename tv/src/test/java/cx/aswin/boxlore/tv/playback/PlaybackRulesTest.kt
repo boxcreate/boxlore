@@ -20,6 +20,8 @@ class PlaybackRulesTest {
         assertEquals(1.5f, now.speed)
         // Until the player knows the length, the episode's own length stands in.
         assertEquals(60, PlaybackRules.resting(episode, positionMs = 0).minutesLeft)
+        // The resting card is not in the player, so Home keeps it a Resume card.
+        assertEquals(false, PlaybackRules.resting(episode, positionMs = 0).loaded)
     }
 
     @Test

@@ -65,6 +65,11 @@ class TvNavigator(private val nav: NavHostController) {
         }
     }
 
+    /** Back to Home itself from a page opened on top of it. */
+    fun home() {
+        nav.popBackStack(TvRoutes.HOME, inclusive = false)
+    }
+
     fun show(id: String) = nav.navigate(TvRoutes.show(id))
 
     fun episode(id: String) = nav.navigate(TvRoutes.episode(id))
@@ -88,10 +93,10 @@ fun TvApp(container: TvContainer) {
     Box(Modifier.fillMaxSize()) {
         NavHost(navController = nav, startDestination = TvRoutes.HOME) {
             composable(TvRoutes.HOME) {
-                RailScaffold(RailTab.Home, go) { HomeScreen(container, go) }
+                RailScaffold(RailTab.Home, go, container.playback.nowPlaying) { HomeScreen(container, go) }
             }
             composable(TvRoutes.SEARCH) {
-                RailScaffold(RailTab.Search, go) { SearchScreen(container, go) }
+                RailScaffold(RailTab.Search, go, container.playback.nowPlaying) { SearchScreen(container, go) }
             }
             composable(
                 TvRoutes.LIBRARY_PAGE,
@@ -103,18 +108,18 @@ fun TvApp(container: TvContainer) {
                 )
             ) { entry ->
                 val tab = LibraryTab.entries.firstOrNull { it.name == entry.arguments?.getString(TvRoutes.ARG_TAB) }
-                RailScaffold(RailTab.Library, go) { LibraryScreen(container, go, tab) }
+                RailScaffold(RailTab.Library, go, container.playback.nowPlaying) { LibraryScreen(container, go, tab) }
             }
             composable(TvRoutes.SETTINGS) {
-                RailScaffold(RailTab.Settings, go) { SettingsScreen(container.account) }
+                RailScaffold(RailTab.Settings, go, container.playback.nowPlaying) { SettingsScreen(container.account) }
             }
             composable(TvRoutes.SHOW, arguments = listOf(navArgument(TvRoutes.ARG_SHOW) { type = NavType.StringType })) { entry ->
                 val id = entry.arguments?.getString(TvRoutes.ARG_SHOW).orEmpty()
-                RailScaffold(RailTab.Home, go) { ShowScreen(id, container, go) }
+                RailScaffold(RailTab.Home, go, container.playback.nowPlaying, atRoot = false) { ShowScreen(id, container, go) }
             }
             composable(TvRoutes.EPISODE, arguments = listOf(navArgument(TvRoutes.ARG_EPISODE) { type = NavType.StringType })) { entry ->
                 val id = entry.arguments?.getString(TvRoutes.ARG_EPISODE).orEmpty()
-                RailScaffold(RailTab.Home, go) { EpisodeScreen(id, container, go) }
+                RailScaffold(RailTab.Home, go, container.playback.nowPlaying, atRoot = false) { EpisodeScreen(id, container, go) }
             }
             composable(TvRoutes.PLAYER) {
                 PlayerScreen(container, go)

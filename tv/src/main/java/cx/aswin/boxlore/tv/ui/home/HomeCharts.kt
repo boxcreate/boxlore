@@ -10,6 +10,7 @@ import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.tv.R
 import cx.aswin.boxlore.tv.data.TvLibrary
 import cx.aswin.boxlore.tv.ui.TvNavigator
+import cx.aswin.boxlore.tv.ui.components.RevealOnFocus
 import cx.aswin.boxlore.tv.ui.search.ShowRow
 
 /** Genre charts on Home, in the phone's genre order, under the names the API's charts use. */
@@ -31,10 +32,10 @@ internal enum class ChartGenre(val apiName: String, @StringRes val label: Int) {
 internal fun LazyListScope.chartItems(library: TvLibrary, go: TvNavigator) {
     item(key = "chart-top") {
         val top by library.trending.collectAsState()
-        if (top.isNotEmpty()) ShowRow(stringResource(R.string.tv_top_shows), top) { go.show(it.id) }
+        if (top.isNotEmpty()) RevealOnFocus { ShowRow(stringResource(R.string.tv_top_shows), top) { go.show(it.id) } }
     }
     items(ChartGenre.entries, key = { "chart-${it.name}" }) { genre ->
         val shows by remember(genre) { library.chart(genre.apiName) }.collectAsState(initial = emptyList())
-        if (shows.isNotEmpty()) ShowRow(stringResource(R.string.tv_top_in, stringResource(genre.label)), shows) { go.show(it.id) }
+        if (shows.isNotEmpty()) RevealOnFocus { ShowRow(stringResource(R.string.tv_top_in, stringResource(genre.label)), shows) { go.show(it.id) } }
     }
 }

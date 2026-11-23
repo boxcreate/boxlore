@@ -124,6 +124,13 @@
     <string name="tv_without_account">You can keep using boxlore on this TV without an account.</string>
     <!-- Player -->
     <string name="tv_now_playing">Now playing</string>
+    <!-- Above the Home card while it plays, e.g. "Now playing · 20m left" -->
+    <string name="tv_now_playing_eyebrow">Now playing · %1$s</string>
+    <!-- Above the Home card while it is paused, e.g. "Paused · 20m left" -->
+    <string name="tv_paused_eyebrow">Paused · %1$s</string>
+    <!-- Sidebar, under the playing episode's title -->
+    <string name="tv_paused">Paused</string>
+    <string name="tv_open_player">Open player</string>
     <string name="tv_playback_speed">Playback speed</string>
     <string name="tv_liked">Liked</string>
     <!-- Under the seek bar while the remote is on it: Left skips back 10 s, Right ahead 30 s -->

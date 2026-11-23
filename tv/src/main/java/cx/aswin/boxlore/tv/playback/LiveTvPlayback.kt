@@ -11,6 +11,7 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import cx.aswin.boxlore.tv.data.LiveTvLibrary
+import cx.aswin.boxlore.tv.data.ShowEpisodes
 import cx.aswin.boxlore.tv.data.TvLibraryStore
 import cx.aswin.boxlore.tv.data.TvPlayback
 import cx.aswin.boxlore.tv.model.NowPlaying
@@ -23,16 +24,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Playback on the TV, through [TvPlaybackService]. Everything here runs on the main thread: [scope]
  * must be a main-thread scope, as the media controller requires.
  *
  * It connects to the service on first use, keeps the listener's place in [store], and moves on to
- * the next episode in Up next when one ends.
+ * the next episode in Up next when one ends, or to the one [TvSmartQueue] picks when Up next is empty.
  */
 class LiveTvPlayback(
     private val context: Context,
@@ -208,7 +211,30 @@ class LiveTvPlayback(
             }
         }
         val following = next
-        if (following != null) play(following.id) else publish(player)
+        when {
+            following != null -> play(following.id)
+            continues -> {
+                publish(player)
+                smartQueue(finished, player)
+            }
+            else -> publish(player)
+        }
+    }
+
+    /**
+     * With Up next empty, [TvSmartQueue] picks what plays next. The show's feed may take a moment
+     * to read, so nothing starts if the listener has played something else or left meanwhile.
+     */
+    private fun smartQueue(finished: TvEpisode, player: MediaController) {
+        scope.launch {
+            // The show's page list, read from its feed if it has not been opened yet.
+            val listing = withTimeoutOrNull(SHOW_READ_TIMEOUT_MS) { library.episodes(finished.showId).first { it != ShowEpisodes.Loading } }
+            val sameShow = (listing as? ShowEpisodes.Loaded)?.episodes.orEmpty()
+            val saved = store.state.value
+            val pick = TvSmartQueue.next(finished, sameShow, saved.newEpisodes + saved.dailyMix, saved.played)
+            val stillEnded = current?.id == finished.id && player.playbackState == Player.STATE_ENDED
+            if (pick != null && stillEnded) play(pick.id)
+        }
     }
 
     private fun saveProgress(player: MediaController) {
@@ -234,6 +260,7 @@ class LiveTvPlayback(
     private companion object {
         const val TICK_MS = 1_000L
         const val SAVE_EVERY_MS = 10_000L
+        const val SHOW_READ_TIMEOUT_MS = 20_000L
     }
 }
 
