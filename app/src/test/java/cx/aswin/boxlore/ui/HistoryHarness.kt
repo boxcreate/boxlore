@@ -40,6 +40,8 @@ internal class HistoryHarness(private val compose: AndroidComposeTestRule<Activi
     val pane: MutableState<BoxloreLayoutBounds?> = mutableStateOf(null)
     val fontScale: MutableState<Float> = mutableStateOf(1f)
     val explores = mutableListOf<Unit>()
+    val plays = mutableListOf<String>()
+    val opens = mutableListOf<String>()
     lateinit var viewModel: HistoryViewModel
 
     fun render(
@@ -58,7 +60,14 @@ internal class HistoryHarness(private val compose: AndroidComposeTestRule<Activi
             ) {
                 BoxLoreTheme(darkTheme = false, dynamicColor = false) {
                     Box(Modifier.requiredSize(window.value.widthDp.dp, window.value.heightDp.dp)) {
-                        HistoryScreen(viewModel, {}, {}, { explores += Unit }, isMiniPlayerVisible = miniPlayer)
+                        HistoryScreen(
+                            viewModel = viewModel,
+                            onBack = {},
+                            onEpisodeClick = { opens += it.episodeId },
+                            onExploreClick = { explores += Unit },
+                            onPlayEpisode = { plays += it.episodeId },
+                            isMiniPlayerVisible = miniPlayer,
+                        )
                     }
                 }
             }

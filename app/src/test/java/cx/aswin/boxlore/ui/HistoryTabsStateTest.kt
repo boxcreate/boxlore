@@ -5,22 +5,38 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.components.BOXLORE_SNACKBAR_TAG
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
+import cx.aswin.boxlore.core.testing.SystemInsets
+import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import cx.aswin.boxlore.core.testing.walkWindows
 import cx.aswin.boxlore.feature.history.HISTORY_EMPTY_TAG
 import cx.aswin.boxlore.feature.history.HistoryTab
 import cx.aswin.boxlore.feature.history.insights.INSIGHTS_LIST_TAG
+import cx.aswin.boxlore.feature.history.insights.INSIGHTS_PAIR_TAG
+import cx.aswin.boxlore.feature.history.insights.MOSAIC_GRID_TAG
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -123,6 +139,81 @@ class HistoryTabsStateTest {
         assertEquals(0f, emptyPage().maxScroll(), 0f)
         compose.onNodeWithText("Explore podcasts").performClick()
         assertEquals(1, history.explores.size)
+    }
+
+    @Test fun `the big title starts slim in short windows and opens again once the window is tall`() {
+        history.render(tab = HistoryTab.INSIGHTS)
+        fun listTop() = compose.onNodeWithTag(INSIGHTS_LIST_TAG).bounds().top
+        val tall = listTop()
+        compose.walkWindows(
+            history.window,
+            BoxloreTestWindows.PHONE_LAND,
+            BoxloreTestWindows.PHONE,
+            BoxloreTestWindows.W900_H479,
+            BoxloreTestWindows.W900_H480,
+            BoxloreTestWindows.SPLIT_HALF,
+            BoxloreTestWindows.PHONE,
+        ) { window ->
+            compose.waitForIdle()
+            if (window.heightDp < 480f) {
+                assertTrue("$window: the title should start slim (list at ${listTop()})", listTop() < tall - 40f)
+            } else {
+                assertEquals("$window: the title should be open again", tall, listTop(), 1f)
+            }
+        }
+        // A tabletop fold's lower half is short too, though the whole window isn't.
+        history.window.value = BoxloreTestWindows.FOLD_TABLETOP
+        history.pane.value = BoxloreLayoutBounds(0f, 336f, 932f, 650f)
+        compose.waitForIdle()
+        assertTrue(listTop() < tall - 40f)
+        history.pane.value = null
+        history.window.value = BoxloreTestWindows.FOLD_FLAT
+        compose.waitForIdle()
+        assertEquals(tall, listTop(), 1f)
+        assertEquals(HistoryTab.INSIGHTS, history.viewModel.selectedTab.value)
+    }
+
+    @Test fun `on a sideways phone row menus and the switcher clear the cutout and side buttons`() {
+        history.window.value = BoxloreTestWindows.PHONE_LAND
+        history.render()
+        WindowCompat.setDecorFitsSystemWindows(compose.activity.window, false)
+        compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets.SIDEWAYS_3_BUTTON) }
+        compose.waitForIdle()
+        val width = BoxloreTestWindows.PHONE_LAND.widthDp
+        val rowMore = hasContentDescription("More options for", substring = true)
+        compose.onAllNodes(hasScrollToNodeAction() and SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).onFirst().performScrollToNode(rowMore)
+        val more = compose.onAllNodes(rowMore).onFirst().bounds()
+        assertTrue("A row's More button ends at ${more.right}", more.right <= width - 48f)
+        val switcher = history.switcher()
+        assertTrue(switcher.left >= 32f && switcher.right <= width - 48f)
+        assertEquals((32f + width - 48f) / 2f, switcher.center.x, 1f)
+    }
+
+    @Test fun `on large tablets Insights pairs its cards and keeps its place as the window changes`() {
+        // On the cover the list is long enough to bring When you listen to the top.
+        history.window.value = BoxloreTestWindows.COVER_443
+        history.render(tab = HistoryTab.INSIGHTS)
+        compose.onAllNodesWithTag(INSIGHTS_PAIR_TAG).assertCountEquals(0)
+        compose.onNodeWithTag(INSIGHTS_LIST_TAG).performScrollToKey("when")
+        compose.walkWindows(history.window, BoxloreTestWindows.DESKTOP, BoxloreTestWindows.TABLET_PORTRAIT, BoxloreTestWindows.DESKTOP, BoxloreTestWindows.FOLD_FLAT, BoxloreTestWindows.COVER_443) { window ->
+            compose.waitForIdle()
+            val pairs = compose.onAllNodesWithTag(INSIGHTS_PAIR_TAG).fetchSemanticsNodes().size
+            if (window == BoxloreTestWindows.DESKTOP) assertTrue("$window should pair cards", pairs > 0) else assertEquals("$window keeps one column", 0, pairs)
+            // The listener keeps their place among the cards: the list doesn't jump back to its top.
+            compose.onNode(hasText("30d")).assertIsNotDisplayed()
+        }
+        assertEquals(HistoryTab.INSIGHTS, history.viewModel.selectedTab.value)
+    }
+
+    @Test fun `the month's days stop at 56dp on big screens and keep their size on phones`() {
+        history.render(tab = HistoryTab.INSIGHTS)
+        compose.onNodeWithTag(INSIGHTS_LIST_TAG).performScrollToKey("mosaic")
+        val phone = compose.onNodeWithTag(MOSAIC_GRID_TAG).bounds().width
+        compose.walkWindows(history.window, BoxloreTestWindows.FOLD_FLAT, BoxloreTestWindows.TABLET, BoxloreTestWindows.PHONE) { window ->
+            compose.onNodeWithTag(INSIGHTS_LIST_TAG).performScrollToKey("mosaic")
+            val grid = compose.onNodeWithTag(MOSAIC_GRID_TAG).bounds().width
+            if (window == BoxloreTestWindows.PHONE) assertEquals(phone, grid, 0.5f) else assertTrue("$window grid is $grid wide", grid <= 7 * 56f + 6 * 6f + 0.5f)
+        }
     }
 
     /** The snackbar's card: Material pads it 12dp inside the tagged node. */

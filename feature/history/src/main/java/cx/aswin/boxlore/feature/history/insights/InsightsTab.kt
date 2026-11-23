@@ -25,6 +25,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,7 +58,7 @@ internal data class InsightsCallbacks(
 )
 
 /** What the Insights list shows around its cards: the monthly story's entry card above, the earlier months below. */
-internal class InsightsStorySlots(val header: LazyListScope.() -> Unit = {}, val footer: LazyListScope.() -> Unit = {})
+internal class InsightsStorySlots(val header: LazyListScope.() -> Unit = {}, val footer: LazyListScope.() -> Unit = {}, val headerItems: Int = 0)
 
 /** The Insights list's test tag. */
 const val INSIGHTS_LIST_TAG = "insights_list"
@@ -65,6 +69,7 @@ const val INSIGHTS_LIST_TAG = "insights_list"
  * story's entry card and the earlier months; [listState] is held by the screen, so the
  * tab keeps its place while Timeline is open.
  */
+@Suppress("LongParameterList") // Content, callbacks and the screen-held list state and layout.
 @Composable
 internal fun InsightsTab(
     content: InsightsContent,
@@ -74,8 +79,13 @@ internal fun InsightsTab(
     contentPadding: PaddingValues,
     listState: LazyListState = rememberLazyListState(),
     stories: InsightsStorySlots = InsightsStorySlots(),
+    columns: Int = 1,
 ) {
     TrackScreenView("history_insights")
+    val cards = fullInsightCards(content, period, today, callbacks)
+    val rows = InsightsLayout.rows(cards.map { it.first }, columns)
+    // The story card (when there is one) and the period selector come before the cards.
+    KeepFirstCardInView(listState, rows, columns, leading = stories.headerItems + 1)
     LazyColumn(
         state = listState,
         contentPadding = contentPadding,
@@ -83,9 +93,23 @@ internal fun InsightsTab(
         modifier = Modifier.fillMaxSize().testTag(INSIGHTS_LIST_TAG),
     ) {
         if (content.hasEnoughTiming) stories.header(this)
-        item(key = "period") { InsightsPeriodSelector(period, callbacks.onPeriodChange) }
+        // Only once every card below follows it: while timing fills in, the cards are all-time.
+        if (content.hasEnoughTiming) item(key = "period") { InsightsPeriodSelector(period, callbacks.onPeriodChange) }
         if (content.hasEnoughTiming) {
-            fullInsights(content, period, today, callbacks)
+            val byKey = cards.toMap()
+            // One list item a row, keyed by its first card, so the list's items keep their type across window sizes.
+            rows.forEach { row ->
+                item(key = row.first()) {
+                    if (row.size == 1) {
+                        byKey.getValue(row.first())()
+                    } else {
+                        // Paired cards start together at the top; each keeps its own height.
+                        Row(Modifier.fillMaxWidth().testTag(INSIGHTS_PAIR_TAG), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
+                            row.forEach { key -> Box(Modifier.weight(1f)) { byKey.getValue(key)() } }
+                        }
+                    }
+                }
+            }
             stories.footer(this)
         } else {
             earlyInsights(content.early)
@@ -93,19 +117,45 @@ internal fun InsightsTab(
     }
 }
 
-private fun LazyListScope.fullInsights(content: InsightsContent, period: ListeningPeriod, today: LocalDate, callbacks: InsightsCallbacks) {
-    item(key = "time") { TimeListenedCard(content.time, period) }
-    content.type?.let { type -> item(key = "type") { ListeningTypeCard(type) } }
-    if (content.topShows.isNotEmpty()) item(key = "top_shows") { TopShowsCard(content.topShows) }
-    if (content.parts.isNotEmpty()) item(key = "when") { WhenYouListenCard(content.parts) }
-    if (content.outputs.isNotEmpty()) item(key = "where") { WhereYouListenCard(content.outputs) }
-    content.weekdays?.let { weekdays -> item(key = "weekdays") { BigDayCard(weekdays, period) } }
-    item(key = "mosaic") { MonthMosaicCard(content.mosaic, today, callbacks.onOpenDay) }
-    item(key = "records") { RecordsSection(content.records) }
-    if (content.genres.isNotEmpty()) item(key = "genres") { GenresCard(content.genres) }
-    content.sources?.let { sources -> sources.newShare?.let { newShare -> item(key = "fresh") { NewOrCatchingUpCard(sources, newShare) } } }
-    item(key = "milestone") { MilestoneCard(content.milestone) }
-    if (content.inProgress.count > 0) item(key = "in_progress") { InProgressCard(content.inProgress, callbacks.onReviewInProgress) }
+/** A row of two Insights cards on large tablets: its test tag. */
+const val INSIGHTS_PAIR_TAG = "insights_pair"
+
+/**
+ * When the number of columns changes, a card that was first in view and now shares a row (or no
+ * longer does) is scrolled back to the top, so the listener keeps their place.
+ */
+@Composable
+private fun KeepFirstCardInView(listState: LazyListState, rows: List<List<String>>, columns: Int, leading: Int) {
+    val firstKey = remember { mutableStateOf<String?>(null) }
+    // A plain holder, not state: it only remembers the last layout between compositions.
+    val lastColumns = remember { intArrayOf(columns) }
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key as? String }.collect { firstKey.value = it }
+    }
+    // While composing the new layout, before the list measures it: ask it to open at the row holding the card.
+    if (lastColumns[0] != columns) {
+        lastColumns[0] = columns
+        val key = firstKey.value
+        val row = key?.let { InsightsLayout.rowOf(rows, it) } ?: -1
+        if (row >= 0 && rows[row].first() != key) listState.requestScrollToItem(leading + row)
+    }
+}
+
+/** The full Insights cards in order, each with its list key. */
+private fun fullInsightCards(content: InsightsContent, period: ListeningPeriod, today: LocalDate, callbacks: InsightsCallbacks): List<Pair<String, @Composable () -> Unit>> = buildList {
+    if (!content.hasEnoughTiming) return@buildList
+    add("time" to { TimeListenedCard(content.time, period) })
+    content.type?.let { type -> add("type" to { ListeningTypeCard(type) }) }
+    if (content.topShows.isNotEmpty()) add("top_shows" to { TopShowsCard(content.topShows) })
+    if (content.parts.isNotEmpty()) add("when" to { WhenYouListenCard(content.parts) })
+    if (content.outputs.isNotEmpty()) add("where" to { WhereYouListenCard(content.outputs) })
+    content.weekdays?.let { weekdays -> add("weekdays" to { BigDayCard(weekdays, period) }) }
+    add("mosaic" to { MonthMosaicCard(content.mosaic, today, callbacks.onOpenDay) })
+    add("records" to { RecordsSection(content.records) })
+    if (content.genres.isNotEmpty()) add("genres" to { GenresCard(content.genres) })
+    content.sources?.let { sources -> sources.newShare?.let { newShare -> add("fresh" to { NewOrCatchingUpCard(sources, newShare) }) } }
+    add("milestone" to { MilestoneCard(content.milestone) })
+    if (content.inProgress.count > 0) add("in_progress" to { InProgressCard(content.inProgress, callbacks.onReviewInProgress) })
 }
 
 private fun LazyListScope.earlyInsights(early: EarlyInsights) {
@@ -134,7 +184,7 @@ private fun EarlyHeroCard(early: EarlyInsights) {
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(early.finished.toString(), style = InsightsType.hero.copy(letterSpacing = 0.sp), color = colors.onPrimaryContainer)
                 Text(
-                    stringResource(R.string.history_early_finished),
+                    pluralStringResource(R.plurals.history_early_finished, early.finished),
                     style = InsightsType.body16.copy(fontSize = 18.sp, lineHeight = 24.sp),
                     color = colors.onPrimaryContainer,
                     modifier = Modifier.padding(bottom = 8.dp),

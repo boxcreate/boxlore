@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="history_title">Historique d’écoute</string>
     <string name="history_back">Retour</string>
     <string name="history_clear_all">Tout effacer</string>
@@ -60,7 +60,6 @@
     <string name="history_tab_insights">Statistiques</string>
     <string name="history_more_options">Plus d’options</string>
     <string name="history_search_hint">Rechercher épisodes et podcasts</string>
-    <string name="history_search_clear">Effacer la recherche</string>
     <string name="history_jump_back_in">Reprendre l’écoute</string>
     <string name="history_jump_back_in_all">Les %1$d</string>
     <string name="history_filter_finished">Terminés</string>
@@ -264,7 +263,11 @@
     <string name="history_ins_in_progress_fresh">Reprenez là où vous en étiez, ou marquez-les comme écoutés.</string>
     <string name="history_ins_review_in_progress">Voir les épisodes en cours</string>
     <string name="history_early_title">Vos écoutes jusqu’ici</string>
-    <string name="history_early_finished">épisodes terminés</string>
+    <!-- The count is shown in large type beside these words, so the words carry no number. -->
+    <plurals name="history_early_finished" tools:ignore="ImpliedQuantity">
+        <item quantity="one">épisode terminé</item>
+        <item quantity="other">épisodes terminés</item>
+    </plurals>
     <string name="history_early_in_progress">%1$d en cours</string>
     <plurals name="history_early_played_days">
         <item quantity="one">Écoute sur %1$d jour ce mois-ci</item>

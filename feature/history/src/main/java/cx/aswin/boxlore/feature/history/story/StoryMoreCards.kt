@@ -308,7 +308,7 @@ internal fun StoryShareArt(story: MonthStory, palette: StoryPalette, modifier: M
                 Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     OptimizedImage(url = top.imageUrl, proxyWidth = 128, contentDescription = null, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(11.dp)))
                     Column {
-                        Text(stringResource(R.string.history_story_share_card_top), style = StoryType.of(11f, 14f), color = ink)
+                        Text(stringResource(R.string.history_story_share_card_top), style = StoryType.of(STORY_MIN_INFO_SP, 16f), color = ink)
                         Text(top.name, style = StoryType.of(15f, 19f, GoogleSansWeight.semiBold), color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
@@ -319,7 +319,7 @@ internal fun StoryShareArt(story: MonthStory, palette: StoryPalette, modifier: M
             }
         }
         Column(Modifier.align(Alignment.BottomStart).padding(start = 22.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            Text(stringResource(R.string.history_story_share_listen_on), style = StoryType.of(10f, 13f), color = ink)
+            Text(stringResource(R.string.history_story_share_listen_on), style = StoryType.of(STORY_MIN_INFO_SP, 16f), color = ink)
             Text(stringResource(R.string.history_story_share_brand), style = StoryType.of(19f, 22f, GoogleSansWeight.bold), color = ink)
         }
     }
@@ -332,7 +332,7 @@ private const val WHERE_PILL_FROM = 0.5f
 private fun StoryShareStat(value: Int, label: Int, ink: Color) {
     Column {
         Text(value.toString(), style = StoryType.of(22f, 26f, GoogleSansWeight.semiBold), color = ink)
-        Text(stringResource(label), style = StoryType.of(11f, 14f), color = ink)
+        Text(stringResource(label), style = StoryType.of(STORY_MIN_INFO_SP, 16f), color = ink)
     }
 }
 

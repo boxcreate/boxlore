@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <string name="history_title">Historial de escucha</string>
     <string name="history_back">Atrás</string>
@@ -63,7 +63,6 @@
     <string name="history_tab_insights">Estadísticas</string>
     <string name="history_more_options">Más opciones</string>
     <string name="history_search_hint">Buscar episodios y podcasts</string>
-    <string name="history_search_clear">Borrar búsqueda</string>
     <string name="history_jump_back_in">Retoma donde lo dejaste</string>
     <!-- Opens every in-progress episode. The argument is how many there are. -->
     <string name="history_jump_back_in_all">Los %1$d</string>
@@ -313,7 +312,12 @@
     <string name="history_ins_review_in_progress">Revisar episodios en curso</string>
     <!-- Little data (only a few days timed) -->
     <string name="history_early_title">Lo que llevas escuchado</string>
-    <string name="history_early_finished">episodios terminados</string>
+    <!-- The count is shown in large type beside these words, so the words carry no number. -->
+    <plurals name="history_early_finished" tools:ignore="ImpliedQuantity">
+        <item quantity="one">episodio terminado</item>
+        <item quantity="many">episodios terminados</item>
+        <item quantity="other">episodios terminados</item>
+    </plurals>
     <string name="history_early_in_progress">%1$d en curso</string>
     <plurals name="history_early_played_days">
         <item quantity="one">Reproducido %1$d día este mes</item>

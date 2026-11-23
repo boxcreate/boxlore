@@ -1,7 +1,7 @@
 package cx.aswin.boxlore.feature.history
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -17,9 +17,6 @@ import androidx.compose.material.icons.rounded.ClearAll
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Share
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +29,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,19 +48,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
 import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTab
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTabSwitcher
 import cx.aswin.boxlore.core.designsystem.components.discoveryTabSwitcherHeight
+import cx.aswin.boxlore.core.designsystem.components.rememberBoxloreMenuState
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreMiniPlayerVisible
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
+import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
 import cx.aswin.boxlore.core.designsystem.share.ShareManager
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.feature.history.insights.InsightsCallbacks
+import cx.aswin.boxlore.feature.history.insights.InsightsLayout
 import cx.aswin.boxlore.feature.history.insights.InsightsStorySlots
 import cx.aswin.boxlore.feature.history.insights.InsightsTab
+import cx.aswin.boxlore.feature.history.story.EarlierStories
 import cx.aswin.boxlore.feature.history.story.StoryDialog
 import cx.aswin.boxlore.feature.history.story.StoryEntryCard
 import cx.aswin.boxlore.feature.history.story.StoryText
@@ -80,6 +85,7 @@ import cx.aswin.boxlore.feature.history.timeline.durationText
  * filters, each month by day or show). Tapping a row opens the episode; its cover's play disc resumes it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("CyclomaticComplexMethod") // The two tabs, their sheets, dialogs and the story in one place.
 @Composable
 fun HistoryScreen(
     viewModel: HistoryViewModel,
@@ -104,6 +110,18 @@ fun HistoryScreen(
     var earlierExpanded by rememberSaveable { mutableStateOf(false) }
     // The large title collapses as either tab scrolls, as before the redesign.
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    // In short windows (a sideways phone, a split half, a tabletop's lower half) the title starts slim,
+    // so the list shows first; it opens again once the window is tall and the open tab is at its top.
+    val shortPane = boxloreIsShortPane()
+    LaunchedEffect(shortPane, scrollBehavior.state.heightOffsetLimit) {
+        val limit = scrollBehavior.state.heightOffsetLimit
+        if (limit == -Float.MAX_VALUE) return@LaunchedEffect
+        val list = if (viewModel.selectedTab.value == HistoryTab.TIMELINE) timelineListState else insightsListState
+        when {
+            shortPane -> scrollBehavior.state.heightOffset = limit
+            list.firstVisibleItemIndex == 0 && list.firstVisibleItemScrollOffset == 0 -> scrollBehavior.state.heightOffset = 0f
+        }
+    }
 
     HistoryScreenEffects(viewModel, snackbarHostState)
     TimelineScrollEffect(viewModel, timelineListState)
@@ -131,8 +149,14 @@ fun HistoryScreen(
         val chrome = appBottomChromeContentPadding(isMiniPlayerVisible, WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
         val switcherBottom = chrome + 16.dp
         val bottom = switcherBottom + discoveryTabSwitcherHeight()
-        Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding())) {
-            Column(modifier = Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Reading)) {
+        // Rows, the fast scroller, the switcher and Undo clear a sideways phone's cutout and side buttons.
+        BoxWithConstraints(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).boxloreHorizontalSafePadding()) {
+            // On large tablets Insights spreads to two columns in a wider grid; Timeline stays a reading list.
+            val columns = InsightsLayout.columns(maxWidth.value)
+            val wide = tab == HistoryTab.INSIGHTS && columns > 1
+            val tilesPerRow = if (wide) EarlierStories.tilesPerRow(minOf(maxWidth.value, GRID_MAX_WIDTH_DP) - INSIGHTS_SIDE_PADDING_DP * 2) else EarlierStories.TILES_PER_ROW
+            // A reading width on every window, sideways phones included.
+            Column(modifier = Modifier.fillMaxSize().then(if (wide) Modifier.boxloreCardWidth(BoxloreCardFamily.Grid) else Modifier.boxloreCardWidth(BoxloreCardFamily.Reading).boxloreReadingColumn())) {
                 when (tab) {
                     HistoryTab.TIMELINE ->
                         HistoryTimelineContent(
@@ -143,7 +167,7 @@ fun HistoryScreen(
                             navigation = HistoryNavigation(onEpisodeClick, onExploreClick, onPlayEpisode, onOpenShow),
                             onOpenCalendar = { showCalendar = true },
                         )
-                    HistoryTab.INSIGHTS -> HistoryInsightsContent(insights, viewModel, bottom, insightsListState, earlierExpanded, onExploreClick) { earlierExpanded = it }
+                    HistoryTab.INSIGHTS -> HistoryInsightsContent(insights, viewModel, bottom, insightsListState, earlierExpanded, onExploreClick, { earlierExpanded = it }, columns, tilesPerRow)
                 }
             }
             HistoryTabs(
@@ -212,11 +236,15 @@ private fun HistoryTopBar(
     onShareListening: (() -> Unit)?,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
-    var menuOpen by remember { mutableStateOf(false) }
+    val menu = rememberBoxloreMenuState("history_more")
+    val clearAll = stringResource(R.string.history_clear_all)
+    val headline = MaterialTheme.typography.headlineMedium
+    val title = MaterialTheme.typography.titleLarge
     val titleStyle =
         lerp(
-            start = MaterialTheme.typography.headlineMedium.copy(fontWeight = GoogleSansWeight.bold),
-            stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
+            // Drawn at the boards' weights (the theme's styles carry theirs in the font).
+            start = historyTextStyle(headline.fontSize.value, headline.lineHeight.value, GoogleSansWeight.bold),
+            stop = historyTextStyle(title.fontSize.value, title.lineHeight.value, GoogleSansWeight.semiBold),
             fraction = scrollBehavior.state.collapsedFraction,
         )
     LargeTopAppBar(
@@ -245,18 +273,11 @@ private fun HistoryTopBar(
             // Boards A1 and A6: ⋮ on the Timeline and on Insights while timing fills in.
             if (canClear && (tab == HistoryTab.TIMELINE || !insightsHaveTiming)) {
                 Box {
-                    IconButton(onClick = { menuOpen = true }) {
+                    IconButton(onClick = menu::open) {
                         Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.history_more_options))
                     }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.history_clear_all)) },
-                            onClick = {
-                                menuOpen = false
-                                onRequestClearAll()
-                            },
-                            leadingIcon = { Icon(Icons.Rounded.ClearAll, contentDescription = null) },
-                        )
+                    BoxloreDropdownMenu(menu) {
+                        group { item(clearAll, onClick = onRequestClearAll, leadingIcon = Icons.Rounded.ClearAll, destructive = true) }
                     }
                 }
             }
@@ -264,6 +285,10 @@ private fun HistoryTopBar(
         scrollBehavior = scrollBehavior,
     )
 }
+
+/** Grid screens stop at this width; Insights pads its cards this much on each side. */
+private const val GRID_MAX_WIDTH_DP = 1_040f
+private const val INSIGHTS_SIDE_PADDING_DP = 16f
 
 /** The Insights | Timeline switcher's test tag. */
 const val HISTORY_TABS_TAG = "history_tabs"
@@ -305,7 +330,7 @@ private fun HistoryTimelineContent(
 ) {
     TrackScreenView("history_timeline")
     when (state) {
-        TimelineUiState.Loading -> HistoryLoading()
+        TimelineUiState.Loading -> HistoryTimelineLoading(PaddingValues(bottom = bottomPadding + 16.dp))
         is TimelineUiState.Ready ->
             if (state.content.isHistoryEmpty) {
                 HistoryEmptyState(onExploreClick = navigation.onExploreClick, contentPadding = PaddingValues(bottom = bottomPadding + 16.dp))
@@ -339,14 +364,8 @@ private fun HistoryTimelineContent(
     }
 }
 
-@Composable
-private fun HistoryLoading() {
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        CircularProgressIndicator()
-    }
-}
-
 /** The Insights tab: the period's stories, or what history alone can say while timing fills in. */
+@Suppress("LongParameterList") // The tab's state, the screen-held list state and its layout.
 @Composable
 private fun HistoryInsightsContent(
     state: InsightsUiState,
@@ -356,9 +375,11 @@ private fun HistoryInsightsContent(
     earlierExpanded: Boolean,
     onExploreClick: () -> Unit,
     onExpandEarlier: (Boolean) -> Unit,
+    columns: Int = 1,
+    tilesPerRow: Int = EarlierStories.TILES_PER_ROW,
 ) {
     when (state) {
-        InsightsUiState.Loading -> HistoryLoading()
+        InsightsUiState.Loading -> HistoryInsightsLoading(PaddingValues(bottom = bottomPadding + 16.dp))
         is InsightsUiState.Ready -> if (state.content.isEmptyHistory) {
             // The same page view as the Insights list sends.
             TrackScreenView("history_insights")
@@ -387,9 +408,11 @@ private fun HistoryInsightsContent(
                         }
                     },
                     footer = {
-                        earlierStories(state.stories.earlier, earlierExpanded, onExpand = onExpandEarlier, onOpen = { viewModel.openStory(it.month) })
+                        earlierStories(state.stories.earlier, state.today, earlierExpanded, tilesPerRow, onExpand = onExpandEarlier, onOpen = { viewModel.openStory(it.month) })
                     },
+                    headerItems = if (state.stories.latest != null) 1 else 0,
                 ),
+                columns = columns,
             )
         }
     }

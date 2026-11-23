@@ -315,6 +315,10 @@ class StoryLogicTest {
         // Two rows or fewer: everything shows and there's no button.
         assertFalse(EarlierStories.folds(months.take(6)))
         assertEquals(months.take(6), EarlierStories.shown(months.take(6), expanded = false))
+        // Large tablets fit more tiles a row, never fewer than three or more than five.
+        assertEquals(3, EarlierStories.tilesPerRow(560f))
+        assertEquals(5, EarlierStories.tilesPerRow(1_008f))
+        assertEquals(months.take(10), EarlierStories.shown(months, expanded = false, perRow = 5))
     }
 
     private companion object {

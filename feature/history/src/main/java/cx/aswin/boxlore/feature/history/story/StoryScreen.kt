@@ -245,6 +245,7 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
  * Round previous, pause and next buttons beside the frame on wide windows (tablets, unfolded
  * foldables), centred in the [gap] on each side, so moving between cards needs no hidden tap areas.
  */
+@Suppress("LongParameterList") // Placement, colours, state and the three actions.
 @Composable
 private fun BoxScope.StorySideButtons(
     gap: Dp,

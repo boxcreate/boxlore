@@ -84,11 +84,7 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
     @Test fun capture() {
         val mode = System.getProperty("boxlore.tabletCaptures")
         assumeTrue(mode == "after" || mode == "audit")
-        val port = BoardHistory(
-            empty = view == "empty" || view == "empty-insights",
-            timedDays = if (view == "insights-early") 2 else Int.MAX_VALUE,
-            loading = view.startsWith("loading-"),
-        )
+        val port = boardFor(view)
         val vm = HistoryViewModel(port, zoneId = { ZoneId.systemDefault() }, now = { TODAY })
         fixture.prepare()
         if (view == "story-hello-sequence") {
@@ -139,6 +135,23 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
         check(ready) { "The $view tab was still loading: a capture of it would show the loader" }
         fixture.compose.mainClock.advanceTimeBy(1_000)
         fixture.compose.waitForIdle()
+        interact()
+        if (view in ALL_WINDOW_VIEWS) {
+            val roots = fixture.compose.onAllNodes(isRoot()).fetchSemanticsNodes().size
+            check(roots > 1) { "$view opens its own window ($roots roots)" }
+        }
+        fixture.capture("history-$view", allWindows = view in ALL_WINDOW_VIEWS)
+    }
+
+    /** The boards' history as [view] needs it: none, early (two timed days), still loading, or all of it. */
+    private fun boardFor(view: String) = BoardHistory(
+        empty = view == "empty" || view == "empty-insights",
+        timedDays = if (view == "insights-early") 2 else Int.MAX_VALUE,
+        loading = view.startsWith("loading-"),
+    )
+
+    /** What the view shows beyond the tab: Shows, a lower card, an open menu or dialog, or Undo. */
+    private fun interact() {
         when (view) {
             "shows" -> {
                 val shows = text(HistoryR.string.history_group_shows)
@@ -166,11 +179,6 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
                 }
             }
         }
-        if (view in ALL_WINDOW_VIEWS) {
-            val roots = fixture.compose.onAllNodes(isRoot()).fetchSemanticsNodes().size
-            check(roots > 1) { "$view opens its own window ($roots roots)" }
-        }
-        fixture.capture("history-$view", allWindows = view in ALL_WINDOW_VIEWS)
     }
 
     /** The Timeline's own list (Jump back in scrolls sideways). */
@@ -371,7 +379,12 @@ internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE, priv
         restored += removal.item.episodeId
     }
 
-    override suspend fun clearHistory() = Unit
+    /** How many times Clear all reached the history. */
+    var clears = 0
+
+    override suspend fun clearHistory() {
+        clears++
+    }
 
     override suspend fun maintainListeningAnalytics() = Unit
 

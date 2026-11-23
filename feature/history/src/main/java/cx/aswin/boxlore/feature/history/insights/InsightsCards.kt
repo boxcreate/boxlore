@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.TrendingDown
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
@@ -41,26 +43,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.feature.history.R
 import cx.aswin.boxlore.feature.history.historyTextStyle
 import cx.aswin.boxlore.feature.history.timeline.TimelineType
 import cx.aswin.boxlore.feature.history.timeline.durationText
+import cx.aswin.boxlore.feature.history.timeline.historySelectorColors
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import kotlin.math.sqrt
@@ -87,7 +88,7 @@ internal fun InsightsCardHeader(title: String, trailing: String? = null) {
     }
 }
 
-/** 7d | 30d | 180d | All: 44dp, 4dp apart; the chosen one primary and fully round, the others 10dp corners with round outer ends. */
+/** 7d | 30d | 180d | All: boxlore's connected selector at 44dp, the chosen one primary, easing into shape. */
 @Composable
 internal fun InsightsPeriodSelector(selected: ListeningPeriod, onSelect: (ListeningPeriod) -> Unit) {
     val colors = MaterialTheme.colorScheme
@@ -99,34 +100,15 @@ internal fun InsightsPeriodSelector(selected: ListeningPeriod, onSelect: (Listen
             ListeningPeriod.DAYS_180 to stringResource(R.string.history_period_180d),
             ListeningPeriod.ALL to stringResource(R.string.history_period_all),
         )
-    Row(modifier = Modifier.fillMaxWidth().semantics { contentDescription = label }, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        ListeningPeriod.entries.forEachIndexed { index, period ->
-            val isSelected = period == selected
-            val shape =
-                when {
-                    isSelected -> RoundedCornerShape(22.dp)
-                    index == 0 -> RoundedCornerShape(topStart = 22.dp, bottomStart = 22.dp, topEnd = 10.dp, bottomEnd = 10.dp)
-                    index == ListeningPeriod.entries.lastIndex -> RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp, topEnd = 22.dp, bottomEnd = 22.dp)
-                    else -> RoundedCornerShape(10.dp)
-                }
-            Box(
-                modifier =
-                Modifier
-                    .weight(1f)
-                    .height(44.dp)
-                    .clip(shape)
-                    .background(if (isSelected) colors.primary else colors.surfaceContainerHigh)
-                    .expressiveClickable(shape = shape, feedback = ExpressivePressFeedback.Control) { onSelect(period) }
-                    .semantics {
-                        role = Role.RadioButton
-                        this.selected = isSelected
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(names.getValue(period), style = TimelineType.label, color = if (isSelected) colors.onPrimary else colors.onSurface)
-            }
-        }
-    }
+    ConnectedOptionSelector(
+        options = ListeningPeriod.entries.map { it to names.getValue(it) },
+        selected = selected,
+        onSelect = onSelect,
+        labelStyle = TimelineType.label,
+        colors = historySelectorColors(),
+        // A fixed height keeps the boards' 44dp (the selector's 48dp minimum gives way to it).
+        modifier = Modifier.height(44.dp).semantics { contentDescription = label },
+    )
 }
 
 /** Time listened (A4): primaryContainer, the total at 45sp, a day's average, and pills for the change and the best run. */
@@ -145,7 +127,8 @@ internal fun TimeListenedCard(time: TimeListened, period: ListeningPeriod) {
         )
         Column(modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.history_ins_time_title), style = InsightsType.label, color = colors.onPrimaryContainer)
-            Text(durationText(time.totalMs), style = InsightsType.hero, color = colors.onPrimaryContainer)
+            // One line: a long total or large text shrinks a step instead of wrapping "min" alone.
+            Text(durationText(time.totalMs), style = InsightsType.hero, color = colors.onPrimaryContainer, maxLines = 1, autoSize = TextAutoSize.StepBased(minFontSize = 32.sp, maxFontSize = InsightsType.hero.fontSize))
             Text(perDayText(time.perDayMs), style = InsightsType.body16, color = colors.onPrimaryContainer)
             val comparison = comparisonText(time, period)
             if (comparison != null || time.bestRunDays > 1) {
@@ -275,22 +258,24 @@ internal fun WhenYouListenCard(parts: List<PartShare>) {
     }
     InsightsCard {
         Text(stringResource(R.string.history_ins_when), style = TimelineType.header, color = colors.onSurface)
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            ListeningClock(parts, rankColor)
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(mostlyText(parts), style = InsightsType.title18, color = colors.onSurface)
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    parts.forEachIndexed { index, share ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                Modifier.size(10.dp).clip(CircleShape).background(rankColor(index))
-                                    .then(if (index == 1) Modifier.border(1.dp, colors.primary, CircleShape) else Modifier),
-                            )
-                            Text(
-                                stringResource(R.string.history_ins_part_share, partName(share.part), InsightsWording.percent(share.share)),
-                                style = InsightsType.body13,
-                                color = if (index < 2) colors.onSurface else colors.onSurfaceVariant,
-                            )
+        // The clock scales to the card; on a narrow card (a 360dp phone) it sits above the heading
+        // and a two-column legend, so "Mostly afternoons" never stacks a word a line.
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            if (maxWidth < WHEN_STACK_WIDTH) {
+                Column(Modifier.fillMaxWidth().testTag(WHEN_STACKED_TAG), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ListeningClock(parts, rankColor, NARROW_CLOCK, Modifier.align(Alignment.CenterHorizontally))
+                    Text(mostlyText(parts), style = InsightsType.title18, color = colors.onSurface)
+                    FlowRow(maxItemsInEachRow = 2, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        parts.forEachIndexed { index, share -> PartLegendRow(share, index, rankColor, Modifier.weight(1f)) }
+                    }
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    ListeningClock(parts, rankColor, WIDE_CLOCK)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(mostlyText(parts), style = InsightsType.title18, color = colors.onSurface)
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            parts.forEachIndexed { index, share -> PartLegendRow(share, index, rankColor) }
                         }
                     }
                 }
@@ -299,21 +284,45 @@ internal fun WhenYouListenCard(parts: List<PartShare>) {
     }
 }
 
+/** One line of the clock's legend: its colour dot and "Afternoon 42%". */
+@Composable
+private fun PartLegendRow(share: PartShare, index: Int, rankColor: (Int) -> Color, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.size(10.dp).clip(CircleShape).background(rankColor(index))
+                .then(if (index == 1) Modifier.border(1.dp, colors.primary, CircleShape) else Modifier),
+        )
+        Text(
+            stringResource(R.string.history_ins_part_share, partName(share.part), InsightsWording.percent(share.share)),
+            style = InsightsType.body13,
+            color = if (index < 2) colors.onSurface else colors.onSurfaceVariant,
+        )
+    }
+}
+
+private val WHEN_STACK_WIDTH = 300.dp
+private val WIDE_CLOCK = 180.dp
+private val NARROW_CLOCK = 160.dp
+
+/** The When you listen card's narrow (stacked) layout's test tag. */
+const val WHEN_STACKED_TAG = "insights_when_stacked"
+
 /**
  * The board's 180dp clock: a surfaceContainerHigh disc with a dashed outlineVariant ring; each part
  * of the day is a quarter wedge (night top-right, morning bottom-right, afternoon bottom-left,
  * evening top-left) of radius 70dp × √(share / largest share), and a surface dot at the centre.
  */
 @Composable
-private fun ListeningClock(parts: List<PartShare>, rankColor: (Int) -> Color) {
+private fun ListeningClock(parts: List<PartShare>, rankColor: (Int) -> Color, clockSize: Dp, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     val description =
         parts.map { stringResource(R.string.history_ins_part_share, partName(it.part), InsightsWording.percent(it.share)) }.joinToString()
     val labels = listOf(R.string.history_clock_12am, R.string.history_clock_6am, R.string.history_clock_12pm, R.string.history_clock_6pm).map { stringResource(it) }
-    val labelStyle = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, letterSpacing = 0.sp)
-    Box(modifier = Modifier.size(180.dp).clearAndSetSemantics { contentDescription = description }) {
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp)
+    Box(modifier = modifier.size(clockSize).clearAndSetSemantics { contentDescription = description }) {
         val largest = parts.maxOf { it.share }.coerceAtLeast(0.0001f)
-        Canvas(modifier = Modifier.size(180.dp)) {
+        Canvas(modifier = Modifier.size(clockSize)) {
             val center = Offset(size.width / 2, size.height / 2)
             val unit = size.width / 180f
             drawCircle(colors.surfaceContainerHigh, radius = 74 * unit, center = center)
