@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -176,10 +178,13 @@ private fun EpisodeMetadata(episode: Episode, completion: EpisodeCompletionState
             )
         }
         // Archiving is done from the show page's selection menu; here an archived episode is only marked.
-        // Weighted too, so on a line of their own the pills sit at the end.
-        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
-            if (completion.isArchived) EpisodeArchivedPill()
-            MarkPlayedTip(episode.id, completion.showTip, onTipDismissed) { EpisodeCompletionPill(completion.isCompleted, onToggleCompletion) }
+        // Weighted, so on a line of their own the pills sit at the end. The inner row asks for its whole
+        // width: the line breaks before the pills rather than squeezing a label.
+        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.width(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (completion.isArchived) EpisodeArchivedPill()
+                MarkPlayedTip(episode.id, completion.showTip, onTipDismissed) { EpisodeCompletionPill(completion.isCompleted, onToggleCompletion) }
+            }
         }
     }
 }

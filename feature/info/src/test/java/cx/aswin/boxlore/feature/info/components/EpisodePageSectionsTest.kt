@@ -43,6 +43,7 @@ import cx.aswin.boxlore.feature.info.episodeHeaderColor
 import cx.aswin.boxlore.feature.info.stubEpisodeInfoViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -145,6 +146,17 @@ class EpisodePageSectionsTest {
         val detailsCentre = (details.top.value + details.bottom.value) / 2
         val pillCentre = (markPlayed.top.value + markPlayed.bottom.value) / 2
         assertEquals(detailsCentre, pillCentre, 2f)
+        assertFalse("Mark played is whole", cutOff(textLayout(fixture.compose.onNode(hasText("Mark played"), useUnmergedTree = true))))
+    }
+
+    @Test
+    fun `beside Archived and a season number on a regular phone, Mark played moves down whole instead of shrinking`() {
+        val rich = richState().let { it.copy(episode = it.episode.copy(seasonNumber = 3, episodeNumber = 14, duration = 4_380)) }
+        render(rich, archived = setOf(EPISODE_ID))
+        val markPlayed = fixture.compose.onNode(hasText("Mark played"), useUnmergedTree = true)
+        assertFalse("Mark played is whole", cutOff(textLayout(markPlayed)))
+        assertFalse("Archived is whole", cutOff(textLayout(fixture.compose.onNode(hasText("Archived"), useUnmergedTree = true))))
+        assertTrue("inside the page", markPlayed.getBoundsInRoot().right.value <= BoxloreTestWindows.PHONE.widthDp)
     }
 
     @Test
@@ -183,9 +195,9 @@ class EpisodePageSectionsTest {
         return layouts.first()
     }
 
-    private fun render() {
+    private fun render(state: EpisodeInfoUiState.Success = richState(), archived: Set<String> = emptySet()) {
         val model = mock(EpisodeInfoViewModel::class.java)
-        stubEpisodeInfoViewModel(model, MutableStateFlow(richState()))
+        stubEpisodeInfoViewModel(model, MutableStateFlow(state), archived = MutableStateFlow(archived))
         fixture.prepare()
         fixture.compose.mainClock.autoAdvance = true
         fixture.compose.setContent {
@@ -236,11 +248,11 @@ class EpisodePageSectionsTest {
     }
 }
 
-/** German at 130% text on a small phone: the details wrap instead of scrolling, and the pills move below. */
+/** German on regular phones: the details wrap instead of scrolling, and the pills move below whole rather than shrink. */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(sdk = [33], application = Application::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class EpisodeDetailsLongTextTest(configuration: PhoneGoldenConfiguration) {
+class EpisodeDetailsLongTextTest(private val configuration: PhoneGoldenConfiguration) {
     @get:Rule val fixture = PhoneGoldenRule(configuration)
 
     @Test
@@ -251,7 +263,7 @@ class EpisodeDetailsLongTextTest(configuration: PhoneGoldenConfiguration) {
         stubEpisodeInfoViewModel(model, MutableStateFlow(EpisodeInfoUiState.Success(episode, "1", "Neugierige Welt", relatedEpisodesLoading = false, similarEpisodesLoading = false)), archived = MutableStateFlow(setOf("de")))
         fixture.prepare()
         fixture.compose.mainClock.autoAdvance = true
-        val window = BoxloreWindowLayout(360f, 800f)
+        val window = BoxloreWindowLayout(configuration.width.toFloat(), configuration.height.toFloat())
         fixture.compose.setContent {
             CompositionLocalProvider(LocalBoxloreWindowLayout provides window, LocalBoxlorePaneWidth provides window.widthDp) {
                 BoxLoreTheme(dynamicColor = false) {
@@ -260,19 +272,35 @@ class EpisodeDetailsLongTextTest(configuration: PhoneGoldenConfiguration) {
             }
         }
         fixture.compose.waitForIdle()
-        // Nothing moves on its own any more: no ticker after a few seconds.
-        val before = fixture.compose.onNodeWithTag(EPISODE_DETAILS_TAG).getBoundsInRoot()
-        fixture.compose.mainClock.advanceTimeBy(5_000)
-        assertEquals(before, fixture.compose.onNodeWithTag(EPISODE_DETAILS_TAG).getBoundsInRoot())
+        // The details wrap as plain text: a ticker needs one unwrapped line that runs past its room.
+        val detailsLayout = textLayout(fixture.compose.onNodeWithTag(EPISODE_DETAILS_TAG))
+        assertTrue("the details wrap", detailsLayout.layoutInput.softWrap)
+        assertFalse("the details are whole", cutOff(detailsLayout))
+        val markPlayedNode = fixture.compose.onNode(hasText("Als gehört markieren"), useUnmergedTree = true)
+        assertFalse("Mark played is whole", cutOff(textLayout(markPlayedNode)))
         val details = fixture.compose.onNodeWithTag(EPISODE_DETAILS_TAG).getBoundsInRoot()
-        val markPlayed = fixture.compose.onNode(hasText("Als gehört markieren")).getBoundsInRoot()
-        assertTrue("the pills sit below the details", markPlayed.top >= details.bottom)
-        assertTrue("the details stay inside the page", details.right.value <= 360f)
+        val markPlayed = markPlayedNode.getBoundsInRoot()
+        if (configuration.fontScale > 1f) assertTrue("the pills sit below the details", markPlayed.top >= details.bottom)
+        assertTrue("the details stay inside the page", details.right.value <= window.widthDp)
+        assertTrue("Mark played stays inside the page", markPlayed.right.value <= window.widthDp)
+    }
+
+    private fun textLayout(node: SemanticsNodeInteraction): TextLayoutResult {
+        val layouts = mutableListOf<TextLayoutResult>()
+        node.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+        return layouts.first()
     }
 
     companion object {
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
-        fun configurations(): List<Array<Any>> = listOf(arrayOf(PhoneGoldenConfiguration(360, 800, false, fontScale = 1.3f, locale = "de")))
+        fun configurations(): List<Array<Any>> = listOf(
+            arrayOf(PhoneGoldenConfiguration(360, 800, false, fontScale = 1.3f, locale = "de")),
+            arrayOf(PhoneGoldenConfiguration(412, 915, false, locale = "de")),
+        )
     }
 }
+
+/** True when [layout] lost text: more lines than it may show, or an ellipsis on a line. */
+internal fun cutOff(layout: TextLayoutResult): Boolean =
+    layout.multiParagraph.didExceedMaxLines || (0 until layout.lineCount).any(layout::isLineEllipsized)
