@@ -8,6 +8,9 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.CastDevice
@@ -45,23 +48,73 @@ internal fun rememberCastSessionWatch(context: Context, isCasting: Boolean): Cas
     return watch
 }
 
-/** Closes the sheet once [progress] connects; lets the listener pick again when it fails or times out. */
+/**
+ * The device the listener picked in the sheet, kept in saved state so a fold, unfold, resize or
+ * recreation keeps the pick and the device it started from.
+ */
+@Stable
+internal class CastPickState(routeId: String?, routeName: String?, fromDeviceId: String?) {
+    var routeId by mutableStateOf(routeId)
+        private set
+    var routeName by mutableStateOf(routeName)
+        private set
+
+    /** The device the phone was casting to when the listener picked; null when it wasn't casting. */
+    var fromDeviceId by mutableStateOf(fromDeviceId)
+        private set
+
+    fun start(routeId: String, routeName: String?, fromDeviceId: String?) {
+        this.routeId = routeId
+        this.routeName = routeName
+        this.fromDeviceId = fromDeviceId
+    }
+
+    fun clear() {
+        routeId = null
+        routeName = null
+    }
+
+    companion object {
+        val Saver =
+            listSaver<CastPickState, String?>(
+                save = { listOf(it.routeId, it.routeName, it.fromDeviceId) },
+                restore = { CastPickState(it[0], it[1], it[2]) },
+            )
+    }
+}
+
+@Composable
+internal fun rememberCastPickState(): CastPickState = rememberSaveable(saver = CastPickState.Saver) { CastPickState(null, null, null) }
+
+/**
+ * Closes the sheet once [pick] connects, calling the current [onConnected] once; lets the listener
+ * pick again when the session fails to start or the pick times out.
+ */
 @Composable
 internal fun followCastPick(
-    progress: CastPickProgress?,
+    pick: CastPickState,
+    session: CastSessionWatch,
     onConnected: () -> Unit,
-    onEnded: () -> Unit,
 ) {
-    LaunchedEffect(progress) {
+    val currentOnConnected by rememberUpdatedState(onConnected)
+    val progress =
+        pick.routeId?.let {
+            castPickProgress(
+                deviceIdAtPick = pick.fromDeviceId,
+                connected = session.connected,
+                startFailed = session.startFailed,
+            )
+        }
+    LaunchedEffect(pick, progress) {
         when (progress) {
             CastPickProgress.CONNECTED -> {
                 delay(CAST_CONNECTED_DISMISS_DELAY_MS)
-                onConnected()
+                currentOnConnected()
             }
-            CastPickProgress.FAILED -> onEnded()
+            CastPickProgress.FAILED -> pick.clear()
             CastPickProgress.CONNECTING -> {
                 delay(CAST_CONNECT_TIMEOUT_MS)
-                onEnded()
+                pick.clear()
             }
             null -> Unit
         }

@@ -33,7 +33,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,26 +106,8 @@ internal fun CastRoutePickerSheet(
     val routeSelector = remember(context) { resolveCastRouteSelector(context) }
     val routes = rememberAvailableCastRoutes(mediaRouter, routeSelector)
     val castSession = rememberCastSessionWatch(context, isCasting)
-    var connectingRouteId by rememberSaveable { mutableStateOf<String?>(null) }
-    var connectingRouteName by rememberSaveable { mutableStateOf<String?>(null) }
-    // The device the phone was casting to when the listener picked; null when it wasn't casting.
-    var connectingFromDeviceId by rememberSaveable { mutableStateOf<String?>(null) }
-
-    followCastPick(
-        progress =
-        connectingRouteId?.let {
-            castPickProgress(
-                deviceIdAtPick = connectingFromDeviceId,
-                connected = castSession.connected,
-                startFailed = castSession.startFailed,
-            )
-        },
-        onConnected = onDismiss,
-        onEnded = {
-            connectingRouteId = null
-            connectingRouteName = null
-        },
-    )
+    val pick = rememberCastPickState()
+    followCastPick(pick = pick, session = castSession, onConnected = onDismiss)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -138,8 +119,8 @@ internal fun CastRoutePickerSheet(
             isCasting = isCasting,
             routes = routes,
             connectedDevice = castSession.connected,
-            connectingRouteId = connectingRouteId,
-            connectingRouteName = connectingRouteName,
+            connectingRouteId = pick.routeId,
+            connectingRouteName = pick.routeName,
             onStopCasting = {
                 Cast.getSingletonInstance(context).endCurrentSession(true)
                 onDismiss()
@@ -149,10 +130,8 @@ internal fun CastRoutePickerSheet(
                     // Already casting there: nothing to connect.
                     onDismiss()
                 } else {
-                    connectingFromDeviceId = castSession.connected?.id
                     castSession.startFailed = false
-                    connectingRouteId = route.id
-                    connectingRouteName = route.name
+                    pick.start(route.id, route.name, fromDeviceId = castSession.connected?.id)
                     route.select()
                 }
             },
