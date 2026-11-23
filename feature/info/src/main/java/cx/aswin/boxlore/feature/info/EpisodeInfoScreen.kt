@@ -346,6 +346,8 @@ fun EpisodeInfoScreen(
                                 }
                             }
 
+                            // What the episode is about comes before its chapters.
+                            episodeAbout(state, viewModel::seekToPosition, blockCap)
                             if (state.chapters.isNotEmpty()) {
                                 item(key = "chapters") {
                                     cx.aswin.boxlore.feature.info.components.EpisodeChaptersSection(
@@ -357,7 +359,7 @@ fun EpisodeInfoScreen(
                                     )
                                 }
                             }
-                            episodeShowNotes(state, viewModel::seekToPosition, blockCap)
+                            episodeLinks(state, blockCap)
 
                             // Contextual "MORE LIKE THIS" RECOMMENDATIONS SECTION -> Card
                             if (moreLikeThisOn == true && (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty())) {
@@ -503,31 +505,32 @@ fun EpisodeInfoScreen(
     }
 }
 
-private fun LazyListScope.episodeShowNotes(
+private fun LazyListScope.episodeAbout(
     state: EpisodeInfoUiState.Success,
     onSeekTo: (Long) -> Unit,
     blockCap: Modifier,
 ) {
-    state.showNotes?.let { notes ->
-        if (notes.plainText.isNotBlank()) {
-            item(key = "about") {
-                Box(blockCap) {
-                    EpisodeDescriptionCard(
-                        notes = notes,
-                        location = state.location,
-                        license = state.license,
-                        persons = state.episode.persons,
-                        onSeekTo = onSeekTo,
-                    )
-                }
-            }
+    val notes = state.showNotes ?: return
+    if (notes.plainText.isBlank()) return
+    item(key = "about") {
+        Box(blockCap) {
+            EpisodeDescriptionCard(
+                notes = notes,
+                location = state.location,
+                license = state.license,
+                persons = state.episode.persons,
+                onSeekTo = onSeekTo,
+            )
         }
-        if (notes.links.isNotEmpty()) {
-            item(key = "links") {
-                Box(blockCap) {
-                    EpisodeLinksSection(notes.links, EpisodeShowTitle.displayName(state.podcastTitle, stringResource(R.string.episode_info_show_placeholder)))
-                }
-            }
+    }
+}
+
+private fun LazyListScope.episodeLinks(state: EpisodeInfoUiState.Success, blockCap: Modifier) {
+    val notes = state.showNotes ?: return
+    if (notes.links.isEmpty()) return
+    item(key = "links") {
+        Box(blockCap) {
+            EpisodeLinksSection(notes.links, EpisodeShowTitle.displayName(state.podcastTitle, stringResource(R.string.episode_info_show_placeholder)))
         }
     }
 }

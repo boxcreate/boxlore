@@ -47,6 +47,7 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.ShowNotes
 import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.info.components.EpisodeExpandRow
 import java.util.Locale
 
 @Composable
@@ -90,10 +91,12 @@ internal fun EpisodeDescriptionCard(notes: ShowNotes, modifier: Modifier = Modif
                 )
             }
             if (expanded || overflows) {
-                FilledTonalButton(onClick = { expanded = !expanded }, shape = CircleShape) {
-                Text(stringResource(if (expanded) R.string.episode_info_show_less else R.string.episode_info_read_more))
-                Icon(if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore, null, modifier = Modifier.size(18.dp))
-            }
+                EpisodeExpandRow(
+                    label = stringResource(if (expanded) R.string.episode_info_show_less else R.string.episode_info_read_more),
+                    expanded = expanded,
+                    onClick = { expanded = !expanded },
+                    shape = CircleShape,
+                )
             }
             if (!persons.isNullOrEmpty()) {
                 Text(stringResource(R.string.episode_info_people), style = MaterialTheme.typography.titleSmall)
