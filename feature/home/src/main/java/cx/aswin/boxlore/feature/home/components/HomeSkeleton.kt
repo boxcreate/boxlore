@@ -42,6 +42,7 @@ import cx.aswin.boxlore.core.designsystem.components.FeedPosterSpacing
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.theme.SkeletonBlock
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import kotlin.math.roundToInt
@@ -231,24 +232,6 @@ fun GridSkeletonItem(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun SkeletonBlock(
-    width: androidx.compose.ui.unit.Dp,
-    height: androidx.compose.ui.unit.Dp,
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(4.dp),
-    baseColor: androidx.compose.ui.graphics.Color,
-    highlightColor: androidx.compose.ui.graphics.Color,
-) {
-    Box(
-        modifier =
-        Modifier
-            .width(width)
-            .height(height)
-            .clip(shape)
-            .m3Shimmer(baseColor, highlightColor, shape = shape),
-    )
-}
-
-@Composable
 fun YourShowsSkeleton(
     subscribedCount: Int = 0,
     modifier: Modifier = Modifier,
@@ -271,7 +254,7 @@ fun YourShowsSkeleton(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                SkeletonBlock(width = 120.dp, height = 24.dp, baseColor = baseColor, highlightColor = highlightColor)
+                SkeletonBlock(Modifier.width(120.dp).height(24.dp), baseColor = baseColor, highlightColor = highlightColor)
             }
             Box(
                 modifier =
@@ -312,8 +295,8 @@ fun YourShowsSkeleton(
             YourShowsDivider()
             Column(Modifier.padding(top = HomeMixLayout.TopPadding, bottom = HomeMixLayout.BottomPadding)) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = HomeMixLayout.ContentInset).height(HomeMixLayout.HeaderHeight), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    SkeletonBlock(width = 132.dp, height = 34.dp, baseColor = baseColor, highlightColor = highlightColor)
-                    SkeletonBlock(width = 88.dp, height = HomeMixLayout.HeaderHeight, baseColor = baseColor, highlightColor = highlightColor)
+                    SkeletonBlock(Modifier.width(132.dp).height(34.dp), baseColor = baseColor, highlightColor = highlightColor)
+                    SkeletonBlock(Modifier.width(88.dp).height(HomeMixLayout.HeaderHeight), baseColor = baseColor, highlightColor = highlightColor)
                 }
                 Spacer(Modifier.height(HomeMixLayout.HeaderGap))
                 BoxWithConstraints(Modifier.fillMaxWidth()) {

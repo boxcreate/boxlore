@@ -4,8 +4,13 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.CompositionLocalProvider
@@ -19,7 +24,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
+import cx.aswin.boxlore.core.testing.TestFixtures
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -35,6 +42,38 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [33], qualifiers = "w420dp-h1000dp-mdpi")
 class YourShowsSkeletonTest {
     @get:Rule val composeRule = createComposeRule()
+
+    /** A selected show used to load as a spinner in a 200dp box, then jump to the height of its rows. */
+    @Test fun `the selected show's loading rows are as tall as its loaded rows and See all`() {
+        val scale = mutableStateOf(1f)
+        val width = mutableStateOf(380)
+        val episodes = List(4) { TestFixtures.episode(id = "e$it", title = "Episode $it with a title long enough for two lines") }
+        val podcast = TestFixtures.podcast()
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, scale.value)) {
+                MaterialTheme {
+                    ShimmerScope(active = false) {
+                        Column(Modifier.width(width.value.dp)) {
+                            DenseEpisodeRowSkeleton(rows = 4, modifier = Modifier.testTag("skeleton"))
+                            Column(Modifier.testTag("loaded"), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                episodes.forEach { DenseEpisodeRow(it, podcast, DenseEpisodeRowActions({}, {})) }
+                                Box(Modifier.fillMaxWidth().heightIn(min = 52.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Phones and the Fold 8 cover's card widths, at normal and 130% text.
+        for ((cardWidth, textScale) in listOf(380 to 1f, 380 to 1.3f, 443 to 1f, 443 to 1.3f)) {
+            width.value = cardWidth
+            scale.value = textScale
+            composeRule.waitForIdle()
+            val skeleton = composeRule.onNodeWithTag("skeleton").fetchSemanticsNode().boundsInRoot.height
+            val loaded = composeRule.onNodeWithTag("loaded").fetchSemanticsNode().boundsInRoot.height
+            assertEquals("${cardWidth}dp at ${textScale}x", loaded, skeleton, 1f)
+        }
+    }
 
     @Test fun `unknown count reserves both rows with visible cover placeholders`() {
         verifyPlaceholderRows(subscribedCount = 0, secondCount = 5)

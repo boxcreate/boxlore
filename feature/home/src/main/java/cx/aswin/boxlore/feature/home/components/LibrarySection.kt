@@ -25,7 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -315,16 +314,8 @@ private fun SelectedShowEpisodes(
     if ((frame.loading || frame.refreshing) &&
         frame.episodes.list.isEmpty()
     ) {
-        Box(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .testTag("home_selected_show_loading"),
-            contentAlignment = Alignment.Center,
-        ) {
-            BoxLoreLoader.Expressive(size = 48.dp)
-        }
+        // Rows in the loaded rows' shape load in place, so the module keeps its height.
+        DenseEpisodeRowSkeleton(rows = SelectedShowSkeletonRows)
     } else if (frame.episodes.list.isEmpty()) {
         SelectedShowMessage(
             failed = frame.status.loadFailed,
@@ -358,7 +349,7 @@ private fun SelectedShowEpisodes(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).testTag("home_selected_show_refreshing"))
+                BoxLoreLoader.LinearWavy(Modifier.fillMaxWidth().padding(bottom = 8.dp).testTag("home_selected_show_refreshing"))
             }
             val visible = frame.episodes.list.take(8)
             // The rows and the See all footer form one connected list.
@@ -461,3 +452,6 @@ private fun Modifier.centredWithoutHeight(): Modifier = layout { measurable, con
     val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
     layout(placeable.width, 0) { placeable.place(0, -placeable.height / 2) }
 }
+
+/** Placeholder rows a selected show shows while its episodes load. */
+private const val SelectedShowSkeletonRows = 4
