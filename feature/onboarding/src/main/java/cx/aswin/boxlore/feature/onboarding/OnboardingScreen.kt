@@ -10,8 +10,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.prefs.AppLanguage
 
 /** The onboarding flow. [onAppLanguageChosen] applies a language picked in the first question and may recreate the activity. */
@@ -289,9 +292,21 @@ internal fun OnboardingStepTransition(step: OnboardingStep, modifier: Modifier =
     ) { target ->
         val leaving = transition.targetState == EnterExitState.PostExit
         Box(if (leaving) Modifier.clearAndSetSemantics {} else Modifier, propagateMinConstraints = true) {
-            content(target)
+            Box(Modifier.onboardingSideSafe(target), propagateMinConstraints = true) { content(target) }
         }
     }
+}
+
+/**
+ * Keeps each step's controls and text clear of a sideways phone's side system buttons and camera
+ * cutout; the step's own colour still runs to the edge behind them. The language question and
+ * Welcome place their panels themselves, so their colour reaches the edge.
+ */
+@Composable
+private fun Modifier.onboardingSideSafe(step: OnboardingStep): Modifier = when (step) {
+    OnboardingStep.APP_LANGUAGE, OnboardingStep.WELCOME -> this
+    OnboardingStep.AI_ONBOARDING -> background(MaterialTheme.colorScheme.background).boxloreHorizontalSafePadding()
+    else -> background(MaterialTheme.colorScheme.surface).boxloreHorizontalSafePadding()
 }
 
 /** The language question's choices fade this fast as Welcome takes over underneath. */
