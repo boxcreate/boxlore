@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.explore
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -37,7 +36,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
-import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreScrollableCenteredColumn
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
@@ -198,14 +196,15 @@ fun LearnScreen(
                     )
                     when (val state = uiState) {
                         is LearnUiState.Loading -> {
-                            Box(
+                            // A card-shaped placeholder in the first card's exact place.
+                            Spacer(modifier = Modifier.height(if (compactSpacing) 8.dp else 16.dp))
+                            LoreCardSkeleton(
+                                accentColor = fallbackAccent,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .weight(1f),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                BoxLoreLoader.Expressive(size = 64.dp)
-                            }
+                                    .weight(1f)
+                                    .padding(horizontal = if (compactSpacing) 12.dp else 20.dp)
+                            )
                         }
                         is LearnUiState.CaughtUp -> {
                             LoreStateCard(

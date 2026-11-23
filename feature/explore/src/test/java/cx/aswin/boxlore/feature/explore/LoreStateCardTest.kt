@@ -19,6 +19,7 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.COVER_443
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.COVER_475
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.FOLD_TABLETOP
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.PHONE
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.PHONE_LAND
@@ -107,6 +108,27 @@ class LoreStateCardTest {
         host.show(LearnUiState.Success(LoreDeckHost.cards()))
         assertEquals(failed, header())
         host.activeCard().assertIsDisplayed()
+    }
+
+    @Test
+    fun `loading shows a card-shaped placeholder exactly where the first card lands`() {
+        host.render()
+        for (window in listOf(PHONE, COVER_475, PHONE_LAND, TABLET)) {
+            host.moveTo(window)
+            host.show(LearnUiState.Success(LoreDeckHost.cards()))
+            val card = host.bounds(host.activeCard())
+            host.show(LearnUiState.Loading)
+            fixture.compose.onNode(hasTestTag(LoreDeckHost.ACTIVE_CARD), useUnmergedTree = true).assertDoesNotExist()
+            val placeholder = host.bounds(fixture.compose.onNode(hasTestTag(LORE_CARD_SKELETON_TAG), useUnmergedTree = true))
+            assertEquals("$window left", card.left.value, placeholder.left.value, 1f)
+            assertEquals("$window top", card.top.value, placeholder.top.value, 1f)
+            assertEquals("$window right", card.right.value, placeholder.right.value, 1f)
+            assertEquals("$window bottom", card.bottom.value, placeholder.bottom.value, 1f)
+        }
+        for (window in listOf(PHONE, TABLET, PHONE)) {
+            host.moveTo(window)
+            fixture.compose.onNode(hasTestTag(LORE_CARD_SKELETON_TAG), useUnmergedTree = true).assertExists()
+        }
     }
 
     private fun header(): DpRect = host.bounds(fixture.compose.onNode(hasTestTag(LORE_DECK_HEADER_TAG)))

@@ -47,14 +47,14 @@ internal data class LoreCardTextSpec(
 
 internal data class LoreMeasuredCardText(val spec: LoreCardTextSpec, val heightPx: Int)
 
-private val loreTextSpecs = listOf(
+internal val loreTextSpecs = listOf(
     LoreCardTextSpec(28, 24, 18, 16),
     LoreCardTextSpec(28, 20, 12, 12),
     LoreCardTextSpec(26, 20, 12, 12),
     LoreCardTextSpec(24, 20, 8, 12),
 )
 
-private fun TextStyle.loreHeading(spec: LoreCardTextSpec): TextStyle = copy(
+internal fun TextStyle.loreHeading(spec: LoreCardTextSpec): TextStyle = copy(
     fontSize = spec.headingSp.sp,
     lineHeight = (spec.headingSp + 4).sp,
     fontWeight = GoogleSansWeight.bold,

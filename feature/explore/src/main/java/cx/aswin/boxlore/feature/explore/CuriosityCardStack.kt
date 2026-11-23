@@ -90,23 +90,7 @@ fun CuriosityCardStack(
     // A fourth card waits hidden behind the deck and fades into third place during a swipe.
     val visibleCards = questions.take(LoreDeckDepth + 1)
 
-    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
-    BoxWithConstraints(
-        modifier = modifier
-            .boxloreCardWidth(BoxloreCardFamily.Reading, maximumWidthDp = 520f)
-            .then(if (tablet) Modifier.wrapContentHeight(Alignment.Top).heightIn(max = 640.dp) else Modifier)
-            .fillMaxSize()
-            // Centred and capped on every window, so a sideways phone gets the cover's card, not the full width.
-            .wrapContentWidth()
-            .widthIn(max = 520.dp),
-    ) {
-    // A deck this short (tabletop lower half, sideways phone, split-screen half) gives its rest and
-    // padding to the question instead.
-    val short = maxHeight < LoreShortDeckHeight
-    Box(
-        modifier = Modifier.fillMaxSize().padding(bottom = if (short) 0.dp else 28.dp),
-        contentAlignment = Alignment.TopCenter
-    ) {
+    LoreDeckFrame(modifier) { short ->
         visibleCards.asReversed().forEach { card ->
             key(card.episodeId) {
                 val depth = visibleCards.indexOf(card)
@@ -137,6 +121,32 @@ fun CuriosityCardStack(
             accentColor = artworkAccentColors[questions.first().artworkSources]?.let { Color(it) } ?: accentColor,
         )
     }
+}
+
+/**
+ * Where Lore's cards sit: centred, at most 520dp wide on every window, capped in height on tablets,
+ * with a rest below the deck. The loading placeholder uses the same frame, so the first card lands
+ * exactly where its placeholder was. [content] learns whether the deck is short.
+ */
+@Composable
+internal fun LoreDeckFrame(modifier: Modifier = Modifier, content: @Composable BoxScope.(short: Boolean) -> Unit) {
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    BoxWithConstraints(
+        modifier = modifier
+            .boxloreCardWidth(BoxloreCardFamily.Reading, maximumWidthDp = 520f)
+            .then(if (tablet) Modifier.wrapContentHeight(Alignment.Top).heightIn(max = 640.dp) else Modifier)
+            .fillMaxSize()
+            // Centred and capped on every window, so a sideways phone gets the cover's card, not the full width.
+            .wrapContentWidth()
+            .widthIn(max = 520.dp),
+    ) {
+        // A deck this short (tabletop lower half, sideways phone, split-screen half) gives its rest and
+        // padding to the question instead.
+        val short = maxHeight < LoreShortDeckHeight
+        Box(
+            modifier = Modifier.fillMaxSize().padding(bottom = if (short) 0.dp else 28.dp),
+            contentAlignment = Alignment.TopCenter,
+        ) { content(short) }
     }
 }
 
@@ -419,12 +429,12 @@ private fun LoreCardSource(
 }
 
 /** The source row's height. */
-private fun loreBarHeight(compactSpacing: Boolean) = if (compactSpacing) 48.dp else 52.dp
+internal fun loreBarHeight(compactSpacing: Boolean) = if (compactSpacing) 48.dp else 52.dp
 
 /** The action bar is taller than the source row, so Play and its neighbours are easy targets. */
-private fun loreActionBarHeight(compactSpacing: Boolean) = if (compactSpacing) 52.dp else 60.dp
+internal fun loreActionBarHeight(compactSpacing: Boolean) = if (compactSpacing) 52.dp else 60.dp
 
-private fun loreActionBarPadding(compactSpacing: Boolean, tight: Boolean = false) = when {
+internal fun loreActionBarPadding(compactSpacing: Boolean, tight: Boolean = false) = when {
     tight -> 4.dp
     compactSpacing -> 8.dp
     else -> 10.dp
