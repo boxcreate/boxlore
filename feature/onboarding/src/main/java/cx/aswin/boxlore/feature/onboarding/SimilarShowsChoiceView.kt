@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,28 +30,33 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxloreScrollableCenteredColumn
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.artworkUrls
 
 /**
  * Search and import, before any request: the question, just above the middle, with the picked
- * shows' covers in a small fan under it and how many are already in the library. The footer holds
- * both answers (See similar shows, Go to Home); the content scrolls only in short windows.
+ * shows' covers in a small fan under it and how many are already in the library. In short windows
+ * the fan gives way to a row of small covers beside that line, so nothing is cut at the edge. The
+ * footer holds both answers (See similar shows, Go to Home); the content scrolls only in short windows.
  */
 @Composable
 internal fun SimilarShowsChoiceContent(uiState: OnboardingUiState) {
     val origin = OnboardingSuggestionsPresentation.origin(uiState)
     val seeds = OnboardingSuggestionsPresentation.seedShows(uiState)
     val count = uiState.suggestionSeedCount.takeIf { it > 0 } ?: seeds.size
+    val short = boxloreIsShortPane()
+    val covers = seeds.take(MaxCovers).map { it.imageUrl to it.artworkUrls() }
     BoxloreScrollableCenteredColumn(
         Modifier.fillMaxSize().testTag("similar_choice"),
-        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = if (short) 8.dp else 16.dp),
     ) {
-        Column(Modifier.widthIn(max = SimilarChoiceMaxWidth).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        // Short windows take a wider, tighter column, so the question and its line fit without scrolling.
+        Column(Modifier.widthIn(max = if (short) SimilarChoiceShortMaxWidth else SimilarChoiceMaxWidth).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 stringResource(R.string.similar_choice_title),
                 Modifier.semantics { heading() }.testTag("similar_choice_title"),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = GoogleSansWeight.bold),
+                style = (if (short) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineSmall).copy(fontWeight = GoogleSansWeight.bold),
                 textAlign = TextAlign.Center,
             )
             Text(
@@ -60,18 +66,21 @@ internal fun SimilarShowsChoiceContent(uiState: OnboardingUiState) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
-            if (seeds.isNotEmpty()) SimilarChoiceCovers(seeds.take(MaxCovers).map { it.imageUrl to it.artworkUrls() })
-            Text(
-                if (origin == SuggestionsOrigin.Library) {
-                    pluralStringResource(R.plurals.suggestions_library_seeds, count, count)
-                } else {
-                    pluralStringResource(R.plurals.suggestions_search_seeds, count, count)
-                },
-                Modifier.padding(top = 12.dp).testTag("suggestions_seed_summary"),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
+            if (covers.isNotEmpty() && !short) SimilarChoiceCovers(covers)
+            Row(Modifier.padding(top = if (short) 8.dp else 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (covers.isNotEmpty() && short) SimilarChoiceCoverRow(covers)
+                Text(
+                    if (origin == SuggestionsOrigin.Library) {
+                        pluralStringResource(R.plurals.suggestions_library_seeds, count, count)
+                    } else {
+                        pluralStringResource(R.plurals.suggestions_search_seeds, count, count)
+                    },
+                    Modifier.weight(1f, fill = false).testTag("suggestions_seed_summary"),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }
@@ -106,8 +115,39 @@ private fun SimilarChoiceCovers(covers: List<Pair<String, List<String>>>) {
     }
 }
 
+/** Short windows: up to five small covers overlapping in a row, beside the library line. */
+@Composable
+private fun SimilarChoiceCoverRow(covers: List<Pair<String, List<String>>>) {
+    val colors = MaterialTheme.colorScheme
+    Box(
+        Modifier
+            .padding(end = 12.dp)
+            .width(SmallCoverSize + SmallCoverStep * (covers.size - 1))
+            .height(SmallCoverSize)
+            .testTag("similar_choice_covers"),
+    ) {
+        covers.forEachIndexed { index, (url, fallbacks) ->
+            OptimizedImage(
+                url = url,
+                fallbackUrls = fallbacks,
+                proxyWidth = 120,
+                contentDescription = null,
+                modifier = Modifier
+                    .offset(x = SmallCoverStep * index)
+                    .size(SmallCoverSize)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(colors.surfaceContainerHigh)
+                    .testTag("similar_choice_cover"),
+            )
+        }
+    }
+}
+
+private val SmallCoverSize = 36.dp
+private val SmallCoverStep = 22.dp
 private const val MaxCovers = 5
 private const val CoverTurn = 6f
 private val CoverSize = 64.dp
 private val CoverStep = 40.dp
 private val SimilarChoiceMaxWidth = 480.dp
+private val SimilarChoiceShortMaxWidth = 720.dp

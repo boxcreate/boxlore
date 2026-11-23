@@ -106,6 +106,28 @@ class SimilarShowsChoiceScreenTest {
     }
 
     @Test
+    fun `on short windows the covers and the library line show whole or not at all`() {
+        val seven = (1..7).associate { "s$it" to Podcast(id = "s$it", title = "Show s$it", artist = "Host", imageUrl = "") }
+        state.value = choosing(importPath = false).copy(selectedPodcasts = seven, subscribedPodcastIds = seven.keys, suggestionSeedCount = 7)
+        compose.setContent { screen() }
+        listOf(BoxloreWindowLayout(740f, 360f), BoxloreWindowLayout(932f, 314f), BoxloreWindowLayout(475f, 330f), BoxloreWindowLayout(412f, 915f)).forEach { next ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            val viewport = compose.onNodeWithTag("similar_choice").fetchSemanticsNode().boundsInRoot
+            listOf("similar_choice_covers", "suggestions_seed_summary").forEach { tag ->
+                compose.onAllNodesWithTag(tag).fetchSemanticsNodes().forEach { node ->
+                    // Its own size, not the part the scroll edge leaves showing.
+                    val top = node.positionInRoot.y
+                    val bottom = top + node.size.height
+                    val whole = top >= viewport.top - 1f && bottom <= viewport.bottom + 1f
+                    val gone = bottom <= viewport.top || top >= viewport.bottom
+                    assertTrue("$tag is cut at the edge at ${next.widthDp}x${next.heightDp} ($top..$bottom vs $viewport)", whole || gone)
+                }
+            }
+        }
+    }
+
+    @Test
     fun `import leads with Go to Home`() {
         state.value = choosing(importPath = true)
         compose.setContent { screen() }
