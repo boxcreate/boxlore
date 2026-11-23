@@ -13,6 +13,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -53,6 +54,7 @@ class ShortHeroCardsTest {
     private val grid = mutableStateOf(false)
     private val fontScale = mutableFloatStateOf(1f)
     private val cardHeight = mutableStateOf(240.dp)
+    private val cardWidth = mutableStateOf(320.dp)
 
     private fun show(index: Int) = TestFixtures.podcast(id = "show-$index", title = "The Joe Rogan Experience", imageUrl = "").copy(
         latestEpisode = TestFixtures.episode(id = "e$index", title = LONG_TITLE, podcastId = "show-$index").copy(duration = 3600),
@@ -70,7 +72,7 @@ class ShortHeroCardsTest {
                 LocalBoxloreWindowLayout provides BoxloreTestWindows.PHONE_LAND,
             ) {
                 BoxLoreTheme(dynamicColor = false) {
-                    Box(Modifier.size(320.dp, cardHeight.value).testTag("short_hero")) { if (grid.value) ShortCollection() else ShortCard() }
+                    Box(Modifier.size(cardWidth.value, cardHeight.value).testTag("short_hero")) { if (grid.value) ShortCollection() else ShortCard() }
                 }
             }
         }
@@ -81,10 +83,15 @@ class ShortHeroCardsTest {
                     show(current, collection = false, scale, height)
                     failures += singleCardFailures("$current at ${height.value}dp, text ${scale}x", tide = current == HeroCardStyle.TIDE)
                 }
-                SINGLE_STYLES.forEach { current ->
-                    show(current, collection = true, scale, height)
-                    failures += collectionFailures("$current collection at ${height.value}dp, text ${scale}x")
+                // A split-screen half's card and a sideways phone's wider one.
+                for (width in listOf(320.dp, 520.dp)) {
+                    cardWidth.value = width
+                    SINGLE_STYLES.forEach { current ->
+                        show(current, collection = true, scale, height)
+                        failures += collectionFailures("$current collection ${width.value}x${height.value}dp, text ${scale}x")
+                    }
                 }
+                cardWidth.value = 320.dp
             }
         }
         assertTrue(failures.joinToString("\n"), failures.isEmpty())
@@ -113,18 +120,28 @@ class ShortHeroCardsTest {
         }
     }
 
-    /** Every collection row that shows keeps its Play target whole inside the card and at least 48dp each way. */
+    /**
+     * Every one of the four episodes keeps its Play target whole inside the card, at least 48dp each way
+     * and clear of Tide's panel, and the count the card shows is the number of episodes it lets you play.
+     */
     private fun collectionFailures(label: String): List<String> {
         val hero = rect("short_hero")
         // Block and Duotone rows play from their whole cover; the other styles from a Play button on it.
         val target = if (style.value == HeroCardStyle.BLOCK || style.value == HeroCardStyle.DUOTONE) "artwork" else "play"
-        val targets = (0 until 4).mapNotNull { index -> rectOrNull("home_hero_collection_${index}_$target") }
+        val targets = (0 until 4).map { index -> index to rectOrNull("home_hero_collection_${index}_$target") }
+        val panel = rectOrNull("home_hero_tide_panel")
         val failures = mutableListOf<String>()
-        if (targets.isEmpty()) failures += "$label: no Play target shows"
-        targets.forEach { target ->
-            if (!hero.contains(target)) failures += "$label: Play $target leaves the card $hero"
-            if (target.width < 48f - 0.5f || target.height < 48f - 0.5f) failures += "$label: Play target is ${target.width}x${target.height}dp"
+        targets.forEach { (index, target) ->
+            when {
+                target == null -> failures += "$label: episode ${index + 1} has no Play target"
+                !hero.contains(target) -> failures += "$label: Play $target leaves the card $hero"
+                target.width < 48f - 0.5f || target.height < 48f - 0.5f -> failures += "$label: Play target is ${target.width}x${target.height}dp"
+                panel != null && target.overlaps(panel) -> failures += "$label: Play ${index + 1} $target is under the panel $panel"
+            }
         }
+        val count = composeRule.onAllNodesWithTag("home_hero_collection_count", useUnmergedTree = true).fetchSemanticsNodes().firstOrNull()
+        val shown = count?.config?.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }
+        if (count != null && shown != targets.count { it.second != null }.toString()) failures += "$label: the count says $shown"
         return failures
     }
 

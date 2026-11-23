@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
@@ -333,7 +334,8 @@ internal fun TideHeroGridCard(
                     TideCoverTile(podcast, resume, showStatus = square, playing[index], onCellClick, onPlaybackClick, "home_hero_collection_$index")
                 }
             },
-            panel = { TidePanel(shade.deep) },
+            // The panel takes the taps that land on it, so nothing under its edge plays or opens.
+            panel = { TidePanel(shade.deep, Modifier.fillMaxSize().testTag("home_hero_tide_panel").pointerInput(Unit) {}) },
             copy = {
                 Column(Modifier.heroPeekFade(heroPeekContent())) {
                     Text(
@@ -373,7 +375,9 @@ internal fun TideHeroGridCard(
 /**
  * Four covers make a square, two or three a row up to 34% of the card's height; the panel's edge sits
  * 20dp above the square's foot (higher if the heading needs it) or 9dp above the row's, and the words
- * sit at the bottom under a square, or just under the edge above a row's episode list.
+ * sit at the bottom under a square, or just under the edge above a row's episode list. On a short card
+ * (sideways phones, split-screen halves) where the panel would rise over the square's second row, the
+ * four covers sit in one row instead, so none is hidden under the panel.
  */
 @Composable
 private fun TideCollectionLayout(square: Boolean, count: Int, covers: @Composable () -> Unit, panel: @Composable () -> Unit, copy: @Composable () -> Unit) {
@@ -386,33 +390,54 @@ private fun TideCollectionLayout(square: Boolean, count: Int, covers: @Composabl
         val height = constraints.maxHeight
         val inset = TideInset.roundToPx()
         val tiles = measurables.dropLast(2)
-        val columns = if (square) 2 else count.coerceAtLeast(1)
-        val tileWidth = width / columns
-        val tileHeight = if (square) tileWidth else minOf(tileWidth, (height * TideRowCoverShare).roundToInt())
-        val placedTiles = tiles.map { it.measure(Constraints.fixed(tileWidth, tileHeight)) }
-        val coversBottom = if (square) tileHeight * 2 else tileHeight
-        val wordsMax = Constraints(maxWidth = (width - inset * 2).coerceAtLeast(0))
-        val words = measurables.last().measure(
-            if (square) wordsMax else wordsMax.copy(maxHeight = (height - coversBottom).coerceAtLeast(0)),
-        )
         val bottom = TideBottomInset.dp.roundToPx()
+        val wordsMax = Constraints(maxWidth = (width - inset * 2).coerceAtLeast(0))
+        // Under a square the words sit at the card's foot; the panel's edge rises 24dp above them at most.
+        val squareWords = if (square) measurables.last().measure(wordsMax) else null
+        val wordsRoom = squareWords?.let { height - bottom - it.height - 24.dp.roundToPx() } ?: 0
+        val shape = tideCollectionShape(square, count, width, height, wordsRoom, density = this)
+        val tileWidth = width / shape.columns
+        val placedTiles = tiles.map { it.measure(Constraints.fixed(tileWidth, shape.tileHeight)) }
+        val coversBottom = shape.tileHeight * shape.lines
+        val words = squareWords ?: measurables.last().measure(wordsMax.copy(maxHeight = (height - coversBottom).coerceAtLeast(0)))
         val panelTop = if (square) {
-            minOf(coversBottom - 20.dp.roundToPx(), height - bottom - words.height - 24.dp.roundToPx())
+            minOf(coversBottom - 20.dp.roundToPx(), wordsRoom)
         } else {
             coversBottom - 9.dp.roundToPx()
         }.coerceAtLeast(0)
         val ground = measurables[measurables.size - 2].measure(Constraints.fixed(width, (height - panelTop).coerceAtLeast(0)))
         layout(width, height) {
             placedTiles.forEachIndexed { index, tile ->
-                val column = index % columns
-                val row = index / columns
-                tile.placeRelative(column * tileWidth, row * tileHeight)
+                val column = index % shape.columns
+                val row = index / shape.columns
+                tile.placeRelative(column * tileWidth, row * shape.tileHeight)
             }
             ground.placeRelative(0, panelTop)
             val wordsTop = if (square) height - bottom - words.height else panelTop + 22.dp.roundToPx()
             words.placeRelative(inset, wordsTop)
         }
     }
+}
+
+/** How Tide's collection covers are laid out: [columns] a line, [lines] lines, each [tileHeight] tall (px). */
+internal data class TideCollectionShape(val columns: Int, val lines: Int, val tileHeight: Int)
+
+/**
+ * Four covers make a 2×2 square when the panel, which rises to [wordsRoom] at most, leaves the second
+ * row's covers and their Play buttons in sight; otherwise one row of four, as tall as the room above the
+ * words allows. Two or three covers always sit in one row up to 34% of the card's height.
+ */
+internal fun tideCollectionShape(square: Boolean, count: Int, width: Int, height: Int, wordsRoom: Int, density: androidx.compose.ui.unit.Density): TideCollectionShape {
+    if (!square) {
+        val columns = count.coerceAtLeast(1)
+        val tileWidth = width / columns
+        return TideCollectionShape(columns, 1, minOf(tileWidth, (height * TideRowCoverShare).roundToInt()))
+    }
+    val half = width / 2
+    val secondRowShows = with(density) { wordsRoom >= half + maxOf(half / 2, TideSecondRowSight.roundToPx()) }
+    if (secondRowShows) return TideCollectionShape(2, 2, half)
+    val overlap = with(density) { 20.dp.roundToPx() }
+    return TideCollectionShape(4, 1, minOf(width / 4, wordsRoom + overlap).coerceAtLeast(0))
 }
 
 /** "4 episodes · 1h 53m left", or the new episodes' total length; just the count when no lengths are known. */
@@ -447,7 +472,7 @@ private fun TideCoverTile(
     val duration = HomeHeroStyle.minutes(podcast, resume)?.let { heroDurationText(it) }
     val progress = HomeHeroStyle.progress(podcast).takeIf { resume && it > 0f }
     val peek = heroPeekContent()
-    Box(
+    BoxWithConstraints(
         Modifier.background(shade.deep).testTag(tag)
             .then(if (peek.shown) Modifier.semantics { contentDescription = title } else Modifier.clearAndSetSemantics {})
             .expressiveClickable(enabled = peek.shown) { currentOnClick(currentPodcast) },
@@ -460,7 +485,8 @@ private fun TideCoverTile(
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
         )
-        if (showStatus && duration != null) {
+        // Four covers in one row (a short card) are too narrow for the time chip beside Play.
+        if (showStatus && duration != null && maxWidth >= TideStatusTileWidth) {
             TideCoverStatus(
                 text = if (resume) stringResource(R.string.home_hero_remaining, duration) else duration,
                 progress = progress,
@@ -606,3 +632,9 @@ private const val TideCopyGap = 40f
 private const val TidePanelHighest = 0.65f
 private const val TidePanelLowestGap = 16f
 private const val TideRowCoverShare = 0.34f
+
+/** The narrowest cover that shows its time chip beside the Play button. */
+private val TideStatusTileWidth = 136.dp
+
+/** How much of the square's second row must stay above the panel: at least its Play button's 48dp target. */
+private val TideSecondRowSight = 56.dp
