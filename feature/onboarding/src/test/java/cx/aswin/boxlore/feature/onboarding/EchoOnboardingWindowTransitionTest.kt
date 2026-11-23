@@ -64,7 +64,7 @@ class EchoOnboardingWindowTransitionTest {
         onContinue = { calls += "continue" },
         onRevealSuggestions = {},
         onRetry = {},
-        onPickTopics = {},
+        onPickTopics = { calls += "topics" },
         onFindShows = { calls += "find" },
         onChangeAnswers = {},
         onSearch = {},
@@ -191,6 +191,18 @@ class EchoOnboardingWindowTransitionTest {
             assertEquals("the About sheet closed on $step", 1, compose.onAllNodes(hasText("About Echo")).fetchSemanticsNodes().size)
         }
         assertEquals(emptyList<String>(), calls)
+    }
+
+    @Test
+    fun `the More menu stays open through a turn and picks topics once`() {
+        show()
+        compose.onNodeWithTag("echo_more").performClick()
+        settle()
+        compose.walkWindows(window, BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE) { settle() }
+        compose.onNode(hasText("Pick topics instead") and hasClickAction()).performClick()
+        settle()
+        assertEquals(listOf("topics"), calls)
+        compose.onNode(hasText("Pick topics instead") and hasClickAction()).assertDoesNotExist()
     }
 
     /** Rows of topic tiles on [size]: distinct tile tops. */

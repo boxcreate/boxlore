@@ -16,8 +16,6 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -27,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,7 +38,9 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.components.rememberBoxloreMenuState
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
@@ -68,6 +69,11 @@ internal fun EchoTopBar(progress: Float, busy: Boolean, searchEnabled: Boolean, 
     val onMenuOpenChange = menu.onMenuOpenChange
     val aboutOpen = menu.aboutOpen
     val onAboutOpenChange = menu.onAboutOpenChange
+    val menuState = rememberBoxloreMenuState()
+    val aboutLabel = stringResource(R.string.echo_about)
+    val pickTopicsLabel = stringResource(R.string.echo_pick_topics)
+    // The screen pauses Echo while the menu is open.
+    LaunchedEffect(menuState.expanded) { if (menuState.expanded != menuOpen) onMenuOpenChange(menuState.expanded) }
     val animated by animateFloatAsState(progress, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "echoProgress")
     val progressLabel = stringResource(R.string.echo_progress)
     Row(
@@ -92,26 +98,13 @@ internal fun EchoTopBar(progress: Float, busy: Boolean, searchEnabled: Boolean, 
         )
         IconButton(onClick = onSearch, enabled = searchEnabled) { Icon(Icons.Rounded.Search, stringResource(R.string.echo_search)) }
         Box {
-            IconButton(onClick = { onMenuOpenChange(true) }, modifier = Modifier.testTag("echo_more")) {
+            IconButton(onClick = { menuState.open() }, modifier = Modifier.testTag("echo_more")) {
                 Icon(Icons.Rounded.MoreVert, stringResource(R.string.echo_more_options))
             }
-            DropdownMenu(expanded = menuOpen, onDismissRequest = { onMenuOpenChange(false) }) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.echo_about)) },
-                    leadingIcon = { Icon(Icons.Outlined.Info, null) },
-                    onClick = {
-                        onMenuOpenChange(false)
-                        onAboutOpenChange(true)
-                    },
-                )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.echo_pick_topics)) },
-                    leadingIcon = { Icon(Icons.Rounded.Category, null) },
-                    onClick = {
-                        onMenuOpenChange(false)
-                        onPickTopics()
-                    },
-                )
+            // The shared boxlore menu: rounded, and it opens in the half of a folded screen that holds the button.
+            BoxloreDropdownMenu(menuState, anchorAlignment = Alignment.End) {
+                item(aboutLabel, onClick = { onAboutOpenChange(true) }, leadingIcon = Icons.Outlined.Info)
+                item(pickTopicsLabel, onClick = onPickTopics, leadingIcon = Icons.Rounded.Category)
             }
         }
     }
