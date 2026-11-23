@@ -1,8 +1,6 @@
 package cx.aswin.boxlore.feature.info.components
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.MarqueeSpacing
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,7 +29,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -144,6 +141,11 @@ private fun EpisodeShowLink(podcastTitle: String, onPodcastClick: () -> Unit) {
     }
 }
 
+/**
+ * Date, length and number in readable text that never scrolls, then the Archived and Mark played
+ * pills: on the same line when they fit, on their own line at the end when they don't.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleCompletion: () -> Unit, isArchived: Boolean) {
     val locale = currentLocale()
@@ -152,29 +154,28 @@ private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleComp
     }
     val number = episodeNumberLabel(episode)
     val metadata = listOfNotNull(date, formatEpisodeDuration(episode.duration, locale).takeIf(String::isNotBlank), number).joinToString(" · ")
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+    FlowRow(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
         if (metadata.isNotEmpty()) {
             Text(
                 metadata,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Clip,
-                modifier = Modifier.weight(1f).clipToBounds().basicMarquee(
-                    iterations = Int.MAX_VALUE,
-                    initialDelayMillis = 2_500,
-                    repeatDelayMillis = 2_000,
-                    spacing = MarqueeSpacing(32.dp),
-                    velocity = 24.dp,
-                ),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = true).testTag(EPISODE_DETAILS_TAG),
             )
-        } else {
-            Spacer(Modifier.weight(1f))
         }
         // Archiving is done from the show page's selection menu; here an archived episode is only marked.
-        if (isArchived) EpisodeArchivedPill()
-        EpisodeCompletionPill(isCompleted, onToggleCompletion)
+        // Weighted too, so on a line of their own the pills sit at the end.
+        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
+            if (isArchived) EpisodeArchivedPill()
+            EpisodeCompletionPill(isCompleted, onToggleCompletion)
+        }
     }
 }
 
@@ -205,3 +206,4 @@ private fun episodeNumberLabel(episode: Episode): String? {
 }
 
 internal const val EPISODE_HERO_ART_TAG = "episode_info_hero_art"
+internal const val EPISODE_DETAILS_TAG = "episode_info_details"
