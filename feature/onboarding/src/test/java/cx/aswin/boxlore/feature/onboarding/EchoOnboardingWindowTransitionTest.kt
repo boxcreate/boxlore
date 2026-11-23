@@ -178,6 +178,21 @@ class EchoOnboardingWindowTransitionTest {
         compose.onNodeWithTag("echo_finish_confirmation").assertDoesNotExist()
     }
 
+    @Test
+    fun `the About Echo sheet stays open through every window change`() {
+        show()
+        compose.onNodeWithTag("echo_more").performClick()
+        settle()
+        compose.onNode(hasText("About Echo") and hasClickAction()).performClick()
+        settle()
+
+        compose.walkWindows(window, *walk) { step ->
+            settle()
+            assertEquals("the About sheet closed on $step", 1, compose.onAllNodes(hasText("About Echo")).fetchSemanticsNodes().size)
+        }
+        assertEquals(emptyList<String>(), calls)
+    }
+
     /** Rows of topic tiles on [size]: distinct tile tops. */
     private fun rowsOn(size: BoxloreWindowLayout): Int {
         window.value = size
