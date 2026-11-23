@@ -47,6 +47,10 @@ class VideoOverlayBarTypesTest {
                     visible.value = true
                 }
                 compose.runOnIdle { window.value = hiddenOn }
+                compose.waitForIdle()
+                // While the video stays open, an inner screen is never held sideways; the cover is again.
+                val expected = if (hiddenOn.usesTabletLayout) ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED else ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                assertEquals(expected, compose.activity.requestedOrientation)
                 compose.runOnIdle { visible.value = false }
                 compose.waitForIdle()
                 assertEquals(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED, compose.activity.requestedOrientation)

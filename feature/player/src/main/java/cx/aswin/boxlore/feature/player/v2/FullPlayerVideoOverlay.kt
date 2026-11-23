@@ -43,7 +43,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -181,10 +180,12 @@ internal fun FullscreenVideoSystemUi(
     onExit: () -> Unit
 ) {
     if (!visible) return
-    val tablet by rememberUpdatedState(LocalBoxloreWindowLayout.current.usesTabletLayout)
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     // Read once per full-screen session, before this overlay requests anything.
     val originalOrientation = remember(activity) { activity?.requestedOrientation }
-    DisposableEffect(isLandscape) {
+    // Runs again when the layout changes while the video is open: unfolding to the inner screen gives
+    // rotation back at once, and folding to the cover turns it sideways again.
+    DisposableEffect(isLandscape, tablet) {
         fullscreenVideoOrientation(FullscreenVideoPhase.Enter, isLandscape, tablet, originalOrientation)
             ?.let { activity?.requestedOrientation = it }
         val window = activity?.window
