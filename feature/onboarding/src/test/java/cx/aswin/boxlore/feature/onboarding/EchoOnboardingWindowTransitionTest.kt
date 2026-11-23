@@ -132,6 +132,23 @@ class EchoOnboardingWindowTransitionTest {
     }
 
     @Test
+    fun `answers that move to four columns never enter again`() {
+        show()
+        topic("Science").performClick()
+        settle()
+
+        compose.walkWindows(window, TABLETOP_LOWER_FOLD8, PHONE_LAND, TABLETOP_LOWER_FOLD8, BoxloreTestWindows.PHONE) { step ->
+            // The first frame after the change: the first tile already sits at the top of the answers,
+            // not lifted on its way in again.
+            val answers = compose.onNodeWithTag("echo_topics").fetchSemanticsNode().boundsInRoot
+            assertEquals("the answers entered again on $step", answers.top, topic("Science").fetchSemanticsNode().boundsInRoot.top, 0.5f)
+            topic("Science").assertToggle(ToggleableState.On, step)
+            settle()
+        }
+        assertEquals("four columns on the tabletop half", 2, rowsOn(TABLETOP_LOWER_FOLD8))
+    }
+
+    @Test
     fun `a draft keeps its text and focus`() {
         state = laterTurn.copy(aiCustomInputText = "Long drives and big ideas")
         show()
@@ -161,6 +178,14 @@ class EchoOnboardingWindowTransitionTest {
         compose.onNodeWithTag("echo_finish_confirmation").assertDoesNotExist()
     }
 
+    /** Rows of topic tiles on [size]: distinct tile tops. */
+    private fun rowsOn(size: BoxloreWindowLayout): Int {
+        window.value = size
+        settle()
+        return compose.onAllNodes(androidx.compose.ui.test.hasAnyAncestor(androidx.compose.ui.test.hasTestTag("echo_topics")) and hasClickAction())
+            .fetchSemanticsNodes().map { it.boundsInRoot.top.toInt() }.distinct().size
+    }
+
     private fun androidx.compose.ui.test.SemanticsNodeInteraction.assertToggle(expected: ToggleableState, step: BoxloreWindowLayout) {
         val actual = fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ToggleableState]
         assertEquals("picked state on $step", expected, actual)
@@ -178,5 +203,9 @@ class EchoOnboardingWindowTransitionTest {
     private companion object {
         /** The lower half a foldable like the Pixel 9 Pro Fold gives onboarding in tabletop. */
         val TABLETOP_LOWER_9PRO = BoxloreWindowLayout(673f, 410f)
+
+        /** The Galaxy Z Fold 8's lower half in tabletop, where the topics stand four across. */
+        val TABLETOP_LOWER_FOLD8 = BoxloreWindowLayout(932f, 314f)
+        val PHONE_LAND = BoxloreTestWindows.PHONE_LAND
     }
 }

@@ -18,12 +18,18 @@ class EchoFitPlanTest {
      * Stand-in text: the question wraps to three lines under 300dp and two above, the bubble needs
      * two lines under 400dp, and labels need [labelWidth] at 12sp (scaled by the text size).
      */
-    private class FixedMeasure(private val fontScale: Float = 1f, private val labelWidth: Float = 60f) : EchoFitMeasure {
+    private class FixedMeasure(
+        private val fontScale: Float = 1f,
+        private val labelWidth: Float = 60f,
+        private val bubbleLines: (Float) -> Int = { width -> if (width < 400f) 2 else 1 },
+    ) : EchoFitMeasure {
         override fun questionHeight(widthDp: Float, maxSp: Float, minSp: Float): Float = (if (widthDp < 300f) 3 else 2) * maxSp * 1.15f * fontScale
 
-        override fun bubbleHeight(widthDp: Float, lines: Int): Float = 36f + minOf(lines, if (widthDp < 400f) 2 else 1) * 24f * fontScale
+        override fun bubbleHeight(widthDp: Float, lines: Int): Float = 36f + minOf(lines, bubbleLines(widthDp)) * 24f * fontScale
 
-        override fun labelsFit(widthDp: Float, maxLines: Int): Boolean = widthDp >= labelWidth * fontScale
+        override fun labelsFit(widthDp: Float, maxLines: Int): Boolean = widthDp * maxLines >= labelWidth * fontScale
+
+        override fun bubbleFits(widthDp: Float, lines: Int): Boolean = lines >= bubbleLines(widthDp)
     }
 
     private val topics = EchoAnswerShape(EchoAnswerKind.Topics, EchoInitialTopic.entries.size)
@@ -119,12 +125,61 @@ class EchoFitPlanTest {
 
     @Test
     fun `a label too long for its tile with an icon drops the icons before anything shrinks`() {
-        val germanTile = 112f
+        // Too long beside an icon in a two-column tile, short enough without one.
+        val germanTile = 80f
         val fit = plan(360, 800, fontScale = 1.3f, measure = FixedMeasure(1.3f, labelWidth = germanTile))
 
         assertEquals(EchoFitLevel.NoIcons, fit.level)
         assertFalse(fit.showIcons)
         assertEquals(plan(360, 800, fontScale = 1.3f).metrics, fit.metrics)
+    }
+
+    @Test
+    fun `labels too long for two columns even without icons stand one to a row where that fits`() {
+        listOf(1.3f to 360, 2f to 360, 2f to 412).forEach { (scale, width) ->
+            val fit = plan(width, if (width == 360) 800 else 915, 24, 24, scale, measure = FixedMeasure(scale, labelWidth = 120f))
+            assertEquals(1, fit.columns, "${width}dp at $scale")
+            assertEquals(EchoFitLevel.Stacked, fit.level)
+            assertFalse(fit.sideBySide || fit.showIcons || fit.overflow)
+            assertTrue(fit.somethingElseInFooter)
+        }
+    }
+
+    @Test
+    fun `beside the answers every label fits, the start column narrowing first`() {
+        listOf(475 to 330, 673 to 410, 740 to 360).forEach { (w, h) ->
+            listOf(1f, 1.3f).forEach { scale ->
+                val roomy = plan(w, h, fontScale = scale)
+                // Labels a little too long for two columns in the end column's usual share.
+                val end = (w - Sides - SideBySideGap) * (1 - SideBySideStartShare)
+                val long = plan(w, h, fontScale = scale, measure = FixedMeasure(scale, labelWidth = (end / 2 - 32f + 10f) / scale))
+                assertTrue(long.sideBySide, "${w}x$h at $scale")
+                assertFalse(long.overflow)
+                assertTrue(long.startShare < roomy.startShare || long.labelLines == 2 || long.columns != roomy.columns, "${w}x$h at $scale: $long")
+            }
+        }
+    }
+
+    @Test
+    fun `Echo comes and goes with the window, never with what it says`() {
+        // Windows whose tier hides Echo keep it hidden beside the answers.
+        listOf(475 to 330, 932 to 314, 740 to 360, 673 to 410).forEach { (w, h) ->
+            listOf(FixedMeasure(), FixedMeasure(bubbleLines = { 1 }), FixedMeasure(bubbleLines = { 6 })).forEach { measure ->
+                assertFalse(plan(w, h, measure = measure).metrics.showEcho, "${w}x$h")
+            }
+        }
+        // Beside the answers, Echo shows only with everything it says.
+        val wordy = plan(841, 560, measure = FixedMeasure(bubbleLines = { 9 }))
+        if (wordy.sideBySide) assertFalse(wordy.metrics.showEcho)
+    }
+
+    @Test
+    fun `larger text keeps a third line for Echo where it still fits`() {
+        val fit = plan(412, 915, 24, 24, 1.3f, measure = FixedMeasure(1.3f, bubbleLines = { 3 }))
+        assertEquals(3, fit.metrics.bubbleLines)
+        assertTrue(fit.level <= EchoFitLevel.Shrunk)
+        // Default text keeps the tier's lines.
+        assertEquals(EchoLayout.metrics((915 - 24 - TopBar - FooterAllowance).dp, 1f, false).bubbleLines, plan(412, 915, 24, 24).metrics.bubbleLines)
     }
 
     @Test

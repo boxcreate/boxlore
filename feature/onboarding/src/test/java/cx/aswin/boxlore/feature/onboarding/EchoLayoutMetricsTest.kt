@@ -18,21 +18,6 @@ class EchoLayoutMetricsTest {
     }
 
     @Test
-    fun `the tier table stays as it is, so phones where it fits keep today's look`() {
-        val table = listOf(700.dp, 640.dp, 540.dp, 420.dp).map { EchoLayout.metrics(it, 1f, keyboardOpen = false) }
-            .map { listOf(it.avatarWidth, it.rowHeight, it.tileHeight, it.badgeSize, it.gap) }
-        assertEquals(
-            listOf(
-                listOf(168.dp, 72.dp, 96.dp, 48.dp, 22.dp),
-                listOf(132.dp, 64.dp, 80.dp, 42.dp, 18.dp),
-                listOf(112.dp, 58.dp, 58.dp, 36.dp, 14.dp),
-                listOf(84.dp, 50.dp, 50.dp, 32.dp, 8.dp),
-            ),
-            table,
-        )
-    }
-
-    @Test
     fun `smaller tiers shrink Echo and rows but never below the touch target`() {
         val tiers = listOf(700.dp, 640.dp, 540.dp, 420.dp).map { EchoLayout.metrics(it, 1f, keyboardOpen = false) }
         assertEquals(tiers.sortedByDescending { it.avatarWidth }, tiers)

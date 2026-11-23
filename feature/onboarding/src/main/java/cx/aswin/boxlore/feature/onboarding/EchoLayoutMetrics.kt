@@ -39,7 +39,7 @@ internal object EchoLayout {
             bodyHeight >= 480.dp -> EchoLayoutTier.Regular
             else -> EchoLayoutTier.Compact
         }
-        return if (fontScale >= 1.3f) EchoLayoutTier.entries[(byHeight.ordinal + 1).coerceAtMost(EchoLayoutTier.Compact.ordinal)] else byHeight
+        return if (fontScale >= LargeFontScale) EchoLayoutTier.entries[(byHeight.ordinal + 1).coerceAtMost(EchoLayoutTier.Compact.ordinal)] else byHeight
     }
 
     fun metrics(bodyHeight: Dp, fontScale: Float, keyboardOpen: Boolean): EchoLayoutMetrics = when (tier(bodyHeight, fontScale)) {
@@ -79,4 +79,7 @@ internal object EchoLayout {
 
     private val TightHeight = 400.dp
     const val TightFontScale = 1.6f
+
+    /** Text at least this large drops a tier. */
+    const val LargeFontScale = 1.3f
 }

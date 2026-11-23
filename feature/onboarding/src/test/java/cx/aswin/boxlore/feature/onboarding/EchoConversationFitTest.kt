@@ -10,9 +10,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -117,6 +120,34 @@ class EchoConversationFitTest(
 
     @Test fun `show card`() = check(deck, expectEcho = mustShow)
 
+    // Echo thinking: the answers' skeleton keeps the loaded rows' shape and Echo keeps its size.
+    @Test fun `waiting keeps the next turn's shape`() {
+        assumeTrue("Checked on a phone with bars and a tabletop half", "${widthDp}x$heightDp$bars" in WAITING_SIZES && fontScale == 1f)
+        val turn = mutableStateOf(later.copy(isAiLoading = true))
+        show(turn)
+        val rows = compose.onAllNodesWithTag("echo_skeleton_row").fetchSemanticsNodes()
+        assertTrue("no skeleton on $widthDp x $heightDp", rows.isNotEmpty())
+        rows.forEach { assertTrue("a skeleton row is squeezed (${it.boundsInRoot.height})", it.boundsInRoot.height >= 48f - 0.5f) }
+        val waitingEcho = bounds("echo_onboarding_avatar")
+        turn.value = later
+        compose.mainClock.advanceTimeBy(1_500)
+        compose.waitForIdle()
+        assertEquals("Echo changes size when the question arrives", waitingEcho?.width, bounds("echo_onboarding_avatar")?.width)
+    }
+
+    // Writing with the keyboard up: the question stays whole and the field shows, nothing scrolls.
+    @Test fun `writing with the keyboard open`() {
+        assumeTrue("Checked on a phone with bars and a sideways phone", "${widthDp}x$heightDp$bars" in KEYBOARD_SIZES && fontScale == 1f)
+        show(mutableStateOf(later.copy(aiCustomInputText = "Long drives and old mysteries")), ime = true)
+        assertTrue("something scrolls", compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).fetchSemanticsNodes().isEmpty())
+        val question = compose.onAllNodesWithTag("echo_question").fetchSemanticsNodes().single()
+        textLayouts(question).forEach { assertTrue("the question is cut off with the keyboard open", !it.hasVisualOverflow) }
+        val field = bounds("echo_answer_input")!!
+        assertTrue("the answer field is squeezed (${field.height})", field.height >= 48f)
+        val keyboardTop = compose.onNodeWithTag("echo_onboarding_screen").fetchSemanticsNode().boundsInRoot.bottom - ImeHeight
+        assertTrue("the answer field is under the keyboard ($field, $keyboardTop)", field.top + 48f <= keyboardTop + 1f)
+    }
+
     // A very long name and a long pitch: the name shrinks or wraps and the pitch is still shown whole.
     @Test fun `show card with a long name`() = check(
         deck.copy(
@@ -139,9 +170,9 @@ class EchoConversationFitTest(
 
     private fun check(state: OnboardingUiState, expectEcho: Boolean, longText: Boolean = false) {
         val isDeck = state.aiDeck.current != null
-        assumeTrue("Show cards are checked on the original sizes", !isDeck || deckSize)
-        assumeTrue("Long text is checked on phones, the cover and a sideways phone", !longText || "${widthDp}x$heightDp$bars" in LONG_TEXT_SIZES)
-        show(state)
+        assumeTrue("Show cards are checked where a card is shown", !isDeck || deckSize)
+        assumeTrue("Long text is checked on phones, the cover, sideways phones and short halves", !longText || "${widthDp}x$heightDp$bars" in LONG_TEXT_SIZES)
+        show(mutableStateOf(state))
         val label = "${widthDp}x$heightDp$bars dp at ${fontScale}x text"
         checkEcho(label, expectEcho)
         assertTrue("something scrolls on $label", compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).fetchSemanticsNodes().isEmpty())
@@ -149,10 +180,11 @@ class EchoConversationFitTest(
         // A show card answers with its own buttons; every other turn has a main button.
         bounds("echo_primary")?.let { assertTrue("the main button is cut off on $label", it.bottom <= root.bottom + 1f) }
         if (isDeck) checkDeck(label, root) else checkQuestionAndAnswers(label, root)
+        checkReadingOrder(label)
     }
 
-    /** The screen at this size and text size, with the bars this size has, settled. */
-    private fun show(state: OnboardingUiState) {
+    /** The screen at this size and text size, with the bars this size has (and the keyboard, when [ime]), settled. */
+    private fun show(state: State<OnboardingUiState>, ime: Boolean = false) {
         compose.mainClock.autoAdvance = false
         WindowCompat.setDecorFitsSystemWindows(compose.activity.window, false)
         compose.setContent {
@@ -162,13 +194,14 @@ class EchoConversationFitTest(
                     LocalEchoShowPreviewFactory provides { _ -> SilentPreview },
                     LocalBoxloreWindowLayout provides BoxloreWindowLayout(widthDp.toFloat(), heightDp.toFloat()),
                 ) {
-                    Box(Modifier.requiredSize(widthDp.dp, heightDp.dp)) { EchoOnboardingScreen(state, callbacks) }
+                    Box(Modifier.requiredSize(widthDp.dp, heightDp.dp)) { EchoOnboardingScreen(state.value, callbacks) }
                 }
             }
         }
+        val keyboard = if (ime) ImeHeight.toInt() else 0
         when (bars) {
-            BARS -> compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets.PHONE_BARS) }
-            SIDEWAYS -> compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets.SIDEWAYS_3_BUTTON) }
+            BARS -> compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets.PHONE_BARS.copy(imeBottom = keyboard)) }
+            SIDEWAYS -> compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets.SIDEWAYS_3_BUTTON.copy(imeBottom = keyboard)) }
         }
         compose.mainClock.advanceTimeBy(1_500)
         compose.waitForIdle()
@@ -216,9 +249,11 @@ class EchoConversationFitTest(
     private fun checkQuestionAndAnswers(label: String, root: Rect) {
         val question = compose.onAllNodesWithTag("echo_question").fetchSemanticsNodes()
         assertEquals("the question is missing on $label", 1, question.size)
-        val layouts = mutableListOf<TextLayoutResult>()
-        question.single().config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
-        layouts.forEach { assertTrue("the question is cut off on $label", !it.hasVisualOverflow) }
+        textLayouts(question.single()).forEach {
+            assertTrue("the question is cut off on $label", !it.hasVisualOverflow)
+            // At default text the question keeps to three lines; larger text may take a fourth at its smallest size.
+            if (fontScale == 1f) assertTrue("the question runs past three lines on $label (${it.lineCount})", it.lineCount <= 3)
+        }
         val questionBounds = question.single().boundsInRoot
         assertTrue("the question runs off the screen on $label", questionBounds.top >= root.top - 1f && questionBounds.bottom <= root.bottom + 1f)
         val primary = bounds("echo_primary")!!
@@ -228,14 +263,47 @@ class EchoConversationFitTest(
         val somethingElse = bounds("echo_something_else")!!
         assertTrue("Something else is off screen on $label", somethingElse.top >= root.top - 1f && somethingElse.bottom <= root.bottom + 1f)
         assertTrue("Something else sits under the main button on $label", !somethingElse.overlaps(primary.deflate(1f)))
+        assertTrue("the question runs into the footer on $label", questionBounds.bottom <= minOf(primary.top, somethingElse.top) + 1f)
+        // Every answer shows whole: no label is cut short.
+        val labels = compose.onAllNodes(
+            (hasAnyAncestor(hasTestTag("echo_topics")) or hasAnyAncestor(hasTestTag("echo_choices"))) and
+                !hasAnyAncestor(hasTestTag("echo_something_else")) and !hasTestTag("echo_something_else") and
+                SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult),
+            useUnmergedTree = true,
+        ).fetchSemanticsNodes()
+        assertTrue("no answer labels on $label", labels.isNotEmpty())
+        labels.forEach { node -> textLayouts(node).forEach { assertTrue("an answer is cut short on $label: ${it.layoutInput.text}", !it.hasVisualOverflow) } }
+        // Where larger text keeps room for it, Echo says all it has to say.
+        val pseudo = compose.activity.resources.configuration.locales[0].country == "XA"
+        if ("${widthDp}x$heightDp$bars" == "412x915-bars" && fontScale == 1.3f && !pseudo) {
+            compose.onAllNodes(hasAnyAncestor(hasTestTag("echo_acknowledgment")) and SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
+                .fetchSemanticsNodes().forEach { node -> textLayouts(node).forEach { assertTrue("Echo's bubble is cut short on $label", !it.hasVisualOverflow) } }
+        }
     }
+
+    /** Echo, the question and the answers are read in that order, each as a group, whatever the arrangement. */
+    private fun checkReadingOrder(label: String) {
+        val order = EchoBodySlotTags.mapNotNull { tag ->
+            compose.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().singleOrNull()?.config?.getOrNull(SemanticsProperties.TraversalIndex)
+        }
+        assertEquals("the body's reading order on $label", listOf(0f, 1f, 2f), order)
+    }
+
+    private fun textLayouts(node: SemanticsNode): List<TextLayoutResult> =
+        mutableListOf<TextLayoutResult>().also { node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(it) }
 
     private fun bounds(tag: String): Rect? = compose.onAllNodesWithTag(tag).fetchSemanticsNodes().firstOrNull()?.boundsInRoot
 
     companion object {
         private const val BARS = "-bars"
         private const val SIDEWAYS = "-sideways"
-        private val LONG_TEXT_SIZES = setOf("412x915-bars", "475x695-bars", "915x412-sideways", "360x800-bars")
+        private val LONG_TEXT_SIZES = setOf("412x915-bars", "475x695-bars", "915x412-sideways", "360x800-bars", "475x330", "673x410", "740x360")
+        private val WAITING_SIZES = setOf("412x915-bars", "932x314")
+        private val KEYBOARD_SIZES = setOf("412x915-bars")
+
+        /** Windows where the show card still can't keep its pitch whole (reported; not part of this change). */
+        private val SHORTEST = setOf("740x360", "475x330", "932x314", "841x340")
+        private const val ImeHeight = 300f
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}x{1}{4} font {2}")
@@ -257,18 +325,18 @@ class EchoConversationFitTest(
             arrayOf<Any>(1280, 800, 1.0f, false, "", true),
             arrayOf<Any>(640, 800, 1.3f, false, "", true),
             // A phone with its status and gesture bars keeps Echo and shows the whole question.
-            arrayOf<Any>(412, 915, 1.0f, true, BARS, false),
-            arrayOf<Any>(412, 915, 2.0f, false, BARS, false),
-            arrayOf<Any>(360, 800, 2.0f, false, BARS, false),
+            arrayOf<Any>(412, 915, 1.0f, true, BARS, true),
+            arrayOf<Any>(412, 915, 2.0f, false, BARS, true),
+            arrayOf<Any>(360, 800, 2.0f, false, BARS, true),
         ) + listOf(1.0f, 1.3f).flatMap { scale ->
             // Phones and the Fold 8 cover with their bars.
-            listOf(412 to 915, 360 to 800, 430 to 932, 384 to 854, 443 to 649, 475 to 695).map { (w, h) -> arrayOf<Any>(w, h, scale, false, BARS, false) } +
+            listOf(412 to 915, 360 to 800, 430 to 932, 384 to 854, 443 to 649, 475 to 695).map { (w, h) -> arrayOf<Any>(w, h, scale, false, BARS, true) } +
                 // A phone on its side with 3-button navigation and a cutout.
                 listOf(arrayOf<Any>(915, 412, scale, false, SIDEWAYS, false)) +
                 // A small sideways phone, the cover sideways and in split-screen, a phone split-screen half,
                 // the lower halves of foldables in tabletop, and open foldables and tablets.
                 listOf(740 to 360, 695 to 475, 412 to 450, 475 to 330, 932 to 314, 841 to 340, 673 to 410, 750 to 832, 932 to 650, 841 to 701, 1600 to 1000)
-                    .map { (w, h) -> arrayOf<Any>(w, h, scale, false, "", false) }
+                    .map { (w, h) -> arrayOf<Any>(w, h, scale, false, "", scale == 1f && "${w}x$h" !in SHORTEST) }
         }.distinctBy { it.toList() }
     }
 }

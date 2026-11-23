@@ -61,6 +61,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
@@ -138,7 +139,7 @@ private fun EchoTopicGrid(key: String, selected: Set<String>, fit: EchoFit, call
                             ) {
                                 if (!fit.showIcons) {
                                     // The tightest windows drop the badge; the fill and rounding still show the pick.
-                                    Box(Modifier.padding(horizontal = EchoAnswerTextOnlyPadding)) { EchoAnswerLabel(stringResource(topic.labelRes), maxLines = 1) }
+                                    Box(Modifier.padding(horizontal = EchoAnswerTextOnlyPadding)) { EchoAnswerLabel(stringResource(topic.labelRes), maxLines = fit.labelLines, tight = fit.labelLines > 1) }
                                 } else if (metrics.tileStacked) {
                                     Column(Modifier.padding(horizontal = EchoAnswerStackedPadding), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                         EchoSelectionBadge(picked, topic.icon, metrics.badgeSize, shapeIndex = index)
@@ -253,10 +254,10 @@ private fun EchoAnswerRow(content: @Composable () -> Unit) {
     }
 }
 
-/** Labels never wrap past their limit or get cut: they shrink, down to 12sp, to fit. */
+/** Labels never wrap past their limit or get cut: they shrink, down to 12sp, to fit. [tight] lines fit two in a 48dp tile. */
 @Composable
-private fun EchoAnswerLabel(text: String, maxLines: Int) {
-    val style = MaterialTheme.typography.bodyLarge
+private fun EchoAnswerLabel(text: String, maxLines: Int, tight: Boolean = false) {
+    val style = MaterialTheme.typography.bodyLarge.let { if (tight) it.copy(lineHeight = 1.15.em) else it }
     Text(
         text,
         style = style,
@@ -273,18 +274,27 @@ private fun EchoSomethingElse(onClick: () -> Unit) {
     }
 }
 
-/** The rows' skeleton, in the loaded geometry and place. */
+/** The rows' skeleton, in the loaded geometry and place: as many columns as the answers will have. */
 @Composable
 private fun EchoChoiceSkeleton(fit: EchoFit) {
+    val rows = (0 until EchoLayout.AnswerRows).chunked(fit.columns.coerceAtLeast(1))
     ShimmerScope(active = true) {
         Column(Modifier.fillMaxSize()) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(EchoGroupGap)) {
-                repeat(EchoLayout.AnswerRows) { index ->
-                    val corners = echoChoiceCorners(index, EchoLayout.AnswerRows, false)
-                    EchoSkeleton(
-                        Modifier.fillMaxWidth().weight(1f).heightIn(min = fit.metrics.rowHeight),
-                        RoundedCornerShape(topStart = corners.first, topEnd = corners.first, bottomStart = corners.second, bottomEnd = corners.second),
-                    )
+                rows.forEachIndexed { rowIndex, row ->
+                    Row(Modifier.weight(1f).fillMaxWidth().heightIn(min = fit.metrics.rowHeight), horizontalArrangement = Arrangement.spacedBy(EchoGroupGap)) {
+                        row.forEachIndexed { column, _ ->
+                            val corners = if (row.size == 1 && rows.size == EchoLayout.AnswerRows) {
+                                echoChoiceCorners(rowIndex, rows.size, false).let { (top, bottom) -> EchoCorners(top, top, bottom, bottom) }
+                            } else {
+                                echoTileCorners(rowIndex, column, rows.size, row.size, false)
+                            }
+                            EchoSkeleton(
+                                Modifier.weight(1f).fillMaxHeight().testTag("echo_skeleton_row"),
+                                RoundedCornerShape(topStart = corners.topStart, topEnd = corners.topEnd, bottomEnd = corners.bottomEnd, bottomStart = corners.bottomStart),
+                            )
+                        }
+                    }
                 }
             }
             // Same geometry as the loaded choices, which end with Something else unless it waits in the footer.

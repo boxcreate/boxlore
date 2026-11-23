@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -23,6 +24,8 @@ internal data class EchoFitText(
     val questionExtraDp: Float,
     val speech: String?,
     val labels: List<String>,
+    /** Height under what Echo says in its bubble (the wait countdown). */
+    val speechExtraDp: Float = 0f,
 )
 
 /** The answers a turn shows, for its fit. Writing keeps its turn's arrangement, so typing never moves things. */
@@ -42,8 +45,14 @@ internal fun rememberEchoFitText(state: OnboardingUiState, kind: EchoScreenKind)
     val intro = stringResource(R.string.echo_intro)
     val initialQuestion = stringResource(R.string.echo_initial_question)
     val topicLabels = EchoInitialTopic.entries.map { stringResource(it.labelRes) }
+    // While Echo thinks, its bubble may show its longest wait line with the countdown under it.
+    val waitLine = stringArrayResource(EchoWaitStep.NextQuestion.lines).maxByOrNull { it.length }
     return when (kind) {
-        EchoScreenKind.Waiting -> EchoFitText(null, EchoWaitingHeight, state.aiGuidedTurn?.response, emptyList())
+        EchoScreenKind.Waiting -> if (state.isSynthesizing) {
+            EchoFitText(null, EchoWaitingHeight, null, emptyList())
+        } else {
+            EchoFitText(null, EchoWaitingHeight, waitLine, emptyList(), speechExtraDp = EchoWaitDetailHeight)
+        }
         else -> {
             val suggestion = kind == EchoScreenKind.Asking && !state.aiSearchSuggestion.isNullOrBlank()
             EchoFitText(
@@ -102,15 +111,29 @@ private class TextEchoFitMeasure(
 
     override fun bubbleHeight(widthDp: Float, lines: Int): Float = bubbles.getOrPut(widthDp to lines) {
         val speech = text.speech ?: return@getOrPut 0f
-        val layout = measurer.measure(
-            speech,
-            bubbleStyle,
-            overflow = TextOverflow.Ellipsis,
-            maxLines = lines,
-            constraints = Constraints(maxWidth = px(widthDp - EchoBubbleHorizontalPadding)),
-        )
-        layout.size.height / density.density + EchoBubbleChrome
+        bubble(speech, widthDp, lines).size.height / density.density + EchoBubbleChrome + text.speechExtraDp
     }
+
+    override fun bubbleFits(widthDp: Float, lines: Int): Boolean = text.speech?.let { !bubble(it, widthDp, lines).hasVisualOverflow } ?: true
+
+    override fun questionSize(widthDp: Float, maxSp: Float, minSp: Float): Float {
+        val question = text.question ?: return maxSp
+        var size = maxSp
+        while (size - 1f >= minSp) {
+            val layout = measurer.measure(question, questionStyle.copy(fontSize = size.sp), constraints = Constraints(maxWidth = px(widthDp)))
+            if (layout.lineCount <= EchoQuestionLines) break
+            size -= 1f
+        }
+        return size
+    }
+
+    private fun bubble(speech: String, widthDp: Float, lines: Int) = measurer.measure(
+        speech,
+        bubbleStyle,
+        overflow = TextOverflow.Ellipsis,
+        maxLines = lines,
+        constraints = Constraints(maxWidth = px(widthDp - EchoBubbleHorizontalPadding)),
+    )
 
     override fun labelsFit(widthDp: Float, maxLines: Int): Boolean = labels.getOrPut(widthDp to maxLines) {
         widthDp > 0f &&
@@ -127,6 +150,9 @@ private const val EchoQuestionLines = 3
 
 /** The question's placeholder while Echo thinks: two 30dp bars and their gap. */
 private const val EchoWaitingHeight = 70f
+
+/** The countdown under a wait line: its 4dp gap and a labelLarge line. */
+private const val EchoWaitDetailHeight = 24f
 
 /** The search suggestion under a question: its spacing, padding and 48dp button. */
 private const val EchoSuggestionHeight = 60f

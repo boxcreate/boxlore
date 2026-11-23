@@ -9,6 +9,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -41,6 +42,9 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
@@ -359,12 +363,23 @@ private fun EchoBodyLayout(
     question: @Composable () -> Unit,
     answers: @Composable () -> Unit,
 ) {
-    Layout(contents = listOf(header, question, answers), modifier = modifier) { (headerParts, questionParts, answerParts), constraints ->
+    // Read in order whatever the arrangement: Echo, then the question, then the answers, each as a group,
+    // so beside the answers TalkBack doesn't weave the answer rows in among Echo and the question.
+    val slots = listOf(header, question, answers).mapIndexed { index, slot ->
+        @Composable {
+            val group = Modifier.semantics {
+                isTraversalGroup = true
+                traversalIndex = index.toFloat()
+            }
+            Box(group.testTag(EchoBodySlotTags[index]), propagateMinConstraints = true) { slot() }
+        }
+    }
+    Layout(contents = slots, modifier = modifier) { (headerParts, questionParts, answerParts), constraints ->
         val width = constraints.maxWidth
         val height = constraints.maxHeight
         val gapPx = fit.metrics.gap.roundToPx()
         val columnGap = SideBySideGap.dp.roundToPx()
-        val startWidth = if (fit.sideBySide) ((width - columnGap) * SideBySideStartShare).toInt() else width
+        val startWidth = if (fit.sideBySide) ((width - columnGap) * fit.startShare).toInt() else width
         val answersWidth = if (fit.sideBySide) width - startWidth - columnGap else width
         val loose = Constraints(maxWidth = startWidth, maxHeight = height)
         val headers = headerParts.map { it.measure(loose) }
@@ -384,6 +399,9 @@ private fun EchoBodyLayout(
         }
     }
 }
+
+/** Test tags of the body's three slots, in reading order. */
+internal val EchoBodySlotTags = listOf("echo_slot_header", "echo_slot_question", "echo_slot_answers")
 
 /** Echo and the question, measured, with the room they take above the answers. */
 private class EchoBodySlots(

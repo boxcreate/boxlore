@@ -16,6 +16,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
@@ -109,9 +111,13 @@ internal fun EchoFooterBar(footer: EchoFooter, onAction: (EchoAction) -> Unit, s
         if (somethingElse == null) {
             EchoMainButton(footer, onAction, Modifier.fillMaxWidth())
         } else {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                EchoSomethingElseButton(somethingElse, enabled = footer.visible)
-                EchoMainButton(footer, onAction, Modifier.weight(1f))
+            // Something else never takes more than half the row, so long text can't squeeze out the main button.
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val half = maxWidth / 2
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    EchoSomethingElseButton(somethingElse, enabled = footer.visible, modifier = Modifier.widthIn(max = half))
+                    EchoMainButton(footer, onAction, Modifier.weight(1f))
+                }
             }
         }
     }
