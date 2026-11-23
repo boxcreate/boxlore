@@ -167,7 +167,7 @@ private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleComp
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = true).testTag(EPISODE_DETAILS_TAG),
+                modifier = Modifier.testTag(EPISODE_DETAILS_TAG),
             )
         }
         // Archiving is done from the show page's selection menu; here an archived episode is only marked.
