@@ -33,4 +33,10 @@ class ExploreChromeScrollLogicTest {
         assertEquals(10f, ExploreChromeScrollLogic.offsetAfterScroll(Float.NaN, -10f, 48f, true))
         assertEquals(0f, ExploreChromeScrollLogic.fraction(Float.NaN, 48f))
     }
+
+    @Test
+    fun `search results clear the keyboard when it is up and the bottom chrome otherwise`() {
+        assertEquals(324f, ExploreChromeScrollLogic.searchBottomPaddingDp(imeBottomDp = 300f, chromeBottomDp = 96f))
+        assertEquals(120f, ExploreChromeScrollLogic.searchBottomPaddingDp(imeBottomDp = 0f, chromeBottomDp = 96f))
+    }
 }

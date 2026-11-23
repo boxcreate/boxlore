@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -63,6 +64,8 @@ import cx.aswin.boxlore.core.designsystem.components.discoveryTabSwitcherHeight
 import cx.aswin.boxlore.core.designsystem.components.regionDisplayLabel
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeContentPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
@@ -88,6 +91,7 @@ import cx.aswin.boxlore.feature.explore.components.exploreTopHeaderTitle
 import cx.aswin.boxlore.feature.explore.components.exploreTopicResults
 import cx.aswin.boxlore.feature.explore.components.rememberExploreTabPagerState
 import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
+import cx.aswin.boxlore.feature.explore.logic.ExploreChromeScrollLogic
 import cx.aswin.boxlore.feature.explore.logic.ExploreTabPagerLogic
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -286,10 +290,12 @@ fun ExploreContent(
         // Clearance above navbar/mini-player for the tab FAB.
         val tabFabBottomPadding = bottomChromeHeight + 16.dp
         // Extra FAB height so list content can scroll fully past the overlay.
+        // In search the keyboard is up, so results scroll above it (its inset already counts the nav bar).
+        val imeBottom = if (isSearchModeActive) WindowInsets.ime.asPaddingValues().calculateBottomPadding() else 0.dp
         val listBottomPadding = if (!isSearchModeActive) {
             tabFabBottomPadding + discoveryTabSwitcherHeight() + 16.dp
         } else {
-            bottomChromeHeight + 24.dp
+            ExploreChromeScrollLogic.searchBottomPaddingDp(imeBottom.value, bottomChromeHeight.value).dp
         }
 
         Box(
@@ -376,22 +382,25 @@ fun ExploreContent(
                 LazyListKeyPolicy.deduplicateById(state.recommendations) { it.id }
             }
 
-            val tabletColumns = if (LocalBoxloreWindowLayout.current.usesTabletLayout) boxlorePosterColumns(LocalBoxloreWindowLayout.current, boxloreContentWidthDp(), gapDp = 12f) else 0
+            // One poster rule with Home: 2 on phones and the Fold 8 cover, more on wide compact windows and tablets.
+            val window = LocalBoxloreWindowLayout.current
+            val posterColumns = boxlorePosterColumns(window, boxloreContentWidthDp(), gapDp = 12f)
+            // Tablets lead with a featured row; compact windows keep the full-width first card.
+            val tabletColumns = if (window.usesTabletLayout) posterColumns else 0
+            val gridPadding = boxloreHorizontalSafeContentPadding(
+                PaddingValues(start = 16.dp, end = 16.dp, top = expandedHeaderHeight, bottom = listBottomPadding),
+            )
             val feed: @Composable (Int, LazyStaggeredGridState) -> Unit = { browseTab, pageGridState ->
                 ShimmerScope(active = if (state.currentVibe != null) state.isLoading else !isSearchModeActive && if (browseTab == 1) state.isRecommendationsLoading else state.isLoading) {
                     LazyVerticalStaggeredGrid(
                         state = pageGridState,
-                        columns = if (tabletColumns > 0) {
-                            StaggeredGridCells.Fixed(tabletColumns)
+                        columns = if (window.isSpecified) {
+                            StaggeredGridCells.Fixed(posterColumns)
                         } else {
+                            // Isolated previews and tests have no app shell to size the window.
                             StaggeredGridCells.Adaptive(150.dp)
                         },
-                        contentPadding = PaddingValues(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = expandedHeaderHeight,
-                            bottom = listBottomPadding
-                        ),
+                        contentPadding = gridPadding,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalItemSpacing = 12.dp,
                         modifier = Modifier.fillMaxSize().testTag("explore_feed_$browseTab")
@@ -630,7 +639,7 @@ fun ExploreContent(
                         searchActive = true
                         focusSearch = true
                     },
-                    modifier = Modifier.align(Alignment.TopCenter).padding(horizontal = 16.dp, vertical = 12.dp)
+                    modifier = Modifier.align(Alignment.TopCenter).boxloreHorizontalSafePadding().padding(horizontal = 16.dp, vertical = 12.dp)
                         .onSizeChanged { size -> expandedHeaderHeight = with(density) { size.height.toDp() } + 24.dp },
                 )
             } else {
@@ -703,6 +712,7 @@ fun ExploreContent(
                     onTabSelected = browsePager::selectTab,
                     modifier = Modifier
                         .adaptivePlayerOverlayOffset(isMiniPlayerVisible = isPlayerVisible)
+                        .boxloreHorizontalSafePadding()
                         .padding(bottom = animatedBottomOffset)
                 )
             }

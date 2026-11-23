@@ -44,6 +44,7 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.designsystem.layout.boxloreConfigurationWindowSize
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -188,7 +189,9 @@ fun LearnScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .statusBarsPadding(),
+                        .statusBarsPadding()
+                        // Clear of a sideways phone's camera and buttons; the colour halo still reaches the edge.
+                        .boxloreHorizontalSafePadding(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = if (tablet) Arrangement.Center else Arrangement.Top,
                 ) {
