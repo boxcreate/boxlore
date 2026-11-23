@@ -143,7 +143,13 @@ class ExploreLoadFailureTest {
 
     private fun renderLive(live: androidx.compose.runtime.MutableState<ExploreUiState.Success>) {
         val state = live.value
-        feedTag = if (state.isSearching) "explore_feed_1" else if (state.selectedTab == 1 && state.hasForYou) "explore_feed_1" else "explore_feed_0"
+        feedTag = if (state.isSearching) {
+            "explore_feed_1"
+        } else if (state.selectedTab == 1 && state.hasForYou) {
+            "explore_feed_1"
+        } else {
+            "explore_feed_0"
+        }
         fixture.prepare()
         fixture.compose.mainClock.autoAdvance = true
         fixture.setContent {

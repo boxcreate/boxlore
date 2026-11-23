@@ -40,9 +40,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
-import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreVisibleWindowSize
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.artworkDeepShade
@@ -128,51 +126,8 @@ fun CuriosityCardStack(
     }
 }
 
-/**
- * Where Lore's cards sit: centred, at most 520dp wide on every window, capped in height on tablets,
- * with a rest below the deck. The loading placeholder uses the same frame, so the first card lands
- * exactly where its placeholder was. [content] learns whether the deck is short.
- */
-@Composable
-internal fun LoreDeckFrame(modifier: Modifier = Modifier, content: @Composable BoxScope.(short: Boolean) -> Unit) {
-    val window = LocalBoxloreWindowLayout.current
-    val tablet = window.usesTabletLayout
-    val paneHeight = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current?.height ?: window.heightDp
-    BoxWithConstraints(
-        modifier = modifier
-            .boxloreCardWidth(BoxloreCardFamily.Reading, maximumWidthDp = 520f)
-            .then(if (tablet) Modifier.wrapContentHeight(Alignment.Top).heightIn(max = loreTabletDeckHeightDp(paneHeight).dp) else Modifier)
-            .fillMaxSize()
-            // Centred and capped on every window, so a sideways phone gets the cover's card, not the full width.
-            .wrapContentWidth()
-            .widthIn(max = 520.dp),
-    ) {
-        // A deck this short (tabletop lower half, sideways phone, split-screen half) gives its rest and
-        // padding to the question instead.
-        val short = maxHeight < LoreShortDeckHeight
-        Box(
-            modifier = Modifier.fillMaxSize().padding(bottom = if (short) 0.dp else 28.dp),
-            contentAlignment = Alignment.TopCenter,
-        ) { content(short) }
-    }
-}
-
-/**
- * The tallest a tablet deck gets: about 60% of the pane, so a tall upright tablet grows the card a
- * little, never under the 640dp landscape tablets have always had and never over 760dp.
- */
-internal fun loreTabletDeckHeightDp(paneHeightDp: Float): Float =
-    (paneHeightDp * LORE_TABLET_DECK_SHARE).coerceIn(LORE_TABLET_DECK_MIN_DP, LORE_TABLET_DECK_MAX_DP)
-
-private const val LORE_TABLET_DECK_SHARE = 0.62f
-private const val LORE_TABLET_DECK_MIN_DP = 640f
-private const val LORE_TABLET_DECK_MAX_DP = 760f
-
 /** Room past the window's edge before a leaving card is dropped (its tilt and shadow clear it). */
 private val LoreExitMargin = 48.dp
-
-/** Below this deck height the card drops its bottom rest and uses its tightest padding. */
-internal val LoreShortDeckHeight = 260.dp
 
 /** Skip and Add to queue leave the deck the same way a swipe does; other actions run directly. */
 private fun routeCardAction(
@@ -268,6 +223,7 @@ internal fun loreOnAccent(accent: Color): Color {
  * Play in the middle and Add to queue on the right. Tapping the card or Details opens the episode.
  */
 @Composable
+@Suppress("LongParameterList") // The card, its playback state, its look and its one action callback.
 private fun CuriosityCardContent(
     daily: LearnCuriosityCard,
     isCurrentEpisode: Boolean,
@@ -453,12 +409,6 @@ private fun LoreCardSource(
     }
 }
 
-/** An episode's length in whole minutes, rounded up (never 0), or null when it isn't known. */
-internal fun loreDurationMinutes(durationSeconds: Int): Int? =
-    if (durationSeconds <= 0) null else (durationSeconds + SECONDS_PER_MINUTE - 1) / SECONDS_PER_MINUTE
-
-private const val SECONDS_PER_MINUTE = 60
-
 /** The source row's height. */
 internal fun loreBarHeight(compactSpacing: Boolean) = if (compactSpacing) 48.dp else 52.dp
 
@@ -479,6 +429,7 @@ private val ActionBarInnerCorner = 8.dp
  * are fully round, inner joins tight.
  */
 @Composable
+@Suppress("LongParameterList") // Playback state, look and spacing of one connected button group.
 private fun LoreCardActionBar(
     isCurrentEpisode: Boolean,
     isPlaying: Boolean,

@@ -99,8 +99,13 @@ class ExploreSideInsetsTest {
                     Box(Modifier.requiredSize(size.widthDp.dp, size.heightDp.dp).testTag(ROOT)) {
                         ExploreContent(
                             ExploreUiState.Success(trending = shows, selectedTab = 0),
-                            onSearchQueryChanged = {}, onCategorySelected = {}, onPodcastClick = { _, _, _, _ -> }, onEpisodeClick = { _, _ -> },
-                            onTabSelected = {}, onVibeSelected = { _, _ -> }, onClearVibe = {},
+                            onSearchQueryChanged = {},
+                            onCategorySelected = {},
+                            onPodcastClick = { _, _, _, _ -> },
+                            onEpisodeClick = { _, _ -> },
+                            onTabSelected = {},
+                            onVibeSelected = { _, _ -> },
+                            onClearVibe = {},
                         )
                     }
                 }

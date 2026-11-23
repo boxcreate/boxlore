@@ -51,8 +51,8 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.AdaptiveOverflowRow
 import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChip
 import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChipDefaults
-import cx.aswin.boxlore.core.designsystem.components.BoxloreMoreChip
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.components.BoxloreMoreChip
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryExpressiveTheme
 import cx.aswin.boxlore.core.designsystem.components.rememberAdaptiveOverflowState
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout

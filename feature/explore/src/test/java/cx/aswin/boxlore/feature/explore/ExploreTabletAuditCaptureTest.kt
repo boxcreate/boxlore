@@ -76,20 +76,24 @@ class ExploreTabletAuditCaptureTest(private val scene: String, configuration: Ph
             TestFixtures.episode(id = "$index", title = "How we understand the universe $index", podcastTitle = if (index == 1) LONG_SHOW else "Curious world $index", imageUrl = PhoneGoldenRule.ARTWORK_URL)
         }
         val moods = listOf("Learn something new" to "Learn something new", "Feel good" to "Feel good", "What's happening" to "What's happening")
-        val state = when (scene) {
-            "show-search", "search-ime" -> ExploreUiState.Success(searchQuery = "space", isSearching = true, searchResults = shows, alsoFoundResults = shows.takeLast(3))
-            "episode-search" -> ExploreUiState.Success(searchQuery = "space", isSearching = true, searchTab = SearchTab.EPISODES, hasPerformedSemanticSearch = true, semanticPodcastResults = shows, semanticSearchResults = episodes)
-            "topic" -> ExploreUiState.Success(currentVibe = "What's happening", isSearching = true, searchResults = shows)
-            "empty-topic", "failed-topic" -> ExploreUiState.Success(currentVibe = "What's happening", isSearching = true)
-            "loading-topic" -> ExploreUiState.Success(currentVibe = "What's happening", isSearching = true, isLoading = true)
-            "for-you" -> ExploreUiState.Success(recommendations = episodes, suggestedVibes = moods, selectedTab = 1)
-            "for-you-empty" -> ExploreUiState.Success(suggestedVibes = moods, selectedTab = 1)
-            "genre-sheet" -> ExploreUiState.Success(trending = shows, selectedTab = 0)
-            "top-genre" -> ExploreUiState.Success(trending = shows, selectedTab = 0, currentCategory = "Comedy")
-            "show-landing" -> ExploreUiState.Success(suggestedVibes = moods, selectedTab = 0)
-            "ask-landing" -> ExploreUiState.Success(suggestedVibes = moods, selectedTab = 0, searchTab = SearchTab.EPISODES)
-            else -> error("Unknown Explore scene $scene")
-        }
+        val search = ExploreUiState.Success(searchQuery = "space", isSearching = true, searchResults = shows, alsoFoundResults = shows.takeLast(3))
+        val topic = ExploreUiState.Success(currentVibe = "What's happening", isSearching = true)
+        val states = mapOf(
+            "show-search" to search,
+            "search-ime" to search,
+            "episode-search" to ExploreUiState.Success(searchQuery = "space", isSearching = true, searchTab = SearchTab.EPISODES, hasPerformedSemanticSearch = true, semanticPodcastResults = shows, semanticSearchResults = episodes),
+            "topic" to topic.copy(searchResults = shows),
+            "empty-topic" to topic,
+            "failed-topic" to topic.copy(topicFailed = true),
+            "loading-topic" to topic.copy(isLoading = true),
+            "for-you" to ExploreUiState.Success(recommendations = episodes, suggestedVibes = moods, selectedTab = 1),
+            "for-you-empty" to ExploreUiState.Success(suggestedVibes = moods, selectedTab = 1),
+            "genre-sheet" to ExploreUiState.Success(trending = shows, selectedTab = 0),
+            "top-genre" to ExploreUiState.Success(trending = shows, selectedTab = 0, currentCategory = "Comedy"),
+            "show-landing" to ExploreUiState.Success(suggestedVibes = moods, selectedTab = 0),
+            "ask-landing" to ExploreUiState.Success(suggestedVibes = moods, selectedTab = 0, searchTab = SearchTab.EPISODES),
+        )
+        val state = states[scene] ?: error("Unknown Explore scene $scene")
         val openSearch = scene == "show-landing" || scene == "ask-landing"
         withChrome("explore") {
             ExploreContent(

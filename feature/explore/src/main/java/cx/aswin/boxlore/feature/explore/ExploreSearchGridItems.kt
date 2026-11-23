@@ -69,8 +69,13 @@ internal fun LazyStaggeredGridScope.exploreEpisodeSearchItems(
                         podcasts = pods,
                         onPodcastClick = { podcast, index ->
                             AnalyticsHelper.trackSearchResultTapped(
-                                surface = "explore", resultType = "podcast", podcastId = podcast.id, episodeId = null,
-                                positionIndex = index, searchQuery = content.query, searchMode = "concept_semantic",
+                                surface = "explore",
+                                resultType = "podcast",
+                                podcastId = podcast.id,
+                                episodeId = null,
+                                positionIndex = index,
+                                searchQuery = content.query,
+                                searchMode = "concept_semantic",
                             )
                             onPodcastClick(podcast.id, "explore_search_concept", content.category, index)
                         },
@@ -112,8 +117,13 @@ private fun SemanticEpisodeCard(episode: Episode, featured: Boolean, position: I
         featured = featured,
         onClick = {
             AnalyticsHelper.trackSearchResultTapped(
-                surface = "explore", resultType = "episode", podcastId = parentPodcast.id, episodeId = episode.id,
-                positionIndex = position, searchQuery = query, searchMode = "concept_semantic",
+                surface = "explore",
+                resultType = "episode",
+                podcastId = parentPodcast.id,
+                episodeId = episode.id,
+                positionIndex = position,
+                searchQuery = query,
+                searchMode = "concept_semantic",
             )
             onEpisodeClick(episode, parentPodcast)
         },
