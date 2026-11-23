@@ -17,8 +17,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
@@ -47,9 +47,9 @@ import cx.aswin.boxlore.core.testing.SystemInsets
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import cx.aswin.boxlore.core.testing.walkWindows
+import cx.aswin.boxlore.feature.info.PODCAST_INFO_BRANDED_SPOTLIGHT_TAG
 import cx.aswin.boxlore.feature.info.PodcastInfoScreen
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
-import cx.aswin.boxlore.feature.info.PODCAST_INFO_BRANDED_SPOTLIGHT_TAG
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import cx.aswin.boxlore.feature.info.branded.rottenmango.RottenMangoPage
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformPage

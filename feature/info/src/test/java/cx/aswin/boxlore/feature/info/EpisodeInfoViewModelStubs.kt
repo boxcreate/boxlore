@@ -14,20 +14,16 @@ internal fun stubEpisodeInfoViewModel(
     model: EpisodeInfoViewModel,
     uiState: StateFlow<EpisodeInfoUiState>,
     moreLikeThisOn: Boolean? = true,
-    liked: Set<String> = emptySet(),
-    completed: Set<String> = emptySet(),
     archived: StateFlow<Set<String>> = MutableStateFlow(emptySet()),
-    queued: Set<String> = emptySet(),
-    downloaded: Boolean = false,
-    downloading: Boolean = false,
+    completed: Set<String> = emptySet(),
 ) {
     `when`(model.uiState).thenReturn(uiState)
     `when`(model.moreLikeThisOn).thenReturn(MutableStateFlow(moreLikeThisOn))
-    `when`(model.likedEpisodeIds).thenReturn(MutableStateFlow(liked))
+    `when`(model.likedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
     `when`(model.completedEpisodeIds).thenReturn(MutableStateFlow(completed))
     `when`(model.archivedEpisodeIds).thenReturn(archived)
-    `when`(model.queuedEpisodeIds).thenReturn(MutableStateFlow(queued))
-    `when`(model.isDownloaded(anyString())).thenReturn(flowOf(downloaded))
-    `when`(model.isDownloading(anyString())).thenReturn(flowOf(downloading))
+    `when`(model.queuedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
+    `when`(model.isDownloaded(anyString())).thenReturn(flowOf(false))
+    `when`(model.isDownloading(anyString())).thenReturn(flowOf(false))
     `when`(model.showRemoveDownloadDialog).thenReturn(MutableStateFlow(false))
 }

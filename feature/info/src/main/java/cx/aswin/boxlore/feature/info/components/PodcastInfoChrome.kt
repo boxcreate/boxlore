@@ -72,9 +72,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
-import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneOwnsStatusBar
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneOwnsStatusBar
 import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes

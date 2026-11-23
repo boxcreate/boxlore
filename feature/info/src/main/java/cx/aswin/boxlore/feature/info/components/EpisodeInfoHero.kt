@@ -61,6 +61,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * [EpisodeHeroForm.TwoColumn] the [rail] (the Play row) sits under the details, beside the cover.
  * Reading order stays cover, show, title, details, rail in every form.
  */
+@Suppress("LongParameterList")
 @Composable
 internal fun EpisodeInfoHero(
     episode: Episode,

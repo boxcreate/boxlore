@@ -5,15 +5,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
-import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
-import cx.aswin.boxlore.core.testing.PhoneGoldenRule
-import cx.aswin.boxlore.core.testing.TestFixtures
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
+import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.CrossPromotionConfidence
 import cx.aswin.boxlore.core.model.Episode
@@ -22,6 +19,9 @@ import cx.aswin.boxlore.core.model.EpisodeLinkKind
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.ResolvedCrossPromotion
 import cx.aswin.boxlore.core.model.ShowNotes
+import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
+import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import cx.aswin.boxlore.core.testing.TestFixtures
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test

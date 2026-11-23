@@ -98,13 +98,6 @@ internal fun EpisodeLinksSection(links: List<EpisodeLink>, showName: String, mod
 
 private val TWO_COLUMN_LINKS_WIDTH = 568.dp
 
-private fun linkRowShape(first: Boolean, last: Boolean) = RoundedCornerShape(
-    topStart = if (first) 24.dp else 5.dp,
-    topEnd = if (first) 24.dp else 5.dp,
-    bottomStart = if (last) 24.dp else 5.dp,
-    bottomEnd = if (last) 24.dp else 5.dp,
-)
-
 /** One link: its brand or kind icon in a circle, its name, the site, and the open-in-new arrow. */
 @Composable
 private fun EpisodeLinkRow(link: EpisodeLink, showName: String, shape: RoundedCornerShape, modifier: Modifier, onClick: () -> Unit) {
@@ -136,13 +129,6 @@ private fun EpisodeLinkRow(link: EpisodeLink, showName: String, shape: RoundedCo
         }
     }
 }
-
-/** A row's name, without the "Visit" or "Read" the old pills started with: the link's title, profile, platform or site. */
-internal fun episodeLinkRowTitle(link: EpisodeLink): String =
-    EpisodeLinkTitles.destinationTitle(link.title, link.platform)
-        ?: episodeLinkProfileHandle(link)?.let { if (it.startsWith("@")) it else "@$it" }
-        ?: link.platform?.takeIf(String::isNotBlank)
-        ?: link.host
 
 @Composable
 private fun EpisodeLinkIcon(link: EpisodeLink, tint: Color) {

@@ -5,12 +5,12 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
 import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
 import cx.aswin.boxlore.core.designsystem.theme.resolveFixedThemeColorScheme
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.junit.jupiter.api.Test
 
 class EpisodeExpandableTitleTest {
     @Test

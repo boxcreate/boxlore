@@ -23,9 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneOwnsStatusBar
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneOwnsStatusBar
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkColorTransitionMillis
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkPalette
 import cx.aswin.boxlore.core.designsystem.theme.LocalArtworkColorsEnabled

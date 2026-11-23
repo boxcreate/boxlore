@@ -85,7 +85,10 @@ class EpisodeIconTooltipsTest {
                             positionMs = 0L,
                             durationMs = 0L,
                         ),
-                        callbacks = EpisodeActionRailCallbacks(onMainActionClick = {}, onLikeClick = { likes++; liked = !liked }, onDownloadClick = {}, onQueueClick = {}),
+                        callbacks = EpisodeActionRailCallbacks(onMainActionClick = {}, onLikeClick = {
+                            likes++
+                            liked = !liked
+                        }, onDownloadClick = {}, onQueueClick = {}),
                     )
                     PodcastEpisodeActions(
                         state = PodcastEpisodeActionsState(isPlaying = false, isResume = false, isLiked = false, isDownloaded = false, isDownloading = false, isQueued = false),

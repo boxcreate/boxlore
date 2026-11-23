@@ -42,9 +42,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,9 +54,9 @@ import androidx.compose.ui.unit.lerp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeContentPadding
-import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeInsetsDp
 import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneStatusBarsPadding
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight

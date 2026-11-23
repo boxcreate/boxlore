@@ -1,5 +1,8 @@
 package cx.aswin.boxlore.feature.info
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.catalog.shownotes.EpisodeLinkTitles
 import cx.aswin.boxlore.core.model.EpisodeLink
 
 /** Links shown before the "Show all links" row. */
@@ -15,3 +18,18 @@ internal fun episodeLinkListRows(links: List<EpisodeLink>, columns: Int, expande
     val shown = if (expanded) ordered else ordered.take(COLLAPSED_EPISODE_LINKS)
     return shown.chunked(columns.coerceAtLeast(1))
 }
+
+/** A row's name, without the "Visit" or "Read" the old pills started with: the link's title, profile, platform or site. */
+internal fun episodeLinkRowTitle(link: EpisodeLink): String =
+    EpisodeLinkTitles.destinationTitle(link.title, link.platform)
+        ?: episodeLinkProfileHandle(link)?.let { if (it.startsWith("@")) it else "@$it" }
+        ?: link.platform?.takeIf(String::isNotBlank)
+        ?: link.host
+
+/** A link row's corners in the connected group: round at the group's top and bottom, tight between rows. */
+internal fun linkRowShape(first: Boolean, last: Boolean) = RoundedCornerShape(
+    topStart = if (first) 24.dp else 5.dp,
+    topEnd = if (first) 24.dp else 5.dp,
+    bottomStart = if (last) 24.dp else 5.dp,
+    bottomEnd = if (last) 24.dp else 5.dp,
+)

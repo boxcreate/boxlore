@@ -9,21 +9,21 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.getBoundsInRoot
-import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performScrollToIndex
-import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
@@ -34,13 +34,13 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
-import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
+import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.core.testing.SystemInsets
+import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import cx.aswin.boxlore.core.testing.walkWindows
-import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.components.EPISODE_HERO_ART_TAG
 import cx.aswin.boxlore.feature.info.components.EPISODE_PAGE_SKELETON_TAG
 import cx.aswin.boxlore.feature.info.components.EPISODE_SKELETON_ART_TAG
@@ -492,7 +492,7 @@ class EpisodeInfoAdaptiveTransitionTest {
         const val FULL_TITLE = "Show full title"
         const val SHOW_LESS = "Show less"
         const val PLAY = "Play"
-        val LONG_TITLE = "How we find our way home again after a long winter away: memory, maps and the places that keep us, " +
+        const val LONG_TITLE = "How we find our way home again after a long winter away: memory, maps and the places that keep us, " +
             "with stories from listeners in Lagos, Leipzig and Lisbon about the streets they still walk in their sleep, " +
             "the kitchens they can still smell and the maps they drew from memory when they could not go back"
         val COMPACT = BoxloreWindowLayout(599f, 800f)

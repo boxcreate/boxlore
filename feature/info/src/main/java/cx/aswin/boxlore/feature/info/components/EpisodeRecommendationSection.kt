@@ -33,16 +33,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCard
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardSkeleton
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import cx.aswin.boxlore.core.model.Episode
