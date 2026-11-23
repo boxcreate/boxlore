@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -20,6 +21,7 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Podcast
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -82,10 +84,25 @@ class SimilarShowsChoiceScreenTest {
         compose.setContent { screen() }
         compose.onNodeWithText("Want shows like these?").assertIsDisplayed()
         compose.onNodeWithText("Your pick is in your library").assertIsDisplayed()
+        assertEquals(1, compose.onAllNodesWithTag("similar_choice_cover").fetchSemanticsNodes().size)
         assertEquals(emptyList<String>(), actions)
         compose.onNodeWithTag("suggestions_finish").performClick()
         compose.onNodeWithTag("similar_choice_home").performClick()
         assertEquals(listOf("similar", "home"), actions)
+    }
+
+    @Test
+    fun `the question sits near the middle over a fan of the picked covers`() {
+        val seven = (1..7).associate { "s$it" to Podcast(id = "s$it", title = "Show s$it", artist = "Host", imageUrl = "") }
+        state.value = choosing(importPath = false).copy(selectedPodcasts = seven, subscribedPodcastIds = seven.keys, suggestionSeedCount = 7)
+        compose.setContent { screen() }
+        assertEquals(5, compose.onAllNodesWithTag("similar_choice_cover").fetchSemanticsNodes().size)
+        listOf(BoxloreWindowLayout(412f, 915f), BoxloreWindowLayout(1280f, 800f)).forEach { next ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            val title = compose.onNodeWithTag("similar_choice_title").fetchSemanticsNode().boundsInRoot
+            assertTrue("the question is far from the middle at ${next.widthDp}", title.center.y in next.heightDp / 3f..next.heightDp * 2f / 3f)
+        }
     }
 
     @Test
@@ -123,6 +140,7 @@ class SimilarShowsChoiceScreenTest {
             BoxloreWindowLayout(600f, 900f),
             BoxloreWindowLayout(1280f, 800f),
             BoxloreWindowLayout(1280f, 479f),
+            BoxloreWindowLayout(915f, 412f),
             BoxloreWindowLayout(360f, 740f),
         ).forEach { next ->
             compose.runOnIdle { window.value = next }
