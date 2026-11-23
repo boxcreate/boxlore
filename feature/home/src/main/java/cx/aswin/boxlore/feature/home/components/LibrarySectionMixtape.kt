@@ -35,8 +35,6 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -57,6 +55,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
+import cx.aswin.boxlore.core.designsystem.components.BoxloreMenuState
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -392,8 +392,13 @@ private fun HomeMixDropdownHeading(
     modifier: Modifier = Modifier,
 ) {
     // Home keeps the open menu above its grid, so it stays open when the window crosses the tablet size.
-    val localExpanded = remember { mutableStateOf(false) }
-    var expanded by (LocalHomeSectionsUiState.current?.mixMenu ?: localExpanded)
+    val hoisted = LocalHomeSectionsUiState.current?.mixMenu
+    var localExpanded by remember { mutableStateOf(false) }
+    val menu = rememberHoistedMenuState(
+        open = hoisted?.value ?: localExpanded,
+        onOpenChange = { if (hoisted != null) hoisted.value = it else localExpanded = it },
+    )
+    val expanded = menu.expanded
     val chevronRotation by
         animateFloatAsState(
             targetValue = if (expanded) 180f else 0f,
@@ -409,7 +414,7 @@ private fun HomeMixDropdownHeading(
                     .semantics { role = Role.Button }
                     .expressiveClickable(
                         shape = RoundedCornerShape(10.dp),
-                        onClick = { expanded = true },
+                        onClick = menu::open,
                     )
                     .testTag("home_mix_mode_trigger")
                     .padding(end = 4.dp)
@@ -437,69 +442,26 @@ private fun HomeMixDropdownHeading(
             AnimatedHomeMixSubtitle(subtitle = subtitle)
         }
 
-        HomeMixDropdownMenu(
-            mode = mode,
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            onModeSelected = {
-                expanded = false
-                onModeSelected(it)
-            },
-        )
+        HomeMixDropdownMenu(mode = mode, state = menu, onModeSelected = onModeSelected)
     }
 }
 
+/** Daily or Offline: boxlore's menu, the current mix as a filled row with a tick, opening from the heading's start. */
 @Composable
 private fun HomeMixDropdownMenu(
     mode: HomeMixMode,
-    expanded: Boolean,
-    onDismissRequest: () -> Unit,
+    state: BoxloreMenuState,
     onModeSelected: (HomeMixMode) -> Unit,
 ) {
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = onDismissRequest,
-        shape = RoundedCornerShape(16.dp),
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-    ) {
+    val daily = stringResource(R.string.home_mix_daily_title)
+    val offline = stringResource(R.string.home_mix_offline_title)
+    BoxloreDropdownMenu(state = state, anchorAlignment = Alignment.Start, modifier = Modifier.testTag("home_mix_menu")) {
         HomeMixMode.entries.forEach { option ->
-            val selected = option == mode
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text =
-                        stringResource(
-                            when (option) {
-                                HomeMixMode.DAILY -> R.string.home_mix_daily_title
-                                HomeMixMode.OFFLINE -> R.string.home_mix_offline_title
-                            },
-                        ),
-                        fontWeight = if (selected) GoogleSansWeight.bold else GoogleSansWeight.regular,
-                    )
-                },
+            selectableItem(
+                text = if (option == HomeMixMode.DAILY) daily else offline,
+                selected = option == mode,
                 onClick = { onModeSelected(option) },
-                modifier = Modifier.testTag("home_mix_menu_${option.name.lowercase()}"),
-                leadingIcon = {
-                    Icon(
-                        imageVector =
-                        when (option) {
-                            HomeMixMode.DAILY -> Icons.AutoMirrored.Rounded.QueueMusic
-                            HomeMixMode.OFFLINE -> Icons.Outlined.DownloadDone
-                        },
-                        contentDescription = null,
-                    )
-                },
-                trailingIcon =
-                if (selected) {
-                    {
-                        Icon(
-                            imageVector = Icons.Rounded.Check,
-                            contentDescription = null,
-                        )
-                    }
-                } else {
-                    null
-                },
+                leadingIcon = if (option == HomeMixMode.DAILY) Icons.AutoMirrored.Rounded.QueueMusic else Icons.Outlined.DownloadDone,
             )
         }
     }

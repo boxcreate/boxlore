@@ -192,7 +192,7 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         allWindows = true,
         scrollTo = "your_shows" to MIX_TRIGGER_TAG,
         act = { click(MIX_TRIGGER_TAG) },
-        waitFor = "home_mix_menu_offline",
+        waitFor = "home_mix_menu",
     ) { Home(state(), playback = withDownload()) }
 
     /** The Pin menu after a long press on a show cover in Your shows. */
@@ -201,7 +201,7 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         allWindows = true,
         scrollTo = "your_shows" to "home_show_selector_${podcasts[2].id}",
         act = { fixture.compose.onNodeWithTag("home_show_selector_${podcasts[2].id}").performSemanticsAction(SemanticsActions.OnLongClick) },
-        waitFor = "home_pin_menu_item",
+        waitFor = "home_pin_menu",
     ) { Home(state()) }
 
     /** The Brief after tapping hide: the "hide for today?" step. */

@@ -158,7 +158,7 @@ class HomeFeedTabletGateStateTest {
     }
 
     private fun assertMenuAndRail(label: String) {
-        assertTrue("$label: the mix menu closed", exists("home_mix_menu_offline"))
+        assertTrue("$label: the mix menu closed", exists("home_mix_menu"))
         assertEquals("$label: the Daily Mix rail moved", 3, sections.dailyRail.firstVisibleItemIndex)
         assertTrue("$label: the rail's fourth card isn't shown", exists("home_mix_episode_daily-3"))
     }

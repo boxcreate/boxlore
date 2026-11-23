@@ -19,8 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.PushPin
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,7 +42,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupProperties
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
+import cx.aswin.boxlore.core.designsystem.components.BoxloreMenuState
 import cx.aswin.boxlore.core.designsystem.components.NewEpisodeBadge
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
@@ -87,16 +86,19 @@ internal fun SelectorCover(
     val coverShape = rememberYourShowsSelectorShape(isSelected)
     val actionLabel = stringResource(if (pin.pinned) R.string.home_shows_unpin else R.string.home_shows_pin)
     // Home keeps which cover's menu is open above its grid, so it stays open across window changes.
-    val sections = LocalHomeSectionsUiState.current
+    val hoisted = LocalHomeSectionsUiState.current?.pinMenu
     var localPinMenu by remember { mutableStateOf(false) }
-    val showPinMenu = sections?.pinMenu?.value?.let { it == podcast.id } ?: localPinMenu
-    fun setPinMenu(open: Boolean) {
-        when {
-            sections == null -> localPinMenu = open
-            open -> sections.pinMenu.value = podcast.id
-            sections.pinMenu.value == podcast.id -> sections.pinMenu.value = null
-        }
-    }
+    val pinMenu = rememberHoistedMenuState(
+        open = hoisted?.value?.let { it == podcast.id } ?: localPinMenu,
+        onOpenChange = { open ->
+            when {
+                hoisted == null -> localPinMenu = open
+                open -> hoisted.value = podcast.id
+                hoisted.value == podcast.id -> hoisted.value = null
+            }
+        },
+        key = podcast.id,
+    )
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(22.dp))
@@ -104,7 +106,7 @@ internal fun SelectorCover(
                             feedback = ExpressivePressFeedback.Control,
                 shape = RoundedCornerShape(22.dp),
                 onLongClickLabel = actionLabel,
-                onLongClick = { setPinMenu(true) },
+                onLongClick = pinMenu::open,
                 onClick = onClick,
             )
             .semantics {
@@ -142,42 +144,24 @@ internal fun SelectorCover(
                 }
             }
         }
-        CoverPinMenu(showPinMenu, actionLabel, { setPinMenu(false) }, pin.onToggle)
+        CoverPinMenu(pinMenu, actionLabel, pin.onToggle)
     }
 }
 
+/** Pin or Unpin on a cover: boxlore's menu, opening under the cover from its start. */
 @Composable
 private fun CoverPinMenu(
-    expanded: Boolean,
+    state: BoxloreMenuState,
     actionLabel: String,
-    onDismiss: () -> Unit,
     onToggle: () -> Unit,
 ) {
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(20.dp),
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 3.dp,
-        shadowElevation = 3.dp,
+    BoxloreDropdownMenu(
+        state = state,
         offset = DpOffset(x = 0.dp, y = 4.dp),
-        properties = PopupProperties(clippingEnabled = false, focusable = true),
+        anchorAlignment = Alignment.Start,
+        modifier = Modifier.testTag("home_pin_menu"),
     ) {
-        DropdownMenuItem(
-            text = { Text(actionLabel) },
-            onClick = {
-                onDismiss()
-                onToggle()
-            },
-            modifier = Modifier.testTag("home_pin_menu_item"),
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Rounded.PushPin,
-                    contentDescription = null,
-                    modifier = Modifier.graphicsLayer { rotationZ = 45f },
-                )
-            },
-        )
+        item(text = actionLabel, onClick = onToggle, leadingIcon = Icons.Rounded.PushPin)
     }
 }
 
