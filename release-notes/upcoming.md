@@ -32,6 +32,9 @@ Announcement title:
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.
 - On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.
+- Getting started with boxlore fits every screen: Echo's question always shows in full, and the welcome screen sits beside its picture on sideways phones, the Galaxy Z Fold cover and tablets.
+- Picking your language now flows straight into the welcome screen.
+- While you get started, search keeps more shows in view on small screens, and Shows for you lays its shows out in rows on tablets.
 
 ## Fixed
 
@@ -46,3 +49,5 @@ Announcement title:
 - Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.
+- Pick topics instead now keeps the topics you already chose with Echo.
+- If you skip the quick check before similar shows, boxlore now says so instead of asking you to check your connection.

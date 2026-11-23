@@ -9,7 +9,7 @@ Owns first-run onboarding: the Welcome screen, Echo (the AI-guided conversation 
 - `OnboardingScreen`: the whole flow, shown by `:app` on the `onboarding` route. It switches on `OnboardingUiState.currentStep` and calls `onComplete`, `onBack`, `onImportClick` and `onAppLanguageChosen`.
 - `OnboardingViewModel`: an `AndroidViewModel` built by `:app` from `PodcastRepository`, `SubscriptionRepository`, `UserPreferencesRepository` and an `appLanguageSuggestion`; it exposes `uiState`. `chooseAppLanguage` answers the language question (`AppLanguageQuestion`).
 - `markOnboardingCompletedSilent` and `generateRecommendationsFromOpml`: extensions the app calls to finish without the flow, or to hand imported shows to the similar-shows choice.
-- `OnboardingUiState`, `OnboardingStep` (`APP_LANGUAGE`, `WELCOME`, `GENRES`, `SUB_GENRES`, `ACTIVITY_PICKER`, `LENGTH_PICKER`, `SEARCH`, `AI_ONBOARDING`, `AI_SUGGESTIONS`) and `AiLoadingStage`: the flow's state.
+- `OnboardingUiState`, `OnboardingStep` (`APP_LANGUAGE`, `WELCOME`, `GENRES`, `SUB_GENRES`, `ACTIVITY_PICKER`, `LENGTH_PICKER`, `SEARCH`, `AI_ONBOARDING`, `AI_SUGGESTIONS`), `AiLoadingStage` and `OnboardingErrorKind`: the flow's state.
 - `ONBOARDING_GENRES` / `GenreItem` and `SEARCH_CATEGORIES` / `SearchCategoryItem`: the picker and search chip lists. Each item pairs a label resource with the English key sent to the server; keys never change.
 - Everything else, including every step screen, is `internal`.
 
@@ -24,9 +24,9 @@ Owns first-run onboarding: the Welcome screen, Echo (the AI-guided conversation 
 - Finishing is always the listener's choice. `GuidedOnboardingLogic` caps a conversation at seven answers (`MAX_ANSWERS`) and offers the build nudge after four.
 - **Show deck**: after two answers the app asks for two to four taste-test cards (`EchoDeckLogic`). Reactions (`like`, `dislike`, `listen`, `unknown`) travel on later requests as `probeReactions`, at most twelve. **I already listen** also adds the show to the listener's picks. One deck per conversation, with one retry.
 - **Manual topics**: `GenrePickerScreen`, `SubGenrePickerScreen`, `ActivityPickerScreen` and `LengthPickerScreen`, limited by `OnboardingGenreLimits`.
-- **Search** (`OnboardingSearchScreen`): progressive typeahead through `searchPodcastsGrouped`, kept at the top by `ProgressiveSearchScrollLogic`; picks are followed at the handoff.
+- **Search** (`OnboardingSearchScreen`): progressive typeahead through `searchPodcastsGrouped`, kept at the top by `ProgressiveSearchScrollLogic`. Picks gather in the Continue bar, which opens them in a sheet, and are followed at the handoff.
 - **Similar-shows choice** (`SimilarShowsChoice`, `SimilarShowsChoiceContent`): after search or import the listener chooses **See similar shows** or **Go to Home** before any request is made. Import leads with Go to Home, search with See similar shows; a late answer after skipping is dropped (`acceptsResult`).
-- **Suggestions** (`AiSuggestionsScreen`, shared by every path): lanes of `SuggestionShowCard`s. Nothing starts selected except Echo's **Your picks** lane; `OnboardingSuggestionsPresentation` decides the origin (`SuggestionsOrigin`), loading state and what **Add N shows** counts.
+- **Suggestions** (`AiSuggestionsScreen`, shared by every path): lanes of `SuggestionShowCard`s, a row each on narrow windows and rows of cards (then **Show all**) on wide ones; a show appears in one lane only (`OnboardingSuggestionsLanes.withoutRepeats`), and **Popular now** picks its country from a compact `RegionSegmentedSelector`. Nothing starts selected except Echo's **Your picks** lane; `OnboardingSuggestionsPresentation` decides the origin (`SuggestionsOrigin`), loading state and what **Add N shows** counts. A similar-shows request the API refuses for a skipped or failed human check says so (`OnboardingErrorKind.VerificationSkipped`) instead of blaming the connection.
 - Back restores the previous question with its answer still picked, cancels requests in flight, and from loaded Echo suggestions shows `EchoReadyStage`. **Change my answers** drops results and their picks (`OnboardingAiStart.withoutResults`).
 
 ## Client contracts

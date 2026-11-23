@@ -51,7 +51,7 @@ Owns boxlore's shared Compose visuals: theme, type, shapes, motion, press feedba
 - `TopBarUtilityActions`: connected Update, Feedback and Settings segments, named in tooltips. Update shows only with `LocalUpdateAvailableAction`, and its sweep runs three times, never with animations off; `LocalFeedbackReplyWaiting` dots Feedback.
 - `BoxloreTooltip`: names an icon-only button on hover or long-press.
 - `BoxloreTopBar`, `boxloreLargeTitlePresentation`: page header, slim in short panes.
-- `ConnectedOptionSelector`, `RegionSegmentedSelector`, `ContentRegionPickerSheet`: option buttons (long names shrink, wrap, then stack) and the region picker.
+- `ConnectedOptionSelector`, `RegionSegmentedSelector`, `ContentRegionPickerSheet`: option buttons (long names shrink, wrap, then stack) and the region picker, opened from a labelled card or, with `compact`, a small country chip.
 - `BoxloreFilterChip`, `BoxloreMoreChip`, `BoxloreFilterChipDefaults`: the one filter chip, with a sheet container; `PillFilterChip` is it for genre pills.
 - `BoxloreDropdownMenu`, `rememberBoxloreMenuState`: grouped, fold-safe menus with selectable rows and destructive groups, saved across recreation.
 - `BoxloreTextField`, `BoxloreSearchField`: the text field and search box; hints stay on one line.
