@@ -41,6 +41,33 @@ class TabletPlayerLayoutLogicTest {
     }
 
     @Test
+    fun `inner screens held flat in landscape use two columns from 840dp`() {
+        listOf(852f to 594f, 841f to 645f, 840f to 600f, 999f to 700f).forEach { (width, height) ->
+            val regions = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(width, height), BoxloreLayoutBounds(0f, 24f, width, height - 24f), false))
+            assertEquals("${width}x$height", TabletPlayerArrangement.Columns, regions.arrangement)
+        }
+        listOf(839f to 600f, 800f to 1_280f, 840f to 1_000f).forEach { (width, height) ->
+            val regions = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(width, height), BoxloreLayoutBounds(0f, 24f, width, height - 24f), false))
+            assertEquals("${width}x$height", TabletPlayerArrangement.Stacked, regions.arrangement)
+        }
+        val context = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(1_280f, 800f), BoxloreLayoutBounds(0f, 24f, 900f, 776f), true))
+        assertEquals(TabletPlayerArrangement.Stacked, context.arrangement)
+    }
+
+    @Test
+    fun `the supporting panel keeps a 16dp margin from the window edges beside the controls`() {
+        val viewport = BoxloreLayoutBounds(0f, 24f, 1_280f, 776f)
+        val columns = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(1_280f, 800f), viewport, false))
+        assertEquals(viewport.right - 16f, columns.support.right, 0f)
+        assertEquals(viewport.bottom - 16f, columns.support.bottom, 0f)
+        val hinge = BoxloreFold(BoxloreFoldState.HalfOpened, BoxloreFoldOrientation.Vertical, BoxloreLayoutBounds(456f, 0f, 476f, 650f), true, true)
+        val book = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(932f, 650f, listOf(hinge)), BoxloreLayoutBounds(0f, 24f, 932f, 626f), false))
+        assertEquals(TabletPlayerArrangement.VerticalFold, book.arrangement)
+        assertTrue(book.support.right <= 932f - 16f)
+        assertTrue(book.support.bottom <= 626f - 16f)
+    }
+
+    @Test
     fun `tabletop art stays above the hinge and all controls and tabs below`() {
         val hinge = BoxloreFold(
             BoxloreFoldState.HalfOpened,

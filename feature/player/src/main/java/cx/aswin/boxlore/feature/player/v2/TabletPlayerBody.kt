@@ -59,6 +59,7 @@ import cx.aswin.boxlore.feature.player.v2.logic.TabletPlayerArrangement
 import cx.aswin.boxlore.feature.player.v2.logic.TabletPlayerRegions
 import cx.aswin.boxlore.feature.player.v2.logic.intersectPlayerBounds
 import cx.aswin.boxlore.feature.player.v2.logic.tabletPlayerRegions
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -156,11 +157,7 @@ private fun TabletPlayerRegionLayout(
             if (regions.artwork != null) artwork()
         }
         if (scrollStack) {
-            Column(Modifier.fillMaxSize().clipToBounds().verticalScroll(rememberScrollState()).testTag("tablet_player_scroll")) {
-                Box(Modifier.fillMaxWidth().testTag("tablet_player_controls_region")) { controls() }
-                Spacer(Modifier.height(12.dp))
-                Box(Modifier.fillMaxWidth().height((body.height * 0.4f).coerceIn(200f, 360f).dp).testTag("tablet_player_support_region")) { support() }
-            }
+            TabletPlayerScrollStack(body.height, controls, support)
         } else {
             Box(Modifier.clipToBounds().testTag("tablet_player_controls_region")) { controls() }
             Box(Modifier.clipToBounds().testTag("tablet_player_support_region")) { support() }
@@ -178,6 +175,35 @@ private fun TabletPlayerRegionLayout(
         }
     }
 }
+
+/**
+ * Controls first, then the supporting panel in exactly the height left under them (at least
+ * [SUPPORT_MIN_HEIGHT]), so the page scrolls only when even that does not fit.
+ */
+@Composable
+private fun TabletPlayerScrollStack(viewportHeightDp: Float, controls: @Composable () -> Unit, support: @Composable () -> Unit) {
+    Layout(
+        content = {
+            Box(Modifier.fillMaxWidth().testTag("tablet_player_controls_region")) { controls() }
+            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp).testTag("tablet_player_support_region")) { support() }
+        },
+        modifier = Modifier.fillMaxSize().clipToBounds().verticalScroll(rememberScrollState()).testTag("tablet_player_scroll"),
+    ) { measurables, constraints ->
+        val width = constraints.maxWidth
+        val top = measurables[0].measure(Constraints(minWidth = width, maxWidth = width))
+        val gap = SUPPORT_GAP.roundToPx()
+        val supportHeight = max(SUPPORT_MIN_HEIGHT.roundToPx(), (viewportHeightDp * density).roundToInt() - top.height - gap - SUPPORT_BOTTOM_MARGIN.roundToPx())
+        val panel = measurables[1].measure(Constraints.fixed(width, supportHeight))
+        layout(width, top.height + gap + supportHeight + SUPPORT_BOTTOM_MARGIN.roundToPx()) {
+            top.place(0, 0)
+            panel.place(0, top.height + gap)
+        }
+    }
+}
+
+private val SUPPORT_MIN_HEIGHT = 200.dp
+private val SUPPORT_GAP = 12.dp
+private val SUPPORT_BOTTOM_MARGIN = 16.dp
 
 @Composable
 private fun TabletPlayerHeader(model: FullPlayerBodyModel, display: FullPlayerDisplay, actions: FullPlayerActions, ui: FullPlayerUiState) {
@@ -309,11 +335,42 @@ private fun TabletPlayerControls(
         } else {
             if (compactHeading) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(112.dp)) { TabletPlayerArtwork(model, dependencies, display, actions, flows, ui, 112f) }
-                    Spacer(Modifier.width(16.dp))
+                    // 8dp of room around the card keeps its shadow whole.
+                    Box(Modifier.size(128.dp), contentAlignment = Alignment.Center) {
+                        CompactPlayerArtwork(
+                            PlayerHeroArtwork(
+                                episodeId = model.episode.id,
+                                artworkUrl = model.episode.imageUrl?.takeIf { it.isNotBlank() } ?: model.podcast.imageUrl,
+                                nextArtworkUrl = null,
+                                nextEpisodeTitle = null,
+                                chapterArtFlow = remember(model.state.currentChapters, flows.position) { chapterArtFlow(flows.position, model.state.currentChapters) },
+                                fallbackArtworkUrls = listOf(model.episode.podcastImageUrl, model.podcast.imageUrl, model.podcast.fallbackImageUrl),
+                            ),
+                            display.colorScheme,
+                            112.dp,
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
                     Column(Modifier.weight(1f)) { TabletPlayerMetadata(model, display, actions, compact = true) }
                 }
             } else {
+                if (regions.artwork == null && regions.arrangement == TabletPlayerArrangement.Stacked) {
+                    // The cover gives way first, so the supporting panel keeps its minimum on screen.
+                    val stackHeight = regions.support.bottom - regions.controls.top
+                    MeasuredTabletPlayerColumn(
+                        viewportHeightDp = stackHeight - SUPPORT_MIN_HEIGHT.value - SUPPORT_GAP.value - SUPPORT_BOTTOM_MARGIN.value - 16f,
+                        maximumArtworkDp = regions.artworkSizeDp,
+                        artwork = { size -> TabletPlayerArtwork(model, dependencies, display, actions, flows, ui, size) },
+                        chrome = {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                TabletPlayerMetadata(model, display, actions, compact = false)
+                                Spacer(Modifier.height(12.dp))
+                                playbackControls()
+                            }
+                        },
+                    )
+                    return@Column
+                }
                 if (regions.artwork == null) {
                     TabletPlayerArtwork(model, dependencies, display, actions, flows, ui, regions.artworkSizeDp)
                     Spacer(Modifier.height(12.dp))

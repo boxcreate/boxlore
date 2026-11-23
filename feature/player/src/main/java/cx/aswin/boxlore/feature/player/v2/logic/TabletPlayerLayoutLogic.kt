@@ -42,14 +42,14 @@ internal fun tabletPlayerRegions(
     val region = safe.maxByOrNull { it.width * it.height } ?: return null
     val header = region.copy(bottom = min(region.bottom, region.top + 56f))
     val body = region.copy(top = header.bottom)
-    if (body.width >= 1_000f && !contextPane) {
+    if (usesPlayerColumns(body, contextPane)) {
         val middle = body.left + (body.width - 16f) / 2f
         return TabletPlayerRegions(
             TabletPlayerArrangement.Columns,
             header,
             null,
             body.copy(right = middle),
-            body.copy(left = middle + 16f),
+            insetSupport(body.copy(left = middle + 16f)),
             artworkSize(body, 0.4f),
         )
     }
@@ -64,6 +64,20 @@ internal fun tabletPlayerRegions(
         artworkSize(body, if (contextPane) 0.19f else 0.28f),
     )
 }
+
+/**
+ * Side by side from 1000dp, and on landscape windows from 840dp (inner foldable screens held flat,
+ * split-screen halves of big tablets); a player beside a page stays stacked.
+ */
+internal fun usesPlayerColumns(body: BoxloreLayoutBounds, contextPane: Boolean): Boolean =
+    !contextPane && (body.width >= 1_000f || (body.width >= COLUMNS_MIN_WIDTH_DP && body.width > body.height))
+
+/** The supporting panel keeps an even margin from the window's end and bottom edges. */
+private fun insetSupport(support: BoxloreLayoutBounds): BoxloreLayoutBounds =
+    support.copy(right = support.right - SUPPORT_EDGE_DP, bottom = support.bottom - SUPPORT_EDGE_DP)
+
+private const val COLUMNS_MIN_WIDTH_DP = 840f
+private const val SUPPORT_EDGE_DP = 16f
 
 private fun playerHorizontalFold(window: BoxloreWindowLayout, viewport: BoxloreLayoutBounds, safe: List<BoxloreLayoutBounds>): BoxloreFold? =
     window.folds.firstOrNull {
@@ -91,12 +105,13 @@ private fun separatedPlayerRegions(
     val header = artRegion.copy(bottom = min(artRegion.bottom, artRegion.top + 56f))
     val art = artRegion.copy(top = header.bottom)
     val division = controlRegion.top + controlRegion.height * 0.64f
+    val support = controlRegion.copy(top = division)
     return TabletPlayerRegions(
         arrangement,
         header,
         art,
         controlRegion.copy(bottom = division),
-        controlRegion.copy(top = division),
+        if (arrangement == TabletPlayerArrangement.VerticalFold) insetSupport(support) else support,
         artworkSize(art, 0.8f),
     )
 }
