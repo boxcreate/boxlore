@@ -30,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.VectorPath
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -160,8 +162,27 @@ private fun CoverPinMenu(
         anchorAlignment = Alignment.Start,
         modifier = Modifier.testTag("home_pin_menu"),
     ) {
-        item(text = actionLabel, onClick = onToggle, leadingIcon = Icons.Rounded.PushPin)
+        item(text = actionLabel, onClick = onToggle, leadingIcon = TiltedPushPin)
     }
+}
+
+/**
+ * The pin glyph tilted 45°, as on the pinned badge; boxlore's menu items take a vector, not a
+ * modifier, so the tilt is part of the vector.
+ */
+private val TiltedPushPin: ImageVector by lazy {
+    val source = Icons.Rounded.PushPin
+    ImageVector.Builder(
+        name = "TiltedPushPin",
+        defaultWidth = source.defaultWidth,
+        defaultHeight = source.defaultHeight,
+        viewportWidth = source.viewportWidth,
+        viewportHeight = source.viewportHeight,
+    ).addGroup(rotate = 45f, pivotX = source.viewportWidth / 2f, pivotY = source.viewportHeight / 2f).apply {
+        source.root.filterIsInstance<VectorPath>().forEach { path ->
+            addPath(pathData = path.pathData, pathFillType = path.pathFillType, fill = path.fill, fillAlpha = path.fillAlpha)
+        }
+    }.clearGroup().build()
 }
 
 @Composable

@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.outlined.DownloadDone
+import androidx.compose.material.icons.rounded.DownloadForOffline
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Button
@@ -470,7 +471,8 @@ private fun HomeMixDropdownMenu(
                 text = if (option == HomeMixMode.DAILY) daily else offline,
                 selected = option == mode,
                 onClick = { onModeSelected(option) },
-                leadingIcon = if (option == HomeMixMode.DAILY) Icons.AutoMirrored.Rounded.QueueMusic else Icons.Outlined.DownloadDone,
+                // Offline Mix's glyph isn't a tick, so only the chosen mix reads as checked.
+                leadingIcon = if (option == HomeMixMode.DAILY) Icons.AutoMirrored.Rounded.QueueMusic else Icons.Rounded.DownloadForOffline,
             )
         }
     }
