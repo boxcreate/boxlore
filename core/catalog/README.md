@@ -10,7 +10,7 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 
 ### Repository and discovery
 
-- `PodcastRepository`: the one application-scoped repository for discovery, Home bootstrap, briefings, content catalog v3, feedback and episode lists; lazy `api`/`apiV2` share one cached OkHttp client.
+- `PodcastRepository`: the app-scoped repository for discovery, Home bootstrap, briefings, content catalog v3, feedback and episode lists; lazy `api`/`apiV2` share one OkHttp client.
 - Episode-list sources: RSS table for `rss:` shows, Room only for ready followed catalogs, else the server's list (`/v2/episodes`, local owner IDs).
 - Limits: 100 per page (`clampPageLimit`), a 200-episode `getEpisodes` window, bounded `TimedLruCache` caches. `getEpisodeWindow` gives an episode and up to 199 newer, searching from near the last found row; empty if not listed.
 - `ApiRouteBudget` (`PodcastRepository.routeBudget`) paces library-wide jobs per route; a 429 holds the route until `Retry-After`.
@@ -18,13 +18,13 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 - `syncSubscriptions`: each show's latest episode from Room (ready catalogs), cached extras (opted-in shows), else `/sync` in 20-ID calls, two at a time.
 - `loadPiEpisodesForSupplement`: the strict Podcast Index baseline for feed-only extras; failure stops the extras refresh.
 - Discovery uses `/v2` when switched on, else v1; show search, typeahead, onboarding, content catalog, feedback, `/sync` and OPML lookups stay v1.
-- `DiscoveryEpisodeIds` (`RoomDiscoveryEpisodeIds` in production) maps recipe IDs in `/v2` answers to the phone's owner IDs before callers use them, and sends seeds and exclusions as recipe IDs. Follow seeds and sent followed IDs go by latest play, then follow day (same-day follows take turns daily); picks of any followed show are dropped.
+- `DiscoveryEpisodeIds` (`RoomDiscoveryEpisodeIds` in production) maps recipe IDs in `/v2` answers to the phone's owner IDs before use and sends seeds and exclusions as recipe IDs. Follow seeds and sent followed IDs go by latest play, then follow day (same-day follows take turns daily); picks of any followed show are dropped.
 - Hidden shows leave discovery answers and go out as `excludedPodcastIds`; show search keeps them.
 - Failed `/v2` requests never fall back to v1: they keep the last good answer (`V2DiscoveryLastGood`, not for Lore's new-card check; `RecommendationsLastGood` per country, marked `fromLastGood`), else mark Home results `failed`, keeping what's shown.
 - `/v2` answers are cached under `v2|` keys, apart from v1.
 - `DiscoveryRouting` and `BriefingLinks` give code outside the repository the same switch and ID translation.
 - `RolloutSwitches`: feed-first show pages (default off, fixed per process); upgrade repair, daily address check, `/v2` discovery (default on). Off pauses without marking done.
-- `ChapterRepository`, `TranscriptRepository` and their offline storage: chapters and transcripts, remote, from descriptions or saved for downloads. Remote reads use `RemoteText` and share one read per address; results sit in a bounded `TimedLruCache`, untranslated, so related-episode IDs are translated on every return.
+- `ChapterRepository`, `TranscriptRepository` and their offline storage: chapters and transcripts, remote, from descriptions or saved for downloads. Remote reads share one `RemoteText` read per address; results sit in a bounded `TimedLruCache`, untranslated, so related-episode IDs are translated on every return.
 - `shownotes.ShowNotesParser`: publisher HTML links, handles and description chapters, without fetching pages.
 
 ### Subscriptions and feed addresses
@@ -35,18 +35,18 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 - One address write is one compare-and-set transaction (`PodcastDao.replaceFeedAddress`): both addresses, `previousFeedUrl`, source (`FeedUrlSources`), check time, cleared validators, dirty mark; refuses `rss:` shows and non-HTTPS addresses.
 - A cloud pull never restores an address a confirmed correction replaced (`KEPT_CORRECTION`); merges use `PodcastDao.upsertKeepingFeedAddress`.
 - Address writes fail closed: without a `PendingNotificationRegistrations` record first, nothing is written (`NOT_SAVED`).
-- `SubscriptionForegroundSync`: the foreground pass. It sweeps expired catalogs, recovers addresses (`FeedUrlLookup`), sends shows with no HTTPS feed or ready catalog to `/sync`, and reads `DirectFeedRefreshBatch`'s picks, longest unread first; pull to refresh (`RefreshReason.PULL`) skips their wait but keeps the conditional check. Full downloads share `:core:rss`'s feed gate; feeds still failing after `DirectFeedRecovery` are asked from `/sync` while `FeedFixToggles.syncFallback` is on.
+- `SubscriptionForegroundSync`, the foreground pass, sweeps expired catalogs, recovers addresses (`FeedUrlLookup`), sends shows with no HTTPS feed or ready catalog to `/sync`, and reads `DirectFeedRefreshBatch`'s picks, longest unread first; pull to refresh (`RefreshReason.PULL`) skips their wait but keeps the conditional check. Full downloads share `:core:rss`'s feed gate; feeds still failing after `DirectFeedRecovery` go to `/sync` while `FeedFixToggles.syncFallback` is on.
 - `ForegroundCatchUp` then fills pulled placeholder rows and pending OPML outlines while the app is open.
 - `requestRefresh` respects a cooldown; `refreshNow` (pull to refresh) skips it, waiting at most `PULL_WAIT_MAX_MS` while its pass runs on; `requestCatalogIngest` reads a newly followed show's feed on the application scope.
-- `DirectFeedRecovery`: reports a failed read, tries a replacement address, saved only if it reads; `FeedFixToggles` stay on without an answer.
+- `DirectFeedRecovery`: reports a failed read and tries a replacement, saved only if it reads; `FeedFixToggles` stay on without an answer.
 - `FeedAddressDailyCheck`: asks `/v2/shows/feeds` daily per followed show and swaps only a confirmed move that reads; follows not yet pushed wait.
-- `FollowedShowFeedRead.readNow` reads one followed show's feed past its wait (Home's show chip; the caller throttles it).
-- `FeedReporter` / `FeedReportLimiter`: broken-feed reports, once per show daily and 20 daily, `FOLLOWED_SHOWS_RESERVE` kept for followed shows. Longest-unreported go first (`lastReportedAt`); use the app's one limiter.
+- `FollowedShowFeedRead.readNow` reads one followed show's feed past its wait (Home's show chip; callers throttle).
+- `FeedReporter` / `FeedReportLimiter`: broken-feed reports, once per show daily and 20 daily, `FOLLOWED_SHOWS_RESERVE` kept for followed shows. Longest-unreported go first (`lastReportedAt`), through one app-wide limiter.
 - `RenumberedShowFollows` (`SubscriptionRepository.renumberedFollows`, rules in `RenumberedFollowMerge`) keeps one follow when Podcast Index renumbers a show.
 - `SubscribedEpisodeCatalog`: routes the local catalog port to the Podcast Index or RSS adapter; a `FeedMoveFollower` saves permanent feed moves.
 - `UpgradeAddressRepair`: one-time post-upgrade address repair run by the app's `UpgradeRepairWorker`; finished steps survive process death.
 - `LegacyRssRepair`: one-time pass turning old OPML `rss:` rows into Podcast Index shows on exact feed-URL or GUID match.
-- `FolderRepository` / `RoomFolderRepository`: folders and auto-organize; deleting a folder never unfollows its shows.
+- `FolderRepository` / `RoomFolderRepository`: folders and auto-organize; deleting one never unfollows its shows.
 - `PlaylistRepository`: show playlists, backed up, never synced, kept through renumbering; `nextEpisodes` mixes followed, unhidden shows' unfinished stored episodes.
 
 ### Show pages and episode sources
@@ -54,7 +54,7 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 - `showPageSource(feedId)`: `RSS`, `FOLLOWED_CATALOG`, `FEED` (feed-first on, a Podcast Index show not in fallback) or `SERVER_LIST`.
 - Only show-page reads use the feed-first stored copy: `getShowPageEpisodes`, `getWholeShowPage`, in-show search and `getEpisodeWindow` around an episode.
 - `FeedFirstShowPages` reads the feed into the copy, shown offline; a failed read is retried once and reported (not for followed shows), then the server's list serves (`FALLBACK`) until reopened.
-- In-show search (`searchShowEpisodes`; `searchEpisodes` for matches) reads stored episodes or `/v2/episodes` (never v1) and throws when unreadable; `searchedNewest` says how far it searched. `showSearchCache` keeps one show's scan apart from the page cache: the newest 1,000 rows whole, older ones as title and start of notes; `showSearchMatches` keeps older matches whole.
+- In-show search (`searchShowEpisodes`; `searchEpisodes` for matches) reads stored episodes or `/v2/episodes` (never v1) and throws when unreadable; `searchedNewest` says how far it got. `showSearchCache` keeps one show's scan apart from the page cache: the newest 1,000 rows whole, older ones as title and start of notes; `showSearchMatches` keeps older matches whole.
 - `getWholeShowPage` (Select all, Mark all) reads the show page's sources and throws on a failed page, or `ShowListTooLongException` past `/v2/episodes`' last offset; it never mixes `/v2` and v1 pages.
 
 ### Episode links and shares
@@ -62,7 +62,7 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 - `resolveEpisodeLink` (`EpisodeLinkResolver`): stored row, trusted alias, API, then one feed read on `needsFeed`, giving `Found`, `NotFound` or `Unavailable`; `getEpisode` skips the feed read.
 - `EpisodeAliasReads` / `RoomEpisodeAliasReads`: trusted alias reads for links, pushes and Android Auto.
 - `EpisodeSharePreparer` never shares a phone-only ID; `EpisodeShareRegistrar.registerOnce` waits at most `DEFAULT_TIMEOUT_MS`; failures go to the app's retry worker.
-- `InstallReferrerManager`: parses Play referrers to `ReferralIntent`, opens the shared page on fresh installs only, reports attribution via `onInstallReferrerResolved`.
+- `InstallReferrerManager`: parses Play referrers to `ReferralIntent`, opens the shared page only on fresh installs and reports attribution (`onInstallReferrerResolved`).
 
 ### Cloud sync
 
@@ -93,10 +93,10 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 
 ### Shared wiring and ports
 
-- `SharedAppDependencies` / `SharedAppDependenciesHolder`: application-scoped instances for workers and services.
-- `RoomLocalCatalog` and `RoomEpisodeOfflineLookup`: production implementations of the domain ports.
-- `ports.*` keep catalog free of playback. Backups read `ListeningHistoryBackupPort.exportStoredHistory`, never the screens' capped list.
-- Android Auto `auto_*` strings live here; `auto_app_name` stays `boxlore`. `genreLabelRes` gives a genre tag its translated `auto_genre_*` name, and null for a blank tag or the "Podcast" placeholder.
+- `SharedAppDependencies` / `SharedAppDependenciesHolder`: app-scoped instances for workers and services.
+- `RoomLocalCatalog`, `RoomEpisodeOfflineLookup`: production port implementations.
+- `ports.*` keep catalog free of playback; backups read `ListeningHistoryBackupPort.exportStoredHistory`, never the screens' capped list.
+- Android Auto `auto_*` strings live here; `auto_app_name` stays `boxlore`. `genreLabelRes` names a genre tag from `auto_genre_*` (null when blank or "Podcast").
 
 ## Internal structure
 
@@ -153,7 +153,7 @@ Never rename these:
 
 ## Testing notes
 
-Tests live in `core/catalog/src/test` (JUnit 5, Robolectric Room, MockWebServer, no MockK); recorded `/v2` answers are in `src/test/resources/fixtures/v2`.
+Tests in `src/test` use JUnit 5, Robolectric Room and MockWebServer (no MockK); recorded `/v2` answers are in `src/test/resources/fixtures/v2`.
 
 | Area | Test classes |
 | :--- | :--- |
