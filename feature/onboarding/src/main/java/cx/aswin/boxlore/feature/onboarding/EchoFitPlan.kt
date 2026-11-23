@@ -164,6 +164,7 @@ private class EchoFitPlanner(
      * instead (at this step, else at the last), and only where that doesn't fit do they shrink to 12sp.
      */
     private fun accept(level: EchoFitLevel, metrics: EchoLayoutMetrics, shrunk: EchoLayoutMetrics = metrics): EchoFit? {
+        wideTopics(level, metrics)?.let { return it }
         val question = questionHeight(metrics, width)
         val minAnswers = answersMinHeight(metrics, columns, inline = true)
         if (columnHeight(metrics, width, question) + minAnswers > height) return null
@@ -180,6 +181,18 @@ private class EchoFitPlanner(
             answersMinHeight = minAnswers.dp,
             growRows = rows(columns),
         )
+    }
+
+    /**
+     * On wide, roomy bodies (tablets, open foldables) the topics stand four across in two rows of
+     * full-size tiles, instead of stretching two across, when their labels fit with their icons.
+     */
+    private fun wideTopics(level: EchoFitLevel, metrics: EchoLayoutMetrics): EchoFit? {
+        if (!topics || width < WideTopicsMinWidth || metrics.tileHeight < WideTopicsMinTile || !labelsFit(width, WideTopicColumns, showIcons = true, metrics)) return null
+        val question = questionHeight(metrics, width)
+        val minAnswers = answersMinHeight(metrics, WideTopicColumns, inline = true)
+        if (columnHeight(metrics, width, question) + minAnswers > height) return null
+        return EchoFit(level, metrics, columns = WideTopicColumns, questionHeight = question.dp, answersMinHeight = minAnswers.dp, growRows = rows(WideTopicColumns))
     }
 
     /** Topics one to a row, for labels too long for two columns even without icons, when that fits. */
@@ -360,6 +373,7 @@ private class EchoFitPlanner(
         private val TouchFloor = 48.dp
         private val CompactGap = 8.dp
         private const val WideTopicColumns = 4
+        private val WideTopicsMinTile = 58.dp
         private const val RoomyBubbleLines = 3
 
         /** Beside the answers, the start column narrows through these shares before labels take two lines. */
@@ -383,6 +397,9 @@ private fun echoAnswerSteps(topics: Boolean, base: EchoLayoutMetrics): List<Echo
 
 /** Beside the answers, Echo and the question take this share of the width. */
 internal const val SideBySideStartShare = 0.4f
+
+/** Bodies at least this wide (dp) may set the topics four across. */
+internal const val WideTopicsMinWidth = 560f
 internal const val SideBySideGap = 24f
 
 /** Answer content padding, shared by the planner and the tiles it plans for. */

@@ -64,6 +64,16 @@ class EchoFitPlanTest {
     }
 
     @Test
+    fun `wide windows set the topics four across, phones and the cover keep two`() {
+        listOf(plan(800, 1280), plan(1280, 800), plan(1600, 1000), plan(750, 832), plan(841, 701)).forEach { fit ->
+            assertEquals(4, fit.columns)
+            assertTrue(fit.showIcons)
+            assertFalse(fit.sideBySide)
+        }
+        listOf(plan(412, 915), plan(360, 800), plan(475, 695, 24, 24), plan(600, 960)).forEach { assertEquals(2, it.columns) }
+    }
+
+    @Test
     fun `a phone with its system bars shortens the topic tiles first and keeps Echo's size`() {
         val today = plan(412, 915)
         val fit = plan(412, 915, status = 24, nav = 24)

@@ -40,6 +40,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 
 internal data class EchoTopBarActions(val onBack: () -> Unit, val onSearch: () -> Unit, val onPickTopics: () -> Unit)
@@ -69,7 +71,8 @@ internal fun EchoTopBar(progress: Float, busy: Boolean, searchEnabled: Boolean, 
     val animated by animateFloatAsState(progress, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "echoProgress")
     val progressLabel = stringResource(R.string.echo_progress)
     Row(
-        Modifier.fillMaxWidth().statusBarsPadding().height(56.dp).padding(horizontal = 4.dp),
+        // Lined up with the conversation's column on wide windows.
+        Modifier.fillMaxWidth().statusBarsPadding().boxloreCardWidth(BoxloreCardFamily.Utility).height(56.dp).padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.echo_back)) }
