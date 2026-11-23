@@ -49,8 +49,8 @@
     <string name="explore_change_region">Inhaltsregion ändern</string>
     <string name="explore_search_results">Suchergebnisse</string>
     <string name="explore_video_badge">Video</string>
-    <string name="explore_taste_growing_title">Dein Geschmacksprofil wächst</string>
-    <string name="explore_taste_growing_body">Je mehr Folgen du hörst und Podcasts du abonnierst, desto besser passen die persönlichen Empfehlungen, die wir hier für dich zusammenstellen.</string>
+    <string name="explore_taste_growing_title">Deine Empfehlungen sind unterwegs</string>
+    <string name="explore_taste_growing_body">Abonniere ein paar Podcasts oder hör ein paar Folgen, dann erscheinen hier Empfehlungen für dich.</string>
     <string name="explore_top_charts">Top-Charts</string>
     <string name="explore_top_in_genre">Top in %1$s</string>
     <string name="explore_genre_browse_title">In Genres stöbern</string>
@@ -115,4 +115,6 @@
     <string name="explore_search_placeholder_shows">Nach Podcastnamen suchen</string>
     <string name="explore_search_placeholder_questions">Frag nach einer Idee oder einem Thema</string>
     <string name="explore_chart_rank_description">Platz %1$d, %2$s</string>
+    <string name="explore_topic_empty_body">Für deine Region und Sprachen gibt es hier noch nichts. Probier eine andere Sammlung.</string>
+    <string name="explore_topic_failed_title">Diese Sammlung konnte nicht geladen werden</string>
 </resources>

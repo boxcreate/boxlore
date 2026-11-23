@@ -84,6 +84,37 @@ class ExploreLoadFailureTest {
         assertEquals(listOf(ExploreRetry.NEXT_TOP_CHART_PAGE), retries)
     }
 
+    @Test
+    fun `a mood collection that couldn't load offers Try again, and an empty one explains itself`() {
+        val topic = ExploreUiState.Success(currentVibe = "What's happening", isSearching = true, topicFailed = true)
+        val state = mutableStateOf(topic)
+        renderLive(state)
+        assertAcrossWindowChanges("Couldn’t load this collection")
+        fixture.compose.onNodeWithText("No podcasts to show right now").assertDoesNotExist()
+        fixture.compose.onNodeWithText("Try again").performClick()
+        assertEquals(listOf(ExploreRetry.TOPIC), retries)
+
+        // The retry found shows.
+        fixture.compose.runOnIdle { state.value = topic.copy(topicFailed = false, searchResults = shows.take(4)) }
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithText("Show 0").assertIsDisplayed()
+        fixture.compose.onNodeWithText("Try again").assertDoesNotExist()
+
+        // Read, but nothing for this region: a title, why, and the way back.
+        fixture.compose.runOnIdle { state.value = topic.copy(topicFailed = false) }
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithText("No podcasts to show right now").assertIsDisplayed()
+        fixture.compose.onNodeWithText("Nothing here for your region and languages yet. Try another collection.").assertIsDisplayed()
+        fixture.compose.onNodeWithText("Try again").assertDoesNotExist()
+    }
+
+    @Test
+    fun `For you with nothing yet shows the badge and a title that fits`() {
+        render(ExploreUiState.Success(selectedTab = 1))
+        fixture.compose.onNodeWithTag(cx.aswin.boxlore.feature.explore.components.EXPLORE_TASTE_BADGE_TAG).assertExists()
+        fixture.compose.onNodeWithText("Your picks are on the way").assertIsDisplayed()
+    }
+
     private fun assertAcrossWindowChanges(text: String) {
         fixture.compose.onNodeWithText(text).assertIsDisplayed()
         listOf(
@@ -108,8 +139,11 @@ class ExploreLoadFailureTest {
 
     private var feedTag = "explore_feed_1"
 
-    private fun render(state: ExploreUiState.Success) {
-        feedTag = if (state.isSearching) "explore_feed_1" else "explore_feed_0"
+    private fun render(state: ExploreUiState.Success) = renderLive(mutableStateOf(state))
+
+    private fun renderLive(live: androidx.compose.runtime.MutableState<ExploreUiState.Success>) {
+        val state = live.value
+        feedTag = if (state.isSearching) "explore_feed_1" else if (state.selectedTab == 1 && state.hasForYou) "explore_feed_1" else "explore_feed_0"
         fixture.prepare()
         fixture.compose.mainClock.autoAdvance = true
         fixture.setContent {
@@ -121,7 +155,7 @@ class ExploreLoadFailureTest {
                 Box(Modifier.width(size.widthDp.dp).height(size.heightDp.dp)) {
                     BoxLoreTheme(dynamicColor = false) {
                         ExploreContent(
-                            state,
+                            live.value,
                             onSearchQueryChanged = {},
                             onCategorySelected = {},
                             onPodcastClick = { _, _, _, _ -> },

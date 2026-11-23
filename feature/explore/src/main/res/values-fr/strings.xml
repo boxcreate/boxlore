@@ -50,8 +50,8 @@
     <string name="explore_change_region">Changer la région du contenu</string>
     <string name="explore_search_results">Résultats de recherche</string>
     <string name="explore_video_badge">Vidéo</string>
-    <string name="explore_taste_growing_title">Votre profil de goûts se précise</string>
-    <string name="explore_taste_growing_body">À mesure que vous écoutez des épisodes et vous abonnez à des podcasts, nous vous proposerons ici des recommandations adaptées à vos goûts.</string>
+    <string name="explore_taste_growing_title">Vos suggestions arrivent bientôt</string>
+    <string name="explore_taste_growing_body">Abonnez-vous à quelques podcasts ou écoutez quelques épisodes, et des suggestions pour vous apparaîtront ici.</string>
     <string name="explore_top_charts">Classements</string>
     <string name="explore_top_in_genre">Top %1$s</string>
     <string name="explore_genre_browse_title">Parcourir les genres</string>
@@ -116,4 +116,6 @@
     <string name="explore_search_placeholder_shows">Rechercher par nom de podcast</string>
     <string name="explore_search_placeholder_questions">Posez une question sur une idée ou un sujet</string>
     <string name="explore_chart_rank_description">Numéro %1$d, %2$s</string>
+    <string name="explore_topic_empty_body">Rien ici pour votre région et vos langues pour le moment. Essayez une autre collection.</string>
+    <string name="explore_topic_failed_title">Impossible de charger cette collection</string>
 </resources>

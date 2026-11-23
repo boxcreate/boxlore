@@ -51,8 +51,8 @@
     <string name="explore_change_region">Cambiar región del contenido</string>
     <string name="explore_search_results">Resultados de búsqueda</string>
     <string name="explore_video_badge">Video</string>
-    <string name="explore_taste_growing_title">Tu perfil de gustos está creciendo</string>
-    <string name="explore_taste_growing_body">A medida que escuches más episodios y sigas más podcasts, aquí reuniremos recomendaciones personalizadas según tus gustos.</string>
+    <string name="explore_taste_growing_title">Tus recomendaciones están en camino</string>
+    <string name="explore_taste_growing_body">Sigue algunos podcasts o escucha algunos episodios y aquí aparecerán recomendaciones para ti.</string>
     <!-- Top tab heading with no genre picked. -->
     <string name="explore_top_charts">Los más escuchados</string>
     <!-- Top tab heading for a genre; %1$s is the genre name, e.g. "Top in Technology". -->
@@ -127,4 +127,6 @@
     <string name="explore_search_placeholder_shows">Busca por nombre del podcast</string>
     <string name="explore_search_placeholder_questions">Pregunta por cualquier idea o tema</string>
     <string name="explore_chart_rank_description">Número %1$d, %2$s</string>
+    <string name="explore_topic_empty_body">Todavía no hay nada aquí para tu región e idiomas. Prueba otra colección.</string>
+    <string name="explore_topic_failed_title">No se pudo cargar esta colección</string>
 </resources>

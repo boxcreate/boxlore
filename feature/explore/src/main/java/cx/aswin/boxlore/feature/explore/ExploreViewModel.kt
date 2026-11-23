@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 enum class SearchTab { SHOWS, EPISODES }
 
 /** What a Try again button on Explore asks for again. */
-enum class ExploreRetry { SHOW_SEARCH, TOP_CHART, NEXT_TOP_CHART_PAGE }
+enum class ExploreRetry { SHOW_SEARCH, TOP_CHART, NEXT_TOP_CHART_PAGE, TOPIC }
 
 sealed interface ExploreUiState {
     data object Loading : ExploreUiState
@@ -79,6 +79,8 @@ sealed interface ExploreUiState {
         val topChartFailed: Boolean = false,
         /** The next Top chart page couldn't be read; the chart hasn't ended. */
         val nextTopChartPageFailed: Boolean = false,
+        /** The open mood collection couldn't be read: Try again, not "nothing here". */
+        val topicFailed: Boolean = false,
     ) : ExploreUiState
     data class Error(val message: String) : ExploreUiState
 }
@@ -354,6 +356,7 @@ class ExploreViewModel(
                     showSearchFailed = loading.failures.showSearch,
                     topChartFailed = loading.failures.topChart,
                     nextTopChartPageFailed = loading.failures.nextTopChartPage,
+                    topicFailed = loading.failures.topic,
                 )
             }.combine(userPrefs.hiddenShows.matchIdsStream) { state, hiddenIds ->
                 // On screen, so a show hidden elsewhere leaves at once and chart pages keep their size.
@@ -508,6 +511,15 @@ class ExploreViewModel(
 
     fun onVibeSelected(vibeId: String, vibeName: String) {
         vibesClickedCount++
+        loadVibe(vibeId, vibeName)
+    }
+
+    /** The open collection, so Try again reads the same one. */
+    private var currentVibeId: String? = null
+
+    private fun loadVibe(vibeId: String, vibeName: String) {
+        currentVibeId = vibeId
+        _failures.update { it.copy(topic = false) }
         _searchQuery.value = ""
         _localSubstringResults.value = emptyList()
         _currentVibe.value = vibeName
@@ -536,6 +548,7 @@ class ExploreViewModel(
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 if (searchJob == myJob) {
                     _searchResults.value = emptyList()
+                    _failures.update { it.copy(topic = true) }
                 }
             } finally {
                 if (searchJob == myJob) {
@@ -548,6 +561,8 @@ class ExploreViewModel(
 
     fun clearVibe() {
         _currentVibe.value = null
+        currentVibeId = null
+        _failures.update { it.copy(topic = false) }
         if (_searchQuery.value.isEmpty()) {
             _searchResults.value = emptyList()
             _alsoFoundResults.value = emptyList()
@@ -596,6 +611,11 @@ class ExploreViewModel(
         when (target) {
             ExploreRetry.SHOW_SEARCH -> _searchQuery.value.takeIf { it.isNotBlank() }?.let(::performSearch)
             ExploreRetry.TOP_CHART -> _topChartRetries.update { it + 1 }
+            ExploreRetry.TOPIC -> {
+                val id = currentVibeId
+                val name = _currentVibe.value
+                if (id != null && name != null) loadVibe(id, name)
+            }
             ExploreRetry.NEXT_TOP_CHART_PAGE -> loadNextTopChartPage()
         }
     }

@@ -51,13 +51,13 @@
     <string name="explore_change_region">Change content region</string>
     <string name="explore_search_results">Search results</string>
     <string name="explore_video_badge">Video</string>
-    <string name="explore_taste_growing_title">Your Taste Profile is Growing</string>
-    <string name="explore_taste_growing_body">As you listen to more episodes and subscribe to shows, we\'ll curate personalized recommendations here tailored to your taste.</string>
+    <string name="explore_taste_growing_title">Your picks are on the way</string>
+    <string name="explore_taste_growing_body">Subscribe to a few shows or listen to some episodes, and picks for you will show up here.</string>
     <!-- Top tab heading with no genre picked. -->
     <string name="explore_top_charts">Top charts</string>
     <!-- Top tab heading for a genre; %1$s is the genre name, e.g. "Top in Technology". -->
     <string name="explore_top_in_genre">Top in %1$s</string>
-    <string name="explore_genre_browse_title">Browse Genres</string>
+    <string name="explore_genre_browse_title">Browse genres</string>
     <!-- Genre chip that clears the genre filter. Short: shown in a chip. -->
     <string name="explore_genre_all">All</string>
     <!-- Chip that opens the full genre list. Short: shown in a chip. -->
@@ -137,4 +137,8 @@
     <string name="explore_search_placeholder_questions">Ask about any idea or topic</string>
     <!-- Screen reader label for a show's place in Top charts: the number, then the show's name. -->
     <string name="explore_chart_rank_description">Number %1$d, %2$s</string>
+    <!-- Under the empty mood collection title: nothing matched the listener's region and content languages. -->
+    <string name="explore_topic_empty_body">Nothing here for your region and languages yet. Try another collection.</string>
+    <!-- Mood collection page when its shows couldn't be read. -->
+    <string name="explore_topic_failed_title">Couldn’t load this collection</string>
 </resources>

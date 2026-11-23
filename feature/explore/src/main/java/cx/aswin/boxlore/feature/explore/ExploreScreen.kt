@@ -414,6 +414,8 @@ fun ExploreContent(
                                 onPodcastClick = { podcast, index ->
                                     onPodcastClick(podcast.id, "explore_vibe", state.currentCategory, index)
                                 },
+                                failed = state.topicFailed,
+                                onRetry = { onRetry(ExploreRetry.TOPIC) },
                             )
                         } else if (isSearchModeActive) {
                             if (state.searchTab == SearchTab.EPISODES) {
