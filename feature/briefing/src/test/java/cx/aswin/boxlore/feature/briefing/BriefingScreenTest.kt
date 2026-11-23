@@ -239,9 +239,8 @@ class BriefingScreenTest {
         val logo = compose.onNodeWithContentDescription("The boxlore brief", useUnmergedTree = true).getUnclippedBoundsInRoot()
         val back = compose.onNodeWithTag("briefingBack").getUnclippedBoundsInRoot()
         assertEquals(viewport.top, cover.top)
-        assertEquals(16f, logo.left.value - cover.left.value, 0.1f)
         assertTrue("Navigation must not push the masthead down", logo.top.value - cover.top.value < 48f)
-        assertTrue("Navigation must stay outside the masthead", back.left >= logo.right)
+        assertTrue("Back must stay beside the masthead, not over it", back.right <= logo.left)
     }
 
     private fun statusIconsAreDark(): Boolean = compose.runOnIdle {

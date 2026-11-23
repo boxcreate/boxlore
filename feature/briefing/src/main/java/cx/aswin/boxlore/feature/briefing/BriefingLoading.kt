@@ -31,6 +31,7 @@ import cx.aswin.boxlore.core.designsystem.briefing.BriefingCover
 import cx.aswin.boxlore.core.designsystem.briefing.briefingRegionLabel
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import java.time.LocalDate
@@ -41,7 +42,7 @@ import java.time.LocalDate
  * their final places, so the page settles in place instead of swapping a spinner for content.
  */
 @Composable
-internal fun BriefingLoadingContent(region: String, topPadding: Dp) {
+internal fun BriefingLoadingContent(region: String, topPadding: Dp, mastheadLeftPadding: Dp = 0.dp) {
     val label = stringResource(R.string.briefing_loading_edition, stringResource(briefingRegionLabel(region)))
     val today = remember { LocalDate.now().toString() }
     ShimmerScope(active = true) {
@@ -55,8 +56,9 @@ internal fun BriefingLoadingContent(region: String, topPadding: Dp) {
                 modifier = Modifier.fillMaxWidth().aspectRatio(BRIEFING_COVER_ASPECT_RATIO).clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)),
                 mastheadTopPadding = topPadding + 12.dp,
                 mastheadScrim = true,
+                mastheadLeftPadding = mastheadLeftPadding,
             )
-            Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(Modifier.boxloreHorizontalSafePadding().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     LoadingBlock(Modifier.width(150.dp).height(14.dp))
                     LoadingBlock(Modifier.width(96.dp).height(40.dp), RoundedCornerShape(20.dp))
@@ -68,7 +70,7 @@ internal fun BriefingLoadingContent(region: String, topPadding: Dp) {
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.padding(horizontal = 24.dp).boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth(),
+                modifier = Modifier.boxloreHorizontalSafePadding().padding(horizontal = 24.dp).boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth(),
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     LoadingBlock(Modifier.width(72.dp).height(20.dp))

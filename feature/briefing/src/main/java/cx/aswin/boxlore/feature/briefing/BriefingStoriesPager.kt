@@ -49,6 +49,8 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreConfigurationWindowSize
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeInsetsDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -267,7 +269,7 @@ private fun BriefingStoriesPagerContent(
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+            Modifier.fillMaxWidth().boxloreHorizontalSafePadding().padding(horizontal = 20.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -321,8 +323,11 @@ private fun BriefingChapterPager(
     val windowHeight = if (tablet && pane != null) pane.height.dp else boxloreConfigurationWindowSize().height
     val maxCardHeight = windowHeight * STORY_CARD_MAX_SCREEN_FRACTION
     val scrollStoryAsOne = storyCardScrollsAsOne(windowHeight.value.toInt())
+    // Cards clear a sideways phone's cutout and side buttons; swiping still reaches the edge.
+    val (safeStart, safeEnd) = boxloreHorizontalSafeInsetsDp()
+    val sidePadding = PaddingValues(start = PagerSidePadding + safeStart, end = PagerSidePadding + safeEnd)
     SubcomposeLayout(Modifier.fillMaxWidth()) { constraints ->
-        val availableWidth = (constraints.maxWidth - (PagerSidePadding * 2).roundToPx()).coerceAtLeast(0)
+        val availableWidth = (constraints.maxWidth - (PagerSidePadding * 2 + safeStart + safeEnd).roundToPx()).coerceAtLeast(0)
         val pageWidth = if (tablet) availableWidth.coerceAtMost(720.dp.roundToPx()) else availableWidth
         val tallest = subcompose("measure") {
             uiState.chapters.indices.forEach { page ->
@@ -335,7 +340,7 @@ private fun BriefingChapterPager(
             HorizontalPager(
                 state = actions.pagerState,
                 pageSize = if (tablet) PageSize.Fixed(pageWidth.toDp()) else PageSize.Fill,
-                contentPadding = PaddingValues(horizontal = PagerSidePadding),
+                contentPadding = sidePadding,
                 pageSpacing = 16.dp,
                 key = { page -> stableChapterKey(uiState.chapters[page]) },
                 modifier = Modifier.fillMaxWidth().height(tallest.toDp()),

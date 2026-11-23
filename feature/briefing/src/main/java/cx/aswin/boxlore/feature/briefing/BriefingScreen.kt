@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -23,12 +24,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -44,9 +47,9 @@ import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -66,15 +69,16 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -82,9 +86,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -100,8 +106,13 @@ import cx.aswin.boxlore.core.designsystem.briefing.BriefingRegionMenu
 import cx.aswin.boxlore.core.designsystem.briefing.briefingRegionLabel
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.components.BoxloreScrollableCenteredColumn
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeInsetsDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneStatusBarsPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.model.Briefing
@@ -199,36 +210,26 @@ fun BriefingScreen(
         }
     }
     BriefingEditorialTheme {
-        Surface(modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxSize().testTag("briefing_reading_frame").onSizeChanged { coverHeight = it.width / BRIEFING_COVER_ASPECT_RATIO }, color = MaterialTheme.colorScheme.background) {
+        // Capped at a reading width on every window, sideways phones included; the cover fills the frame.
+        Surface(modifier.fillMaxSize().boxloreReadingColumn().fillMaxSize().testTag("briefing_reading_frame").onSizeChanged { coverHeight = it.width / BRIEFING_COVER_ASPECT_RATIO }, color = MaterialTheme.colorScheme.background) {
             Box(Modifier.fillMaxSize()) {
+                val masthead = briefingMastheadLeftPadding()
                 AnimatedContent(uiState, contentKey = { it.presentationKey() }, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "briefingState") { displayedState ->
                     when (displayedState) {
-                        is BriefingUiState.Loading -> BriefingLoadingContent(displayedState.selectedRegion, topPadding)
-                        is BriefingUiState.Error -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(displayedState.message, style = MaterialTheme.typography.bodyLarge)
-                            Button(onClick = { onRegionSelect(displayedState.selectedRegion) }, modifier = Modifier.padding(top = 16.dp)) { Text(stringResource(R.string.briefing_try_again)) }
-                            BriefingRegionMenu(displayedState.selectedRegion, onRegionSelect)
-                        }
+                        is BriefingUiState.Loading -> BriefingLoadingContent(displayedState.selectedRegion, topPadding, masthead)
+                        is BriefingUiState.Error -> BriefingErrorContent(displayedState, topPadding, bottomContentPadding, onRegionSelect)
                         is BriefingUiState.Success -> BriefingEditionContent(
                             displayedState,
                             scroll,
                             BriefingContentActions(onRegionSelect, onPlayPauseClick, onSeekTo, onEpisodeClick, onFeedbackClick, onSources = { showSources = true }),
-                            topPadding,
-                            bottomContentPadding,
+                            BriefingPagePadding(topPadding, bottomContentPadding, masthead),
                         )
                     }
                 }
-                Row(
-                    Modifier.align(AbsoluteAlignment.TopRight).statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                        IconButton(onBackClick, Modifier.testTag("briefingBack")) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.briefing_back)) }
-                    }
-                    Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                        IconButton(onClick = { showPreferences = true }) { Icon(Icons.Rounded.Tune, stringResource(R.string.briefing_preferences)) }
-                    }
+                // Back at the start and Preferences at the end, clear of a sideways phone's cutout and side buttons.
+                Box(Modifier.fillMaxWidth().boxlorePaneStatusBarsPadding().boxloreHorizontalSafePadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    BriefingTopButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.briefing_back), onBackClick, Modifier.align(Alignment.TopStart).testTag("briefingBack"))
+                    BriefingTopButton(Icons.Rounded.Tune, stringResource(R.string.briefing_preferences), { showPreferences = true }, Modifier.align(Alignment.TopEnd))
                 }
             }
         }
@@ -238,6 +239,56 @@ fun BriefingScreen(
         if (showSources && success != null) {
             BriefingSourcesSheet(success.briefing, onDismiss = { showSources = false })
         }
+    }
+}
+
+/** The page's top padding, its bottom chrome clearance and how far the cover's logo moves right for the top-left button. */
+private data class BriefingPagePadding(val top: Dp, val bottom: Dp, val mastheadLeft: Dp)
+
+/**
+ * How far the cover's logo moves right: past the 48dp button at the cover's top left (Back, or
+ * Preferences in right-to-left), and past a cutout or side buttons on that side.
+ */
+@Composable
+private fun briefingMastheadLeftPadding(): Dp {
+    val (start, end) = boxloreHorizontalSafeInsetsDp()
+    val left = if (LocalLayoutDirection.current == LayoutDirection.Ltr) start else end
+    return left + BRIEFING_TOP_BUTTON_SIZE + 8.dp
+}
+
+private val BRIEFING_TOP_BUTTON_SIZE = 48.dp
+
+/** A round tonal 48dp button over the cover, with the usual press feedback. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun BriefingTopButton(icon: ImageVector, description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    FilledTonalIconButton(
+        onClick = onClick,
+        modifier = modifier.size(BRIEFING_TOP_BUTTON_SIZE),
+        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh, contentColor = MaterialTheme.colorScheme.onSurface),
+        shapes = IconButtonDefaults.shapes(),
+    ) {
+        Icon(icon, description)
+    }
+}
+
+/**
+ * An edition that failed to load: the message centred with Try again and the edition menu below. It
+ * clears the floating buttons at the top and the mini player at the bottom, and scrolls in short windows.
+ */
+@Composable
+private fun BriefingErrorContent(state: BriefingUiState.Error, topPadding: Dp, bottomContentPadding: Dp, onRegionSelect: (String) -> Unit) {
+    BoxloreScrollableCenteredColumn(
+        modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)).boxloreHorizontalSafePadding().testTag("briefingError"),
+        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = topPadding + 72.dp, bottom = bottomContentPadding + 24.dp),
+    ) {
+        Text(state.message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(20.dp))
+        FilledTonalButton(onClick = { onRegionSelect(state.selectedRegion) }, modifier = Modifier.heightIn(min = 48.dp)) {
+            Text(stringResource(R.string.briefing_try_again))
+        }
+        Spacer(Modifier.height(12.dp))
+        BriefingRegionMenu(state.selectedRegion, onRegionSelect)
     }
 }
 
@@ -382,16 +433,19 @@ private fun BriefingEditionContent(
     state: BriefingUiState.Success,
     scroll: ScrollState,
     actions: BriefingContentActions,
-    topPadding: Dp,
-    bottomContentPadding: Dp,
+    padding: BriefingPagePadding,
 ) {
+    val topPadding = padding.top
+    val bottomContentPadding = padding.bottom
     val onRegionSelect = actions.region
     val onPlayPauseClick = actions.play
     val onSeekTo = actions.seek
     val onEpisodeClick = actions.episode
     val onFeedbackClick = actions.feedback
     Column(
-        Modifier.fillMaxWidth().verticalScroll(scroll).testTag("briefingArticle").padding(bottom = bottomContentPadding + 24.dp).navigationBarsPadding(),
+        Modifier.fillMaxWidth().verticalScroll(scroll).testTag("briefingArticle").padding(bottom = bottomContentPadding + 24.dp)
+            // Only the bottom bar: the cover reaches the side edges, and text clears side buttons on its own.
+            .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         BriefingCover(
@@ -400,8 +454,9 @@ private fun BriefingEditionContent(
             modifier = Modifier.fillMaxWidth().aspectRatio(BRIEFING_COVER_ASPECT_RATIO).clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)).testTag("briefingPageCover"),
             mastheadTopPadding = topPadding + 12.dp,
             mastheadScrim = true,
+            mastheadLeftPadding = padding.mastheadLeft,
         )
-        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.boxloreHorizontalSafePadding().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -456,7 +511,7 @@ private fun BriefingEditionContent(
             onPlayPauseClick = { onPlayPauseClick(state.briefing, it) },
             onShowSources = { actions.onSources() },
         )
-        Surface(Modifier.padding(horizontal = 20.dp).boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+        Surface(Modifier.boxloreHorizontalSafePadding().padding(horizontal = 20.dp).boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (state.briefing.sources.isNotEmpty()) {
                     Surface(onClick = { actions.onSources() }, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {
