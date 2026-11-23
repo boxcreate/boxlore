@@ -330,7 +330,7 @@ private fun MorphingPlayButton(
     }
 }
 
-private enum class QuickControlMode { ACTIONS, SPEED, SLEEP }
+internal enum class QuickControlMode { ACTIONS, SPEED, SLEEP }
 
 internal data class QuickControlShapes(
     val topStart: androidx.compose.ui.graphics.Shape,
@@ -396,6 +396,22 @@ fun SecondaryRail(
     modifier: Modifier = Modifier
 ) {
     var controlMode by rememberSaveable { mutableStateOf(QuickControlMode.ACTIONS) }
+    SecondaryRail(playback, availability, library, colorScheme, selectionActions, clickActions, controlMode, { controlMode = it }, modifier)
+}
+
+/** [SecondaryRail] with its open panel held by the caller, so it survives a layout change. */
+@Composable
+internal fun SecondaryRail(
+    playback: SecondaryPlaybackState,
+    availability: SecondaryAvailabilityState,
+    library: SecondaryLibraryState,
+    colorScheme: ColorScheme,
+    selectionActions: SecondarySelectionActions,
+    clickActions: SecondaryClickActions,
+    controlMode: QuickControlMode,
+    onControlModeChange: (QuickControlMode) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val groupTrayShape = AbsoluteSmoothCornerShape(
         cornerRadiusTL = 32.dp,
         smoothnessAsPercentTL = 60,
@@ -511,8 +527,8 @@ fun SecondaryRail(
                     colorScheme = colorScheme,
                     shapes = selectorShapes,
                     navigation = QuickControlNavigation(
-                        onSpeedClick = { controlMode = QuickControlMode.SPEED },
-                        onSleepClick = { controlMode = QuickControlMode.SLEEP }
+                        onSpeedClick = { onControlModeChange(QuickControlMode.SPEED) },
+                        onSleepClick = { onControlModeChange(QuickControlMode.SLEEP) }
                     ),
                     clickActions = clickActions
                 )
@@ -521,7 +537,7 @@ fun SecondaryRail(
                     currentSpeed = playback.playbackSpeed,
                     colorScheme = colorScheme,
                     shapes = selectorShapes,
-                    onBack = { controlMode = QuickControlMode.ACTIONS },
+                    onBack = { onControlModeChange(QuickControlMode.ACTIONS) },
                     onSpeedSelected = selectionActions.onSpeedSelected,
                     audio = InlineSpeedAudio(
                         state = playback.audio,
@@ -535,7 +551,7 @@ fun SecondaryRail(
                     sleepAtEndOfEpisode = playback.sleepAtEndOfEpisode,
                     colorScheme = colorScheme,
                     shapes = selectorShapes,
-                    onBack = { controlMode = QuickControlMode.ACTIONS },
+                    onBack = { onControlModeChange(QuickControlMode.ACTIONS) },
                     onDurationSelected = selectionActions.onSleepTimerSelected
                 )
             }

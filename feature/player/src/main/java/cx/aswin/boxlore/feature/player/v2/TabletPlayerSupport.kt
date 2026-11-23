@@ -126,7 +126,7 @@ internal fun TabletPlayerSupport(
                                     cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("episode_info")
                                     actions.onCollapse()
                                     actions.onEpisodeInfoClick(model.episode)
-                                })
+                                }, expandedState = ui.notesExpandedState)
                             }
                         }
                     }

@@ -47,7 +47,8 @@ fun NotesPreviewCard(
     description: String,
     colorScheme: ColorScheme,
     onOpenEpisodeInfo: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    expandedState: androidx.compose.runtime.MutableState<Boolean>? = null
 ) {
     val plainText = remember(description) {
         androidx.core.text.HtmlCompat.fromHtml(
@@ -57,7 +58,8 @@ fun NotesPreviewCard(
     }
     if (plainText.isBlank()) return
 
-    var expanded by rememberSaveable { mutableStateOf(false) }
+    val localExpanded = rememberSaveable { mutableStateOf(false) }
+    var expanded by (expandedState ?: localExpanded)
 
     val cardShape = AbsoluteSmoothCornerShape(
         cornerRadiusTL = 28.dp,

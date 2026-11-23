@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -208,6 +209,52 @@ class TabletPlayerContentTest {
             assertEquals("The same episode state survives resizing", store.ui, store.forEpisode(episode.id))
             assertEquals("Inline transcript at ${layout.widthDp} x ${layout.heightDp}", !layout.usesTabletLayout, store.ui.showInlineTranscript)
             fixture.compose.onNodeWithContentDescription(if (layout.usesTabletLayout) "Open full-screen transcript" else "Open fullscreen transcript").assertExists()
+        }
+    }
+
+    @Test
+    fun `the tray's open speed and sleep panels survive the width and height gates both ways`() {
+        val store = PlayerPresentationStore(episode.id, FullPlayerUiState(), tabletUsed = true)
+        window.value = BoxloreWindowLayout(599f, 841f)
+        render(presentationStore = store)
+        listOf(QuickControlMode.SPEED, QuickControlMode.SLEEP).forEach { mode ->
+            fixture.compose.runOnIdle { store.ui.quickControlMode = mode }
+            listOf(
+                BoxloreWindowLayout(600f, 841f),
+                BoxloreWindowLayout(599f, 841f),
+                BoxloreWindowLayout(840f, 480f),
+                BoxloreWindowLayout(840f, 479f),
+                BoxloreWindowLayout(1_280f, 800f),
+                BoxloreWindowLayout(599f, 841f),
+            ).forEach { layout ->
+                fixture.compose.runOnIdle { window.value = layout }
+                advance()
+                assertEquals("$mode at ${layout.widthDp} x ${layout.heightDp}", mode, store.ui.quickControlMode)
+                fixture.compose.onNodeWithContentDescription("Back to quick actions").assertExists()
+            }
+            fixture.compose.onNodeWithContentDescription("Back to quick actions").performClick()
+            advance()
+            assertEquals(QuickControlMode.ACTIONS, store.ui.quickControlMode)
+        }
+    }
+
+    @Test
+    fun `a sideways phone shows play and the quick actions without scrolling and keeps the tray when turned`() {
+        val store = PlayerPresentationStore(episode.id, FullPlayerUiState(), tabletUsed = true)
+        window.value = BoxloreWindowLayout(412f, 841f)
+        render(presentationStore = store)
+        fixture.compose.runOnIdle { store.ui.quickControlMode = QuickControlMode.SLEEP }
+        listOf(BoxloreWindowLayout(915f, 412f), BoxloreWindowLayout(412f, 841f), BoxloreWindowLayout(915f, 412f)).forEach { layout ->
+            fixture.compose.runOnIdle { window.value = layout }
+            advance()
+            assertEquals(QuickControlMode.SLEEP, store.ui.quickControlMode)
+            fixture.compose.onNodeWithContentDescription("Back to quick actions").assertExists()
+        }
+        fixture.compose.runOnIdle { store.ui.quickControlMode = QuickControlMode.ACTIONS }
+        advance()
+        listOf("Play", "Sleep").forEach { label ->
+            val bounds = fixture.compose.onNodeWithContentDescription(label, useUnmergedTree = true).getUnclippedBoundsInRoot()
+            assertTrue("$label ends at ${bounds.bottom} on a 412dp tall sideways phone", bounds.bottom.value <= 412f)
         }
     }
 

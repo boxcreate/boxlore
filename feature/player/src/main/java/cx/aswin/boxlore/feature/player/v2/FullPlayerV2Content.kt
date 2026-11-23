@@ -271,7 +271,9 @@ internal fun FullPlayerSecondaryControls(
         ),
         colorScheme = model.colorScheme,
         selectionActions = fullPlayerSelectionActions(dependencies.playbackRepository),
-        clickActions = fullPlayerClickActions(model, dependencies, ui, scope, inlineSupportingContent)
+        clickActions = fullPlayerClickActions(model, dependencies, ui, scope, inlineSupportingContent),
+        controlMode = ui.quickControlMode,
+        onControlModeChange = { ui.quickControlMode = it }
     )
 }
 
@@ -392,7 +394,8 @@ internal fun FullPlayerSupportingContent(
             cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("episode_info")
             actions.onCollapse()
             actions.onEpisodeInfoClick(episode)
-        }
+        },
+        expandedState = ui.notesExpandedState
     )
 }
 

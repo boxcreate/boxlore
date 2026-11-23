@@ -127,6 +127,23 @@ internal class FullPlayerUiState {
     var supportingContentUsesTablet by mutableStateOf(false)
     var restoreSupportingContentOnCompact by mutableStateOf(false)
 
+    /** The quick-action tray's open panel, kept when the player moves between phone and tablet layouts. */
+    var quickControlMode by mutableStateOf(QuickControlMode.ACTIONS)
+
+    /** Whether the Cast hero shows receiver controls, and the route it last followed ([castRouteRemote]). */
+    var showCastControls by mutableStateOf(false)
+    var castRouteRemote by mutableStateOf(false)
+    val notesExpandedState = mutableStateOf(false)
+    var notesExpanded by notesExpandedState
+
+    /** Follows a Cast connect or disconnect once; a layout change with the same route keeps the listener's toggle. */
+    fun followCastRoute(isRemote: Boolean): Boolean {
+        if (isRemote == castRouteRemote) return false
+        castRouteRemote = isRemote
+        showCastControls = isRemote
+        return true
+    }
+
     fun selectSupportingTab(tab: PlayerSupportingTab, restoreOnCompact: Boolean = true) {
         supportingTab = tab
         restoreSupportingContentOnCompact = restoreOnCompact
@@ -173,6 +190,12 @@ internal val FullPlayerUiStateSaver =
                 state.supportingTab == PlayerSupportingTab.Notes,
                 state.supportingContentUsesTablet,
                 state.restoreSupportingContentOnCompact,
+                // Appended later; lists saved before them restore with defaults.
+                state.quickControlMode == QuickControlMode.SPEED,
+                state.quickControlMode == QuickControlMode.SLEEP,
+                state.showCastControls,
+                state.castRouteRemote,
+                state.notesExpanded,
             )
         },
         restore = { values ->
@@ -195,6 +218,14 @@ internal val FullPlayerUiStateSaver =
                 }
                 supportingContentUsesTablet = values.getOrElse(13) { false }
                 restoreSupportingContentOnCompact = values.getOrElse(14) { false }
+                quickControlMode = when {
+                    values.getOrElse(15) { false } -> QuickControlMode.SPEED
+                    values.getOrElse(16) { false } -> QuickControlMode.SLEEP
+                    else -> QuickControlMode.ACTIONS
+                }
+                showCastControls = values.getOrElse(17) { false }
+                castRouteRemote = values.getOrElse(18) { false }
+                notesExpanded = values.getOrElse(19) { false }
             }
         },
     )
@@ -646,12 +677,11 @@ internal fun FullPlayerHeroSection(
             ui = ui,
             isCompact = isCompact,
         )
-    var showCastControls by rememberSaveable { mutableStateOf(isRemote) }
     val castPicker = LocalCastPicker.current
     LaunchedEffect(isRemote) {
-        showCastControls = isRemote
-        if (isRemote) actions.onFullscreenVideoChange(false)
+        if (ui.followCastRoute(isRemote) && isRemote) actions.onFullscreenVideoChange(false)
     }
+    val showCastControls = ui.showCastControls || (isRemote && !ui.castRouteRemote)
     val heroMode =
         resolveCastHeroDisplayMode(
             isRemote = isRemote,
@@ -684,7 +714,7 @@ internal fun FullPlayerHeroSection(
             visible = isRemote && heroMode != CastHeroDisplayMode.TRANSCRIPT,
             showCastControls = showCastControls,
             colorScheme = display.colorScheme,
-            onToggle = { showCastControls = !showCastControls },
+            onToggle = { ui.showCastControls = !showCastControls },
             modifier = Modifier.align(Alignment.TopEnd),
         )
     }
