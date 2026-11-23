@@ -46,7 +46,8 @@ class TabletPlayerLayoutLogicTest {
             val regions = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(width, height), BoxloreLayoutBounds(0f, 24f, width, height - 24f), false))
             assertEquals("${width}x$height", TabletPlayerArrangement.Columns, regions.arrangement)
         }
-        listOf(839f to 600f, 800f to 1_280f, 840f to 1_000f).forEach { (width, height) ->
+        // Square and near-square portrait windows stay stacked, though their body under the header is wider than tall.
+        listOf(839f to 600f, 800f to 1_280f, 840f to 1_000f, 840f to 880f, 880f to 880f).forEach { (width, height) ->
             val regions = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(width, height), BoxloreLayoutBounds(0f, 24f, width, height - 24f), false))
             assertEquals("${width}x$height", TabletPlayerArrangement.Stacked, regions.arrangement)
         }

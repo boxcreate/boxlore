@@ -52,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -515,11 +516,14 @@ private fun FullPlayerBody(
     // Both arrangements keep their own scroll position here, so turning the phone and back returns to it.
     val uprightScroll = rememberScrollState()
     val sidewaysScroll = rememberScrollState()
+    // The sideways start column (cover, title, show) too: it leaves composition while the phone is upright.
+    val sidewaysStartScroll = rememberScrollState()
     // Reset scroll when collapsing so reopen always starts at the top.
     LaunchedEffect(display.isExpanded) {
         if (!display.isExpanded) {
             uprightScroll.scrollTo(0)
             sidewaysScroll.scrollTo(0)
+            sidewaysStartScroll.scrollTo(0)
         }
     }
     // One hero for both arrangements, so the inline transcript keeps its place when the phone turns.
@@ -573,7 +577,7 @@ private fun FullPlayerBody(
                 val scrollResources = FullPlayerScrollResources(resources.scope, layoutValues)
                 val parts = FullPlayerBodyParts(dependencies, display, actions, flows, ui, hero)
                 if (sideways) {
-                    FullPlayerSidewaysContent(model, parts, scrollResources, sidewaysScroll, tight)
+                    FullPlayerSidewaysContent(model, parts, scrollResources, sidewaysScroll, sidewaysStartScroll, tight)
                 } else {
                     FullPlayerScrollableContent(model, parts, scrollResources, uprightScroll)
                 }
@@ -680,6 +684,7 @@ private fun FullPlayerSidewaysContent(
     parts: FullPlayerBodyParts,
     resources: FullPlayerScrollResources,
     scrollState: ScrollState,
+    startScroll: ScrollState,
     tight: Boolean,
 ) {
     val display = parts.display
@@ -693,7 +698,7 @@ private fun FullPlayerSidewaysContent(
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(SIDEWAYS_GAP, Alignment.CenterHorizontally),
         ) {
             Column(
-                Modifier.width(columnWidth).fillMaxHeight().verticalScroll(rememberScrollState()),
+                Modifier.width(columnWidth).fillMaxHeight().verticalScroll(startScroll).testTag("player_sideways_start"),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
             ) {

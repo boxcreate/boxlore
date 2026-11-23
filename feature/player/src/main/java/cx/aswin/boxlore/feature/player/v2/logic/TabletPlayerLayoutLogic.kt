@@ -44,7 +44,7 @@ internal fun tabletPlayerRegions(
     val region = safe.maxByOrNull { it.width * it.height } ?: return null
     val header = region.copy(bottom = min(region.bottom, region.top + 56f))
     val body = region.copy(top = header.bottom)
-    if (usesPlayerColumns(body, contextPane)) {
+    if (usesPlayerColumns(body, landscape = window.widthDp > window.heightDp, contextPane)) {
         val middle = body.left + (body.width - 16f) / 2f
         return TabletPlayerRegions(
             TabletPlayerArrangement.Columns,
@@ -69,11 +69,13 @@ internal fun tabletPlayerRegions(
 }
 
 /**
- * Side by side from 1000dp, and on landscape windows from 840dp (inner foldable screens held flat,
- * split-screen halves of big tablets); a player beside a page stays stacked.
+ * Side by side from 1000dp, and on [landscape] windows from 840dp (inner foldable screens held flat,
+ * split-screen halves of big tablets); a player beside a page stays stacked. The window's own
+ * orientation decides, not the body's: taking off the header leaves a near-square portrait window's
+ * body wider than tall.
  */
-internal fun usesPlayerColumns(body: BoxloreLayoutBounds, contextPane: Boolean): Boolean =
-    !contextPane && (body.width >= 1_000f || (body.width >= COLUMNS_MIN_WIDTH_DP && body.width > body.height))
+internal fun usesPlayerColumns(body: BoxloreLayoutBounds, landscape: Boolean, contextPane: Boolean): Boolean =
+    !contextPane && (body.width >= 1_000f || (body.width >= COLUMNS_MIN_WIDTH_DP && landscape))
 
 /** The supporting panel keeps an even margin from the window's end and bottom edges. */
 private fun insetSupport(support: BoxloreLayoutBounds): BoxloreLayoutBounds =

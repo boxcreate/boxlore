@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -170,6 +171,8 @@ private fun TabletPlayerRegionLayout(
 ) {
     val empty = BoxloreLayoutBounds(origin.left, origin.top, origin.left, origin.top)
     val body = regions.stack
+    // Held above the arrangement switch, so the stack's place survives a stretch in two columns.
+    val stackScroll = rememberScrollState()
     val bounds = if (scrollStack) listOf(regions.header, regions.artwork ?: empty, body) else listOf(regions.header, regions.artwork ?: empty, regions.controls, regions.support)
     Layout(content = {
         Box(Modifier.clipToBounds()) { header() }
@@ -177,7 +180,7 @@ private fun TabletPlayerRegionLayout(
             if (regions.artwork != null) artwork()
         }
         if (scrollStack) {
-            TabletPlayerScrollStack(body.height, controls, support)
+            TabletPlayerScrollStack(body.height, stackScroll, controls, support)
         } else {
             Box(Modifier.clipToBounds().testTag("tablet_player_controls_region")) { controls() }
             Box(Modifier.clipToBounds().testTag("tablet_player_support_region")) { support() }
@@ -201,13 +204,13 @@ private fun TabletPlayerRegionLayout(
  * [SUPPORT_MIN_HEIGHT]), so the page scrolls only when even that does not fit.
  */
 @Composable
-private fun TabletPlayerScrollStack(viewportHeightDp: Float, controls: @Composable () -> Unit, support: @Composable () -> Unit) {
+private fun TabletPlayerScrollStack(viewportHeightDp: Float, scroll: ScrollState, controls: @Composable () -> Unit, support: @Composable () -> Unit) {
     Layout(
         content = {
             Box(Modifier.fillMaxWidth().testTag("tablet_player_controls_region")) { controls() }
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp).testTag("tablet_player_support_region")) { support() }
         },
-        modifier = Modifier.fillMaxSize().clipToBounds().verticalScroll(rememberScrollState()).testTag("tablet_player_scroll"),
+        modifier = Modifier.fillMaxSize().clipToBounds().verticalScroll(scroll).testTag("tablet_player_scroll"),
     ) { measurables, constraints ->
         val width = constraints.maxWidth
         val top = measurables[0].measure(Constraints(minWidth = width, maxWidth = width))

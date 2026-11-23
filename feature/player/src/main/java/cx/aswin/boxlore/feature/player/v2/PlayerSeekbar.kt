@@ -273,7 +273,9 @@ private fun SeekbarPreview(dragFraction: Float?, duration: Long, chapters: List<
 @Composable
 private fun SeekbarTimeLabels(previewPosition: Long, duration: Long, colorScheme: ColorScheme, kept: MutableState<Boolean>?) {
     val local = rememberSaveable { mutableStateOf(false) }
-    var showTotalDuration by kept ?: local
+    // The state in use, the caller's when given: the tap below follows it when the episode changes.
+    val label = kept ?: local
+    var showTotalDuration by label
     Spacer(modifier = Modifier.height(2.dp))
 
     // Time labels
@@ -296,8 +298,8 @@ private fun SeekbarTimeLabels(previewPosition: Long, duration: Long, colorScheme
             },
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
             color = colorScheme.primary.copy(alpha = 0.85f),
-            modifier = Modifier.pointerInput(Unit) {
-                detectTapGestures { showTotalDuration = !showTotalDuration }
+            modifier = Modifier.pointerInput(label) {
+                detectTapGestures { label.value = !label.value }
             }
         )
     }

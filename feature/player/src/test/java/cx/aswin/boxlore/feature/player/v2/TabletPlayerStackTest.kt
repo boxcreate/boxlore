@@ -2,12 +2,15 @@ package cx.aswin.boxlore.feature.player.v2
 
 import android.app.Application
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
@@ -61,12 +64,30 @@ class TabletPlayerStackTest(private val name: String, private val window: Boxlor
     @Test
     fun `a short tablet window scrolls with every control before the panel`() {
         assumeTrue(name == SHORT)
-        fixture.renderPlayerInWindow(mutableStateOf(window), queueSize = 3)
+        val shown = mutableStateOf(window)
+        fixture.renderPlayerInWindow(shown, queueSize = 3)
         val scroll = fixture.compose.onNodeWithTag("tablet_player_scroll").fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange]
         assertTrue("The page scrolls", scroll.maxValue() > 0f)
         val lastControl = fixture.compose.onNodeWithContentDescription("Complete", useUnmergedTree = true).getUnclippedBoundsInRoot()
         val support = fixture.compose.onNodeWithTag("tablet_player_support_region").getUnclippedBoundsInRoot()
         assertTrue("Controls $lastControl come before the panel $support", lastControl.bottom <= support.top)
+        // Scrolled, then stretched into two columns and back: the column keeps its place.
+        fixture.compose.onNodeWithTag("tablet_player_scroll").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 80f) }
+        settle()
+        fun place() = fixture.compose.onNodeWithTag("tablet_player_scroll").fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+        val scrolled = place()
+        assertTrue("the column scrolled", scrolled > 0f)
+        listOf(BoxloreWindowLayout(932f, 650f), window).forEach { size ->
+            fixture.compose.runOnIdle { shown.value = size }
+            settle()
+        }
+        assertEquals("the column's place after two columns", scrolled, place(), 1f)
+    }
+
+    private fun settle() {
+        Snapshot.sendApplyNotifications()
+        fixture.compose.mainClock.advanceTimeBy(1_600)
+        fixture.compose.waitForIdle()
     }
 
     @Test

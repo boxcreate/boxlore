@@ -9,11 +9,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -68,6 +74,27 @@ class PhoneRotationStateTest {
         assertEquals(upright, fixture.compose.onNodeWithText("Next journey").getUnclippedBoundsInRoot().top)
     }
 
+    @Test
+    fun `the sideways cover column keeps its scroll through a turn and back`() {
+        // A short sideways window at double-size text: the cover column needs to scroll.
+        window.value = BoxloreWindowLayout(740f, 200f)
+        fontScale = 2f
+        render(PlayerPresentationStore())
+        val start = fixture.compose.onNodeWithTag("player_sideways_start")
+        start.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 60f) }
+        advance()
+        fun scrolled() = fixture.compose.onNodeWithTag("player_sideways_start").fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+        val place = scrolled()
+        assertTrue("the cover column scrolled", place > 0f)
+        listOf(BoxloreWindowLayout(200f, 740f), BoxloreWindowLayout(740f, 200f)).forEach { layout ->
+            fixture.compose.runOnIdle { window.value = layout }
+            advance()
+        }
+        assertEquals("the cover column's place after turning back", place, scrolled(), 1f)
+    }
+
+    private var fontScale = 1f
+
     private fun render(store: PlayerPresentationStore) {
         val playback = mock(PlaybackRepository::class.java)
         `when`(playback.playerState).thenReturn(
@@ -90,7 +117,11 @@ class PhoneRotationStateTest {
         fixture.prepare()
         fixture.setContent {
             val layout = window.value
-            CompositionLocalProvider(LocalBoxloreWindowLayout provides layout, LocalPlayerPresentationStore provides store) {
+            CompositionLocalProvider(
+                LocalBoxloreWindowLayout provides layout,
+                LocalPlayerPresentationStore provides store,
+                LocalDensity provides Density(LocalDensity.current.density, fontScale),
+            ) {
                 BoxLoreTheme(darkTheme = false, dynamicColor = false) {
                     Box(Modifier.requiredSize(layout.widthDp.dp, layout.heightDp.dp)) {
                         FullPlayerV2(

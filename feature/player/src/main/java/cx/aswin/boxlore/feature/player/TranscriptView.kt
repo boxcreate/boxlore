@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -428,25 +429,38 @@ fun FullscreenTranscriptScreen(
     // middle of the part below it. One column either way, so the transcript keeps its place when the
     // fold opens or closes. The overlay starts at the top of its pane, so the split comes from layout,
     // not from where the overlay is while it slides in.
+    // A hinge too near the bottom leaves the controls less than their own height: the window is then
+    // laid out as if flat, so the controls keep their size and stay reachable.
     val hinge = LocalBoxloreWindowLayout.current.tabletopFold?.bounds
     val paneTop = LocalBoxlorePaneBounds.current?.top ?: 0f
-    val readingHeight = hinge?.let { (it.top - paneTop).dp - topInset }?.takeIf { it > 0.dp }
-    Column(modifier = container) {
-        Column(
-            Modifier.fillMaxWidth().then(if (readingHeight != null) Modifier.height(readingHeight) else Modifier.weight(1f)),
-            content = reading
-        )
-        if (readingHeight != null && hinge != null) {
-            Spacer(Modifier.height(hinge.height.dp))
-            Box(
-                Modifier.fillMaxWidth().weight(1f).background(colorScheme.surfaceContainerHigh),
-                contentAlignment = Alignment.Center
-            ) { controls() }
-        } else {
-            controls()
+    BoxWithConstraints(container) {
+        val split = hinge?.let { fold ->
+            val above = (fold.top - paneTop).dp - topInset
+            TabletopSplit(above, fold.height.dp).takeIf { above > 0.dp && maxHeight - above - fold.height.dp >= TabletopControlsMinHeight }
+        }
+        Column(Modifier.fillMaxSize()) {
+            Column(
+                Modifier.fillMaxWidth().then(if (split != null) Modifier.height(split.reading) else Modifier.weight(1f)),
+                content = reading
+            )
+            if (split != null) {
+                Spacer(Modifier.height(split.hinge))
+                Box(
+                    Modifier.fillMaxWidth().weight(1f).background(colorScheme.surfaceContainerHigh),
+                    contentAlignment = Alignment.Center
+                ) { controls() }
+            } else {
+                controls()
+            }
         }
     }
 }
+
+/** The transcript's height above a tabletop hinge, and the hinge's own. */
+private class TabletopSplit(val reading: Dp, val hinge: Dp)
+
+/** The seekbar, its times and the transport row: the least room the controls need under a hinge. */
+private val TabletopControlsMinHeight = 180.dp
 
 /** How strongly a transcript line shows: dimmed around the spoken line only while following the audio. */
 internal fun transcriptLineOpacity(isActive: Boolean, following: Boolean): Float = if (isActive || !following) 1f else 0.35f

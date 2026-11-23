@@ -37,7 +37,7 @@ class SpeedSleepSelectorTest {
         compose.setContent {
             BoxLoreTheme(darkTheme = false, dynamicColor = false) {
                 InlineSleepSelector(
-                    sleepTimerEnd = System.currentTimeMillis() + 25 * 60_000L,
+                    sleepTimerEnd = System.currentTimeMillis() + 25 * 60_000L - 1_000L,
                     sleepAtEndOfEpisode = false,
                     colorScheme = MaterialTheme.colorScheme,
                     shapes = shapes,
@@ -63,7 +63,7 @@ class SpeedSleepSelectorTest {
         compose.setContent {
             BoxLoreTheme(darkTheme = false, dynamicColor = false) {
                 SleepSheet(
-                    sleepTimerEnd = System.currentTimeMillis() + 25 * 60_000L,
+                    sleepTimerEnd = System.currentTimeMillis() + 25 * 60_000L - 1_000L,
                     colorScheme = MaterialTheme.colorScheme,
                     onDurationSelected = { picked += it },
                     onDismiss = {},

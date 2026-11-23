@@ -134,6 +134,13 @@ class FullscreenTranscriptLayoutTest {
         composeRule.runOnIdle { window.value = cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(400f, 1_000f, listOf(hinge)) }
         composeRule.waitForIdle()
         assertTrue(composeRule.onNodeWithContentDescription("Play").getUnclippedBoundsInRoot().top.value >= 500f)
+        // A hinge too near the bottom to fit the controls under it: they keep their size, whole on screen, as when flat.
+        val low = hinge.copy(bounds = cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds(0f, 900f, 400f, 920f))
+        composeRule.runOnIdle { window.value = cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(400f, 1_000f, listOf(low)) }
+        composeRule.waitForIdle()
+        val squeezed = composeRule.onNodeWithContentDescription("Play").getUnclippedBoundsInRoot()
+        assertTrue("play at $squeezed runs off the screen", squeezed.bottom.value <= 1_000f + 0.5f)
+        assertTrue("the controls sit at the foot, as when flat", playBottom() > 900f)
     }
 
     @Test fun `lines dim around the spoken one only while following the audio`() {
