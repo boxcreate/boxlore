@@ -234,13 +234,7 @@ private fun HeroCollectionRow(
         // lines of words: the row keeps a square cover and its title, and drops the progress line.
         val compact = maxHeight < CollectionRowCompactHeight
         val padding = if (compact) 4.dp else 10.dp
-        val preferredArtwork = when {
-            count <= 2 && maxWidth >= 254.dp -> 98.dp
-            count <= 2 -> 78.dp
-            count == 3 && maxWidth >= 254.dp -> 78.dp
-            else -> 68.dp
-        }
-        val artworkSize = if (compact) minOf(preferredArtwork, (maxHeight - padding * 2).coerceAtLeast(0.dp)) else preferredArtwork
+        val artworkSize = collectionArtworkSize(count, maxWidth, maxHeight, compact, padding)
         Row(
             Modifier.fillMaxSize().testTag(tag)
                 .expressiveClickable(enabled = enabled, shape = HomeHeroStyle.CollectionArtworkShape) { currentOnClick(currentPodcast) }
@@ -390,4 +384,15 @@ internal fun collectionRowsThatFit(height: Dp, count: Int): Int {
     if (count <= 1) return count
     val fit = ((height + CollectionDivider) / (CollectionPlayTarget + CollectionDivider)).toInt()
     return fit.coerceIn(1, count)
+}
+
+/** A collection row's cover: larger for fewer, wider rows; on compact rows no taller than the row allows. */
+private fun collectionArtworkSize(count: Int, width: Dp, height: Dp, compact: Boolean, padding: Dp): Dp {
+    val preferred = when {
+        count <= 2 && width >= 254.dp -> 98.dp
+        count <= 2 -> 78.dp
+        count == 3 && width >= 254.dp -> 78.dp
+        else -> 68.dp
+    }
+    return if (compact) minOf(preferred, (height - padding * 2).coerceAtLeast(0.dp)) else preferred
 }

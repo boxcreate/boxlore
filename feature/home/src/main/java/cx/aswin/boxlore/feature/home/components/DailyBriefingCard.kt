@@ -106,15 +106,11 @@ fun DailyBriefingCard(
     onDismissForever: () -> Unit = {},
     onFeedbackClick: () -> Unit = {},
 ) {
-    // Home keeps the hide step and the story list above its grid, so they survive window changes.
-    val sections = LocalHomeSectionsUiState.current
-    val edition = HomeSectionsUiState.briefKey(briefing.region, briefing.date)
-    var localExpanded by remember(briefing.region, briefing.date) { mutableStateOf(false) }
-    var localCardState by remember(briefing.region, briefing.date) { mutableStateOf(DailyBriefingCardState.NORMAL) }
-    val expanded = sections?.briefExpanded(edition) ?: localExpanded
-    val cardState = sections?.briefStep(edition) ?: localCardState
-    val setExpanded: (Boolean) -> Unit = { if (sections != null) sections.setBriefExpanded(edition, it) else localExpanded = it }
-    val setCardState: (DailyBriefingCardState) -> Unit = { if (sections != null) sections.setBriefStep(edition, it) else localCardState = it }
+    val briefState = rememberBriefCardState(briefing)
+    val expanded = briefState.expanded
+    val cardState = briefState.step
+    val setExpanded = briefState.setExpanded
+    val setCardState = briefState.setStep
     val locale = currentLocale()
     val displayDate = remember(briefing.date, locale) { briefingCardDate(briefing.date, locale) }
     val durationMinutes = if (chapters.isNotEmpty()) ((chapters.last().startTime + 30) / 60).toInt().coerceAtLeast(1) else null
@@ -441,4 +437,33 @@ private fun Modifier.briefCoverSize(cap: Dp?): Modifier = layout { measurable, c
     val height = if (cap == null) natural else minOf(natural, cap.roundToPx())
     val placeable = measurable.measure(Constraints.fixed(constraints.maxWidth, height))
     layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+}
+
+/** The Brief card's hide step and story list, with their setters. */
+private class BriefCardState(
+    val step: DailyBriefingCardState,
+    val expanded: Boolean,
+    val setStep: (DailyBriefingCardState) -> Unit,
+    val setExpanded: (Boolean) -> Unit,
+)
+
+/**
+ * Home keeps the hide step and the story list above its grid ([LocalHomeSectionsUiState]), so they
+ * survive window changes; elsewhere (a single card in a test or preview) the card keeps its own.
+ */
+@Composable
+private fun rememberBriefCardState(briefing: Briefing): BriefCardState {
+    val sections = LocalHomeSectionsUiState.current
+    val edition = HomeSectionsUiState.briefKey(briefing.region, briefing.date)
+    var localExpanded by remember(briefing.region, briefing.date) { mutableStateOf(false) }
+    var localStep by remember(briefing.region, briefing.date) { mutableStateOf(DailyBriefingCardState.NORMAL) }
+    if (sections != null) {
+        return BriefCardState(
+            step = sections.briefStep(edition),
+            expanded = sections.briefExpanded(edition),
+            setStep = { sections.setBriefStep(edition, it) },
+            setExpanded = { sections.setBriefExpanded(edition, it) },
+        )
+    }
+    return BriefCardState(localStep, localExpanded, { localStep = it }, { localExpanded = it })
 }

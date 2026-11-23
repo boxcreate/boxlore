@@ -251,13 +251,7 @@ fun PostReviewSheet(
             OutlinedButton(
                 onClick = {
                     onDismissRequest()
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .trackStoreReviewOpened(method = "store_page", source = "post_review")
-                    val pkgName = context.packageName
-                    context.startFirstAvailable(
-                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=$pkgName")),
-                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=$pkgName")),
-                    )
+                    openPlayStoreFromThanks(context)
                 },
                 modifier =
                 Modifier
@@ -605,3 +599,14 @@ private const val FEEDBACK_MAX_LENGTH = 2000
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ReviewButtonShapes() = ButtonDefaults.shapes(shape = CircleShape, pressedShape = RoundedCornerShape(18.dp))
+
+/** Rate on Google Play from the thank-you sheet: the store app, or its web page without it. */
+private fun openPlayStoreFromThanks(context: android.content.Context) {
+    cx.aswin.boxlore.core.analytics.AnalyticsHelper
+        .trackStoreReviewOpened(method = "store_page", source = "post_review")
+    val pkgName = context.packageName
+    context.startFirstAvailable(
+        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=$pkgName")),
+        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=$pkgName")),
+    )
+}
