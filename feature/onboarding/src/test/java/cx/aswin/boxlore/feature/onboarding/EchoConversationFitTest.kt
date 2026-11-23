@@ -14,6 +14,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -145,6 +146,31 @@ class EchoConversationFitTest(
         assertTrue("the answer field is squeezed (${field.height})", field.height >= 48f)
         val keyboardTop = compose.onNodeWithTag("echo_onboarding_screen").fetchSemanticsNode().boundsInRoot.bottom - ImeHeight
         assertTrue("the answer field is under the keyboard ($field, $keyboardTop)", field.top + 48f <= keyboardTop + 1f)
+    }
+
+    // A failed turn: Echo says so in its bubble (or the error stands alone with Echo folded away), whole,
+    // centred in the body on phones and the cover, no wider than the conversation, with Try again on screen.
+    @Test fun `a failed turn`() {
+        show(mutableStateOf(later.copy(onboardingError = "offline")))
+        val label = "${widthDp}x$heightDp$bars dp at ${fontScale}x text"
+        val root = compose.onNodeWithTag("echo_onboarding_screen").fetchSemanticsNode().boundsInRoot
+        val error = compose.onAllNodesWithTag("echo_error").fetchSemanticsNodes().single().boundsInRoot
+        compose.onAllNodes(hasAnyAncestor(hasTestTag("echo_error")) and SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
+            .fetchSemanticsNodes().flatMap(::textLayouts).forEach { layout ->
+                // Centred text is laid out across its whole slot, so only a cut at the bottom or a shortened line counts.
+                val cut = layout.didOverflowHeight || (0 until layout.lineCount).any(layout::isLineEllipsized)
+                assertTrue("the error is cut short on $label: ${layout.layoutInput.text}", !cut)
+            }
+        val retry = bounds("echo_primary")!!
+        compose.onNodeWithTag("echo_primary").assertTextEquals("Try again")
+        assertTrue("Try again is cut off on $label", retry.bottom <= root.bottom + 1f)
+        assertTrue("the error runs into Try again on $label", error.bottom <= retry.top + 1f)
+        if ("${widthDp}x$heightDp$bars" in setOf("412x915", "475x695-bars") && fontScale == 1f) {
+            val top = listOf("echo_progress", "echo_more").maxOf { bounds(it)!!.bottom }
+            val third = (retry.top - top) / 3f
+            assertTrue("the error is off the middle on $label", error.center.y in (top + third)..(retry.top - third))
+        }
+        if (widthDp >= 1280) assertTrue("the error stretches across $label", error.width <= 672f)
     }
 
     // A very long name and a long pitch: the name shrinks or wraps and the pitch is still shown whole.

@@ -39,6 +39,8 @@
     <string name="suggestions_loading_library">Buscando podcasts como los de tu biblioteca.</string>
     <string name="suggestions_error_title">No se pudieron cargar las sugerencias</string>
     <string name="suggestions_error_body">Revisa tu conexión y vuelve a intentarlo.</string>
+    <string name="suggestions_check_title">Los podcasts similares necesitan una comprobación rápida</string>
+    <string name="suggestions_check_body">La comprobación no terminó, así que boxlore no puede buscar podcasts similares ahora. Puedes empezar a escuchar y descubrir más después.</string>
     <string name="suggestions_empty_title">Esta vez no hay sugerencias</string>
     <string name="suggestions_empty_body">Vuelve a intentarlo o empieza sin ellas.</string>
     <string name="suggestions_try_again">Reintentar</string>

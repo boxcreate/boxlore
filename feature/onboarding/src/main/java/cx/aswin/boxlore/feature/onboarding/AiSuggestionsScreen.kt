@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Grain
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.LibraryAddCheck
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Button
@@ -170,7 +171,7 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
             when {
                 choosing -> SimilarShowsChoiceContent(uiState)
                 loading -> SuggestionsLoading(uiState, origin)
-                error || lanes.isEmpty() -> SuggestionsProblem(error)
+                error || lanes.isEmpty() -> SuggestionsProblem(error, skipped = error && uiState.onboardingErrorKind == OnboardingErrorKind.VerificationSkipped)
                 else -> LazyColumn(
                     state = list,
                     modifier = Modifier.fillMaxSize().testTag("suggestions_lanes"),
@@ -454,7 +455,7 @@ private fun SuggestionCardsSkeleton(modifier: Modifier = Modifier) {
 /** A failed or empty load: what happened and what to do; the buttons below offer both ways on. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun SuggestionsProblem(error: Boolean) {
+private fun SuggestionsProblem(error: Boolean, skipped: Boolean) {
     val colors = MaterialTheme.colorScheme
     Column(
         Modifier.fillMaxSize().padding(32.dp).testTag("suggestions_problem"),
@@ -462,16 +463,37 @@ private fun SuggestionsProblem(error: Boolean) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(Modifier.size(72.dp).clip(MaterialShapes.Cookie9Sided.toShape()).background(colors.secondaryContainer), contentAlignment = Alignment.Center) {
-            Icon(if (error) Icons.Rounded.CloudOff else Icons.Rounded.Grain, null, Modifier.size(32.dp), tint = colors.onSecondaryContainer)
+            Icon(
+                when {
+                    skipped -> Icons.Rounded.Shield
+                    error -> Icons.Rounded.CloudOff
+                    else -> Icons.Rounded.Grain
+                },
+                null,
+                Modifier.size(32.dp),
+                tint = colors.onSecondaryContainer,
+            )
         }
         Text(
-            stringResource(if (error) R.string.suggestions_error_title else R.string.suggestions_empty_title),
+            stringResource(
+                when {
+                    skipped -> R.string.suggestions_check_title
+                    error -> R.string.suggestions_error_title
+                    else -> R.string.suggestions_empty_title
+                },
+            ),
             Modifier.semantics { heading() },
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
             textAlign = TextAlign.Center,
         )
         Text(
-            stringResource(if (error) R.string.suggestions_error_body else R.string.suggestions_empty_body),
+            stringResource(
+                when {
+                    skipped -> R.string.suggestions_check_body
+                    error -> R.string.suggestions_error_body
+                    else -> R.string.suggestions_empty_body
+                },
+            ),
             style = MaterialTheme.typography.bodyLarge,
             color = colors.onSurfaceVariant,
             textAlign = TextAlign.Center,

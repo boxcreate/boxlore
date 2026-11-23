@@ -121,6 +121,7 @@ internal object OnboardingSuggestionsPresentation {
         isLoadingPodcasts = false,
         aiLoadingStage = AiLoadingStage.IDLE,
         onboardingError = null,
+        onboardingErrorKind = OnboardingErrorKind.Network,
         suggestionSeedCount = 0,
         reachedSuggestionsViaSearchFlow = false,
         reachedSuggestionsViaOpmlFlow = false,

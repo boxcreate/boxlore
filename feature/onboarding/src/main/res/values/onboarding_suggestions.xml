@@ -36,6 +36,9 @@
     <string name="suggestions_loading_library">Finding shows like the ones in your library.</string>
     <string name="suggestions_error_title">Couldn’t load suggestions</string>
     <string name="suggestions_error_body">Check your connection, then try again.</string>
+    <!-- Similar shows asked for the human check, and it was skipped or failed; trying again soon shows the same. -->
+    <string name="suggestions_check_title">Similar shows need a quick check</string>
+    <string name="suggestions_check_body">The check didn’t finish, so boxlore can’t find similar shows right now. You can start listening and find more later.</string>
     <string name="suggestions_empty_title">No suggestions this time</string>
     <string name="suggestions_empty_body">Try again, or start without them.</string>
     <string name="suggestions_try_again">Try again</string>

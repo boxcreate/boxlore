@@ -48,7 +48,11 @@ internal fun rememberEchoFitText(state: OnboardingUiState, kind: EchoScreenKind)
     val topicLabels = EchoInitialTopic.entries.map { stringResource(it.labelRes) }
     // While Echo thinks, its bubble may show its longest wait line with the countdown under it.
     val waitLine = stringArrayResource(EchoWaitStep.NextQuestion.lines).maxByOrNull { it.length }
+    // An error is said in Echo's bubble, or stands in the question's place with Echo folded away;
+    // planned as both, in the larger styles, so either way it fits whole.
+    val error = "${stringResource(R.string.echo_error_title)}\n${stringResource(R.string.echo_error_body)}"
     return when (kind) {
+        EchoScreenKind.Error -> EchoFitText(question = error, questionExtraDp = 0f, speech = error, labels = emptyList())
         EchoScreenKind.Waiting -> if (state.isSynthesizing) {
             EchoFitText(null, EchoWaitingHeight, null, emptyList())
         } else {

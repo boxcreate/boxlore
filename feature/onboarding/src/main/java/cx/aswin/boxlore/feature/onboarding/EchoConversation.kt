@@ -83,11 +83,15 @@ internal fun EchoHeader(state: OnboardingUiState, kind: EchoScreenKind, metrics:
     val waitKey = if (kind == EchoScreenKind.Waiting && !state.isSynthesizing) "turn:${state.aiHistory.size}" else null
     val wait = rememberEchoWaitCopy(EchoWaitStep.NextQuestion, waitKey)
     val intro = stringResource(R.string.echo_intro)
+    val errorTitle = stringResource(R.string.echo_error_title)
+    val errorBody = stringResource(R.string.echo_error_body)
     val speech = when (kind) {
         EchoScreenKind.Asking, EchoScreenKind.Writing, EchoScreenKind.Recovery ->
             (if (opening) intro else state.aiGuidedTurn?.response)?.takeIf { it.isNotBlank() }?.let { EchoSpeech(it, null) }
         EchoScreenKind.Waiting -> wait?.let { EchoSpeech(it.line, it.detail) }
         EchoScreenKind.Deck -> state.aiDeck.current?.let { EchoSpeech(it.question, null, emphasis = true) }
+        // A failed turn is Echo's to say, in its own bubble, like every other line.
+        EchoScreenKind.Error -> EchoSpeech(errorTitle, errorBody)
         else -> null
     }
     if (kind == EchoScreenKind.Deck) {
@@ -120,7 +124,11 @@ internal fun EchoHeader(state: OnboardingUiState, kind: EchoScreenKind, metrics:
             label = "echoSpeech",
         ) { line ->
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                if (line != null) {
+                if (line != null && kind == EchoScreenKind.Error && line == errorTitle) {
+                    Box(Modifier.testTag("echo_error").semantics { liveRegion = LiveRegionMode.Polite }) {
+                        EchoBubble(line, errorBody, metrics.bubbleLines)
+                    }
+                } else if (line != null) {
                     val current = speech?.takeIf { it.line == line }
                     EchoBubble(line, current?.detail, metrics.bubbleLines, emphasis = current?.emphasis == true)
                 }
@@ -348,7 +356,8 @@ internal fun EchoQuestionArea(
     val question = EchoScreenModel.question(state)
     val key = when (kind) {
         EchoScreenKind.Waiting -> "waiting"
-        EchoScreenKind.Error -> "error"
+        // With Echo shown the error rides in its bubble; with Echo folded away it takes this slot.
+        EchoScreenKind.Error -> if (metrics.showEcho) "error" else "error:plain"
         // The card's question rides in Echo's bubble; with Echo folded away it takes this slot instead.
         EchoScreenKind.Deck -> if (metrics.showEcho) "deck" else "deck:${state.aiDeck.current?.id}"
         else -> "question:${state.aiCurrentTurn}:${question.orEmpty()}"
@@ -362,7 +371,8 @@ internal fun EchoQuestionArea(
     ) { target ->
         when {
             target == "waiting" -> EchoWaiting()
-            target == "error" -> EchoErrorPanel()
+            target == "error" -> Box(Modifier.fillMaxWidth())
+            target == "error:plain" -> EchoErrorText()
             target == "deck" -> Box(Modifier.fillMaxWidth())
             target.startsWith("deck:") -> EchoDeckQuestion(state.aiDeck.current?.question.orEmpty(), metrics)
             else -> EchoQuestion(state, kind, question, metrics, onSearchSuggestion)
@@ -429,28 +439,26 @@ internal fun EchoSkeleton(modifier: Modifier, shape: androidx.compose.ui.graphic
     Box(modifier.m3Shimmer(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.surfaceContainerHighest, shape))
 }
 
+/** The error on its own, centred, when Echo is folded away on the smallest windows. */
 @Composable
-private fun EchoErrorPanel() {
-    Surface(
-        Modifier.fillMaxWidth().testTag("echo_error"),
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+private fun EchoErrorText() {
+    Column(
+        Modifier.fillMaxWidth().testTag("echo_error").semantics { liveRegion = LiveRegionMode.Polite },
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(Modifier.padding(20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Icon(Icons.Rounded.CloudOff, null, tint = MaterialTheme.colorScheme.primary)
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    stringResource(R.string.echo_error_title),
-                    Modifier.semantics { heading() },
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    stringResource(R.string.echo_error_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        Icon(Icons.Rounded.CloudOff, null, tint = MaterialTheme.colorScheme.primary)
+        Text(
+            stringResource(R.string.echo_error_title),
+            Modifier.semantics { heading() },
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            stringResource(R.string.echo_error_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
     }
 }
