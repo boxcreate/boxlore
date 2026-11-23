@@ -11,6 +11,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -97,6 +98,27 @@ class HomeHorizontalInsetsTest {
         show(BoxloreTestWindows.PHONE)
         assertEquals("hero start", 16f, rect("home_hero_row").left, 0.5f)
         assertEquals("hero end", BoxloreTestWindows.PHONE.widthDp - 16f, rect("home_hero_row").right, 0.5f)
+    }
+
+    /** A turn changes Explore's poster columns (2 to 5), which used to send Home back to the hero. */
+    @Test
+    fun `Home keeps its place when the phone turns, in both directions`() {
+        val portrait = SystemInsets(statusTop = 24, navBottom = 48)
+        systemInsets = portrait
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        fixture.compose.onNodeWithTag("home_feed_grid").performScrollToKey("your_shows")
+        advance()
+        val grid = rect("home_feed_grid")
+        assertTrue("Home scrolled past the hero", rect("home_hero_row").bottom <= grid.top + 0.5f)
+        val before = rect("home_show_selector_mix").top
+        for ((layout, insets) in listOf(BoxloreTestWindows.PHONE_LAND to SystemInsets.SIDEWAYS_3_BUTTON, BoxloreTestWindows.PHONE to portrait)) {
+            systemInsets = insets
+            show(layout)
+            val label = "${layout.widthDp}x${layout.heightDp}"
+            assertTrue("$label: the hero came back", rect("home_hero_row").bottom <= rect("home_feed_grid").top + 0.5f)
+        }
+        assertEquals("Your shows moved after turning back", before, rect("home_show_selector_mix").top, 1f)
     }
 
     private fun assertInsideSafeArea(label: String, bounds: Rect, layout: BoxloreWindowLayout) {

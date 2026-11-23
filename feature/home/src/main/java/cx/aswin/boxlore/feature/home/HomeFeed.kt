@@ -12,10 +12,12 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
@@ -114,6 +116,7 @@ internal fun PodcastFeed(
         LocalBoxloreWindowLayout.current,
         boxloreContentWidthDp(),
     )
+    KeepGridPlaceAcrossColumnChanges(layout.gridState, posterColumns)
     val revealStage = rememberHomeRevealStage(viewportReady = !loadingState.isLoading)
     val derivedState = rememberPodcastFeedDerivedState(content, feedState, recommendationState, loadingState, revealStage)
     // Scrolling changes the visible keys often; only a change in the answer recomposes the feed.
@@ -179,6 +182,34 @@ internal fun PodcastFeed(
             discoverFeedItems(feedState, derivedState, callbacks, posterColumns)
         }
     }
+}
+
+/**
+ * A staggered grid starts again from the top when its column count changes, as it does when a phone
+ * turns sideways (2 poster columns to 5) or a window is resized. Home puts the listener back on the
+ * item and offset they were at, in both directions.
+ */
+@Composable
+private fun KeepGridPlaceAcrossColumnChanges(state: LazyStaggeredGridState, columns: Int) {
+    val place = remember(state) { GridPlace(columns) }
+    LaunchedEffect(state, columns) {
+        if (place.columns != columns) {
+            place.columns = columns
+            val index = place.index
+            val offset = place.offset
+            if (state.firstVisibleItemIndex != index || state.firstVisibleItemScrollOffset != offset) state.scrollToItem(index, offset)
+        }
+        snapshotFlow { state.firstVisibleItemIndex to state.firstVisibleItemScrollOffset }.collect { (index, offset) ->
+            place.index = index
+            place.offset = offset
+        }
+    }
+}
+
+/** The grid's last settled place and the column count it was measured with. Not state: it never redraws anything. */
+private class GridPlace(var columns: Int) {
+    var index = 0
+    var offset = 0
 }
 
 internal data class PodcastFeedDerivedState(
