@@ -17,16 +17,25 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -43,7 +52,9 @@ import cx.aswin.boxlore.core.model.effectiveEpisodeType
 import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.logic.EpisodeHeroForm
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * The episode's cover, show link, title and details, laid out for [form]. In
@@ -72,14 +83,7 @@ internal fun EpisodeInfoHero(
         EpisodeShowLink(podcastTitle, onPodcastClick)
         EpisodeExpandableTitle(episode.id, episode.title, titleExpanded, compact = form == EpisodeHeroForm.Row)
         Spacer(Modifier.height(8.dp))
-        EpisodeMetadata(episode, completionState.isCompleted, onToggleCompletion, completionState.isArchived)
-        if (completionState.showTip) {
-            Text(stringResource(R.string.episode_info_mark_tip), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            LaunchedEffect(episode.id) {
-                delay(4_000)
-                onMarkPlayedTipDismissed()
-            }
-        }
+        EpisodeMetadata(episode, completionState, onToggleCompletion, onMarkPlayedTipDismissed)
     }
     // A size animation keyed on the form: a window change snaps to the new layout instead of animating it.
     key(form) {
@@ -147,7 +151,7 @@ private fun EpisodeShowLink(podcastTitle: String, onPodcastClick: () -> Unit) {
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleCompletion: () -> Unit, isArchived: Boolean) {
+private fun EpisodeMetadata(episode: Episode, completion: EpisodeCompletionState, onToggleCompletion: () -> Unit, onTipDismissed: () -> Unit) {
     val locale = currentLocale()
     val date = remember(episode.publishedDate, locale) {
         episode.publishedDate.takeIf { it > 0L }?.let { LocaleFormats.date(it * 1_000L, LocaleFormats.DateStyle.DAY_MONTH_YEAR, locale) }
@@ -173,11 +177,41 @@ private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleComp
         // Archiving is done from the show page's selection menu; here an archived episode is only marked.
         // Weighted too, so on a line of their own the pills sit at the end.
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
-            if (isArchived) EpisodeArchivedPill()
-            EpisodeCompletionPill(isCompleted, onToggleCompletion)
+            if (completion.isArchived) EpisodeArchivedPill()
+            MarkPlayedTip(episode.id, completion.showTip, onTipDismissed) { EpisodeCompletionPill(completion.isCompleted, onToggleCompletion) }
         }
     }
 }
+
+/**
+ * The Mark played tip as a small label pointing at the button, so nothing on the page moves: it
+ * shows for four seconds, or until tapped away, then [onDismissed] runs once.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MarkPlayedTip(episodeId: String, show: Boolean, onDismissed: () -> Unit, anchor: @Composable () -> Unit) {
+    val state = rememberTooltipState(isPersistent = true)
+    val dismissed by rememberUpdatedState(onDismissed)
+    LaunchedEffect(episodeId, show) {
+        if (!show) return@LaunchedEffect
+        // A persistent tooltip's show() waits until it is dismissed, so it runs beside the timer.
+        launch { state.show() }
+        withTimeoutOrNull(MARK_PLAYED_TIP_MS) {
+            snapshotFlow { state.isVisible }.first { it }
+            snapshotFlow { state.isVisible }.first { !it }
+        }
+        state.dismiss()
+        dismissed()
+    }
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+        tooltip = { PlainTooltip { Text(stringResource(R.string.episode_info_mark_tip)) } },
+        state = state,
+        enableUserInput = false,
+    ) { anchor() }
+}
+
+private const val MARK_PLAYED_TIP_MS = 4_000L
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

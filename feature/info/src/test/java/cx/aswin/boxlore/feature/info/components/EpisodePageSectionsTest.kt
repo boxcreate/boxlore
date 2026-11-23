@@ -62,6 +62,8 @@ class EpisodePageSectionsTest {
     @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1_280, 800, false))
 
     private val window = mutableStateOf(BoxloreTestWindows.PHONE)
+    private val showTip = mutableStateOf(false)
+    private var tipsDismissed = 0
 
     @Test
     fun `sections share one heading style and About comes before Chapters`() {
@@ -114,6 +116,24 @@ class EpisodePageSectionsTest {
     }
 
     @Test
+    fun `the Mark played tip points at the button without moving the Play row, then goes once`() {
+        render()
+        val railTop = fixture.compose.onNodeWithTag(EpisodeInfoTags.RAIL).getBoundsInRoot().top
+        fixture.compose.mainClock.autoAdvance = false
+        fixture.compose.runOnIdle { showTip.value = true }
+        repeat(10) {
+            fixture.compose.mainClock.advanceTimeBy(50)
+            fixture.compose.waitForIdle()
+        }
+        assertTrue("the tip shows", fixture.compose.onAllNodesWithText(TIP).fetchSemanticsNodes().isNotEmpty())
+        assertEquals("the Play row stays put", railTop, fixture.compose.onNodeWithTag(EpisodeInfoTags.RAIL).getBoundsInRoot().top)
+        fixture.compose.mainClock.advanceTimeBy(4_000)
+        fixture.compose.waitForIdle()
+        assertEquals("dismissed once", 1, tipsDismissed)
+        assertEquals(0, fixture.compose.onAllNodesWithText(TIP).fetchSemanticsNodes().size)
+    }
+
+    @Test
     fun `the top bar takes the page colour, then the container once content runs under it`() {
         val scheme = resolveFixedThemeColorScheme("violet", darkTheme = false, surfaceStyle = SurfaceStyles.STANDARD)
         assertEquals(scheme.surface.copy(alpha = 0f), episodeHeaderColor(scheme, 0f, contentUnder = false))
@@ -142,7 +162,11 @@ class EpisodePageSectionsTest {
                 Box(Modifier.width(size.widthDp.dp).height(size.heightDp.dp)) {
                     BoxLoreTheme(dynamicColor = false) {
                         Surface {
-                            EpisodeInfoScreen(EPISODE_ID, "", "", "", "", 0, "1", "Curious world", model, {}, {}, {}, {})
+                            EpisodeInfoScreen(
+                                EPISODE_ID, "", "", "", "", 0, "1", "Curious world", model, {}, {}, {}, {},
+                                showMarkPlayedTip = showTip.value,
+                                onMarkPlayedTipDismissed = { tipsDismissed++ },
+                            )
                         }
                     }
                 }
@@ -176,6 +200,7 @@ class EpisodePageSectionsTest {
 
     private companion object {
         const val EPISODE_ID = "episode-sections"
+        const val TIP = "Mark played to move this episode out of your unplayed list."
     }
 }
 
