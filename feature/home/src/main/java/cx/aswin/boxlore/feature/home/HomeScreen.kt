@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -609,7 +609,7 @@ fun HomeScreen(
                 onChangePodcastClick = { showChangePodcastSheet = true },
                 discoverySections = LocalHomeDiscoverySections.current,
             )
-            SnackbarHost(
+            BoxloreSnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
