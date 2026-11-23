@@ -40,7 +40,7 @@ internal object CastMediaMetadata {
         val saved = metadata.extras?.getStringArrayList(PlaybackArtworkMetadata.SOURCES).orEmpty()
         val original =
             saved.firstOrNull(CastMediaEligibility::isCastable)
-                ?: artwork?.let(linkOriginals)?.firstOrNull(CastMediaEligibility::isCastable)
+                ?: artwork?.let { link -> linkOriginals(link).firstOrNull(CastMediaEligibility::isCastable) }
         return original?.let(Uri::parse)
     }
 }

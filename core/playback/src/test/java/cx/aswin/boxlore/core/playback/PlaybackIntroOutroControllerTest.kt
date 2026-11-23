@@ -55,6 +55,7 @@ class PlaybackIntroOutroControllerTest {
         val onExhausted: (Player) -> Boolean = { false },
     )
 
+    @Suppress("LongParameterList")
     private suspend fun TestScope.fixture(
         positionMs: Long = 100L,
         saved: ListeningHistoryEntity = history(),
