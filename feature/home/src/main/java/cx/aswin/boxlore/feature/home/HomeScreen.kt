@@ -532,6 +532,7 @@ private fun HomeScreenBottomSheets(
     if (showChangePodcastSheet) {
         ChangeRecommendationPodcastSheet(
             candidatePodcasts = sheets.candidatePodcasts,
+            selectedPodcastId = uiState.seemsToLikePodcast?.id,
             onDismissRequest = onDismissChangePodcastSheet,
             onPodcastSelect = { podcast ->
                 onDismissChangePodcastSheet()
@@ -597,7 +598,8 @@ fun HomeScreen(
     val gridState = rememberLazyStaggeredGridState()
     // Your shows' and the Brief's places live above the grid, which swaps items at the tablet size.
     val sections = LocalHomeSectionsUiState.current ?: rememberHomeSectionsUiState()
-    var showChangePodcastSheet by remember { androidx.compose.runtime.mutableStateOf(false) }
+    // Saved, so the show picker stays open when the activity is recreated (a density or size change).
+    var showChangePodcastSheet by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
 
     val collapseThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
     val scrollFraction by remember(gridState, collapseThresholdPx) {

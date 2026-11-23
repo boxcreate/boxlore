@@ -44,7 +44,6 @@ class SharedHostUsageTest {
             skipFiles = setOf("core/designsystem/src/main/java/cx/aswin/boxlore/core/designsystem/components/BoxloreModalBottomSheet.kt"),
             allowed = mapOf(
                 "feature/home/src/main/java/cx/aswin/boxlore/feature/home/components/ReviewSheet.kt" to 2,
-                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/components/ChangeRecommendationPodcastSheet.kt" to 1,
             ),
         ),
         Host(
