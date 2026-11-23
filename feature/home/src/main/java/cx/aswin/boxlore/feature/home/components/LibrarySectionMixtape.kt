@@ -628,10 +628,6 @@ private fun dailyMixSubtitle(summary: DailyMixSummary): String {
     if (summary.minutes <= 0) {
         return pluralStringResource(R.plurals.home_mix_daily_count, summary.episodes, summary.episodes)
     }
-    val time = if (summary.minutes >= 60) {
-        stringResource(R.string.home_hero_hours_minutes, summary.minutes / 60, summary.minutes % 60)
-    } else {
-        stringResource(R.string.home_hero_minutes, summary.minutes)
-    }
+    val time = heroDurationText(summary.minutes)
     return pluralStringResource(R.plurals.home_mix_daily_summary, summary.episodes, summary.episodes, time)
 }

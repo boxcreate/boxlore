@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
@@ -133,7 +135,12 @@ private fun HeroDuration(minutes: Int, item: SmartHeroItem, foreground: Color, w
     val caption = episodeDurationCaption(item)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
-            text = if (wide || minutes < 60) heroDurationText(minutes) else stringResource(R.string.home_hero_hours_minutes_stacked, minutes / 60, minutes % 60),
+            // Whole hours read "1h" on one line; hours and minutes stack.
+            text = if (wide || minutes < 60 || minutes % 60 == 0) {
+                heroDurationText(minutes)
+            } else {
+                stringResource(R.string.home_hero_hours_minutes_stacked, minutes / 60, minutes % 60)
+            },
             style = HeroContextTypography.duration(wide),
             color = foreground,
             maxLines = if (wide) 1 else 2,
@@ -259,7 +266,7 @@ private fun TrendingWords(genre: String, foreground: Color, modifier: Modifier) 
 }
 
 @Composable
-internal fun heroDurationText(minutes: Int) = if (minutes >= 60) stringResource(R.string.home_hero_hours_minutes, minutes / 60, minutes % 60) else stringResource(R.string.home_hero_minutes, minutes)
+internal fun heroDurationText(minutes: Int): String = LocaleFormats.duration(minutes * 60L, currentLocale(), LocaleFormats.DurationWidth.NARROW)
 
 /** The smallest the hero's state label ("Resume", "New episode") may shrink to. */
 internal val HeroContextMinLabelSize = 11.sp

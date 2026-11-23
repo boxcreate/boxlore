@@ -29,6 +29,7 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.ListeningTime
 import cx.aswin.boxlore.feature.home.R
 
 internal object HomeHeroStyle {
@@ -44,10 +45,10 @@ internal object HomeHeroStyle {
 
     fun progress(podcast: Podcast): Float = podcast.resumeProgress?.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f
 
+    /** Minutes left, or the whole length for a new episode, rounded as the mini player rounds them ([ListeningTime]). */
     fun minutes(podcast: Podcast, resume: Boolean): Int? {
         val duration = podcast.latestEpisode?.duration?.takeIf { it > 0 } ?: return null
-        val remaining = if (resume) 1.0 - progress(podcast) else 1.0
-        return (duration * remaining / 60).toInt().coerceAtLeast(1)
+        return ListeningTime.minutesLeft(duration.toLong(), if (resume) progress(podcast) else 0f)?.toInt()
     }
 }
 

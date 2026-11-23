@@ -346,11 +346,7 @@ private fun HeroCollectionMetadata(podcast: Podcast, mode: HeroGridMode, foregro
                 )
             }
             if (minutes != null) {
-                val duration = if (minutes >= 60) {
-                    stringResource(R.string.home_hero_hours_minutes, minutes / 60, minutes % 60)
-                } else {
-                    stringResource(R.string.home_hero_minutes, minutes)
-                }
+                val duration = heroDurationText(minutes)
                 Text(
                     if (resume) stringResource(R.string.home_hero_remaining, duration) else duration,
                     style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
