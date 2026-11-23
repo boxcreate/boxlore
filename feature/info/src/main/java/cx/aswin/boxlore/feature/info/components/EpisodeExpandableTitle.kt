@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +22,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.layout.Layout
@@ -105,12 +107,13 @@ private fun InfoTitleWithControl(title: String, lastLineStart: Int, paragraph: T
                 modifier = Modifier.clearAndSetSemantics {},
             )
             IconButton(onClick = onToggle, modifier = Modifier.size(48.dp)) {
-                Box(Modifier.size(32.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f), CircleShape), contentAlignment = Alignment.Center) {
+                val (chip, icon) = expandChipColors(MaterialTheme.colorScheme)
+                Box(Modifier.size(32.dp).background(chip, CircleShape), contentAlignment = Alignment.Center) {
                     Icon(
                         if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
                         stringResource(if (expanded) R.string.episode_info_show_less else R.string.episode_info_full_title),
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurface,
+                        tint = icon,
                     )
                 }
             }
@@ -134,6 +137,9 @@ private fun InfoTitleWithControl(title: String, lastLineStart: Int, paragraph: T
         }
     }
 }
+
+/** The expand chip's fill and icon: solid, so it reads the same over every cover's tint. */
+internal fun expandChipColors(scheme: ColorScheme): Pair<Color, Color> = scheme.surfaceContainerHighest to scheme.onSurfaceVariant
 
 internal data class EpisodeTitleLineMetrics(val height: Int, val firstBaseline: Int, val lastBaseline: Int)
 

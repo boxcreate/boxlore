@@ -1,6 +1,15 @@
 package cx.aswin.boxlore.feature.info.components
 
+import android.app.Application
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.ColorUtils
+import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
+import cx.aswin.boxlore.core.designsystem.theme.resolveFixedThemeColorScheme
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.junit.jupiter.api.Test
 
 class EpisodeExpandableTitleTest {
@@ -43,5 +52,25 @@ class EpisodeExpandableTitleTest {
         assertEquals(144, placement.tailY)
         assertEquals(216, placement.height)
         assertEquals(174, placement.controlY)
+    }
+}
+
+/** Robolectric for the theme's colour resolution, which uses Android's colour maths. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33], application = Application::class)
+class EpisodeExpandChipColorsTest {
+    @org.junit.Test
+    fun `the expand chip is solid with a readable icon in light, dark and pure themes`() {
+        listOf(
+            resolveFixedThemeColorScheme("violet", darkTheme = false, surfaceStyle = SurfaceStyles.STANDARD),
+            resolveFixedThemeColorScheme("violet", darkTheme = true, surfaceStyle = SurfaceStyles.STANDARD),
+            resolveFixedThemeColorScheme("violet", darkTheme = true, surfaceStyle = SurfaceStyles.AMOLED),
+            resolveFixedThemeColorScheme("violet", darkTheme = false, surfaceStyle = SurfaceStyles.PURE_WHITE),
+        ).forEach { scheme ->
+            val (chip, icon) = expandChipColors(scheme)
+            assertEquals(1f, chip.alpha)
+            val contrast = ColorUtils.calculateContrast(icon.toArgb(), chip.toArgb())
+            assertTrue("icon contrast $contrast", contrast >= 3.0)
+        }
     }
 }
