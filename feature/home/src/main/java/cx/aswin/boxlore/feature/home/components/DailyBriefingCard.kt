@@ -1,7 +1,6 @@
 package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +26,8 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,7 +35,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,15 +45,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
@@ -68,7 +73,9 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
+import cx.aswin.boxlore.core.designsystem.theme.BoxLoreShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.EpisodeStatus
@@ -114,7 +121,10 @@ fun DailyBriefingCard(
     val remainingMinutes = briefingRemainingMinutes(durationMinutes, playbackProgress)
     fun track(action: String) = AnalyticsHelper.trackDailyBriefingInteraction(action, briefing.region, briefing.date)
 
-    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val window = LocalBoxloreWindowLayout.current
+    val tablet = window.usesTabletLayout
+    // On a sideways phone the cover is cropped to half the window's height, so the card fits on screen.
+    val phoneCoverCap = briefCoverCap(window)
     val metadata = briefingCardMetadata(displayDate, chapters, durationMinutes)
     val presentation = DailyBriefingPresentation(briefing, chapters, isPlaying, isBuffering, playbackStatus, playbackProgress, remainingMinutes)
     BriefingEditorialTheme {
@@ -124,8 +134,8 @@ fun DailyBriefingCard(
                     BriefingCover(
                         region = briefing.region,
                         editionDate = briefing.date,
-                        modifier = if (tablet) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(BRIEFING_COVER_ASPECT_RATIO).clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)),
-                        artworkContentScale = if (tablet) ContentScale.Crop else ContentScale.Fit,
+                        modifier = if (tablet) Modifier.fillMaxSize() else Modifier.fillMaxWidth().briefCoverSize(phoneCoverCap).clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)).testTag("home_brief_cover"),
+                        artworkContentScale = if (tablet || phoneCoverCap != null) ContentScale.Crop else ContentScale.Fit,
                         trailing = {
                             if (!tablet) {
                             Surface(Modifier.align(AbsoluteAlignment.TopRight).padding(8.dp), shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
@@ -158,26 +168,37 @@ fun DailyBriefingCard(
                                     DailyBriefingCardState.CONFIRM_DISMISS -> {
                                         Text(stringResource(R.string.briefing_hide_today_title), style = MaterialTheme.typography.titleMedium)
                                         Text(stringResource(R.string.briefing_hide_today_description), style = MaterialTheme.typography.bodyMedium)
-                                        Button(onClick = {
-                                            track("dismissed_today")
-                                            onDismiss()
-                                        }, Modifier.testTag("home_brief_hide_today")) { Text(stringResource(R.string.briefing_hide_today)) }
-                                        TextButton(onClick = {
-                                            track("dismiss_forever_initiated")
-                                            setCardState(DailyBriefingCardState.CONFIRM_FOREVER)
-                                        }, Modifier.testTag("home_brief_always_hide")) { Text(stringResource(R.string.briefing_always_hide)) }
+                                        BriefingButtonPair(
+                                            primary = stringResource(R.string.briefing_hide_today),
+                                            onPrimary = {
+                                                track("dismissed_today")
+                                                onDismiss()
+                                            },
+                                            primaryModifier = Modifier.testTag("home_brief_hide_today"),
+                                            secondary = stringResource(R.string.briefing_always_hide),
+                                            onSecondary = {
+                                                track("dismiss_forever_initiated")
+                                                setCardState(DailyBriefingCardState.CONFIRM_FOREVER)
+                                            },
+                                            secondaryModifier = Modifier.testTag("home_brief_always_hide"),
+                                        )
                                     }
                                     DailyBriefingCardState.CONFIRM_FOREVER -> {
                                         Text(stringResource(R.string.briefing_always_hide_title), style = MaterialTheme.typography.titleMedium)
                                         Text(stringResource(R.string.briefing_always_hide_description), style = MaterialTheme.typography.bodyMedium)
-                                        Button(onClick = {
-                                            track("dismissed_forever")
-                                            onDismissForever()
-                                        }, Modifier.testTag("home_brief_confirm_always_hide")) { Text(stringResource(R.string.briefing_confirm_always_hide)) }
-                                        TextButton(onClick = {
-                                            track("feedback_clicked")
-                                            onFeedbackClick()
-                                        }) { Text(stringResource(R.string.briefing_send_feedback)) }
+                                        BriefingButtonPair(
+                                            primary = stringResource(R.string.briefing_confirm_always_hide),
+                                            onPrimary = {
+                                                track("dismissed_forever")
+                                                onDismissForever()
+                                            },
+                                            primaryModifier = Modifier.testTag("home_brief_confirm_always_hide"),
+                                            secondary = stringResource(R.string.briefing_send_feedback),
+                                            onSecondary = {
+                                                track("feedback_clicked")
+                                                onFeedbackClick()
+                                            },
+                                        )
                                     }
                                 }
                             }
@@ -221,6 +242,7 @@ private data class DailyBriefingPresentation(
     val remainingMinutes: Int?,
 )
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DailyBriefingNormalContent(
     state: DailyBriefingPresentation,
@@ -238,10 +260,10 @@ private fun DailyBriefingNormalContent(
     val remainingMinutes = state.remainingMinutes
 
     Text(briefing.title, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Normal, fontSize = 27.sp, lineHeight = 30.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
-    Row(modifier = Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween), verticalAlignment = Alignment.CenterVertically) {
         Button(
             onClick = onPlayPauseClick,
-            shape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp, topEnd = 4.dp, bottomEnd = 4.dp),
+            shapes = ButtonDefaults.shapes(shape = BriefingLeadingShape, pressedShape = BriefingPressedShape),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
             modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 48.dp),
         ) {
@@ -263,7 +285,7 @@ private fun DailyBriefingNormalContent(
         }
         FilledTonalButton(
             onClick = onClick,
-            shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 28.dp, bottomEnd = 28.dp),
+            shapes = ButtonDefaults.shapes(shape = BriefingTrailingShape, pressedShape = BriefingPressedShape),
             colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
             modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 48.dp),
@@ -299,11 +321,16 @@ private fun DailyBriefingStories(
         visible.forEachIndexed { index, chapter ->
             val canExpand = chapters.size > 3 && index == visible.lastIndex
             val rowModifier = if (canExpand) {
-                Modifier.semantics { contentDescription = expandLabel }
-                .clickable {
-                    onExpandedChange(!expanded)
-                    AnalyticsHelper.trackDailyBriefingInteraction("card_chapters_toggled", briefing.region, briefing.date, mapOf("expanded" to !expanded))
+                Modifier.semantics {
+                    contentDescription = expandLabel
+                    role = Role.Button
                 }
+                    .expressiveClickable(shape = BoxLoreShapes.medium) {
+                        onExpandedChange(!expanded)
+                        AnalyticsHelper.trackDailyBriefingInteraction("card_chapters_toggled", briefing.region, briefing.date, mapOf("expanded" to !expanded))
+                    }
+                    // Room inside the card so the rounded press doesn't touch its edge.
+                    .padding(horizontal = 4.dp)
             } else {
                 Modifier
             }
@@ -360,3 +387,58 @@ internal fun briefingCardDate(date: String, locale: Locale): String = runCatchin
     val millis = LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
     LocaleFormats.date(millis, LocaleFormats.DateStyle.DAY_MONTH, locale, TimeZone.getTimeZone("UTC"))
 }.getOrDefault(date)
+
+/** The Brief's paired buttons: rounded at the outer ends, square-ish where they meet. */
+private val BriefingLeadingShape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp, topEnd = 4.dp, bottomEnd = 4.dp)
+private val BriefingTrailingShape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 28.dp, bottomEnd = 28.dp)
+
+/** Both buttons of a pair squash to this while pressed, as boxlore's other paired buttons do. */
+private val BriefingPressedShape = RoundedCornerShape(18.dp)
+
+/**
+ * A hide step's two choices laid out like the card's Listen / Open pair: the confirm action filled,
+ * the other tonal, side by side across the card and growing together with the text.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+@Suppress("LongParameterList") // Two buttons' labels, actions and test hooks.
+private fun BriefingButtonPair(
+    primary: String,
+    onPrimary: () -> Unit,
+    secondary: String,
+    onSecondary: () -> Unit,
+    primaryModifier: Modifier = Modifier,
+    secondaryModifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag("home_brief_confirm_pair"),
+        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Button(
+            onClick = onPrimary,
+            shapes = ButtonDefaults.shapes(shape = BriefingLeadingShape, pressedShape = BriefingPressedShape),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+            modifier = primaryModifier.weight(1f).fillMaxHeight().heightIn(min = 48.dp),
+        ) { Text(primary, textAlign = TextAlign.Center) }
+        FilledTonalButton(
+            onClick = onSecondary,
+            shapes = ButtonDefaults.shapes(shape = BriefingTrailingShape, pressedShape = BriefingPressedShape),
+            colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+            modifier = secondaryModifier.weight(1f).fillMaxHeight().heightIn(min = 48.dp),
+        ) { Text(secondary, textAlign = TextAlign.Center) }
+    }
+}
+
+/** On a phone held sideways, the cover's height cap: half the window. Null elsewhere (the cover keeps its 1.6 ratio). */
+internal fun briefCoverCap(window: cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout): Dp? =
+    if (!window.usesTabletLayout && window.widthDp > window.heightDp) (window.heightDp * 0.5f).dp else null
+
+/** The cover at its 1.6 ratio across the card, no taller than [cap]. */
+private fun Modifier.briefCoverSize(cap: Dp?): Modifier = layout { measurable, constraints ->
+    val natural = (constraints.maxWidth / BRIEFING_COVER_ASPECT_RATIO).toInt()
+    val height = if (cap == null) natural else minOf(natural, cap.roundToPx())
+    val placeable = measurable.measure(Constraints.fixed(constraints.maxWidth, height))
+    layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+}
