@@ -14,7 +14,6 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -104,12 +103,12 @@ class SuggestionsWindowTest {
     fun `on a sideways phone the footer never covers the first row`() {
         window.value = BoxloreTestWindows.PHONE_LAND
         render()
-        val footer = compose.onNodeWithTag("suggestions_footer").fetchSemanticsNode().boundsInRoot
-        // The clock is paused (Echo idles without end), so the list is moved without an animation.
-        compose.onNodeWithTag("suggestions_lanes").performScrollToIndex(1)
         settle()
-        val title = compose.onNode(hasText("Show 1") and SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState)).fetchSemanticsNode().boundsInRoot
-        assertTrue("the first card's text is under the footer ($title vs $footer)", title.bottom <= footer.top + 0.5f)
+        val footer = compose.onNodeWithTag("suggestions_footer").fetchSemanticsNode().boundsInRoot
+        // As the listener first sees it, before any scrolling: the first card and its name show above the footer.
+        val card = compose.onNode(hasText("Show 1") and SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState)).fetchSemanticsNode()
+        val bottom = card.positionInRoot.y + card.size.height
+        assertTrue("the first card's text is under the footer ($bottom vs $footer)", bottom <= footer.top + 0.5f)
     }
 
     @Test

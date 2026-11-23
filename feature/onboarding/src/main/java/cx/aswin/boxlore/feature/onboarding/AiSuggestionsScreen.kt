@@ -118,6 +118,7 @@ internal data class SuggestionsCallbacks(
 @Composable
 internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: SuggestionsCallbacks) {
     val origin = OnboardingSuggestionsPresentation.origin(uiState)
+    val showHeader = suggestionsHeaderShows(origin, boxloreIsShortPane())
     val loading = OnboardingSuggestionsPresentation.isLoading(uiState)
     val error = OnboardingSuggestionsPresentation.isError(uiState)
     val lanes = remember(uiState.aiCurriculumRows, uiState.genreChartsPodcasts, uiState.selectedGenres, uiState.aiPicks, origin) {
@@ -163,7 +164,7 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
                     contentPadding = PaddingValues(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(28.dp),
                 ) {
-                    item(key = "header") { SuggestionsHeader(uiState, origin) }
+                    if (showHeader) item(key = "header") { SuggestionsHeader(uiState, origin) }
                     lanes.forEachIndexed { index, lane ->
                         item(key = lane.id) {
                             SuggestionLane(lane, index, uiState, callbacks, onDetails = { detailsId = it.id })
@@ -216,6 +217,17 @@ private fun SuggestionsHeader(uiState: OnboardingUiState, origin: SuggestionsOri
 }
 
 private val SuggestionsEchoWidth = 96.dp
+
+/**
+ * Whether the list opens with the header. Short windows (sideways phones, tabletop halves) leave
+ * Echo's line out, so the first row of shows and their names fit above the footer; the top bar
+ * still names the screen.
+ */
+internal fun suggestionsHeaderShows(origin: SuggestionsOrigin, shortPane: Boolean): Boolean = when (origin) {
+    SuggestionsOrigin.Echo -> !shortPane
+    SuggestionsOrigin.Search, SuggestionsOrigin.Library -> true
+    SuggestionsOrigin.Genres -> false
+}
 
 /** The search picks or imported shows, already in the library: a few covers and a count. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
