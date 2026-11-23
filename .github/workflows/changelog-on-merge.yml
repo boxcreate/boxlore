@@ -578,10 +578,10 @@ jobs:
             exit 1
           fi
 
-      # The Wear OS app is built in the same run, from the same commit and with the same key.
+      # The Wear OS and Android TV apps are built in the same run, from the same commit and with the same key.
       - name: Build signed release APK and AAB
         if: steps.release.outputs.build == 'true'
-        run: ./gradlew --no-daemon :app:assembleRelease :app:bundlePlayRelease :wear:assembleRelease :wear:bundleRelease
+        run: ./gradlew --no-daemon :app:assembleRelease :app:bundlePlayRelease :wear:assembleRelease :wear:bundleRelease :tv:assembleRelease :tv:bundleRelease
 
       - name: Verify optimized release contracts
         if: steps.release.outputs.build == 'true'
@@ -611,6 +611,8 @@ jobs:
             app/build/outputs/mapping/playRelease/
             wear/build/outputs/mapping/release/mapping.txt
             wear/build/outputs/mapping/release/missing_rules.txt
+            tv/build/outputs/mapping/release/mapping.txt
+            tv/build/outputs/mapping/release/missing_rules.txt
 
       - name: Verify artifact versions and signatures
         if: steps.release.outputs.build == 'true'
@@ -787,11 +789,44 @@ jobs:
           fi
           echo "Verified Wear OS APK/AAB: version code ${expected_wear_code}, same signing certificate"
 
+          # The Android TV app: the phone's application ID and version name, its own version code
+          # (the phone's plus 2,000,000), and the same signing certificate, so Google Play and the
+          # phone's TV sign-in treat it as the same app.
+          tv_apk="tv/build/outputs/apk/release/tv-release.apk"
+          tv_aab="tv/build/outputs/bundle/release/tv-release.aab"
+          [[ -s "$tv_apk" ]] || { echo "::error::Signed Android TV APK is missing"; exit 1; }
+          [[ -s "$tv_aab" ]] || { echo "::error::Signed Android TV AAB is missing"; exit 1; }
+          expected_tv_code=$((EXPECTED_VERSION_CODE + 2000000))
+          read -r tv_application_id tv_version_code tv_version <<< "$("$apkanalyzer" apk summary "$tv_apk")"
+          if [[ "$tv_application_id" != "cx.aswin.boxlore" ||
+                "$tv_version_code" != "$expected_tv_code" ||
+                "$tv_version" != "$EXPECTED_VERSION" ]]; then
+            echo "::error::Android TV APK manifest does not match the release metadata"
+            exit 1
+          fi
+          tv_aab_version="$(java -jar "$bundletool" dump manifest --bundle="$tv_aab" --xpath=/manifest/@android:versionName)"
+          tv_aab_version_code="$(java -jar "$bundletool" dump manifest --bundle="$tv_aab" --xpath=/manifest/@android:versionCode)"
+          if [[ "$tv_aab_version" != "$EXPECTED_VERSION" || "$tv_aab_version_code" != "$expected_tv_code" ]]; then
+            echo "::error::Android TV AAB manifest does not match the release metadata"
+            exit 1
+          fi
+          tv_apk_cert="$(extract_sha256_digest "$("$apksigner" verify --print-certs "$tv_apk" 2>&1)")"
+          jarsigner -verify "$tv_aab" >/dev/null
+          tv_aab_cert="$(extract_sha256_digest "$(keytool -printcert -jarfile "$tv_aab" 2>/dev/null)")"
+          if [[ "$tv_apk_cert" != "$expected_cert" || "$tv_aab_cert" != "$expected_cert" ]]; then
+            echo "::error::Android TV artifact signing certificate mismatch"
+            echo "apk_len=${#tv_apk_cert} aab_len=${#tv_aab_cert}"
+            exit 1
+          fi
+          echo "Verified Android TV APK/AAB: version code ${expected_tv_code}, same signing certificate"
+
       - name: Stage release assets
         if: steps.release.outputs.build == 'true'
         env:
           APK_ASSET: ${{ steps.release.outputs.apk_asset }}
           AAB_ASSET: ${{ steps.release.outputs.aab_asset }}
+          TV_APK_ASSET: ${{ steps.release.outputs.tv_apk_asset }}
+          TV_AAB_ASSET: ${{ steps.release.outputs.tv_aab_asset }}
           WEAR_APK_ASSET: ${{ steps.release.outputs.wear_apk_asset }}
           WEAR_AAB_ASSET: ${{ steps.release.outputs.wear_aab_asset }}
           BUILD_SHA: ${{ steps.release.outputs.build_sha }}
@@ -801,13 +836,17 @@ jobs:
             "$RUNNER_TEMP/release-assets/$APK_ASSET"
           cp app/build/outputs/bundle/playRelease/app-playRelease.aab \
             "$RUNNER_TEMP/release-assets/$AAB_ASSET"
+          cp tv/build/outputs/apk/release/tv-release.apk \
+            "$RUNNER_TEMP/release-assets/$TV_APK_ASSET"
+          cp tv/build/outputs/bundle/release/tv-release.aab \
+            "$RUNNER_TEMP/release-assets/$TV_AAB_ASSET"
           cp wear/build/outputs/apk/release/wear-release.apk \
             "$RUNNER_TEMP/release-assets/$WEAR_APK_ASSET"
           cp wear/build/outputs/bundle/release/wear-release.aab \
             "$RUNNER_TEMP/release-assets/$WEAR_AAB_ASSET"
           (
             cd "$RUNNER_TEMP/release-assets"
-            sha256sum "$APK_ASSET" "$AAB_ASSET" "$WEAR_APK_ASSET" "$WEAR_AAB_ASSET" > SHA256SUMS
+            sha256sum "$APK_ASSET" "$AAB_ASSET" "$TV_APK_ASSET" "$TV_AAB_ASSET" "$WEAR_APK_ASSET" "$WEAR_AAB_ASSET" > SHA256SUMS
           )
           printf '%s\n' "$BUILD_SHA" > "$RUNNER_TEMP/release-assets/build-commit.txt"
 
@@ -819,6 +858,8 @@ jobs:
           TAG: ${{ steps.release.outputs.tag }}
           APK_ASSET: ${{ steps.release.outputs.apk_asset }}
           AAB_ASSET: ${{ steps.release.outputs.aab_asset }}
+          TV_APK_ASSET: ${{ steps.release.outputs.tv_apk_asset }}
+          TV_AAB_ASSET: ${{ steps.release.outputs.tv_aab_asset }}
           WEAR_APK_ASSET: ${{ steps.release.outputs.wear_apk_asset }}
           WEAR_AAB_ASSET: ${{ steps.release.outputs.wear_aab_asset }}
         run: |
@@ -826,12 +867,13 @@ jobs:
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
             --dir "$RUNNER_TEMP/release-assets" \
             --pattern "$APK_ASSET" --pattern "$AAB_ASSET" \
+            --pattern "$TV_APK_ASSET" --pattern "$TV_AAB_ASSET" \
             --pattern "$WEAR_APK_ASSET" --pattern "$WEAR_AAB_ASSET" --pattern SHA256SUMS
           (
             cd "$RUNNER_TEMP/release-assets"
             sha256sum --check SHA256SUMS
           )
-          echo "Reused ${TAG}'s published phone and Wear OS files; nothing was built again." >> "$GITHUB_STEP_SUMMARY"
+          echo "Reused ${TAG}'s published phone, Android TV and Wear OS files; nothing was built again." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Prepare release notes
         if: steps.release.outputs.mode == 'publish'
@@ -860,12 +902,16 @@ jobs:
           BUILD_SHA: ${{ steps.release.outputs.build_sha }}
           APK_ASSET: ${{ steps.release.outputs.apk_asset }}
           AAB_ASSET: ${{ steps.release.outputs.aab_asset }}
+          TV_APK_ASSET: ${{ steps.release.outputs.tv_apk_asset }}
+          TV_AAB_ASSET: ${{ steps.release.outputs.tv_aab_asset }}
           WEAR_APK_ASSET: ${{ steps.release.outputs.wear_apk_asset }}
           WEAR_AAB_ASSET: ${{ steps.release.outputs.wear_aab_asset }}
         run: |
           assets=(
             "$RUNNER_TEMP/release-assets/$APK_ASSET"
             "$RUNNER_TEMP/release-assets/$AAB_ASSET"
+            "$RUNNER_TEMP/release-assets/$TV_APK_ASSET"
+            "$RUNNER_TEMP/release-assets/$TV_AAB_ASSET"
             "$RUNNER_TEMP/release-assets/$WEAR_APK_ASSET"
             "$RUNNER_TEMP/release-assets/$WEAR_AAB_ASSET"
             "$RUNNER_TEMP/release-assets/SHA256SUMS"
