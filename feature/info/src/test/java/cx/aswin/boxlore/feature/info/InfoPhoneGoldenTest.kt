@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.core.testing.TestFixtures
 import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
@@ -128,7 +129,7 @@ class InfoPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
     @Test fun episodeInfoShare() {
         golden.assumeAuditCapture()
         render("episode-info-share", allWindows = true, action = {
-            golden.compose.onNodeWithContentDescription("Share episode").performClick()
+            golden.compose.onNodeWithContentDescription(golden.compose.activity.getString(R.string.episode_info_share)).performClick()
         }) { episodePage(richModel(), richEpisode) }
     }
 
@@ -238,7 +239,8 @@ class InfoPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
         }
         scrollTo?.let { index ->
             golden.compose.mainClock.advanceTimeBy(1_600)
-            golden.compose.onNode(hasScrollToIndexAction()).performScrollToIndex(index)
+            // The page's own list comes first; the rows inside it scroll sideways.
+            golden.compose.onAllNodes(hasScrollToIndexAction()).onFirst().performScrollToIndex(index)
         }
         action?.let {
             golden.compose.mainClock.advanceTimeBy(1_600)

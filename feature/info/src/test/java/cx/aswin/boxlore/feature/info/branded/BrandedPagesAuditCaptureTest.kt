@@ -25,6 +25,7 @@ import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.feature.info.PodcastInfoScreen
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
+import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
 import cx.aswin.boxlore.feature.info.stubArchive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,7 +60,7 @@ class BrandedPagesAuditCaptureTest(private val show: String, configuration: Phon
     @Test fun copyrightOpen() {
         assumeTrue("The © note is checked on three pages", show in CopyrightShows)
         render()
-        golden.compose.onAllNodesWithContentDescription("Copyright information").onFirst().performClick()
+        golden.compose.onAllNodesWithContentDescription(golden.compose.activity.getString(R.string.branded_copyright_button)).onFirst().performClick()
         golden.capture("branded-$show-copyright-open", allWindows = true)
     }
 
