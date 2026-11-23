@@ -65,6 +65,7 @@ fun DiscoveryExpressiveTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
+@Suppress("LongParameterList") // Mirrors FeedMediaCard's source-compatible parameters.
 internal fun ExpressiveFeedMediaCard(
     imageUrl: String,
     title: String,
