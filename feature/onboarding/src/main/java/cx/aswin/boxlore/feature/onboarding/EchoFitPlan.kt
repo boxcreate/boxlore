@@ -226,7 +226,7 @@ private class EchoFitPlanner(
      * Echo and the question in a start column beside the answers. Topics stand in two columns, or four
      * (then three) when two would be too tall; later choices in one column, or two when one would be.
      * Every arrangement must fit its labels: when they don't, the start column narrows, and as a last
-     * resort topic labels take two lines. Echo shows only with everything it says, or folds away.
+     * resort topic labels take two lines. Echo shows wherever its column has room, whatever it says.
      */
     private fun besideAnswers(metrics: EchoLayoutMetrics): EchoFit? {
         val choices = if (topics) listOf(EchoLayout.TopicColumns, WideTopicColumns, WideTopicColumns - 1) else listOf(1, 2)
@@ -237,10 +237,15 @@ private class EchoFitPlanner(
             val columns = choices.firstOrNull { columns ->
                 answersMinHeight(metrics, columns, inline = false) <= height && labelsFit(end, columns, showIcons = false, metrics, labelLines)
             } ?: return@forEach
-            // Echo keeps the largest size its column has room for, or folds away.
-            val option = headerOptions(metrics)
-                .filter { !it.showEcho || (it.avatarWidth.value <= start && measure.bubbleFits(start, it.bubbleLines)) }
-                .firstOrNull { columnHeight(it, start, questionHeight(it, start)) <= height } ?: return@forEach
+            // Echo keeps the largest size its column has room for, with everything it says where that fits.
+            // A turn whose line runs longer keeps Echo and shortens the bubble, so Echo never comes and goes
+            // with what it says; only a column too small for Echo at all folds it away.
+            val fitting = headerOptions(metrics)
+                .filter { !it.showEcho || it.avatarWidth.value <= start }
+                .filter { columnHeight(it, start, questionHeight(it, start)) <= height }
+            val option = fitting.firstOrNull { !it.showEcho || measure.bubbleFits(start, it.bubbleLines) }
+                ?.takeIf { it.showEcho || fitting.none(EchoLayoutMetrics::showEcho) }
+                ?: fitting.firstOrNull() ?: return@forEach
             // The question keeps to three lines, however tall its column.
             val questionMax = measure.questionSize(start, option.questionMax.value, option.questionMin.value).coerceAtMost(option.questionMax.value)
             return EchoFit(

@@ -102,6 +102,19 @@ class EchoFitPlanTest {
     }
 
     @Test
+    fun `beside the answers Echo stays for a turn whose line runs long`() {
+        // A body short enough for the answers to stand beside Echo, under a tier that shows Echo.
+        fun beside(measure: EchoFitMeasure) = echoFitPlan(DpSize(800.dp, 330.dp), 700.dp, 1f, keyboardOpen = false, rows, measure)
+        val short = beside(FixedMeasure())
+        // A long line that needs more bubble than any size offers: Echo stays and its bubble shortens.
+        val long = beside(FixedMeasure(bubbleLines = { 9 }))
+        assertTrue(short.sideBySide && long.sideBySide)
+        assertTrue(short.metrics.showEcho)
+        assertTrue(long.metrics.showEcho, "Echo folded away for a long line")
+        assertFalse(long.overflow)
+    }
+
+    @Test
     fun `split screen and tabletop halves fit`() {
         assertFalse(plan(412, 450).overflow)
         assertFalse(plan(412, 450).sideBySide)
