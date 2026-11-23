@@ -28,9 +28,7 @@ Announcement title:
 
 - The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.
 - The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.
-- Showcase pages keep their latest-episode card at a comfortable width on wide screens, and start right at the top of the lower half on a half-open foldable.
-- Episode pages now fit sideways phones, foldables and tablets: on wide or short screens the cover sits beside the title, and Play stays on the first screen.
-- Episode pages show their outline while they load, put About before Chapters, list links the way they list chapters, and name the show on each recommended episode.
+- Episode pages now fit sideways phones, foldables and tablets, with the cover beside the title on wide or short screens, an outline while they load and links listed like chapters. Show pages in a show's own style keep their latest-episode card at a comfortable width on wide screens.
 - In Android Auto, a show's page now lists its episodes from newest to oldest. Episodes you've started stay in their place and show the time left.
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.
@@ -49,6 +47,4 @@ Announcement title:
 - Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.
-- When an episode or a show doesn't load, its page now says what happened and offers Try again and Back.
-- On an episode page, the date and length no longer scroll sideways, and the Mark played tip no longer pushes the Play button down.
-- An open Share sheet on an episode page now stays open when the screen changes size or the page reloads.
+- Episode and show pages that don't load now offer Try again and Back, and on an episode page the date no longer scrolls sideways and an open Share sheet stays open when the screen changes size.
