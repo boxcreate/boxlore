@@ -314,13 +314,26 @@ fun QueueItemRow(
             Spacer(modifier = Modifier.height(2.dp))
             val showName = (episode.podcastTitle ?: podcast?.title ?: stringResource(R.string.player_unknown_podcast)).replace("+", " ")
             val length = SameShowContinuationBannerDefaults.formatDuration(episode.duration, currentLocale())
-            Text(
-                text = if (length.isBlank()) showName else "$showName · $length",
-                style = MaterialTheme.typography.bodySmall,
-                color = colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            // Only the show name shortens, so the episode length always shows in full.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = showName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (length.isNotBlank()) {
+                    Text(
+                        text = " · $length",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+            }
             display.sourceLabel?.let { sourceLabel ->
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(

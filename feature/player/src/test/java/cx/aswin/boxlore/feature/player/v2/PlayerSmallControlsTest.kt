@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -43,7 +44,11 @@ class PlayerSmallControlsTest {
             BoxLoreTheme(darkTheme = false, dynamicColor = false) {
                 QueueItemRow(
                     display = QueueItemDisplay(
-                        episode = TestFixtures.episode(title = "The longest night of the year, and why it matters more than you think", duration = 2_700),
+                        episode = TestFixtures.episode(
+                            title = "The longest night of the year, and why it matters more than you think",
+                            podcastTitle = "The Rest Is History: Extended Edition with a very long show name",
+                            duration = 2_700,
+                        ),
                         podcast = null,
                         dragHandleModifier = androidx.compose.ui.Modifier,
                     ),
@@ -55,7 +60,29 @@ class PlayerSmallControlsTest {
         }
         assertTarget("Remove from queue")
         assertTarget("Reorder")
-        compose.onNodeWithText("Test Podcast ·", substring = true).assertExists()
+        // A long show name shortens; the length after it shows in full.
+        val length = compose.onNodeWithText("·", substring = true, useUnmergedTree = true).fetchSemanticsNode()
+        assertTrue("Length shown: ${length.config[SemanticsProperties.Text]}", length.config[SemanticsProperties.Text].single().text.matches(Regex(""" · \d+.*""")))
+        assertTrue("Length ends inside the row", length.boundsInRoot.right <= 360f && length.boundsInRoot.width > 0f)
+    }
+
+    @Test
+    fun `chapter rows stand out from the tablet panel they sit on, in light and dark`() {
+        val contrasts = mutableListOf<Double>()
+        compose.setContent {
+            listOf(false, true).forEach { dark ->
+                BoxLoreTheme(darkTheme = dark, dynamicColor = false) {
+                    val scheme = MaterialTheme.colorScheme
+                    // The tablet panel is surfaceContainerLow (TabletPlayerSupport).
+                    contrasts += androidx.core.graphics.ColorUtils.calculateContrast(
+                        cx.aswin.boxlore.feature.player.chapterInactiveRowColor(scheme).toArgb(),
+                        scheme.surfaceContainerLow.toArgb(),
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        contrasts.forEach { assertTrue("Row against panel contrast $it", it >= 1.08) }
     }
 
     @Test

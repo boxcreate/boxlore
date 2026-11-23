@@ -88,8 +88,7 @@ fun ChaptersSheetContent(
     showHeader: Boolean = true,
 ) {
     val positionMs by positionFlow.collectAsState(initial = 0L)
-    // In the tablet panel (no header) the rows sit on the panel's own colour, one step lighter.
-    val inactiveRowColor = if (showHeader) colorScheme.surfaceContainerHigh else colorScheme.surfaceContainer
+    val inactiveRowColor = chapterInactiveRowColor(colorScheme)
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = if (showHeader) colorScheme.surface else Color.Transparent
@@ -231,3 +230,9 @@ private fun ChapterRowsSkeleton(rowColor: Color) {
 
 internal const val CHAPTER_SKELETON_TAG = "chapter_skeleton"
 private const val CHAPTER_SKELETON_ROWS = 5
+
+/**
+ * Chapter rows that aren't playing, in the phone sheet and on the tablet panel alike: two tonal steps
+ * above the panel's surfaceContainerLow, so they read as rows rather than loose text.
+ */
+internal fun chapterInactiveRowColor(colorScheme: ColorScheme): Color = colorScheme.surfaceContainerHigh
