@@ -157,6 +157,7 @@ fun TranscriptView(
                         segment = segment,
                         isActive = index == activeIndex,
                         colorScheme = colorScheme,
+                        following = isSyncEnabled,
                         onClick = {
                             onSeek(segment.startMs)
                             clickedIndex = index
@@ -206,10 +207,17 @@ private fun TranscriptSegmentItem(
     segment: TranscriptSegment,
     isActive: Boolean,
     colorScheme: ColorScheme,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    following: Boolean = true
 ) {
+    // Lines fade around the spoken one only while the transcript follows the audio; scrolled back to
+    // read, every line is full-contrast text until the listener returns to following.
     val textColor by animateColorAsState(
-        targetValue = if (isActive) colorScheme.primary else colorScheme.onSurface,
+        targetValue = when {
+            isActive -> colorScheme.primary
+            following -> colorScheme.onSurface
+            else -> colorScheme.onSurfaceVariant
+        },
         animationSpec = tween(durationMillis = 300),
         label = "textColor"
     )
@@ -220,7 +228,7 @@ private fun TranscriptSegmentItem(
         label = "textScale"
     )
     val textOpacity by animateFloatAsState(
-        targetValue = if (isActive) 1.0f else 0.35f,
+        targetValue = transcriptLineOpacity(isActive, following),
         animationSpec = tween(durationMillis = 300),
         label = "textOpacity"
     )
@@ -433,3 +441,6 @@ fun FullscreenTranscriptScreen(
         controls()
     }
 }
+
+/** How strongly a transcript line shows: dimmed around the spoken line only while following the audio. */
+internal fun transcriptLineOpacity(isActive: Boolean, following: Boolean): Float = if (isActive || !following) 1f else 0.35f

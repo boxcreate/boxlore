@@ -134,4 +134,10 @@ class FullscreenTranscriptLayoutTest {
         composeRule.waitForIdle()
         assertTrue(composeRule.onNodeWithContentDescription("Play").getUnclippedBoundsInRoot().top.value >= 500f)
     }
+
+    @Test fun `lines dim around the spoken one only while following the audio`() {
+        assertTrue(transcriptLineOpacity(isActive = false, following = true) < 1f)
+        assertTrue(transcriptLineOpacity(isActive = false, following = false) == 1f)
+        assertTrue(transcriptLineOpacity(isActive = true, following = true) == 1f)
+    }
 }
