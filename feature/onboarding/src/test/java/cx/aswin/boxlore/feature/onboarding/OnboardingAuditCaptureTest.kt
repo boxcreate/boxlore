@@ -46,14 +46,14 @@ class OnboardingAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     private val callbacks = EchoCallbacks({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
     private val longChoices = listOf("Unsolved mysteries", "Big ideas in science", "Stories from history", "Comedians riffing")
 
-    @Test fun echoOpening() = render("echo-opening") {
+    @Test fun echoOpening() = render("echo-opening", OnboardingStep.AI_ONBOARDING) {
         EchoOnboardingScreen(
             OnboardingUiState(currentStep = OnboardingStep.AI_ONBOARDING, aiSelectedOptions = setOf(EchoInitialTopic.SCIENCE.answer, EchoInitialTopic.TRUE_CRIME.answer)),
             callbacks,
         )
     }
 
-    @Test fun echoLaterTurn() = render("echo-later-turn") {
+    @Test fun echoLaterTurn() = render("echo-later-turn", OnboardingStep.AI_ONBOARDING) {
         EchoOnboardingScreen(
             OnboardingUiState(
                 currentStep = OnboardingStep.AI_ONBOARDING,
@@ -74,11 +74,11 @@ class OnboardingAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         )
     }
 
-    @Test fun welcome() = render("welcome") {
+    @Test fun welcome() = render("welcome", OnboardingStep.WELCOME) {
         WelcomeScreen(onHelpMeFind = {}, onSearch = {}, onSkip = {}, onImportClick = {})
     }
 
-    @Test fun appLanguage() = render("app-language") {
+    @Test fun appLanguage() = render("app-language", OnboardingStep.APP_LANGUAGE) {
         AppLanguageQuestionContent(AppLanguageQuestion(AppLanguage.GERMAN), onChoose = { _, _ -> })
     }
 
@@ -130,13 +130,14 @@ class OnboardingAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         }
     }
 
-    private fun render(name: String, content: @Composable () -> Unit) {
+    /** Captures [content] as the [step] it is, inside the step transition the app uses. */
+    private fun render(name: String, step: OnboardingStep, content: @Composable () -> Unit) {
         golden.assumeAuditCapture()
         assumeTrue("Dark sizes are recorded for the hand-off only", golden.configuration !in DARK_SEQUENCE_SIZES)
         golden.prepare()
         golden.setContent(foldSafeViewport = true) {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
-                Box(Modifier.fillMaxSize().testTag(ROOT_TAG)) { content() }
+                Box(Modifier.fillMaxSize().testTag(ROOT_TAG)) { OnboardingStepTransition(step) { content() } }
             }
         }
         golden.compose.onNodeWithTag(ROOT_TAG).assertExists()

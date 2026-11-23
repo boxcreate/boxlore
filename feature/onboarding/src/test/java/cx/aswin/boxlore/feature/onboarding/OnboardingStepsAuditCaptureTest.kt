@@ -85,13 +85,13 @@ class OnboardingStepsAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     @Test fun echoWritingIme() {
         assumeTrue("The keyboard is recorded on a phone and a sideways phone", golden.configuration.auditKey in setOf("412x915", "915x412"))
         val keyboard = if (golden.configuration.width < golden.configuration.height) SystemInsets.PHONE_BARS else SystemInsets.SIDEWAYS_3_BUTTON
-        render("echo-writing-ime", insets = keyboard.copy(imeBottom = ImeHeight)) {
+        render("echo-writing-ime", OnboardingStep.AI_ONBOARDING, insets = keyboard.copy(imeBottom = ImeHeight)) {
             EchoOnboardingScreen(later.copy(aiCustomInputText = "Long drives and old mysteries"), callbacks)
         }
     }
 
     /** A show card with a very long name and pitch. */
-    @Test fun echoDeck() = render("echo-deck") {
+    @Test fun echoDeck() = render("echo-deck", OnboardingStep.AI_ONBOARDING, dark = true) {
         EchoOnboardingScreen(
             later.copy(
                 aiSelectedOptions = setOf(choices.first()),
@@ -115,11 +115,23 @@ class OnboardingStepsAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         )
     }
 
-    @Test fun echoError() = render("echo-error") {
+    @Test fun echoError() = render("echo-error", OnboardingStep.AI_ONBOARDING) {
         EchoOnboardingScreen(later.copy(onboardingError = "offline"), callbacks)
     }
 
-    @Test fun echoAboutSheet() = render("echo-about-sheet", allWindows = true, open = {
+    /** Echo's More menu, open. */
+    @Test fun echoMenu() = render("echo-menu", OnboardingStep.AI_ONBOARDING, open = {
+        golden.compose.onNodeWithTag("echo_more").performSemanticsAction(SemanticsActions.OnClick)
+    }) {
+        EchoOnboardingScreen(later, callbacks)
+    }
+
+    /** A later question where finishing early is offered: the questions-left note. */
+    @Test fun echoNote() = render("echo-note", OnboardingStep.AI_ONBOARDING) {
+        EchoOnboardingScreen(later.copy(aiGuidedTurn = later.aiGuidedTurn?.copy(finish = "available")), callbacks)
+    }
+
+    @Test fun echoAboutSheet() = render("echo-about-sheet", OnboardingStep.AI_ONBOARDING, allWindows = true, open = {
         golden.compose.onNodeWithTag("echo_more").performSemanticsAction(SemanticsActions.OnClick)
         golden.compose.mainClock.advanceTimeBy(600)
         golden.compose.waitForIdle()
@@ -131,20 +143,48 @@ class OnboardingStepsAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         EchoOnboardingScreen(OnboardingUiState(currentStep = OnboardingStep.AI_ONBOARDING), callbacks)
     }
 
-    @Test fun searchGrid() = render("search-grid") { Search(picks = emptyList()) }
+    @Test fun searchGrid() = render("search-grid", OnboardingStep.SEARCH) { Search(picks = emptyList()) }
 
-    @Test fun searchPicks() = render("search-picks") { Search(picks = shows.take(8)) }
+    /** The trending shows loading into skeletons of their own shape. */
+    @Test fun searchLoading() = render("search-loading", OnboardingStep.SEARCH) { Search(picks = emptyList(), loading = true) }
 
-    @Test fun searchResults() = render("search-results") { Search(picks = shows.take(1), query = "true crime") }
+    @Test fun searchPicks() = render("search-picks", OnboardingStep.SEARCH, dark = true) { Search(picks = shows.take(8)) }
 
-    @Test fun suggestions() = render("suggestions") { Suggestions(suggestionsState()) }
+    /** The picks sheet, opened from the Continue bar. */
+    @Test fun searchPicksSheet() = render("search-picks-sheet", OnboardingStep.SEARCH, dark = true, open = {
+        golden.compose.onNodeWithTag(SEARCH_PICKS_BUTTON_TAG).performSemanticsAction(SemanticsActions.OnClick)
+    }) { Search(picks = shows.take(4)) }
 
-    @Test fun suggestionDetailsSheet() = render("suggestion-details-sheet", allWindows = true, open = {
+    /** Typed results with a 300dp keyboard up on a phone and the Fold 8 cover. */
+    @Test fun searchResultsIme() {
+        assumeTrue("The keyboard is recorded on a phone and the cover", golden.configuration.auditKey in setOf("412x915", "475x695"))
+        render("search-results-ime", OnboardingStep.SEARCH, insets = SystemInsets.PHONE_BARS.copy(imeBottom = ImeHeight)) {
+            Search(picks = shows.take(1), query = "true crime")
+        }
+    }
+
+    @Test fun searchResults() = render("search-results", OnboardingStep.SEARCH) { Search(picks = shows.take(1), query = "true crime") }
+
+    @Test fun suggestions() = render("suggestions", OnboardingStep.AI_SUGGESTIONS, dark = true) { Suggestions(suggestionsState()) }
+
+    /** Similar shows refused because the human check was skipped. */
+    @Test fun suggestionsCheckSkipped() = render("suggestions-check-skipped", OnboardingStep.AI_SUGGESTIONS) {
+        Suggestions(
+            OnboardingUiState(
+                currentStep = OnboardingStep.AI_SUGGESTIONS,
+                reachedSuggestionsViaSearchFlow = true,
+                onboardingError = "check",
+                onboardingErrorKind = OnboardingErrorKind.VerificationSkipped,
+            ),
+        )
+    }
+
+    @Test fun suggestionDetailsSheet() = render("suggestion-details-sheet", OnboardingStep.AI_SUGGESTIONS, allWindows = true, open = {
         golden.compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState) and hasText("Serial", substring = true))
             .performSemanticsAction(SemanticsActions.OnLongClick)
     }) { Suggestions(suggestionsState()) }
 
-    @Test fun similarChoice() = render("similar-choice") {
+    @Test fun similarChoice() = render("similar-choice", OnboardingStep.AI_SUGGESTIONS, dark = true) {
         Suggestions(
             OnboardingUiState(
                 currentStep = OnboardingStep.AI_SUGGESTIONS,
@@ -157,11 +197,11 @@ class OnboardingStepsAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         )
     }
 
-    @Test fun topicsGenres() = render("topics-genres") {
+    @Test fun topicsGenres() = render("topics-genres", OnboardingStep.GENRES, dark = true) {
         GenrePickerScreen(selectedGenres = setOf("True Crime", "Science"), onToggleGenre = {}, onContinue = {}, onBack = {})
     }
 
-    @Test fun topicsActivities() = render("topics-activities") {
+    @Test fun topicsActivities() = render("topics-activities", OnboardingStep.ACTIVITY_PICKER, dark = true) {
         ActivityPickerScreen(
             selectedActivities = setOf("commuting", "working"),
             activityGenreMap = mapOf("commuting" to setOf("True Crime"), "working" to setOf("Science")),
@@ -174,7 +214,7 @@ class OnboardingStepsAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     }
 
     @Composable
-    private fun Search(picks: List<Podcast>, query: String = "") {
+    private fun Search(picks: List<Podcast>, query: String = "", loading: Boolean = false) {
         OnboardingSearchScreen(
             query = query,
             results = if (query.isEmpty()) emptyList() else shows.drop(4),
@@ -186,7 +226,7 @@ class OnboardingStepsAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
             onBack = {},
             onDone = {},
             popularPodcasts = shows,
-            isPopularLoading = false,
+            isPopularLoading = loading,
             selectedSearchGenre = null,
             onGenreSelect = {},
         )
@@ -216,20 +256,26 @@ class OnboardingStepsAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         )
     }
 
+    /**
+     * Captures [content] as the [step] it is, inside the step transition the app uses (which keeps
+     * steps clear of side system buttons and cutouts); [dark] scenes are captured in both themes.
+     */
     private fun render(
         name: String,
+        step: OnboardingStep,
+        dark: Boolean = false,
         allWindows: Boolean = false,
         insets: SystemInsets? = null,
         open: (() -> Unit)? = null,
         content: @Composable () -> Unit,
     ) {
         golden.assumeAuditCapture()
-        assumeTrue("Steps after Welcome are recorded in light", !golden.configuration.dark)
+        assumeTrue("This step is recorded in light", dark || !golden.configuration.dark)
         golden.prepare()
         golden.setContent(foldSafeViewport = true) {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
                 CompositionLocalProvider(LocalEchoShowPreviewFactory provides { _ -> SilentPreview }) {
-                    Box(Modifier.fillMaxSize().testTag(ROOT_TAG)) { content() }
+                    Box(Modifier.fillMaxSize().testTag(ROOT_TAG)) { OnboardingStepTransition(step) { content() } }
                 }
             }
         }
