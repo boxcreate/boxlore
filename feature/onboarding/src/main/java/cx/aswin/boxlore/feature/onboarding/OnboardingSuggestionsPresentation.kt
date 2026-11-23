@@ -76,12 +76,15 @@ internal object OnboardingSuggestionsPresentation {
     /**
      * Lanes in order. In Echo's flow the shows picked before the build (a positive taste-test
      * answer, or a search mid-chat) lead in their own lane, selected, and leave the other lanes so
-     * nothing shows twice. Nothing else starts selected.
+     * nothing shows twice; no other lane repeats the charts or an earlier lane either. Nothing else
+     * starts selected.
      */
     fun lanes(uiState: OnboardingUiState): List<OnboardingSuggestionsLane> {
-        val base = OnboardingSuggestionsLanes.deduplicateLanes(
-            OnboardingSuggestionsLanes.build(uiState.aiCurriculumRows, uiState.genreChartsPodcasts, uiState.selectedGenres),
-        ).map { lane -> lane.copy(podcasts = OnboardingSuggestionsLanes.deduplicatePodcasts(lane.podcasts)) }
+        val base = OnboardingSuggestionsLanes.withoutRepeats(
+            OnboardingSuggestionsLanes.deduplicateLanes(
+                OnboardingSuggestionsLanes.build(uiState.aiCurriculumRows, uiState.genreChartsPodcasts, uiState.selectedGenres),
+            ).map { lane -> lane.copy(podcasts = OnboardingSuggestionsLanes.deduplicatePodcasts(lane.podcasts)) },
+        )
         val picks = OnboardingSuggestionsLanes.deduplicatePodcasts(uiState.aiPicks)
         if (origin(uiState) != SuggestionsOrigin.Echo || picks.isEmpty()) return base
         val pickIds = picks.map { it.id }.toSet()

@@ -155,6 +155,22 @@ class OnboardingSuggestionsPresentationTest {
     }
 
     @Test
+    fun `no lane repeats the charts or an earlier lane, and the charts stay whole`() {
+        val twoRows = listOf(
+            OnboardingCurriculumRowDto(rowTitle = "Trending in your Genres", podcasts = (1L..5L).map { OnboardingCurriculumPodcastDto(id = it, title = "Show $it") }),
+            OnboardingCurriculumRowDto(rowTitle = "Cold cases", podcasts = listOf(2L, 6L, 7L, 8L, 9L).map { OnboardingCurriculumPodcastDto(id = it, title = "Show $it") }),
+        )
+        val charts = (1..5).map { show("$it") }
+        val lanes = OnboardingSuggestionsPresentation.lanes(OnboardingUiState(aiCurriculumRows = twoRows, genreChartsPodcasts = charts))
+        // The genre lane is the charts again: hidden. The other keeps only its own shows, in order.
+        assertEquals(listOf("curriculum_1", OnboardingSuggestionsLanes.CHARTS_LANE_ID), lanes.map { it.id })
+        assertEquals(listOf("6", "7", "8", "9"), lanes[0].podcasts.map { it.id })
+        assertEquals(listOf("1", "2", "3", "4", "5"), lanes[1].podcasts.map { it.id })
+        // A short lane that repeats nothing still shows.
+        assertEquals(listOf("1", "2"), OnboardingSuggestionsPresentation.lanes(OnboardingUiState(aiCurriculumRows = rows(1, 2)))[0].podcasts.map { it.id })
+    }
+
+    @Test
     fun `a chat pick removed from Your picks can be found again to add it back`() {
         val state = OnboardingUiState(aiPicks = listOf(show("7")))
         assertEquals("7", OnboardingSuggestionsPresentation.findShow(state, "7")?.id)

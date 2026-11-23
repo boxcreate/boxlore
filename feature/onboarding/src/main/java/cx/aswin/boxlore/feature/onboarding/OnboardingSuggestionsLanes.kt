@@ -53,6 +53,27 @@ internal object OnboardingSuggestionsLanes {
     fun deduplicateLanes(lanes: List<OnboardingSuggestionsLane>): List<OnboardingSuggestionsLane> =
         cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy.deduplicateById(lanes) { it.id }
 
+    /**
+     * The charts lane stays whole (it is a ranking with its own region); every other lane leaves out
+     * shows the charts or an earlier lane already offer. A lane that loses shows that way and has
+     * fewer than [MinLaneShows] left is hidden.
+     */
+    fun withoutRepeats(lanes: List<OnboardingSuggestionsLane>): List<OnboardingSuggestionsLane> {
+        val seen = lanes.filter { it.isCharts }.flatMap { lane -> lane.podcasts.map { it.id } }.toMutableSet()
+        return lanes.mapNotNull { lane ->
+            if (lane.isCharts) return@mapNotNull lane
+            val fresh = lane.podcasts.filter { it.id !in seen }
+            seen += fresh.map { it.id }
+            when {
+                fresh.size == lane.podcasts.size -> lane
+                fresh.size < MinLaneShows -> null
+                else -> lane.copy(podcasts = fresh)
+            }
+        }
+    }
+
+    const val MinLaneShows = 3
+
     fun deduplicatePodcasts(podcasts: List<Podcast>): List<Podcast> =
         cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy.deduplicateById(podcasts) { it.id }
 
