@@ -7,6 +7,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import org.junit.Assert.assertTrue
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
@@ -20,6 +24,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -142,6 +147,23 @@ class AppLanguageQuestionScreenTest {
         }
         button("Français").performScrollTo().performClick()
         assertEquals(listOf(AppLanguage.FRENCH), picks)
+    }
+
+    @Test
+    fun `the list keeps its place when the layout switches between one column and beside the panel`() {
+        window.value = BoxloreWindowLayout(412f, 450f)
+        show { screen() }
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange))[0]
+            .performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 2_000f) }
+        settle(millis = 100)
+        fun scrolled() = compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange))
+            .fetchSemanticsNodes().maxOf { it.config[SemanticsProperties.VerticalScrollAxisRange].value() }
+        assertTrue("the list did not scroll", scrolled() > 0f)
+        listOf(BoxloreWindowLayout(800f, 360f), BoxloreWindowLayout(412f, 450f)).forEach { next ->
+            compose.runOnIdle { window.value = next }
+            settle(millis = 100)
+            assertTrue("the list jumped to the top at ${next.widthDp}x${next.heightDp}", scrolled() > 0f)
+        }
     }
 
     @Test

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -85,16 +86,18 @@ internal fun AppLanguageQuestionContent(
     val colors = MaterialTheme.colorScheme
     // The same rich panel as Welcome, so the two screens read as one opening.
     val panel = openingPanelColors()
+    // One scroll for both arrangements, so turning or unfolding keeps the list's place (clamped to the new end).
+    val scroll = rememberScrollState()
     BoxWithConstraints(modifier.fillMaxSize().background(colors.surface)) {
         if (languageQuestionTwoPane(maxWidth, maxHeight)) {
             // Light clock icons over the panel, as on Welcome beside its panel.
             WelcomeStatusBars(panel.container, coverVisible = true)
-            TwoPaneLanguageQuestion(clock, question, panel, maxWidth, maxHeight) { language ->
+            TwoPaneLanguageQuestion(clock, question, panel, maxWidth, maxHeight, scroll) { language ->
                 val greeting = greetingFrame(clock, question.all, LanguagePanelFoot.value)
                 onChoose(language, OpeningHandoff(OpeningPanelPaneShare, twoPane = true, language, greeting))
             }
         } else {
-            SingleColumnLanguageQuestion(clock, question, panel, onChoose)
+            SingleColumnLanguageQuestion(clock, question, panel, scroll, onChoose)
         }
     }
 }
@@ -108,9 +111,9 @@ private fun SingleColumnLanguageQuestion(
     clock: WelcomeMotionClock,
     question: AppLanguageQuestion,
     panel: LanguagePanelColors,
+    scroll: ScrollState,
     onChoose: (AppLanguage, OpeningHandoff) -> Unit,
 ) {
-    val scroll = rememberScrollState()
     var panelHeight by remember { mutableIntStateOf(Int.MAX_VALUE) }
     val statusBarHeight = WindowInsets.statusBars.getTop(LocalDensity.current)
     val panelVisible by remember(scroll, statusBarHeight) {
@@ -167,13 +170,14 @@ private fun TwoPaneLanguageQuestion(
     panel: LanguagePanelColors,
     width: Dp,
     height: Dp,
+    scroll: ScrollState,
     onChoose: (AppLanguage) -> Unit,
 ) {
     OnboardingOpeningFrame(
         panel,
         width,
         height,
-        rememberScrollState(),
+        scroll,
         panelBottomPadding = LanguagePanelFoot,
         panelContent = { pane ->
             LanguageGreeting(
