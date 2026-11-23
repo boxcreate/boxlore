@@ -11,14 +11,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material3.Text
@@ -57,6 +54,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.boxShadow
@@ -78,7 +76,7 @@ internal fun EvidenceBoard(clues: BoardClues, title: String, palette: Conspiracy
     val clock = rememberBoardClock()
     val dark = LocalEffectiveDarkTheme.current
     val paper = brandedArtNow(if (dark) R.drawable.conspiracy_board_black else R.drawable.conspiracy_board_white)
-    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val statusBar = boxlorePaneTopInset()
     BoxWithConstraints(modifier.fillMaxWidth().height((ConspiracyBoardLayout.BOTTOM - ConspiracyBoardLayout.STATUS_BAR).dp)) {
         val width = ConspiracyBoardLayout.boardWidth(maxWidth.value)
         val fit = maxWidth.value / width

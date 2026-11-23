@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +15,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedIntroClock
 import cx.aswin.boxlore.feature.info.branded.Keyframe
@@ -85,7 +83,7 @@ internal fun DesiCrimeBoard(board: DesiCrimeBoard, modifier: Modifier = Modifier
     val art by rememberBrandedArt(R.drawable.desicrime_cork, R.drawable.desicrime_host_her, R.drawable.desicrime_host_him, R.drawable.desicrime_clipping, R.drawable.desicrime_tape)
     val intro = rememberBrandedIntro(ready = art != null, endMillis = DesiCrimeArt.END)
     val fonts = rememberDesiCrimeFonts()
-    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val statusBar = boxlorePaneTopInset()
     val title = stringResource(R.string.desicrime_wordmark_description)
     val hosts = stringResource(R.string.desicrime_hosts_description)
     BoxWithConstraints(modifier.fillMaxWidth().height(DesiCrimeArt.HEIGHT.dp)) {

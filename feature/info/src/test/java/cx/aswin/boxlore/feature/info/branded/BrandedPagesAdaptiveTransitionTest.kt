@@ -14,6 +14,7 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
@@ -32,12 +33,15 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldState
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import cx.aswin.boxlore.core.testing.SystemInsets
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import cx.aswin.boxlore.feature.info.PodcastInfoScreen
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
@@ -69,6 +73,7 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
     @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1_280, 800, false))
 
     private val window = mutableStateOf(COMPACT)
+    private val pane = mutableStateOf<BoxloreLayoutBounds?>(null)
     private val podcast = TestFixtures.podcast(id = page.ids.podcastIndexId, title = "Showcase", imageUrl = PhoneGoldenRule.ARTWORK_URL)
         .copy(description = DESCRIPTION)
     private val episodes = List(12) { index ->
@@ -154,6 +159,26 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         pressBackOnPopup()
         fixture.compose.onNodeWithText(SEAL_TITLE).assertDoesNotExist()
         fixture.compose.onNodeWithContentDescription(SEAL_LABEL).assertExists()
+    }
+
+    @Test
+    fun `in tabletop the header starts at the top of the lower half, and flat keeps the status bar`() {
+        render()
+        fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets.TABLETOP_STATUS) }
+        fixture.compose.onNodeWithText(DESCRIPTION).performClick()
+        fixture.compose.waitForIdle()
+        val lowerHalf = BoxloreLayoutBounds(0f, 431f, FOLD_FLAT.widthDp, FOLD_FLAT.heightDp)
+        val tops = listOf(FOLD_FLAT to null, FOLD_TABLETOP to lowerHalf, FOLD_FLAT to null).map { (size, bounds) ->
+            fixture.compose.runOnIdle {
+                pane.value = bounds
+                window.value = size
+            }
+            fixture.compose.waitForIdle()
+            assertTrue("The description stays open at $size", descriptionOpen())
+            fixture.compose.onNodeWithContentDescription("Copyright information").getBoundsInRoot().top.value
+        }
+        assertEquals("No status-bar band in the lower half", SystemInsets.TABLETOP_STATUS.statusTop.toFloat(), tops[0] - tops[1], 0.5f)
+        assertEquals("Flat again matches flat before", tops[0], tops[2], 0.5f)
     }
 
     private fun descriptionOpen(): Boolean {
@@ -251,8 +276,13 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         restoration = StateRestorationTester(fixture.compose)
         restoration.setContent {
             val size = window.value
-            CompositionLocalProvider(LocalBoxloreWindowLayout provides size, LocalBoxlorePaneWidth provides size.widthDp) {
-                Box(Modifier.width(size.widthDp.dp).height(size.heightDp.dp)) {
+            val bounds = pane.value
+            CompositionLocalProvider(
+                LocalBoxloreWindowLayout provides size,
+                LocalBoxlorePaneWidth provides (bounds?.width ?: size.widthDp),
+                LocalBoxlorePaneBounds provides bounds,
+            ) {
+                Box(Modifier.width((bounds?.width ?: size.widthDp).dp).height((bounds?.height ?: size.heightDp).dp)) {
                     BoxLoreTheme(dynamicColor = false) {
                         Surface { PodcastInfoScreen(podcast.id, model, {}, { _, _, _ -> }, {}, {}) }
                     }
