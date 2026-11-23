@@ -296,7 +296,7 @@ class BriefingScreenTest {
     @Test
     fun `native playback story navigation and source controls remain independent`() {
         render(BriefingUiState.Success(briefing, "global", duration = 180_000, chapters = listOf(Chapter(0.0, "Energy markets"), Chapter(60.0, "Digital policy"))))
-        compose.onNodeWithText("Listen to brief").performScrollTo().performClick()
+        compose.onNodeWithText("Listen to the Brief").performScrollTo().performClick()
         assertEquals(listOf<Long?>(null), playback)
 
         compose.onNodeWithContentDescription("Next story").performScrollTo().performClick()
@@ -321,7 +321,7 @@ class BriefingScreenTest {
                 large = true
         )
         compose.onNodeWithContentDescription("The boxlore brief", useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText("Listen to brief").performScrollTo().performClick()
+        compose.onNodeWithText("Listen to the Brief").performScrollTo().performClick()
         assertEquals(listOf<Long?>(null), playback)
         compose.onNodeWithContentDescription("Play story: Energy markets").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("Brief preferences").assertIsDisplayed()
