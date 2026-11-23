@@ -74,7 +74,6 @@ internal fun LazyStaggeredGridScope.exploreEpisodeSearchItems(
                             )
                             onPodcastClick(podcast.id, "explore_search_concept", content.category, index)
                         },
-                        modifier = Modifier.padding(bottom = 8.dp),
                     )
                 }
             }
@@ -83,7 +82,6 @@ internal fun LazyStaggeredGridScope.exploreEpisodeSearchItems(
                     ExploreSearchSectionHeader(
                         title = stringResource(R.string.explore_search_episode_results),
                         icon = Icons.Rounded.Headphones,
-                        modifier = Modifier.padding(top = if (pods.isNotEmpty()) 8.dp else 0.dp),
                     )
                 }
                 if (columns >= 3) {
@@ -175,7 +173,6 @@ internal fun LazyStaggeredGridScope.exploreShowSearchItems(
                     ExploreSearchSectionHeader(
                         title = stringResource(R.string.explore_search_also_found),
                         icon = Icons.Rounded.AutoAwesome,
-                        modifier = Modifier.padding(top = 8.dp),
                     )
                 }
                 orderedExploreItems(content.alsoFound, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "also") }) { podcast, index ->
