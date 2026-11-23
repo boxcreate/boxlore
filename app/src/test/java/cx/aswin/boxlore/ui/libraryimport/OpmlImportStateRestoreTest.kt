@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.StateRestorationTester
@@ -43,14 +42,15 @@ class OpmlImportStateRestoreTest {
     private var current: OpmlImportState = OpmlImportState.Idle
     private var source = ""
 
-    /** The root's two saveable values, as BoxLoreAppRoot holds them, around the real import screens. */
+    /** The root's import state, held as BoxLoreAppRoot holds it, around the real import screens. */
     @Composable
     private fun Host() {
-        var state by rememberSaveable(stateSaver = OpmlImportStateSaver) { mutableStateOf<OpmlImportState>(OpmlImportState.Idle) }
-        var openedFrom by rememberSaveable { mutableStateOf("welcome_screen") }
+        val import = rememberOpmlImportState()
+        var state by import.state
+        var openedFrom by import.source
         setState = { next ->
             state = next
-            openedFrom = "welcome_screen"
+            openedFrom = OpenedFrom
         }
         current = state
         source = openedFrom
@@ -64,8 +64,13 @@ class OpmlImportStateRestoreTest {
         }
     }
 
+    private companion object {
+        /** Not the root's starting value, so a source that isn't kept would show. */
+        const val OpenedFrom = "home_import_banner"
+    }
+
     @Test
-    fun `the picker opened from Welcome survives recreation`() {
+    fun `the picker survives recreation with where it was opened from`() {
         val restoration = StateRestorationTester(compose)
         restoration.setContent { Host() }
         compose.runOnIdle { setState(OpmlImportState.ShowSelector) }
@@ -75,7 +80,7 @@ class OpmlImportStateRestoreTest {
 
         compose.onNodeWithTag("import_option_opml").assertExists()
         assertEquals(OpmlImportState.ShowSelector, current)
-        assertEquals("welcome_screen", source)
+        assertEquals("where the picker was opened from", OpenedFrom, source)
     }
 
     @Test
