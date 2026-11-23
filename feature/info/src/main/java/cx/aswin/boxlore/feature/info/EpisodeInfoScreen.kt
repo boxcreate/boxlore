@@ -177,11 +177,10 @@ fun EpisodeInfoScreen(
     val (safeStart, safeEnd) = boxloreHorizontalSafeInsetsDp()
     val collapsedHeaderHeight = 64.dp + statusBarHeight
 
-    // Header background: transparent → surfaceContainer
-    // NOTE: Don't lerp from Color.Transparent - it has RGB=0,0,0 causing black flash
-    val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
+    // Header background: the page's own colour while scrolling, the deeper container once content runs under it.
+    val contentUnder by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
     val headerColor by animateColorAsState(
-        targetValue = surfaceColor.copy(alpha = scrollFraction),
+        targetValue = episodeHeaderColor(MaterialTheme.colorScheme, scrollFraction, contentUnder),
         animationSpec = spring(stiffness = Spring.StiffnessLow),
         label = "headerColor",
     )
@@ -553,3 +552,11 @@ internal object EpisodeInfoTags {
     const val LIST = "episode_info_list"
     const val RAIL = "episode_info_rail"
 }
+
+/**
+ * The episode top bar's fill: the page's `surface`, fading in with [scrollFraction], then the deeper
+ * `surfaceContainer` once content runs under the bar. Never fades from `Color.Transparent`, whose
+ * black would flash.
+ */
+internal fun episodeHeaderColor(scheme: androidx.compose.material3.ColorScheme, scrollFraction: Float, contentUnder: Boolean): androidx.compose.ui.graphics.Color =
+    if (contentUnder) scheme.surfaceContainer else scheme.surface.copy(alpha = scrollFraction.coerceIn(0f, 1f))
