@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="tv_launcher_background">#573DF5</color>
+    <!-- The window behind the first frame, so a cold start never flashes white. -->
+    <color name="tv_window_background">#121318</color>
+</resources>

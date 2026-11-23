@@ -22,6 +22,8 @@ Announcement title:
 
 ## Highlights
 
+- boxlore now has an Android TV app: browse charts and your shows, pick up where you left off, and keep listening as one episode leads to the next.
+
 ## New
 
 ## Improved
