@@ -118,6 +118,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 isOnboarding = isFromOnboarding,
                 onSendFeedback = { navController.navigate("feedback") },
                 onCheckForUpdates = { container.appUpdates.open(checkNow = true) },
+                tvSignIn = container.tvSignIn,
                 onSupportPageVisibilityChanged = w.actions.onSupportPageVisibilityChanged,
                 onAccountPageVisibilityChanged = w.actions.onAccountPageVisibilityChanged,
                 wearOs = cx.aswin.boxlore.wearlink.rememberWearOsSettings(container.phoneWearLink),

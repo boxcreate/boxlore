@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -127,6 +128,7 @@ internal fun AccountManagementGroup(
     onResetPassword: () -> Unit,
     onSignOut: () -> Unit,
     onDeleteAccountClick: () -> Unit,
+    onTvSignIn: (() -> Unit)? = null,
 ) {
     val isPasswordAccount = user.providerId != PROVIDER_GOOGLE && !user.email.isNullOrBlank()
     SettingsGroup(title = stringResource(R.string.account_section)) {
@@ -134,6 +136,10 @@ internal fun AccountManagementGroup(
         SettingsDivider()
         if (isPasswordAccount) {
             SettingsActionRow(title = stringResource(R.string.account_reset_password), icon = Icons.Rounded.Key, onClick = onResetPassword)
+            SettingsDivider()
+        }
+        if (onTvSignIn != null) {
+            SettingsActionRow(title = stringResource(R.string.account_tv_sign_in), icon = Icons.Rounded.Tv, onClick = onTvSignIn)
             SettingsDivider()
         }
         SettingsActionRow(title = stringResource(R.string.account_sign_out), icon = Icons.AutoMirrored.Rounded.Logout, onClick = onSignOut)

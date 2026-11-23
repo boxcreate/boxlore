@@ -828,6 +828,17 @@ class AppContainer(
         )
     }
 
+    /** Approves the code boxlore on a TV shows, so the TV signs in to this phone's account. */
+    val tvSignIn: cx.aswin.boxlore.sync.TvSignInAdapter by lazy {
+        cx.aswin.boxlore.sync.TvSignInAdapter(
+            auth = authRepository,
+            api = {
+                val network = cx.aswin.boxlore.core.network.NetworkModule
+                network.createWatchAccountApi(apiBaseUrl, network.createCachedClient(appContext))
+            },
+        )
+    }
+
     /** Finishes OPML outlines still pending during the foreground catch-up; built once, on the first catch-up. */
     private val opmlCatchUpManager: cx.aswin.boxlore.core.catalog.backup.LibraryBackupManager by lazy {
         cx.aswin.boxlore.core.catalog.backup.LibraryBackupManager(

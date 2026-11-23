@@ -304,7 +304,7 @@ internal fun AccountContinueButton(onContinue: () -> Unit) {
 internal fun AccountSignedInSettings(user: BoxLoreUser, syncStatus: CloudSyncUiStatus, actions: SignedInActions) {
     AccountSyncPanel(syncStatus, actions.onSyncNow, showEcho = true)
     AccountSyncTiles(state = null)
-    AccountManagementGroup(user, actions.onResetPassword, actions.onSignOut, actions.onDeleteAccountClick)
+    AccountManagementGroup(user, actions.onResetPassword, actions.onSignOut, actions.onDeleteAccountClick, actions.onTvSignIn)
     AccountFooterLinks(actions.onOpenAccountDeletionInfo)
 }
 
