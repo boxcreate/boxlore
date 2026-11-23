@@ -65,6 +65,7 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.feature.home.LocalHomeSectionsUiState
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.StableCompletedDownloadList
 import cx.aswin.boxlore.feature.home.StablePlaybackStateMap
@@ -183,8 +184,10 @@ private fun HomeMixRail(
     onPlayEpisode: (Episode, Podcast, cx.aswin.boxlore.core.model.PlaybackEntryPoint) -> Unit,
     onViewDownloads: () -> Unit,
 ) {
-    val dailyScrollState = rememberLazyListState()
-    val offlineScrollState = rememberLazyListState()
+    // Home holds the rails' scroll above its grid, so they keep their place when the grid swaps items.
+    val sections = LocalHomeSectionsUiState.current
+    val dailyScrollState = sections?.dailyRail ?: rememberLazyListState()
+    val offlineScrollState = sections?.offlineRail ?: rememberLazyListState()
     val railLayout = LocalYourShowsRailLayout.current
     AnimatedContent(
         targetState = mode,
@@ -388,7 +391,9 @@ private fun HomeMixDropdownHeading(
     onModeSelected: (HomeMixMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    // Home keeps the open menu above its grid, so it stays open when the window crosses the tablet size.
+    val localExpanded = remember { mutableStateOf(false) }
+    var expanded by (LocalHomeSectionsUiState.current?.mixMenu ?: localExpanded)
     val chevronRotation by
         animateFloatAsState(
             targetValue = if (expanded) 180f else 0f,

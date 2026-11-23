@@ -593,6 +593,8 @@ fun HomeScreen(
     TrackScreenView("home", send = {}) // visits are app opens and Home tab taps
     // Track scroll state for collapsing top bar
     val gridState = rememberLazyStaggeredGridState()
+    // Your shows' and the Brief's places live above the grid, which swaps items at the tablet size.
+    val sections = LocalHomeSectionsUiState.current ?: rememberHomeSectionsUiState()
     var showChangePodcastSheet by remember { androidx.compose.runtime.mutableStateOf(false) }
 
     val collapseThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
@@ -615,6 +617,7 @@ fun HomeScreen(
             )
         }
     }
+    CompositionLocalProvider(LocalHomeSectionsUiState provides sections) {
     Box(modifier = modifier.fillMaxSize()) {
         if (HeroCardStyle.sanitize(LocalHeroCardStyle.current) == HeroCardStyle.MARQUEE) {
             MarqueeHomeLayout(
@@ -639,6 +642,7 @@ fun HomeScreen(
                 feed()
             }
         }
+    }
     }
 
     HomeScreenBottomSheets(

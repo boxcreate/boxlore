@@ -73,6 +73,8 @@ import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.feature.home.HomeSectionsUiState
+import cx.aswin.boxlore.feature.home.LocalHomeSectionsUiState
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Locale
@@ -97,8 +99,15 @@ fun DailyBriefingCard(
     onDismissForever: () -> Unit = {},
     onFeedbackClick: () -> Unit = {},
 ) {
-    var expanded by remember(briefing.region, briefing.date) { mutableStateOf(false) }
-    var cardState by remember(briefing.region, briefing.date) { mutableStateOf(DailyBriefingCardState.NORMAL) }
+    // Home keeps the hide step and the story list above its grid, so they survive window changes.
+    val sections = LocalHomeSectionsUiState.current
+    val edition = HomeSectionsUiState.briefKey(briefing.region, briefing.date)
+    var localExpanded by remember(briefing.region, briefing.date) { mutableStateOf(false) }
+    var localCardState by remember(briefing.region, briefing.date) { mutableStateOf(DailyBriefingCardState.NORMAL) }
+    val expanded = sections?.briefExpanded(edition) ?: localExpanded
+    val cardState = sections?.briefStep(edition) ?: localCardState
+    val setExpanded: (Boolean) -> Unit = { if (sections != null) sections.setBriefExpanded(edition, it) else localExpanded = it }
+    val setCardState: (DailyBriefingCardState) -> Unit = { if (sections != null) sections.setBriefStep(edition, it) else localCardState = it }
     val locale = currentLocale()
     val displayDate = remember(briefing.date, locale) { briefingCardDate(briefing.date, locale) }
     val durationMinutes = if (chapters.isNotEmpty()) ((chapters.last().startTime + 30) / 60).toInt().coerceAtLeast(1) else null
@@ -120,7 +129,7 @@ fun DailyBriefingCard(
                         trailing = {
                             if (!tablet) {
                             Surface(Modifier.align(AbsoluteAlignment.TopRight).padding(8.dp), shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                                BriefingDismissButton(cardState, { cardState = it }, ::track)
+                                BriefingDismissButton(cardState, setCardState, ::track)
                             }
                             }
                         },
@@ -135,7 +144,7 @@ fun DailyBriefingCard(
                                 if (tablet) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(metadata, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        BriefingDismissButton(cardState, { cardState = it }, ::track)
+                                        BriefingDismissButton(cardState, setCardState, ::track)
                                     }
                                 }
                                 when (state) {
@@ -144,7 +153,7 @@ fun DailyBriefingCard(
                                         onPlayPauseClick,
                                         onClick,
                                         expanded,
-                                        onExpandedChange = { expanded = it },
+                                        onExpandedChange = setExpanded,
                                     )
                                     DailyBriefingCardState.CONFIRM_DISMISS -> {
                                         Text(stringResource(R.string.briefing_hide_today_title), style = MaterialTheme.typography.titleMedium)
@@ -155,7 +164,7 @@ fun DailyBriefingCard(
                                         }, Modifier.testTag("home_brief_hide_today")) { Text(stringResource(R.string.briefing_hide_today)) }
                                         TextButton(onClick = {
                                             track("dismiss_forever_initiated")
-                                            cardState = DailyBriefingCardState.CONFIRM_FOREVER
+                                            setCardState(DailyBriefingCardState.CONFIRM_FOREVER)
                                         }, Modifier.testTag("home_brief_always_hide")) { Text(stringResource(R.string.briefing_always_hide)) }
                                     }
                                     DailyBriefingCardState.CONFIRM_FOREVER -> {

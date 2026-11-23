@@ -54,6 +54,7 @@ import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.home.LocalHomeSectionsUiState
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SelectedShowStatus
 import cx.aswin.boxlore.feature.home.StableCompletedDownloadList
@@ -214,7 +215,9 @@ fun YourShowsSection(
                 } else {
                     // Scenario B: Filtered State (A Specific Sub is Selected) / Scenario C: Only 1 Sub Edge Case
                     val activeId = activeShowId
-                    val filteredScrollState = rememberScrollState()
+                    // Home keeps each show's list scroll above its grid, so it survives window changes.
+                    val sections = LocalHomeSectionsUiState.current
+                    val filteredScrollState = activeId?.let { sections?.showListScroll(it) } ?: rememberScrollState()
                     val filteredScrollConnection = remember(filteredScrollState) {
                         HomeEpisodeListScrollConnection(
                             canScrollForward = { filteredScrollState.canScrollForward },

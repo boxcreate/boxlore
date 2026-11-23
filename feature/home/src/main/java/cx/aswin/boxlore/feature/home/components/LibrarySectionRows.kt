@@ -52,6 +52,7 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
+import cx.aswin.boxlore.feature.home.LocalHomeSectionsUiState
 import cx.aswin.boxlore.feature.home.R
 
 internal data class CoverPin(
@@ -85,7 +86,17 @@ internal fun SelectorCover(
 
     val coverShape = rememberYourShowsSelectorShape(isSelected)
     val actionLabel = stringResource(if (pin.pinned) R.string.home_shows_unpin else R.string.home_shows_pin)
-    var showPinMenu by remember { mutableStateOf(false) }
+    // Home keeps which cover's menu is open above its grid, so it stays open across window changes.
+    val sections = LocalHomeSectionsUiState.current
+    var localPinMenu by remember { mutableStateOf(false) }
+    val showPinMenu = sections?.pinMenu?.value?.let { it == podcast.id } ?: localPinMenu
+    fun setPinMenu(open: Boolean) {
+        when {
+            sections == null -> localPinMenu = open
+            open -> sections.pinMenu.value = podcast.id
+            sections.pinMenu.value == podcast.id -> sections.pinMenu.value = null
+        }
+    }
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(22.dp))
@@ -93,7 +104,7 @@ internal fun SelectorCover(
                             feedback = ExpressivePressFeedback.Control,
                 shape = RoundedCornerShape(22.dp),
                 onLongClickLabel = actionLabel,
-                onLongClick = { showPinMenu = true },
+                onLongClick = { setPinMenu(true) },
                 onClick = onClick,
             )
             .semantics {
@@ -131,7 +142,7 @@ internal fun SelectorCover(
                 }
             }
         }
-        CoverPinMenu(showPinMenu, actionLabel, { showPinMenu = false }, pin.onToggle)
+        CoverPinMenu(showPinMenu, actionLabel, { setPinMenu(false) }, pin.onToggle)
     }
 }
 

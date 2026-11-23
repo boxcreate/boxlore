@@ -436,7 +436,7 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         private const val RAIL_TAG = "home_discovery_rail"
 
         /** Phones list the Brief on its own; tablets put it beside Your shows. */
-        private val BRIEF_KEYS = listOf("briefing", "tablet_leading_sections")
+        private val BRIEF_KEYS = listOf("briefing", "your_shows")
 
         private fun styleName(style: String) = when (style) {
             HeroCardStyle.BLOCK -> "block"

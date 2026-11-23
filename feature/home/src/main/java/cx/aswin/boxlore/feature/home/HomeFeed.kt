@@ -165,9 +165,11 @@ internal fun PodcastFeed(
         ) {
             smartHeroItem(content, playback, callbacks, derivedState, marqueeTopInset)
             if (tablet && feedState.briefing != null) {
-                item(span = StaggeredGridItemSpan.FullLine, key = "tablet_leading_sections", contentType = "tablet_leading_sections") {
+                val showLibrary = shouldShowYourShows(content, feedState, loadingState)
+                // Keyed like the section it leads with on phones, so the grid keeps its place across the tablet size.
+                item(span = StaggeredGridItemSpan.FullLine, key = if (showLibrary) "your_shows" else "briefing", contentType = "tablet_leading_sections") {
                     TabletHomeLeadingSections(
-                        showLibrary = shouldShowYourShows(content, feedState, loadingState),
+                        showLibrary = showLibrary,
                         library = { YourShowsFeedSection(content, feedState, loadingState, playback, callbacks, derivedState) },
                         briefing = { DailyBriefingFeedCard(feedState, playback, callbacks, context) },
                     )
