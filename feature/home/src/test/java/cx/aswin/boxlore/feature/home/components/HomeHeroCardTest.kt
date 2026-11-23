@@ -222,6 +222,20 @@ class HomeHeroCardTest {
         }
     }
 
+    /** Long state labels (Spanish, French, large text, narrow cards) used to shrink to 8sp. */
+    @Test fun `the state label never shrinks below 11sp and stays on one line`() {
+        render()
+        for (width in listOf(288, 320, 380)) {
+            for (scale in listOf(1f, 1.3f)) {
+                scenario.value = Scenario(width = width, scale = scale, type = HeroType.SPOTLIGHT, label = "RETOMA DONDE LO DEJASTE AHORA")
+                composeRule.waitForIdle()
+                val label = textLayout("home_hero_context")
+                assertEquals("${width}dp at ${scale}x", 1, label.lineCount)
+                assertTrue("${width}dp at ${scale}x: ${label.layoutInput.style.fontSize}", label.layoutInput.style.fontSize.value >= 11f - 0.01f)
+            }
+        }
+    }
+
     @Test fun `duration units stay intact and captions fit while genres can occupy two lines`() {
         render()
         val variants = listOf(288, 320, 380).flatMap { width ->

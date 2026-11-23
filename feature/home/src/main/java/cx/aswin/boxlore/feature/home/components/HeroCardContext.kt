@@ -121,7 +121,8 @@ private fun ContextLabel(label: String, foreground: Color, modifier: Modifier) {
         color = foreground.copy(alpha = 0.85f),
         maxLines = 1,
         softWrap = false,
-        autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 14.sp),
+        // Never smaller than readable: a label that still doesn't fit at 11sp ends with "…".
+        autoSize = TextAutoSize.StepBased(minFontSize = HeroContextMinLabelSize, maxFontSize = 14.sp),
         overflow = TextOverflow.Ellipsis,
         modifier = modifier.fillMaxWidth().testTag("home_hero_context"),
     )
@@ -207,7 +208,8 @@ private fun RankMarket(market: String, foreground: Color, modifier: Modifier) {
         color = foreground.copy(alpha = 0.9f),
         maxLines = 1,
         softWrap = false,
-        autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 14.sp),
+        // Never smaller than readable: a label that still doesn't fit at 11sp ends with "…".
+        autoSize = TextAutoSize.StepBased(minFontSize = HeroContextMinLabelSize, maxFontSize = 14.sp),
         overflow = TextOverflow.Ellipsis,
         modifier = modifier.fillMaxWidth().testTag("home_hero_context"),
     )
@@ -258,3 +260,6 @@ private fun TrendingWords(genre: String, foreground: Color, modifier: Modifier) 
 
 @Composable
 internal fun heroDurationText(minutes: Int) = if (minutes >= 60) stringResource(R.string.home_hero_hours_minutes, minutes / 60, minutes % 60) else stringResource(R.string.home_hero_minutes, minutes)
+
+/** The smallest the hero's state label ("Resume", "New episode") may shrink to. */
+internal val HeroContextMinLabelSize = 11.sp
