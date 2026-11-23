@@ -7,11 +7,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,6 +48,7 @@ import cx.aswin.boxlore.core.designsystem.echo.EchoFace
 import cx.aswin.boxlore.core.designsystem.echo.EchoGaze
 import cx.aswin.boxlore.core.designsystem.echo.EchoIdle
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.theme.SkeletonBlock
 
 /** Builds the page view for one run; [onMessage] and [onFailed] report back to the controller. */
 internal fun interface TurnstilePageFactory {
@@ -115,7 +118,15 @@ internal fun TurnstileStepUpHost(
         }
     } else {
         TurnstileStepUpSheet(onSkip = { controller.cancel(attempt) }) {
-            AndroidView(factory = holder::attach, modifier = Modifier.fillMaxWidth().height(72.dp).testTag(CHALLENGE_PAGE_TAG))
+            Box(Modifier.fillMaxWidth().height(72.dp), contentAlignment = Alignment.Center) {
+                // The page is see-through: this placeholder, the size of Cloudflare's box, shimmers
+                // until the box draws over it, so the card never sits empty while the check loads.
+                SkeletonBlock(
+                    Modifier.widthIn(max = CHECK_BOX_WIDTH).fillMaxWidth().height(CHECK_BOX_HEIGHT).testTag(CHALLENGE_PLACEHOLDER_TAG),
+                    shape = MaterialTheme.shapes.small,
+                )
+                AndroidView(factory = holder::attach, modifier = Modifier.fillMaxSize().testTag(CHALLENGE_PAGE_TAG))
+            }
         }
     }
 }
@@ -190,6 +201,11 @@ private val CheckEchoIdle = EchoIdle(
     ),
 )
 
+/** Cloudflare's check box at its normal size. */
+private val CHECK_BOX_WIDTH = 300.dp
+private val CHECK_BOX_HEIGHT = 65.dp
+
+internal const val CHALLENGE_PLACEHOLDER_TAG = "turnstile_challenge_placeholder"
 internal const val INVISIBLE_PAGE_TAG = "turnstile_invisible_page"
 internal const val CHALLENGE_PAGE_TAG = "turnstile_challenge_page"
 internal const val CHALLENGE_CARD_TAG = "turnstile_challenge_card"

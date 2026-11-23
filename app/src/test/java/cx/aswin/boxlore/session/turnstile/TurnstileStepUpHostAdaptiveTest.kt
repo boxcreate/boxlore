@@ -208,6 +208,9 @@ class TurnstileStepUpHostAdaptiveTest {
         render()
         val result = start()
         askForInteraction()
+        // Until Cloudflare's box draws over it, a placeholder of its size shimmers in the 72dp frame.
+        compose.onNodeWithTag(CHALLENGE_PLACEHOLDER_TAG).assertIsDisplayed()
+        assertEquals(72f, compose.onNodeWithTag(CHALLENGE_PAGE_TAG).getUnclippedBoundsInRoot().let { it.bottom - it.top }.value, 0.5f)
 
         compose.onNodeWithText("Skip").performClick()
 
