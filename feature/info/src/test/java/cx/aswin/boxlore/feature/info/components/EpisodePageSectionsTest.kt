@@ -99,6 +99,30 @@ class EpisodePageSectionsTest {
     }
 
     @Test
+    fun `links show four rows until opened, sit in two columns on wide pages, and open once per tap`() {
+        render()
+        val list = fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST)
+        list.performScrollToKey("links")
+        assertEquals(0, fixture.compose.onAllNodesWithText("Further reading 4").fetchSemanticsNodes().size)
+        fixture.compose.onNodeWithText("Show all links").performClick()
+        fixture.compose.waitForIdle()
+        fixture.compose.walkWindows(window, BoxloreTestWindows.W599_H900, BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900) { size ->
+            list.performScrollToKey("links")
+            assertTrue("still open at $size", fixture.compose.onAllNodesWithText("Show fewer links").fetchSemanticsNodes().isNotEmpty())
+        }
+        fixture.compose.runOnIdle { window.value = BoxloreTestWindows.UPRIGHT_BOOK }
+        list.performScrollToKey("links")
+        val first = fixture.compose.onNodeWithText("Further reading 1").getBoundsInRoot()
+        val second = fixture.compose.onNodeWithText("Further reading 2").getBoundsInRoot()
+        assertEquals("two columns side by side", first.top.value, second.top.value, 1f)
+        fixture.compose.onNodeWithText("Further reading 1").performClick()
+        fixture.compose.waitForIdle()
+        val opened = org.robolectric.Shadows.shadowOf(fixture.compose.activity.application).nextStartedActivity
+        assertEquals("https://site1.example.org", opened.data.toString())
+        assertEquals(null, org.robolectric.Shadows.shadowOf(fixture.compose.activity.application).nextStartedActivity)
+    }
+
+    @Test
     fun `More from opens the show from its header only`() {
         render()
         fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("more_from_podcast")
@@ -189,7 +213,7 @@ class EpisodePageSectionsTest {
         val links = listOf(
             EpisodeLink("https://curiousworld.example/14", "curiousworld.example", EpisodeLinkKind.WEBSITE),
             EpisodeLink("https://www.youtube.com/watch?v=abc", "youtube.com", EpisodeLinkKind.VIDEO, platform = "YouTube"),
-        )
+        ) + (1..4).map { EpisodeLink("https://site$it.example.org", "site$it.example.org", EpisodeLinkKind.ARTICLE, title = "Further reading $it") }
         val notes = ShowNotes("Amara talks with a cartographer about the places we grew up in. ".repeat(6), links, chapters, "")
         val similar = listOf("History Snacks", "Atlas Hour").mapIndexed { i, show ->
             TestFixtures.episode(id = "similar-$i", title = "Episode $i", podcastId = "${i + 2}", podcastTitle = show)

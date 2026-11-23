@@ -5,17 +5,18 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Article
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
@@ -31,7 +32,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,26 +48,47 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.shownotes.EpisodeLinkTitles
-import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.EpisodeLink
 import cx.aswin.boxlore.core.model.EpisodeLinkKind
+import cx.aswin.boxlore.feature.info.components.EpisodeExpandRow
 import cx.aswin.boxlore.feature.info.components.EpisodeSectionHeader
 
+/**
+ * The episode's links as a list, like its chapters: each row has the site's icon, the link's name,
+ * the site under it and an open-in-new arrow. The first four show, then a row to show the rest. On
+ * pages 600dp and wider the rows sit in two columns.
+ */
 @Composable
 internal fun EpisodeLinksSection(links: List<EpisodeLink>, showName: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val rows = remember(links) { episodeLinkRows(links) }
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    var expanded by rememberSaveable(links.map(EpisodeLink::url)) { mutableStateOf(false) }
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         EpisodeSectionHeader(stringResource(R.string.episode_info_links), Modifier.padding(horizontal = 20.dp))
-        // Rows scroll together, but pack independently so shorter bubbles leave no column gaps.
-        Column(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            rows.forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    row.forEach { link ->
-                        EpisodeLinkPill(link, showName, Modifier.widthIn(max = 300.dp)) {
-                            openEpisodeLink(context, link.url)
+        BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            val columns = if (maxWidth >= TWO_COLUMN_LINKS_WIDTH) 2 else 1
+            val rows = remember(links, columns, expanded) { episodeLinkListRows(links, columns, expanded) }
+            val expandable = links.size > COLLAPSED_EPISODE_LINKS
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                rows.forEachIndexed { rowIndex, row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                        row.forEach { link ->
+                            val shape = linkRowShape(first = rowIndex == 0, last = rowIndex == rows.lastIndex && !expandable)
+                            EpisodeLinkRow(link, showName, shape, Modifier.weight(1f)) { openEpisodeLink(context, link.url) }
                         }
+                        // An odd last link keeps its column's width.
+                        repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+                if (expandable) {
+                    val shape = linkRowShape(first = false, last = true)
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = shape, modifier = Modifier.fillMaxWidth()) {
+                        EpisodeExpandRow(
+                            label = stringResource(if (expanded) R.string.episode_info_fewer_links else R.string.episode_info_all_links),
+                            expanded = expanded,
+                            onClick = { expanded = !expanded },
+                            shape = shape,
+                        )
                     }
                 }
             }
@@ -70,8 +96,18 @@ internal fun EpisodeLinksSection(links: List<EpisodeLink>, showName: String, mod
     }
 }
 
+private val TWO_COLUMN_LINKS_WIDTH = 568.dp
+
+private fun linkRowShape(first: Boolean, last: Boolean) = RoundedCornerShape(
+    topStart = if (first) 24.dp else 5.dp,
+    topEnd = if (first) 24.dp else 5.dp,
+    bottomStart = if (last) 24.dp else 5.dp,
+    bottomEnd = if (last) 24.dp else 5.dp,
+)
+
+/** One link: its brand or kind icon in a circle, its name, the site, and the open-in-new arrow. */
 @Composable
-private fun EpisodeLinkPill(link: EpisodeLink, showName: String, modifier: Modifier, onClick: () -> Unit) {
+private fun EpisodeLinkRow(link: EpisodeLink, showName: String, shape: RoundedCornerShape, modifier: Modifier, onClick: () -> Unit) {
     val label = episodeLinkLabel(link, showName)
     val profile = episodeLinkProfileHandle(link)
     val accessibleLabel = if (profile != null) {
@@ -81,20 +117,32 @@ private fun EpisodeLinkPill(link: EpisodeLink, showName: String, modifier: Modif
     }
     val brand = episodeLinkBrandIcon(link.host)
     val colors = MaterialTheme.colorScheme
-    val palette = brand?.let { episodeLinkPalette(it, colors.surfaceContainer, colors.onSurface) }
+    val palette = brand?.let { episodeLinkPalette(it, colors.surfaceContainerHigh, colors.onSurface) }
     Surface(
-        shape = CircleShape,
-        color = palette?.container ?: colors.surfaceContainer,
-        modifier = modifier.semantics { contentDescription = accessibleLabel }
-            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape, onClick = onClick),
+        shape = shape,
+        color = colors.surfaceContainerLow,
+        modifier = modifier.semantics(mergeDescendants = true) { contentDescription = accessibleLabel }
+            .expressiveClickable(shape = shape, onClick = onClick),
     ) {
-        Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            EpisodeLinkIcon(link, palette?.icon ?: colors.onSurfaceVariant)
-            Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-            Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
+        Row(Modifier.heightIn(min = 56.dp).padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Surface(shape = CircleShape, color = palette?.container ?: colors.surfaceContainerHigh) {
+                Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) { EpisodeLinkIcon(link, palette?.icon ?: colors.onSurfaceVariant) }
+            }
+            Column(Modifier.weight(1f)) {
+                Text(episodeLinkRowTitle(link), style = MaterialTheme.typography.bodyLarge, color = colors.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(link.host, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
         }
     }
 }
+
+/** A row's name, without the "Visit" or "Read" the old pills started with: the link's title, profile, platform or site. */
+internal fun episodeLinkRowTitle(link: EpisodeLink): String =
+    EpisodeLinkTitles.destinationTitle(link.title, link.platform)
+        ?: episodeLinkProfileHandle(link)?.let { if (it.startsWith("@")) it else "@$it" }
+        ?: link.platform?.takeIf(String::isNotBlank)
+        ?: link.host
 
 @Composable
 private fun EpisodeLinkIcon(link: EpisodeLink, tint: Color) {
