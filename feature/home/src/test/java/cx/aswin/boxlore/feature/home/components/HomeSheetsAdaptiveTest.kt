@@ -49,6 +49,7 @@ class HomeSheetsAdaptiveTest {
     private val fontScale = mutableFloatStateOf(1f)
     private val shows = List(14) { TestFixtures.podcast(id = "show-$it", title = "The Rest Is History: The Rise and Fall of Everything $it", artist = "Goalhanger") }
     private val picks = mutableListOf<Podcast?>()
+    private val picked = mutableStateOf<String?>(null)
     private var dismissals = 0
 
     private fun render() {
@@ -59,7 +60,7 @@ class HomeSheetsAdaptiveTest {
                     Box(Modifier.requiredSize(layout.widthDp.dp, layout.heightDp.dp)) {
                         ChangeRecommendationPodcastSheet(
                             candidatePodcasts = shows,
-                            selectedPodcastId = shows[2].id,
+                            selectedPodcastId = picked.value,
                             onDismissRequest = { dismissals++ },
                             onPodcastSelect = { picks += it },
                         )
@@ -71,8 +72,14 @@ class HomeSheetsAdaptiveTest {
     }
 
     @Test
-    fun `the current pick is marked and Pick for me resets once`() {
+    fun `the listener's pick is marked, Pick for me while there is none, and Pick for me resets once`() {
         render()
+        // No show picked: boxlore picks, and no show reads as chosen.
+        compose.onNodeWithTag("home_change_show_auto").assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
+        listOf(2, 3).forEach { compose.onNodeWithTag("home_change_show_${shows[it].id}").assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false)) }
+        picked.value = shows[2].id
+        compose.waitForIdle()
+        compose.onNodeWithTag("home_change_show_auto").assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
         compose.onNodeWithTag("home_change_show_${shows[2].id}").assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
         compose.onNodeWithTag("home_change_show_${shows[3].id}").assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
         compose.onNodeWithTag("home_change_show_auto").performClick()

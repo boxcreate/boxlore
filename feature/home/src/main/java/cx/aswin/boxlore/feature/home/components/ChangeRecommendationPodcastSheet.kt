@@ -104,7 +104,8 @@ fun ChangeRecommendationPodcastSheet(
             ) {
                 item(key = "pick_for_me") {
                     PickerRow(
-                        selected = false,
+                        // With no show picked, boxlore picks; that is the current choice.
+                        selected = selectedPodcastId == null,
                         onClick = { onPodcastSelect(null) },
                         container = MaterialTheme.colorScheme.primaryContainer,
                         content = MaterialTheme.colorScheme.onPrimaryContainer,

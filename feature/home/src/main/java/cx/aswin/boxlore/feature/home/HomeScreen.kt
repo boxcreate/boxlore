@@ -105,6 +105,8 @@ data class HomeSheetUi(
     val showPostReview: Boolean = false,
     val showFeedback: Boolean = false,
     val candidatePodcasts: List<Podcast> = emptyList(),
+    /** The show the listener picked for Because you like; null while boxlore picks for them. */
+    val pickedPodcastId: String? = null,
 )
 
 @androidx.compose.runtime.Stable
@@ -277,6 +279,7 @@ fun HomeRoute(
     val showFeedback by viewModel.showFeedback.collectAsState()
 
     val candidatePodcasts by viewModel.candidatePodcasts.collectAsState(initial = emptyList())
+    val pickedPodcastId by viewModel.overriddenRecPodcastId.collectAsState(initial = null)
 
     val downloadedEpisodeIds by viewModel.downloadedEpisodeIds.collectAsState(initial = emptySet())
     val completedDownloadItems by viewModel.completedDownloadItems.collectAsState(initial = emptyList())
@@ -381,6 +384,7 @@ fun HomeRoute(
                 showPostReview = showPostReview,
                 showFeedback = showFeedback,
                 candidatePodcasts = candidatePodcasts,
+                pickedPodcastId = pickedPodcastId,
             ),
             callbacks = callbacks,
             snackbarHostState = snackbarHostState,
@@ -532,7 +536,8 @@ private fun HomeScreenBottomSheets(
     if (showChangePodcastSheet) {
         ChangeRecommendationPodcastSheet(
             candidatePodcasts = sheets.candidatePodcasts,
-            selectedPodcastId = uiState.seemsToLikePodcast?.id,
+            // The listener's own pick, not the show boxlore rotated in for them.
+            selectedPodcastId = sheets.pickedPodcastId,
             onDismissRequest = onDismissChangePodcastSheet,
             onPodcastSelect = { podcast ->
                 onDismissChangePodcastSheet()
