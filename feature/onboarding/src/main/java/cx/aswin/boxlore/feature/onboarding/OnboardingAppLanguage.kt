@@ -18,8 +18,29 @@ data class AppLanguageQuestion(val suggested: AppLanguage) {
  * How the language question's panel stood when a language was picked, so Welcome can take over from
  * it: its height as a share of the window, or the side panel's share of the width when [twoPane].
  * Held by the view model across the recreation the language change causes; never saved beyond it.
+ *
+ * [greeting] is what the greeting showed at the tap, which need not be the picked [language]'s, and
+ * [scrolledFraction] how far the question had scrolled (a share of the window's height), so Welcome
+ * starts exactly where the question left off.
  */
-data class OpeningHandoff(val panelFraction: Float, val twoPane: Boolean, val language: AppLanguage)
+data class OpeningHandoff(
+    val panelFraction: Float,
+    val twoPane: Boolean,
+    val language: AppLanguage,
+    val greeting: HandoffGreetingFrame = HandoffGreetingFrame(language),
+    val scrolledFraction: Float = 0f,
+)
+
+/**
+ * The greeting as it stood at the tap: its [language], how far it had faded in ([alpha]), how far it
+ * still had to rise ([shift], a share of its height) and the panel's foot under it ([footDp]).
+ */
+data class HandoffGreetingFrame(
+    val language: AppLanguage,
+    val alpha: Float = 1f,
+    val shift: Float = 0f,
+    val footDp: Float = 30f,
+)
 
 /** Where onboarding starts and how the language question moves on, as pure state changes. */
 internal object OnboardingAppLanguage {

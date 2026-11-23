@@ -68,6 +68,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -80,6 +81,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -87,10 +89,10 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.echo.EchoCharacter
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
-import cx.aswin.boxlore.core.prefs.AppLanguage
 
 /**
  * Welcome: the cover panel, the invitation and the ways in. Portrait phones, foldables and the
@@ -109,7 +111,6 @@ internal fun WelcomeScreen(
 ) {
     val scroll = rememberScrollState()
     val panel = openingPanelColors()
-    val actions = WelcomeActionCallbacks(onHelpMeFind, onSearch, onImportClick, onSkip)
     val animationsOff = rememberAnimationsOff()
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         val twoPane = languageQuestionTwoPane(maxWidth, maxHeight)
@@ -117,11 +118,26 @@ internal fun WelcomeScreen(
         // animations on; otherwise it shows as usual straight away.
         val from = handoff.from?.takeIf { it.twoPane == twoPane && !animationsOff }
         if (handoff.from != null && from == null) LaunchedEffect(Unit) { handoff.onDone() }
-        val motion = rememberOpeningHandoffMotion(from, startPx = (from?.panelFraction ?: 0f) * constraints.maxHeight, onDone = handoff.onDone)
-        val greeting = from?.let { WelcomeGreeting(it.language, languageGreetingSize(maxWidth, maxHeight), motion) }
+        val windowPx = constraints.maxHeight.toFloat()
+        val motion = rememberOpeningHandoffMotion(
+            from,
+            startPx = (from?.panelFraction ?: 0f) * windowPx,
+            scrollPx = (from?.scrolledFraction ?: 0f) * windowPx,
+            ready = from == null || appLanguageInEffect(from.language),
+            onDone = handoff.onDone,
+        )
+        // Leaving Welcome ends the hand-off, so coming back shows Welcome as usual.
+        val leave: (() -> Unit) -> () -> Unit = { action ->
+            {
+                if (motion != null) handoff.onDone()
+                action()
+            }
+        }
+        val actions = WelcomeActionCallbacks(leave(onHelpMeFind), leave(onSearch), onImportClick, leave(onSkip))
+        val greeting = motion?.let { WelcomeGreeting(languageGreetingSize(maxWidth, maxHeight), it) }
         if (twoPane) {
-            // As on the language question beside its panel, so the two screens read as one opening.
-            WelcomeStatusBars(panel.container, coverVisible = false)
+            // The clock sits over the panel, so its icons follow the panel, as on the language question.
+            WelcomeStatusBars(panel.container, coverVisible = true)
             TwoPaneWelcome(clock, scroll, panel, PaneSize(maxWidth, maxHeight), actions, greeting)
         } else {
             StackedWelcome(clock, scroll, panel, actions, motion, greeting)
@@ -130,11 +146,18 @@ internal fun WelcomeScreen(
 }
 
 /** The question's greeting while Welcome takes over the panel. */
-private class WelcomeGreeting(val language: AppLanguage, val size: Float, val motion: OpeningHandoffMotion?)
+private class WelcomeGreeting(val size: Float, val motion: OpeningHandoffMotion)
 
 /** Welcome's four ways in, kept together so both arrangements pass them on unchanged. */
 private class WelcomeActionCallbacks(val onHelpMeFind: () -> Unit, val onSearch: () -> Unit, val onImportClick: () -> Unit, val onSkip: () -> Unit)
 
+private enum class WelcomeSlot { Invitation, Actions, Panel }
+
+/**
+ * The stacked page: the cover panel, the invitation, then the actions at the foot. The invitation and
+ * actions are measured first, so the covers are sized in the same pass (smaller only when the page
+ * would otherwise scroll) and never jump a frame later.
+ */
 @Composable
 private fun StackedWelcome(
     clock: WelcomeMotionClock,
@@ -149,35 +172,49 @@ private fun StackedWelcome(
     val coverVisible by remember(scroll, statusBarHeight) {
         derivedStateOf { scroll.value + statusBarHeight < coverPanelHeight }
     }
-    WelcomeStatusBars(panel.container, coverVisible && !cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.usesTabletLayout)
+    WelcomeStatusBars(panel.container, coverVisible && !LocalBoxloreWindowLayout.current.usesTabletLayout)
 
     BoxWithConstraints(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
         val viewportHeight = maxHeight
         val viewportWidth = maxWidth
-        val density = LocalDensity.current
-        // Everything but the covers, measured, so the covers shrink only when the page would scroll.
-        var invitationHeight by remember { mutableIntStateOf(0) }
-        var actionsHeight by remember { mutableIntStateOf(0) }
-        val otherContent = with(density) { (statusBarHeight + invitationHeight + actionsHeight).toDp() } + WelcomePanelChrome
-        val coverSize = welcomeCoverSize(viewportWidth, viewportHeight, otherContent)
-        Column(
-            Modifier.fillMaxWidth().verticalScroll(scroll, enabled = scroll.maxValue > 0, overscrollEffect = null).heightIn(min = viewportHeight),
-        ) {
-            WelcomeCoverPanel(clock, viewportWidth, coverSize, panel, greeting, Modifier.openingPanelMorph(motion).onSizeChanged { coverPanelHeight = it.height })
-            Column(Modifier.onSizeChanged { invitationHeight = it.height }.fillMaxWidth().padding(horizontal = 26.dp).padding(top = 24.dp)) {
-                WelcomeInvitation(clock, welcomeHeadlineSize(minOf(viewportWidth, viewportHeight * WelcomeHeadlineHeightShare)))
+        val viewportPx = constraints.maxHeight
+        // Echo's peek borrows the free space above the button and sizes itself to it, up to its full
+        // size; where even the smallest Echo doesn't fit, it stays hidden.
+        var echoRoom by remember { mutableStateOf(0.dp) }
+        SubcomposeLayout(
+            Modifier.fillMaxWidth().verticalScroll(scroll, enabled = scroll.maxValue > 0, overscrollEffect = null).openingPageShift(motion),
+        ) { constraints ->
+            val loose = constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity)
+            val invitation = subcompose(WelcomeSlot.Invitation) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 26.dp).padding(top = 24.dp).openingInvitationHold(motion)) {
+                    WelcomeInvitation(clock, welcomeHeadlineSize(minOf(viewportWidth, viewportHeight * WelcomeHeadlineHeightShare)))
+                }
+            }.map { it.measure(loose) }
+            val ways = subcompose(WelcomeSlot.Actions) {
+                WelcomeActions(
+                    clock,
+                    actions,
+                    echoCell = welcomeEchoCell(echoRoom),
+                    Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = WelcomeActionsGap)
+                        .navigationBarsPadding().padding(bottom = 8.dp).openingHandoffEntry(motion),
+                )
+            }.map { it.measure(loose) }
+            val invitationHeight = invitation.sumOf { it.height }
+            val actionsHeight = ways.sumOf { it.height }
+            // Everything but the covers, measured, so the covers shrink only when the page would scroll.
+            val coverSize = welcomeCoverSize(viewportWidth, viewportHeight, (statusBarHeight + invitationHeight + actionsHeight).toDp() + WelcomePanelChrome)
+            val panels = subcompose(WelcomeSlot.Panel) {
+                WelcomeCoverPanel(clock, viewportWidth, coverSize, panel, greeting, Modifier.openingPanelMorph(motion).onSizeChanged { coverPanelHeight = it.height })
+            }.map { it.measure(loose) }
+            val panelHeight = panels.sumOf { it.height }
+            val height = maxOf(viewportPx, panelHeight + invitationHeight + actionsHeight)
+            val spare = height - panelHeight - invitationHeight - actionsHeight
+            layout(constraints.maxWidth, height) {
+                panels.forEach { it.placeRelative(0, 0) }
+                invitation.forEach { it.placeRelative(0, panelHeight) }
+                ways.forEach { it.placeRelative(0, height - actionsHeight) }
+                echoRoom = spare.toDp() + WelcomeActionsGap
             }
-            // Echo's peek borrows the free space above the button and sizes itself to it, up to its full
-            // size; where even the smallest Echo doesn't fit, it stays hidden.
-            var echoRoom by remember { mutableStateOf(0.dp) }
-            Spacer(Modifier.weight(1f).onSizeChanged { echoRoom = with(density) { it.height.toDp() } + WelcomeActionsGap })
-            WelcomeActions(
-                clock,
-                actions,
-                echoCell = welcomeEchoCell(echoRoom),
-                Modifier.onSizeChanged { actionsHeight = it.height }.fillMaxWidth().padding(horizontal = 24.dp).padding(top = WelcomeActionsGap)
-                    .navigationBarsPadding().padding(bottom = 8.dp),
-            )
         }
     }
 }
@@ -203,22 +240,25 @@ private fun TwoPaneWelcome(
     actions: WelcomeActionCallbacks,
     greeting: WelcomeGreeting?,
 ) {
+    val motion = greeting?.motion
     OnboardingOpeningFrame(
         panel,
         size.width,
         size.height,
         scroll,
-        panelBottomPadding = 26.dp,
+        panelBottomPadding = WelcomePanelFoot,
         panelContent = { pane ->
-            WelcomePaneReel(clock, pane, panel, reelAlpha = { 1f - (greeting?.motion?.greeting?.value ?: 0f) }) {
-                greeting?.let { HandoffGreeting(it.language, languageGreetingSize(pane.width, pane.height * 1.6f), panel.content, { it.motion?.greeting?.value ?: 0f }, Modifier.align(Alignment.BottomStart).padding(horizontal = 26.dp)) }
+            WelcomePaneReel(clock, pane, panel, reelAlpha = { motion?.covers?.value ?: 1f }) {
+                if (motion != null) {
+                    HandoffGreeting(motion, languageGreetingSize(pane.width, pane.height * 1.6f), panel.content, WelcomePanelFoot, Modifier.align(Alignment.BottomStart).padding(horizontal = 26.dp))
+                }
             }
         },
     ) { pane ->
         val echoRoom = if (pane.height >= OpeningPaneEchoHeight) OpeningPaneEchoRoom else 0.dp
-        WelcomeInvitation(clock, welcomeHeadlineSize(minOf(pane.width, pane.height)))
+        Column(Modifier.fillMaxWidth().openingInvitationHold(motion)) { WelcomeInvitation(clock, welcomeHeadlineSize(minOf(pane.width, pane.height))) }
         Spacer(Modifier.height(maxOf(echoRoom, WelcomeActionsGap)))
-        WelcomeActions(clock, actions, echoCell = welcomeEchoCell(echoRoom), Modifier.fillMaxWidth())
+        WelcomeActions(clock, actions, echoCell = welcomeEchoCell(echoRoom), Modifier.fillMaxWidth().openingHandoffEntry(motion))
     }
 }
 
@@ -231,6 +271,9 @@ private const val WelcomeHeadlineHeightShare = 0.066f / 0.11f
 /** The cover panel around its covers: the 16dp top, the 34dp logo row, the 24dp gap and the 26dp foot. */
 private val WelcomePanelChrome = 100.dp
 
+/** The panel's foot under the covers. */
+private val WelcomePanelFoot = 26.dp
+
 /** On the smallest pages the covers stay at least this large; below it the page scrolls instead. */
 private val WelcomeMinCover = 72.dp
 
@@ -240,15 +283,15 @@ private val WelcomeMinCover = 72.dp
  */
 @Composable
 private fun WelcomeCoverPanel(clock: WelcomeMotionClock, width: Dp, coverSize: Dp, panel: LanguagePanelColors, greeting: WelcomeGreeting?, modifier: Modifier) {
-    OpeningPanel(panel, RoundedCornerShape(bottomStart = 46.dp, bottomEnd = 46.dp), bottomPadding = 26.dp, modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+    OpeningPanel(panel, RoundedCornerShape(bottomStart = 46.dp, bottomEnd = 46.dp), bottomPadding = WelcomePanelFoot, modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
         Box(Modifier.fillMaxWidth()) {
-            // The covers come in as the greeting goes, so the two cross-fade.
-            Column(Modifier.graphicsLayer { alpha = 1f - (greeting?.motion?.greeting?.value ?: 0f) }) {
+            // The covers come in once the greeting has gone, so text never sits over the artwork.
+            Column(Modifier.graphicsLayer { alpha = greeting?.motion?.covers?.value ?: 1f }) {
                 Spacer(Modifier.height(24.dp))
                 WelcomeCoverReel(clock, coverSize, width, panel.container)
             }
             greeting?.let {
-                HandoffGreeting(it.language, it.size, panel.content, { it.motion?.greeting?.value ?: 0f }, Modifier.align(Alignment.BottomStart).padding(horizontal = 26.dp))
+                HandoffGreeting(it.motion, it.size, panel.content, WelcomePanelFoot, Modifier.align(Alignment.BottomStart).padding(horizontal = 26.dp))
             }
         }
     }

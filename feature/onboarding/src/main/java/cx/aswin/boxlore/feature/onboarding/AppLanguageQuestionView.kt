@@ -87,9 +87,11 @@ internal fun AppLanguageQuestionContent(
     val panel = openingPanelColors()
     BoxWithConstraints(modifier.fillMaxSize().background(colors.surface)) {
         if (languageQuestionTwoPane(maxWidth, maxHeight)) {
-            WelcomeStatusBars(panel.container, coverVisible = false)
+            // Light clock icons over the panel, as on Welcome beside its panel.
+            WelcomeStatusBars(panel.container, coverVisible = true)
             TwoPaneLanguageQuestion(clock, question, panel, maxWidth, maxHeight) { language ->
-                onChoose(language, OpeningHandoff(OpeningPanelPaneShare, twoPane = true, language))
+                val greeting = greetingFrame(clock, question.all, LanguagePanelFoot.value)
+                onChoose(language, OpeningHandoff(OpeningPanelPaneShare, twoPane = true, language, greeting))
             }
         } else {
             SingleColumnLanguageQuestion(clock, question, panel, onChoose)
@@ -123,7 +125,10 @@ private fun SingleColumnLanguageQuestion(
         // Welcome's panel takes over from this one at the height it has now.
         val viewportPx = constraints.maxHeight.toFloat()
         val choose: (AppLanguage) -> Unit = { language ->
-            onChoose(language, OpeningHandoff((panelHeight / viewportPx).coerceIn(0f, 1f), twoPane = false, language))
+            // The panel as it is seen: its whole height, how far the page had scrolled and the greeting on show.
+            val greeting = greetingFrame(clock, question.all, (if (compact) LanguagePanelCompactFoot else LanguagePanelFoot).value)
+            val handoff = OpeningHandoff((panelHeight / viewportPx).coerceIn(0f, 1f), twoPane = false, language, greeting, scroll.value / viewportPx)
+            onChoose(language, handoff)
         }
         Column(Modifier.fillMaxWidth().verticalScroll(scroll).heightIn(min = viewportHeight)) {
             LanguageGreetingPanel(
@@ -169,7 +174,7 @@ private fun TwoPaneLanguageQuestion(
         width,
         height,
         rememberScrollState(),
-        panelBottomPadding = 30.dp,
+        panelBottomPadding = LanguagePanelFoot,
         panelContent = { pane ->
             LanguageGreeting(
                 clock,
@@ -199,7 +204,7 @@ private fun LanguageGreetingPanel(
     compact: Boolean,
 ) {
     // The logo sits at the top and the greeting at the bottom, however tall the panel grows.
-    OpeningPanel(panel, shape, bottomPadding = if (compact) 18.dp else 30.dp, modifier, Arrangement.SpaceBetween) {
+    OpeningPanel(panel, shape, bottomPadding = if (compact) LanguagePanelCompactFoot else LanguagePanelFoot, modifier, Arrangement.SpaceBetween) {
         LanguageGreeting(
             clock,
             languages,
@@ -392,6 +397,10 @@ private fun WelcomeMotionClock.entry(delayMillis: Long): Float =
 /** Below this height (a phone on its side, a short split window) the panel and greeting shrink. */
 internal val LanguageCompactHeight = 480.dp
 private val LanguageChoicesGap = 24.dp
+
+/** The panel's foot under the greeting, and on short windows. */
+private val LanguagePanelFoot = 30.dp
+private val LanguagePanelCompactFoot = 18.dp
 
 /** The stacked panel's share of a tall window, so the panel fills space a short column would leave empty. */
 private const val LanguagePanelShare = 0.42f

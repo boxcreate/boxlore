@@ -1,12 +1,18 @@
 package cx.aswin.boxlore.feature.onboarding
 
 import android.app.Application
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.network.model.GuidedOnboardingTurn
@@ -15,6 +21,7 @@ import cx.aswin.boxlore.core.network.model.OnboardingPart
 import cx.aswin.boxlore.core.prefs.AppLanguage
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import java.util.Locale
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -83,22 +90,31 @@ class OnboardingAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     private fun languageToWelcomeSequence(reducedMotion: Boolean) {
         golden.assumeAuditCapture()
         assumeTrue("The hand-off is recorded on phones, the cover, a foldable and a tablet", golden.configuration.auditKey in SEQUENCE_SIZES)
-        // Stands in for the view model, as OnboardingScreen wires it.
+        // Stands in for the view model, as OnboardingScreen wires it, and for the recreation that puts the
+        // picked language in effect.
         val state = mutableStateOf(OnboardingAppLanguage.initialState(onboardingCompleted = false) { AppLanguage.GERMAN })
+        val shown = mutableStateOf<AppLanguage?>(null)
         golden.prepare()
         golden.setContent(foldSafeViewport = true) {
+            val base = LocalConfiguration.current
+            val configuration = shown.value?.let { Configuration(base).apply { setLocale(Locale.forLanguageTag(it.tag)) } } ?: base
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
-                Box(Modifier.fillMaxSize().testTag(ROOT_TAG)) {
-                    OnboardingStepTransition(state.value.currentStep, Modifier.fillMaxSize()) { current ->
-                        when (current) {
-                            OnboardingStep.APP_LANGUAGE -> AppLanguageQuestionContent(AppLanguageQuestion(AppLanguage.GERMAN), onChoose = { _, _ -> })
-                            else -> WelcomeScreen(
-                                onHelpMeFind = {},
-                                onSearch = {},
-                                onSkip = {},
-                                onImportClick = {},
-                                handoff = WelcomeHandoff(state.value.openingHandoff) { state.value = OnboardingAppLanguage.handoffDone(state.value) },
-                            )
+                CompositionLocalProvider(LocalConfiguration provides configuration) {
+                    Box(Modifier.fillMaxSize().testTag(ROOT_TAG)) {
+                        OnboardingStepTransition(state.value.currentStep, Modifier.fillMaxSize()) { current ->
+                            when (current) {
+                                OnboardingStep.APP_LANGUAGE -> AppLanguageQuestionContent(AppLanguageQuestion(AppLanguage.GERMAN), onChoose = { language, handoff ->
+                                    state.value = OnboardingAppLanguage.answered(state.value, handoff)
+                                    shown.value = language
+                                })
+                                else -> WelcomeScreen(
+                                    onHelpMeFind = {},
+                                    onSearch = {},
+                                    onSkip = {},
+                                    onImportClick = {},
+                                    handoff = WelcomeHandoff(state.value.openingHandoff) { state.value = OnboardingAppLanguage.handoffDone(state.value) },
+                                )
+                            }
                         }
                     }
                 }
@@ -107,18 +123,16 @@ class OnboardingAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         golden.compose.mainClock.advanceTimeBy(1_600)
         golden.compose.waitForIdle()
         golden.compose.onNodeWithTag(ROOT_TAG).assertExists()
-        // The pick as the question reports it: its panel's share of the height, or of the width beside it.
-        val size = golden.configuration
-        val twoPane = size.width >= 600 && size.width > size.height
-        val panel = golden.compose.onNodeWithTag(OpeningPanelTag).fetchSemanticsNode().boundsInRoot
-        val handoff = OpeningHandoff(if (twoPane) OpeningPanelPaneShare else panel.height / size.height, twoPane, AppLanguage.GERMAN)
+        // The pick, as a tap on the suggested language makes it.
+        val pick = golden.compose.onNode(hasText("Deutsch") and hasClickAction()).fetchSemanticsNode().config[SemanticsActions.OnClick].action
         golden.captureSequence("language-to-welcome", frames = 16, stepMs = 40, reducedMotion = reducedMotion) {
-            state.value = OnboardingAppLanguage.answered(state.value, handoff)
+            pick?.invoke()
         }
     }
 
     private fun render(name: String, content: @Composable () -> Unit) {
         golden.assumeAuditCapture()
+        assumeTrue("Dark sizes are recorded for the hand-off only", golden.configuration !in DARK_SEQUENCE_SIZES)
         golden.prepare()
         golden.setContent(foldSafeViewport = true) {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
@@ -143,7 +157,19 @@ class OnboardingAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
             PhoneGoldenConfiguration(932, 314, false),
             PhoneGoldenConfiguration(841, 340, false),
             PhoneGoldenConfiguration(673, 410, false),
-        )
+        ) + listOf(915, 1_280).flatMap { width ->
+            // Welcome beside its panel with long text.
+            val height = if (width == 915) 412 else 800
+            listOf(
+                PhoneGoldenConfiguration(width, height, false, locale = "de"),
+                PhoneGoldenConfiguration(width, height, false, locale = "en-rXA"),
+                PhoneGoldenConfiguration(width, height, false, fontScale = 1.3f),
+            )
+        } + DARK_SEQUENCE_SIZES
+
+        /** The hand-off in dark theme too. */
+        private val DARK_SEQUENCE_SIZES: List<PhoneGoldenConfiguration>
+            get() = listOf(PhoneGoldenConfiguration(412, 915, true), PhoneGoldenConfiguration(475, 695, true), PhoneGoldenConfiguration(1_280, 800, true))
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
