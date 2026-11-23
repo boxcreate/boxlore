@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,6 +23,7 @@ import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -47,6 +49,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeRegionPx
 import cx.aswin.boxlore.feature.info.R
 
 /** A branded page's © button and the popup it opens, in the show's colours. */
@@ -126,9 +131,17 @@ private fun CopyrightPopup(style: BrandedCopyrightStyle, copyright: String, onDi
 @Composable
 internal fun BrandedPopup(style: BrandedCopyrightStyle, onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val density = LocalDensity.current
+    val window = LocalBoxloreWindowLayout.current
     // Where the card went: under the anchor, or above it when a short window has no room below.
     var above by remember { mutableStateOf(false) }
-    val position = remember(density, style) { CopyrightPopupPosition(density, style) { above = it } }
+    // The height of the fold-safe region the card opened in, so it scrolls there instead of crossing a hinge.
+    var regionHeight by remember { mutableIntStateOf(Int.MAX_VALUE) }
+    val position = remember(density, style, window) {
+        CopyrightPopupPosition(density, style, window, onRegion = { if (regionHeight != it) regionHeight = it }) { above = it }
+    }
+    val maxCardHeight = with(density) {
+        if (regionHeight == Int.MAX_VALUE) Dp.Unspecified else (regionHeight.toDp() - PopupMargin * 2).coerceAtLeast(PopupMinCardHeight)
+    }
     // Unclipped, so the shadow may run past the screen edge without Android moving the card; the
     // position keeps the card itself inside the window.
     Popup(popupPositionProvider = position, onDismissRequest = onDismiss, properties = PopupProperties(focusable = true, clippingEnabled = false)) {
@@ -146,7 +159,8 @@ internal fun BrandedPopup(style: BrandedCopyrightStyle, onDismiss: () -> Unit, c
             Column(
                 Modifier
                     .width(style.popupWidth)
-                    // Scrolls only in a window too short for the card on either side.
+                    .heightIn(max = maxCardHeight)
+                    // Scrolls only in a window, or a half of a fold, too short for the card on either side.
                     .verticalScroll(rememberScrollState())
                     .boxShadow(fill = style.popup, color = style.shadow, offsetY = 10.dp, blur = 28.dp, cornerRadius = 14.dp)
                     .border(1.dp, style.ring, RoundedCornerShape(14.dp))
@@ -162,6 +176,7 @@ private val PopupShadowRoom = 24.dp
 private val PopupCaretRoom = 8.dp
 private val PopupBottomRoom = PopupShadowRoom + 10.dp
 private val PopupMargin = 8.dp
+private val PopupMinCardHeight = 96.dp
 
 /**
  * Puts the caret's centre under the anchor (the ©, or the seal), [BrandedCopyrightStyle.gap] below it. In windows too narrow
@@ -171,18 +186,25 @@ private val PopupMargin = 8.dp
 private class CopyrightPopupPosition(
     private val density: Density,
     private val style: BrandedCopyrightStyle,
+    private val window: BoxloreWindowLayout,
+    private val onRegion: (heightPx: Int) -> Unit,
     private val onPlaced: (above: Boolean) -> Unit,
 ) : PopupPositionProvider {
     override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset =
         with(density) {
+            // The half of a half-open fold that holds the ©; the whole window otherwise.
+            val region = boxloreFoldSafeRegionPx(window, anchorBounds, windowSize, this@CopyrightPopupPosition.density)
+            onRegion(region.height)
             val cardLeft = (anchorBounds.center.x - style.caretCentre.roundToPx())
-                .coerceAtMost(windowSize.width - (style.popupWidth + PopupMargin).roundToPx())
-                .coerceAtLeast(PopupMargin.roundToPx())
+                .coerceAtMost(region.right - (style.popupWidth + PopupMargin).roundToPx())
+                .coerceAtLeast(region.left + PopupMargin.roundToPx())
             val placement = copyrightPopupTop(
                 anchorTop = anchorBounds.top,
                 anchorBottom = anchorBounds.bottom,
                 windowHeight = windowSize.height,
                 popupHeight = popupContentSize.height,
+                regionTop = region.top,
+                regionBottom = region.bottom,
                 spacing = CopyrightPopupSpacing(
                     gap = style.gap.roundToPx(),
                     caretRoom = PopupCaretRoom.roundToPx(),
@@ -207,7 +229,8 @@ internal data class CopyrightPopupSpacing(val gap: Int, val caretRoom: Int, val 
 /**
  * Under the © when the card fits there; otherwise above it when it fits there; otherwise on the
  * side with more room, kept inside the window, where the card scrolls. All in pixels; the popup's
- * height includes the [spacing]'s caret room above the card and bottom room below it.
+ * height includes the [spacing]'s caret room above the card and bottom room below it. On a
+ * half-open fold [regionTop] and [regionBottom] are the half that holds the ©, and the card stays in it.
  */
 internal fun copyrightPopupTop(
     anchorTop: Int,
@@ -215,16 +238,18 @@ internal fun copyrightPopupTop(
     windowHeight: Int,
     popupHeight: Int,
     spacing: CopyrightPopupSpacing,
+    regionTop: Int = 0,
+    regionBottom: Int = windowHeight,
 ): CopyrightPopupPlacement {
     val gap = spacing.gap
     val caretRoom = spacing.caretRoom
     val margin = spacing.margin
     val card = popupHeight - caretRoom - spacing.bottomRoom
-    val roomBelow = windowHeight - margin - (anchorBottom + gap)
-    val roomAbove = anchorTop - gap - margin
+    val roomBelow = regionBottom - margin - (anchorBottom + gap)
+    val roomAbove = anchorTop - gap - margin - regionTop
     val above = card > roomBelow && (card <= roomAbove || roomAbove > roomBelow)
     val top = if (above) anchorTop - gap - card - caretRoom else anchorBottom + gap - caretRoom
-    val highest = margin - caretRoom
-    val lowest = windowHeight - margin - card - caretRoom
+    val highest = regionTop + margin - caretRoom
+    val lowest = regionBottom - margin - card - caretRoom
     return CopyrightPopupPlacement(top.coerceAtMost(lowest).coerceAtLeast(highest), above)
 }

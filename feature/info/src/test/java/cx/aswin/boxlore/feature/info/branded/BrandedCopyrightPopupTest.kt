@@ -47,4 +47,24 @@ class BrandedCopyrightPopupTest {
         val placement = place(anchorTop = 200, windowHeight = 300, card = 400)
         assertEquals(8, placement.top + 10)
     }
+
+    @Test
+    fun `below a tabletop hinge a tall card stays in the lower half`() {
+        // The hinge runs from 400 to 420px; the © sits 20px below it, with 150px of the half below the ©.
+        val spacing = CopyrightPopupSpacing(gap = 6, caretRoom = 10, bottomRoom = 20, margin = 8)
+        val folded = copyrightPopupTop(
+            anchorTop = 440,
+            anchorBottom = 470,
+            windowHeight = 650,
+            popupHeight = 300 + 30,
+            spacing = spacing,
+            regionTop = 420,
+            regionBottom = 650,
+        )
+        assertTrue(folded.top + 10 >= 420 + 8, "The card's top stays below the hinge: ${folded.top}")
+        // The same inputs without a hinge flip the card above the ©, across where the hinge would be.
+        val flat = copyrightPopupTop(anchorTop = 440, anchorBottom = 470, windowHeight = 650, popupHeight = 330, spacing = spacing)
+        assertTrue(flat.above)
+        assertTrue(flat.top + 10 < 420)
+    }
 }
