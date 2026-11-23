@@ -161,7 +161,9 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
             }
             "insights-mosaic", "insights-when", "insights-records" -> {
                 val key = mapOf("insights-mosaic" to "mosaic", "insights-when" to "when", "insights-records" to "records").getValue(view)
-                withRunningClock { fixture.compose.onNodeWithTag(INSIGHTS_LIST_TAG).performScrollToKey(key) }
+                // On large tablets When you listen shares a row keyed by the card beside it.
+                val rowKey = if (key == "when" && fixture.configuration.width >= 1_000) "top_shows" else key
+                withRunningClock { fixture.compose.onNodeWithTag(INSIGHTS_LIST_TAG).performScrollToKey(rowKey) }
             }
             "timeline-menu" -> tap(firstRowMore())
             "history-menu", "clear-dialog" -> {
