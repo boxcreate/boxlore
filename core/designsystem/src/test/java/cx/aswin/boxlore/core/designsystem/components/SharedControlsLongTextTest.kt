@@ -67,6 +67,7 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.designsystem.theme.SkeletonTextLines
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.walkWindows
 import org.junit.Assert.assertEquals
@@ -445,6 +446,27 @@ class SharedControlsLongTextTest {
             assertFalse("$label is cut at the bottom", layout.didOverflowHeight)
             assertFalse("$label is shortened", layout.isLineEllipsized(layout.lineCount - 1))
             assertTrue("$label breaks inside a word", (0 until layout.lineCount - 1).all { label[layout.getLineEnd(it) - 1] == ' ' || label[layout.getLineEnd(it)] == ' ' })
+        }
+    }
+
+    @Test
+    fun `skeleton text lines are as tall as the loaded text at normal and large text`() {
+        val fontScale = mutableStateOf(1f)
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, fontScale = fontScale.value)) {
+                Page(BoxloreTestWindows.PHONE) {
+                    Row {
+                        SkeletonTextLines(MaterialTheme.typography.titleMedium, 2, Modifier.width(160.dp).testTag("lines"))
+                        Text("Line one\nLine two", style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("text"))
+                    }
+                }
+            }
+        }
+        listOf(1f, 1.3f, 1f).forEach { scale ->
+            fontScale.value = scale
+            compose.waitForIdle()
+            val text = compose.onNodeWithTag("text").fetchSemanticsNode().boundsInRoot.height
+            assertEquals("font scale $scale", text, compose.onNodeWithTag("lines").fetchSemanticsNode().boundsInRoot.height, 0.5f)
         }
     }
 
