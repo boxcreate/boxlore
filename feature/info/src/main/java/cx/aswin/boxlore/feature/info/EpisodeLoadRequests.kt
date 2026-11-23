@@ -24,7 +24,11 @@ internal object EpisodeLoadRequests {
         val podcastId: String,
         val podcastTitle: String,
         val entryPointContext: android.os.Bundle?,
-    )
+    ) {
+        /** Calls [load] with these arguments, in `loadEpisode`'s order. */
+        fun replay(load: (String, String, String, String, String, Int, String, String, android.os.Bundle?) -> Unit) =
+            load(episodeId, episodeTitle, episodeDescription, episodeImageUrl, episodeAudioUrl, episodeDuration, podcastId, podcastTitle, entryPointContext)
+    }
 
     /** The last load the page actually started; a skipped (covered) request never replaces it. */
     class LastLoad {

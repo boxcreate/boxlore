@@ -256,7 +256,7 @@ class EpisodeInfoViewModel(
 
     /** Try again after a failed load: the same request, which a finished error never covers. */
     fun retry() {
-        lastLoad.retryArguments()?.let(::load)
+        lastLoad.retryArguments()?.replay(::loadEpisode)
     }
 
     fun loadEpisode(
@@ -269,24 +269,12 @@ class EpisodeInfoViewModel(
         podcastId: String = "",
         podcastTitle: String = "",
         entryPointContext: android.os.Bundle? = null,
-    ) = load(
-        EpisodeLoadRequests.Arguments(
-            episodeId,
-            episodeTitle,
-            episodeDescription,
-            episodeImageUrl,
-            episodeAudioUrl,
-            episodeDuration,
-            podcastId,
-            podcastTitle,
-            entryPointContext,
-        ),
-    )
-
-    private fun load(arguments: EpisodeLoadRequests.Arguments) {
-        val (episodeId, episodeTitle, episodeDescription, episodeImageUrl, episodeAudioUrl, episodeDuration, podcastId, podcastTitle, entryPointContext) = arguments
+    ) {
         // If we already have this episode loaded (or are loading it with at least as much to go on), don't reload.
         val covered = EpisodeLoadRequests.isCovered(loadRequest, loadJob?.isActive == true, _uiState.value, episodeId, podcastId)
+        val arguments = EpisodeLoadRequests.Arguments(
+            episodeId, episodeTitle, episodeDescription, episodeImageUrl, episodeAudioUrl, episodeDuration, podcastId, podcastTitle, entryPointContext,
+        )
         lastLoad.record(arguments, covered)
         if (covered) return
         loadJob?.cancel()

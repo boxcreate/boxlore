@@ -34,6 +34,13 @@ class EpisodeLoadRequestsTest {
         assertEquals(failed, retry)
         assertEquals("920666", retry?.podcastId)
         assertTrue(retry?.entryPointContext === context)
+        // Replayed into loadEpisode's parameters in their order.
+        var replayed: EpisodeLoadRequests.Arguments? = null
+        retry?.replay { id, title, notes, image, audio, duration, podcast, podcastTitle, entry ->
+            replayed = EpisodeLoadRequests.Arguments(id, title, notes, image, audio, duration, podcast, podcastTitle, entry)
+        }
+        assertEquals(failed, replayed)
+        assertTrue(replayed?.entryPointContext === context)
     }
 
     @Test
