@@ -166,11 +166,14 @@ internal fun CoverCopy(
         }
         Column(Modifier.fillMaxWidth()) {
             if (showContext) {
+                // Beside Tide's Play disc the line is shorter: there the time left keeps its words
+                // together and moves to a second line rather than being cut mid-number.
+                val besideDisc = contextEndInset > 0.dp
                 Text(
-                    coverContext(item, shade.content),
+                    coverContext(item, shade.content, keepDetailTogether = besideDisc),
                     style = HeroContextTypography.label(),
                     color = shade.softContent,
-                    maxLines = 1,
+                    maxLines = if (besideDisc) 2 else 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(end = contextEndInset).testTag("home_hero_context"),
                 )
@@ -205,7 +208,7 @@ internal fun CoverCopy(
 
 /** One line of context: the status in [strong] (Resume, New episode, #1, a genre) and its detail. */
 @Composable
-private fun coverContext(item: SmartHeroItem, strong: Color): AnnotatedString {
+private fun coverContext(item: SmartHeroItem, strong: Color, keepDetailTogether: Boolean = false): AnnotatedString {
     val strongStyle = SpanStyle(color = strong, fontWeight = GoogleSansWeight.semiBold)
     if (item.type == HeroType.SPOTLIGHT) {
         return when (val context = remember(item.label, item.podcast.genre) { heroSpotlightContext(item.label, item.podcast.genre) }) {
@@ -233,6 +236,7 @@ private fun coverContext(item: SmartHeroItem, strong: Color): AnnotatedString {
     val resume = item.type == HeroType.RESUME
     val duration = HomeHeroStyle.minutes(item.podcast, resume)?.let { heroDurationText(it) }
     val detail = duration?.let { if (resume) stringResource(R.string.home_hero_remaining, it) else it }
+        ?.let { if (keepDetailTogether) it.replace(' ', NoBreakSpace) else it }
     return buildAnnotatedString {
         withStyle(strongStyle) { append(label) }
         if (detail != null) {
@@ -482,3 +486,6 @@ private fun CoverTilePlayback(playing: Boolean, shade: ArtworkShade, enabled: Bo
         }
     }
 }
+
+/** Joins the words of the time left so a line break never falls inside it. */
+private const val NoBreakSpace = '\u00A0'

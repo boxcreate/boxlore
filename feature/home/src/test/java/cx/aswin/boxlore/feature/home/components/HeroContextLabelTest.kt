@@ -1,12 +1,15 @@
 package cx.aswin.boxlore.feature.home.components
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -26,10 +29,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import java.util.Locale
 
 /** The hero's state label ("Resume", "New episode") used to shrink to 8sp with long words or large text. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], qualifiers = "w900dp-h1500dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class HeroContextLabelTest {
     @get:Rule val composeRule = createComposeRule()
     private val width = mutableIntStateOf(320)
@@ -57,6 +63,42 @@ class HeroContextLabelTest {
                 val label = results.single()
                 assertEquals("${cardWidth}dp at ${textScale}x", 1, label.lineCount)
                 assertTrue("${cardWidth}dp at ${textScale}x: ${label.layoutInput.style.fontSize}", label.layoutInput.style.fontSize.value >= 11f - 0.01f)
+            }
+        }
+    }
+
+    /**
+     * On Tide the context line stops short of the Play disc, so in German or at large text the time
+     * left was cut mid-number ("Noch 4…" for 43 minutes). It now moves whole to a second line.
+     */
+    @Test
+    fun `Tide's time left is never cut in large text or German`() {
+        val locale = mutableStateOf(Locale.ENGLISH)
+        val show = TestFixtures.podcast(id = "show", title = "The Joe Rogan Experience").copy(
+            latestEpisode = TestFixtures.episode(id = "e", title = "A Thanksgiving Dinner for \$100? Yes, It's Possible", podcastId = "show").copy(duration = 3_900),
+            resumeProgress = 0.34f,
+        )
+        composeRule.setContent {
+            val configuration = Configuration(LocalConfiguration.current).apply { setLocale(locale.value) }
+            CompositionLocalProvider(LocalDensity provides Density(1f, scale.floatValue), LocalConfiguration provides configuration) {
+                BoxLoreTheme(dynamicColor = false) {
+                    Box(Modifier.width(width.intValue.dp).height(homeHeroHeight())) {
+                        TideHeroCard(SmartHeroItem(HeroType.RESUME, show, "Resume"), {}, {}, null, null, false)
+                    }
+                }
+            }
+        }
+        for (language in listOf(Locale.ENGLISH, Locale.GERMAN)) {
+            for ((cardWidth, textScale) in listOf(272 to 1.3f, 304 to 1.3f, 320 to 1f)) {
+                locale.value = language
+                width.intValue = cardWidth
+                scale.floatValue = textScale
+                composeRule.waitForIdle()
+                val results = mutableListOf<TextLayoutResult>()
+                composeRule.onNodeWithTag("home_hero_context", useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(results) }
+                val label = results.single()
+                val cut = (0 until label.lineCount).any { label.isLineEllipsized(it) }
+                assertTrue("$language ${cardWidth}dp at ${textScale}x: '${label.layoutInput.text}' is cut", !cut)
             }
         }
     }
