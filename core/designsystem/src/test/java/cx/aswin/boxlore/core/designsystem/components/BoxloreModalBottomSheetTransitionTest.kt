@@ -155,6 +155,29 @@ class BoxloreModalBottomSheetTransitionTest {
     }
 
     @Test
+    fun `a paused clock still settles when the sheet hands over at the 480dp gate`() {
+        compose.mainClock.autoAdvance = false
+        window.value = BoxloreWindowLayout(900f, 480f)
+        compose.setContent {
+            BoxLoreTheme(darkTheme = false, dynamicColor = false) {
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                    BoxloreModalBottomSheet(onDismissRequest = { dismissals++ }) {
+                        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) { Text("About", Modifier.testTag("about")) }
+                    }
+                }
+            }
+        }
+        compose.mainClock.advanceTimeBy(1_500)
+        compose.waitForIdle()
+        compose.walkWindows(window, BoxloreWindowLayout(900f, 479f), BoxloreWindowLayout(900f, 480f), BoxloreWindowLayout(900f, 479f)) {
+            compose.mainClock.advanceTimeBy(1_500)
+            compose.waitForIdle()
+            compose.onNodeWithTag("about").assertExists()
+        }
+        assertEquals(0, dismissals)
+    }
+
+    @Test
     fun `a sheet back from the centred panel settles as it opened, and Back still closes it once`() {
         val restoration = StateRestorationTester(compose)
         var sheetState: SheetState? = null
