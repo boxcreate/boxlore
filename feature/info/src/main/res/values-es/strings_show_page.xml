@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="podcast_info_frequency_inactive">Inactivo / Finalizado</string>
+    <string name="podcast_info_frequency_inactive">Sin episodios nuevos</string>
     <string name="podcast_info_frequency_hiatus">En pausa</string>
     <string name="podcast_info_frequency_between_seasons">Entre temporadas</string>
     <string name="podcast_info_frequency_daily">Episodios diarios</string>
@@ -38,13 +38,22 @@
     <string name="podcast_info_locked_body">El editor de este podcast ha bloqueado su feed. Según la especificación de Podcasting 2.0, un feed bloqueado impide que otros directorios o servicios de alojamiento importen o migren el feed de este podcast sin la autorización explícita de su dueño.</string>
     <string name="podcast_info_locked_ok">Entendido</string>
     <string name="podcast_info_podroll_title">El creador recomienda</string>
+    <plurals name="podcast_info_podroll_count">
+        <item quantity="one">El creador recomienda %d podcast</item>
+        <item quantity="other">El creador recomienda %d podcasts</item>
+        <item quantity="many">El creador recomienda %d podcasts</item>
+    </plurals>
     <string name="podcast_info_share">Compartir podcast</string>
     <string name="podcast_info_more_options">Más opciones</string>
     <string name="podcast_info_mark_all_played">Marcar todo como escuchado</string>
     <string name="podcast_info_mark_all_unplayed">Marcar todo como no escuchado</string>
     <string name="podcast_info_hide_completed">Ocultar episodios terminados</string>
-    <string name="podcast_info_show_full_episodes">Ver episodios completos</string>
-    <string name="podcast_info_show_titles_only">Ver solo títulos</string>
+    <string name="podcast_info_sort_and_view">Ordenar y ver</string>
+    <string name="podcast_info_sort_newest">Más recientes primero</string>
+    <string name="podcast_info_sort_oldest">Más antiguos primero</string>
+    <string name="podcast_info_show_archived_none">Ver episodios archivados</string>
+    <string name="podcast_info_episode_titles_only">Solo títulos de episodios</string>
+    <string name="podcast_info_add_genre">Añadir género</string>
     <string name="podcast_info_playback_for_show">Reproducción de este podcast</string>
     <string name="podcast_info_change_genre">Cambiar etiqueta / género</string>
     <string name="podcast_info_pin_home">Fijar en Inicio</string>

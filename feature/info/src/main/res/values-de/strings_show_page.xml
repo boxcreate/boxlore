@@ -2,9 +2,9 @@
 <resources>
     <!-- The show page: its menus, chips, sheets, dialogs and messages. -->
     <!-- Show-page chip: the show has not released an episode for over a year. Short chip text. -->
-    <string name="podcast_info_frequency_inactive">Inaktiv / Beendet</string>
+    <string name="podcast_info_frequency_inactive">Keine neuen Folgen</string>
     <!-- Show-page chip: no episode for over six months. -->
-    <string name="podcast_info_frequency_hiatus">Pausiert</string>
+    <string name="podcast_info_frequency_hiatus">Macht Pause</string>
     <!-- Show-page chip: the show is taking a break between seasons. -->
     <string name="podcast_info_frequency_between_seasons">Zwischen den Staffeln</string>
     <!-- Show-page chip: how often the show releases episodes. Short chip text. -->
@@ -51,6 +51,10 @@
     <string name="podcast_info_locked_ok">Verstanden</string>
     <!-- Heading over the shows the show's creator recommends (its podroll). -->
     <string name="podcast_info_podroll_title">Empfehlungen des Podcasts</string>
+    <plurals name="podcast_info_podroll_count">
+        <item quantity="one">Der Podcast empfiehlt %d Sendung</item>
+        <item quantity="other">Der Podcast empfiehlt %d Sendungen</item>
+    </plurals>
     <!-- Screen-reader label for the show page's share button. -->
     <string name="podcast_info_share">Podcast teilen</string>
     <!-- Screen-reader label for the show page's overflow menu button. -->
@@ -59,8 +63,12 @@
     <string name="podcast_info_mark_all_played">Alle als gehört markieren</string>
     <string name="podcast_info_mark_all_unplayed">Alle als ungehört markieren</string>
     <string name="podcast_info_hide_completed">Gehörte Folgen ausblenden</string>
-    <string name="podcast_info_show_full_episodes">Vollständige Folgen zeigen</string>
-    <string name="podcast_info_show_titles_only">Nur Titel zeigen</string>
+    <string name="podcast_info_sort_and_view">Sortieren und anzeigen</string>
+    <string name="podcast_info_sort_newest">Neueste zuerst</string>
+    <string name="podcast_info_sort_oldest">Älteste zuerst</string>
+    <string name="podcast_info_show_archived_none">Archivierte Folgen anzeigen</string>
+    <string name="podcast_info_episode_titles_only">Nur Folgentitel</string>
+    <string name="podcast_info_add_genre">Genre hinzufügen</string>
     <!-- Menu item and sheet title: this show's own speed, trim silence and skips. -->
     <string name="podcast_info_playback_for_show">Wiedergabe für diesen Podcast</string>
     <string name="podcast_info_change_genre">Tag / Genre ändern</string>
