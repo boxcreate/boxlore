@@ -3,12 +3,9 @@ package cx.aswin.boxlore.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +32,7 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneSpec
+import cx.aswin.boxlore.core.designsystem.layout.consumeInsetsOutside
 import cx.aswin.boxlore.core.designsystem.layout.foldSafeBrowsingRegion
 import cx.aswin.boxlore.core.designsystem.layout.foldSafeRegions
 import cx.aswin.boxlore.navigation.LocalTabletDetailNavigation
@@ -220,7 +218,7 @@ private fun TabletShellPhysicalLayout(
 ) {
     Layout(content = {
         ShellRegion(geometry.primary, window, "primary_pane", content = primary)
-        Box(Modifier.clipToBounds().consumeInsetsAwayFromWindowEdges(geometry.rail, window)) { rail() }
+        Box(Modifier.clipToBounds().consumeInsetsOutside(geometry.rail, window)) { rail() }
         ShellRegion(geometry.detail, window, "detail_pane", bottomChromeReserved) {
             Box(if (geometry.context != null) Modifier.clip(MaterialTheme.shapes.extraLarge) else Modifier) { details() }
         }
@@ -261,24 +259,6 @@ private fun ShellRegion(
         LocalBoxlorePaneBounds provides bounds,
         LocalBoxloreBottomChromeReserved provides bottomChromeReserved,
     ) {
-        Box(Modifier.clipToBounds().consumeInsetsAwayFromWindowEdges(bounds, window).testTag(tag)) { content() }
+        Box(Modifier.clipToBounds().consumeInsetsOutside(bounds, window).testTag(tag)) { content() }
     }
 }
-
-/**
- * Only pane edges on the window edge keep system-bar insets. Descendants that pad with
- * `windowInsetsPadding`, `statusBarsPadding` or `navigationBarsPadding` then pad from their pane:
- * the lower half in tabletop gets no status-bar gap, and a pane beside another none on that side.
- */
-@Composable
-private fun Modifier.consumeInsetsAwayFromWindowEdges(bounds: BoxloreLayoutBounds, window: BoxloreWindowLayout): Modifier {
-    val sides = listOfNotNull(
-        WindowInsetsSides.Top.takeIf { bounds.top > EDGE_TOLERANCE_DP },
-        WindowInsetsSides.Left.takeIf { bounds.left > EDGE_TOLERANCE_DP },
-        WindowInsetsSides.Right.takeIf { window.isSpecified && bounds.right < window.widthDp - EDGE_TOLERANCE_DP },
-        WindowInsetsSides.Bottom.takeIf { window.isSpecified && bounds.bottom < window.heightDp - EDGE_TOLERANCE_DP },
-    ).reduceOrNull { all, side -> all + side } ?: return this
-    return consumeWindowInsets(WindowInsets.safeDrawing.only(sides))
-}
-
-private const val EDGE_TOLERANCE_DP = 0.5f

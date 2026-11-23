@@ -5,7 +5,9 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -20,6 +22,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onNodeWithTag
@@ -373,6 +376,24 @@ class TabletAppShellTest {
     }
 
     @Test
+    fun `a show open on the cover keeps the keyboard space the bottom bar does not cover`() {
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        fixture.compose.onNodeWithText("Open show").performClick()
+        fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets(imeBottom = 300)) }
+        advance()
+        fixture.compose.walkWindows(window, BoxloreTestWindows.COVER_475, BoxloreTestWindows.FOLD_FLAT, BoxloreTestWindows.COVER_475) { step ->
+            advance()
+            val pane = fixture.compose.onNodeWithTag("detail_pane").fetchSemanticsNode().boundsInRoot
+            val probe = fixture.compose.onNodeWithTag("ime_probe").fetchSemanticsNode().boundsInRoot
+            val footer = step.heightDp - pane.bottom
+            if (!step.usesTabletLayout) assertTrue("$step $pane", footer > 0f)
+            // The pane only clears the part of the keyboard that reaches above the shell's footer.
+            assertEquals("$step", (300f - footer).coerceAtLeast(0f), pane.bottom - probe.bottom, 1f)
+        }
+    }
+
+    @Test
     fun `starting and stopping playback on a Pixel Fold keeps Home and shows the mini player`() {
         window.value = BoxloreTestWindows.PIXEL_FOLD
         render()
@@ -442,11 +463,15 @@ class TabletAppShellTest {
                                         var count by rememberSaveable { mutableIntStateOf(0) }
                                         detailChromeReserved = LocalBoxloreBottomChromeReserved.current
                                         detailBottomPadding = cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding(false, 48.dp).value
-                                        androidx.compose.foundation.layout.Column {
-                                            Button(onClick = { navigation.detail.popBackStack() }) { Text("Back") }
-                                            Text("Show detail ${entry.arguments?.getString("id")}")
-                                            Button(onClick = { count++ }) { Text("Show state $count") }
-                                            Button(onClick = { navigation.navigate(navigation.detail, "episode/one") }) { Text("Open episode") }
+                                        Box(Modifier.fillMaxSize()) {
+                                            androidx.compose.foundation.layout.Column {
+                                                Button(onClick = { navigation.detail.popBackStack() }) { Text("Back") }
+                                                Text("Show detail ${entry.arguments?.getString("id")}")
+                                                Button(onClick = { count++ }) { Text("Show state $count") }
+                                                Button(onClick = { navigation.navigate(navigation.detail, "episode/one") }) { Text("Open episode") }
+                                            }
+                                            // What a search field's keyboard clearance pads by in this pane.
+                                            Box(Modifier.fillMaxSize().imePadding().testTag("ime_probe"))
                                         }
                                     }
                                     composable("episode/{id}", deepLinks = listOf(navDeepLink { uriPattern = "boxlore://episode/{id}" })) { Text("Episode detail") }

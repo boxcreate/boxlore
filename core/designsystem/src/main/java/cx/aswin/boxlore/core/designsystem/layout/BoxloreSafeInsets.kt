@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
@@ -105,6 +106,21 @@ fun boxloreHorizontalSafeContentPadding(base: PaddingValues = PaddingValues()): 
         end = base.calculateEndPadding(direction) + end,
         bottom = base.calculateBottomPadding(),
     )
+}
+
+/**
+ * Treats the system bars, camera cutout and keyboard between [bounds] and each window edge as
+ * already cleared, as padding filling that gap would. Descendants that pad by insets
+ * (`windowInsetsPadding`, `imePadding`, `statusBarsPadding`) then pad only by the part that reaches
+ * into [bounds]: nothing below a tabletop hinge for the status bar, the keyboard minus the space
+ * under a pane that ends above the bottom. Edges on the window edge keep all of their insets.
+ */
+fun Modifier.consumeInsetsOutside(bounds: BoxloreLayoutBounds, window: BoxloreWindowLayout): Modifier {
+    val right = if (window.isSpecified) window.widthDp - bounds.right else 0f
+    val bottom = if (window.isSpecified) window.heightDp - bounds.bottom else 0f
+    val gaps = listOf(bounds.left, bounds.top, right, bottom).map { gap -> if (gap > EDGE_TOLERANCE_DP) gap.dp else 0.dp }
+    if (gaps.all { it == 0.dp }) return this
+    return consumeWindowInsets(WindowInsets(left = gaps[0], top = gaps[1], right = gaps[2], bottom = gaps[3]))
 }
 
 /** Pane bounds within this of a window edge count as touching it. */
