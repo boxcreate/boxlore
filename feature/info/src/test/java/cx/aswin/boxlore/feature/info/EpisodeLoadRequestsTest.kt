@@ -23,6 +23,20 @@ class EpisodeLoadRequestsTest {
     }
 
     @Test
+    fun `Try again repeats the last load that started, word for word, and a skipped request never replaces it`() {
+        val context = org.mockito.Mockito.mock(android.os.Bundle::class.java)
+        val failed = EpisodeLoadRequests.Arguments("4503599627370500", "Title", "Notes", "art", "audio", 1_800, "920666", "Curious world", context)
+        val memory = EpisodeLoadRequests.LastLoad()
+        assertNull(memory.retryArguments())
+        memory.record(failed, covered = false)
+        memory.record(failed.copy(podcastId = "", podcastTitle = "", entryPointContext = null), covered = true)
+        val retry = memory.retryArguments()
+        assertEquals(failed, retry)
+        assertEquals("920666", retry?.podcastId)
+        assertTrue(retry?.entryPointContext === context)
+    }
+
+    @Test
     fun `a running load of the same ID covers a request with no more to go on`() {
         assertTrue(EpisodeLoadRequests.isCovered(request, true, EpisodeInfoUiState.Loading, request.episodeId, ""))
         assertTrue(EpisodeLoadRequests.isCovered(request, false, EpisodeInfoUiState.ReadingFeed, request.episodeId, ""))
