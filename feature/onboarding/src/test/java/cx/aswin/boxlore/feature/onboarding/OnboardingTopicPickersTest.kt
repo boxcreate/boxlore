@@ -139,14 +139,44 @@ class OnboardingTopicPickersTest {
         listOf(BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND).forEach { size ->
             compose.runOnIdle { window.value = size }
             compose.waitForIdle()
-            val footer = compose.onNodeWithText("Continue (2 selected)").fetchSemanticsNode().boundsInRoot
-            val whole = listOf("Commuting", "Working", "Relaxing", "Winding down", "Working out", "Doing chores").count { label ->
-                val card = compose.onNode(hasText(label) and SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState)).fetchSemanticsNode().boundsInRoot
-                card.top >= 0f && card.bottom <= footer.top - 8f
-            }
-            assertTrue("only $whole cards show whole at ${size.widthDp}x${size.heightDp}", whole >= 2)
+            assertWholeCards("Continue (2 selected)", size)
         }
         assertEquals(setOf("commuting", "working"), picked.value)
+    }
+
+    @Test
+    fun `Pick topics opened on a sideways phone starts with the slim header`() = openSideways(BoxloreTestWindows.PHONE_LAND)
+
+    @Test
+    fun `Pick topics opened on a small sideways phone starts with the slim header`() = openSideways(BoxloreWindowLayout(740f, 360f))
+
+    private fun openSideways(size: BoxloreWindowLayout) {
+        run {
+            window.value = size
+            inWindow {
+                ActivityPickerScreen(
+                    selectedActivities = emptySet(),
+                    activityGenreMap = emptyMap(),
+                    allSelectedGenres = setOf("True Crime"),
+                    onToggleActivity = {},
+                    onSetGenresForActivity = { _, _ -> },
+                    onBack = {},
+                    onContinue = {},
+                )
+            }
+            compose.onNodeWithText("Select all that apply").assertIsDisplayed()
+            assertWholeCards("Select at least 1", size)
+        }
+    }
+
+    /** At least two listening moments show whole between the top of the window and the main button. */
+    private fun assertWholeCards(footerText: String, size: BoxloreWindowLayout) {
+        val footer = compose.onNodeWithText(footerText).fetchSemanticsNode().boundsInRoot
+        val whole = listOf("Commuting", "Working", "Relaxing", "Winding down", "Working out", "Doing chores").count { label ->
+            val card = compose.onNode(hasText(label) and SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState)).fetchSemanticsNode().boundsInRoot
+            card.top >= 0f && card.bottom <= footer.top - 8f
+        }
+        assertTrue("only $whole cards show whole at ${size.widthDp}x${size.heightDp}", whole >= 2)
     }
 
     @Test

@@ -13,6 +13,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -30,7 +31,6 @@ import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -145,16 +145,17 @@ private fun GenreChip(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
+    // One strong highlight: a picked genre takes the primary fill and a check in place of its icon.
     val containerColor =
         if (isSelected) {
-            MaterialTheme.colorScheme.primaryContainer
+            MaterialTheme.colorScheme.primary
         } else {
             MaterialTheme.colorScheme.surfaceContainerHigh
         }
 
     val contentColor =
         if (isSelected) {
-            MaterialTheme.colorScheme.onPrimaryContainer
+            MaterialTheme.colorScheme.onPrimary
         } else {
             MaterialTheme.colorScheme.onSurface
         }
@@ -178,10 +179,10 @@ private fun GenreChip(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(
-                genre.icon,
+                if (isSelected) Icons.Rounded.Check else genre.icon,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
-                tint = if (isSelected) MaterialTheme.colorScheme.primary else contentColor,
+                tint = contentColor,
             )
             Text(
                 stringResource(genre.labelRes),
@@ -326,14 +327,14 @@ private fun SubGenreChip(
 ) {
     val containerColor =
         if (isSelected) {
-            MaterialTheme.colorScheme.primaryContainer
+            MaterialTheme.colorScheme.primary
         } else {
             MaterialTheme.colorScheme.surfaceContainerHigh
         }
 
     val contentColor =
         if (isSelected) {
-            MaterialTheme.colorScheme.onPrimaryContainer
+            MaterialTheme.colorScheme.onPrimary
         } else {
             MaterialTheme.colorScheme.onSurface
         }
@@ -361,7 +362,7 @@ private fun SubGenreChip(
                     Icons.Rounded.Check,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                 )
             }
             Text(
@@ -589,19 +590,19 @@ private fun genreDisplayName(value: String): String = onboardingGenreNameRes(val
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun rememberPickerScrollBehavior(): TopAppBarScrollBehavior {
-    val behavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val short = boxloreIsShortPane()
+    // Opened in a short space, the bar starts collapsed on its very first frame.
+    val collapsible = with(LocalDensity.current) { (TopAppBarDefaults.LargeAppBarExpandedHeight - TopAppBarDefaults.LargeAppBarCollapsedHeight).toPx() }
+    val behavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        rememberTopAppBarState(initialHeightOffsetLimit = -collapsible, initialHeightOffset = if (short) -collapsible else 0f),
+    )
     var wasShort by rememberSaveable { mutableStateOf<Boolean?>(null) }
     LaunchedEffect(short) {
         val previous = wasShort
         wasShort = short
-        if (previous == short) return@LaunchedEffect
+        if (previous == null || previous == short) return@LaunchedEffect
         val state = behavior.state
-        when {
-            // The bar learns its collapsed height when first laid out.
-            short -> state.heightOffset = snapshotFlow { state.heightOffsetLimit }.first { it > -Float.MAX_VALUE }
-            previous == true -> state.heightOffset = 0f
-        }
+        state.heightOffset = if (short) state.heightOffsetLimit else 0f
     }
     return behavior
 }
@@ -660,10 +661,14 @@ private fun ListeningChoiceCard(
                 }
             }
             if (selected) {
-                Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
-                    HorizontalDivider(color = colors.outlineVariant)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    TargetGenreChips(allSelectedGenres, mappedGenres, onSetGenres)
+                // The genres sit on the page's own surface, so their chips read as chips on the picked card's fill.
+                Surface(
+                    Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                    shape = MaterialTheme.shapes.large,
+                    color = colors.surface,
+                    contentColor = colors.onSurface,
+                ) {
+                    Column(Modifier.padding(12.dp)) { TargetGenreChips(allSelectedGenres, mappedGenres, onSetGenres) }
                 }
             }
         }

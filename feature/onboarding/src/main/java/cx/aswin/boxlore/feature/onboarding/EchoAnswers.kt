@@ -136,6 +136,7 @@ private fun EchoTopicGrid(key: String, selected: Set<String>, fit: EchoFit, call
                                 corners = echoTileCorners(rowIndex, column, rows.size, row.size, picked),
                                 minHeight = metrics.tileHeight,
                                 onToggle = { callbacks.toggle(topic.answer) },
+                                strong = !fit.showIcons,
                             ) {
                                 if (!fit.showIcons) {
                                     // The tightest windows drop the badge; the fill and rounding still show the pick.
@@ -179,7 +180,7 @@ private fun EchoChoiceList(
     val choice: @Composable (Int, EchoCorners) -> Unit = { index, corners ->
         val answer = choices[index]
         val picked = answer in selected
-        EchoAnswerSurface(picked, corners, metrics.rowHeight, onToggle = { callbacks.toggle(answer) }) {
+        EchoAnswerSurface(picked, corners, metrics.rowHeight, onToggle = { callbacks.toggle(answer) }, strong = !fit.showIcons) {
             if (fit.showIcons) {
                 EchoAnswerRow {
                     // Shapes rotate through the set each turn, so every question looks a little new.
@@ -221,15 +222,22 @@ private fun EchoAnswerSurface(
     corners: EchoCorners,
     minHeight: Dp,
     onToggle: () -> Unit,
+    strong: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    val container by animateColorAsState(if (selected) colors.primaryContainer else colors.surfaceContainerHigh, label = "answerFill")
+    // Without a badge ([strong]), a picked answer takes the primary fill, so the pick stands out on its own.
+    val picked = if (strong) colors.primary else colors.primaryContainer
+    val container by animateColorAsState(if (selected) picked else colors.surfaceContainerHigh, label = "answerFill")
     val shape = rememberEchoAnimatedShape(corners)
     Surface(
         shape = shape,
         color = container,
-        contentColor = if (selected) colors.onPrimaryContainer else colors.onSurface,
+        contentColor = when {
+            !selected -> colors.onSurface
+            strong -> colors.onPrimary
+            else -> colors.onPrimaryContainer
+        },
         modifier = Modifier
             .fillMaxSize()
             .heightIn(min = minHeight)
