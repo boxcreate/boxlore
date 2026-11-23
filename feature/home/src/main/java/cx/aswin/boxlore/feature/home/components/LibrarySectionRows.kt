@@ -158,6 +158,7 @@ private fun CoverPinMenu(
                 onDismiss()
                 onToggle()
             },
+            modifier = Modifier.testTag("home_pin_menu_item"),
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Rounded.PushPin,

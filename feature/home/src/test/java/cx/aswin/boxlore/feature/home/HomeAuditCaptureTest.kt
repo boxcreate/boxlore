@@ -18,10 +18,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onChildAt
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.unit.dp
@@ -31,6 +36,9 @@ import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPaddin
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreMiniPlayerVisible
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
+import cx.aswin.boxlore.core.model.Briefing
+import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
@@ -53,8 +61,9 @@ import org.robolectric.annotation.GraphicsMode
  * with many items in every style and its loading state, a swipe from the resting first card to the
  * second, the rating, thanks and change-show sheets, the selected show while it loads and refreshes,
  * Your shows' episode rows, the caught-up Daily Mix, an empty greeting and the pin message with and
- * without the mini player. Scenes below the fold scroll Home to their state and fail when it never
- * shows. Outside audit runs the matrix is empty, so CI runs nothing here.
+ * without the mini player, plus the states a tap opens: the mix and pin menus, the Brief's two hide
+ * steps, the More genres sheet and the side rails scrolled by a card and a half. Scenes below the
+ * fold scroll Home to their state and fail when it never shows. Outside audit runs the matrix is empty, so CI runs nothing here.
  * `-PauditSizes` picks the sizes; the extra widths sweep the Galaxy Z Fold 8 cover band (431-599dp).
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
@@ -177,6 +186,79 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         Home(state(), snackbarHostState = host)
     }
 
+    /** The Daily/Offline mix menu open over Your shows (it shows once a download has finished). */
+    @Test fun menuMix() = capture(
+        "home-menu-mix",
+        allWindows = true,
+        scrollTo = "your_shows" to MIX_TRIGGER_TAG,
+        act = { click(MIX_TRIGGER_TAG) },
+        waitFor = "home_mix_menu_offline",
+    ) { Home(state(), playback = withDownload()) }
+
+    /** The Pin menu after a long press on a show cover in Your shows. */
+    @Test fun menuPin() = capture(
+        "home-menu-pin",
+        allWindows = true,
+        scrollTo = "your_shows" to "home_show_selector_${podcasts[2].id}",
+        act = { fixture.compose.onNodeWithTag("home_show_selector_${podcasts[2].id}").performSemanticsAction(SemanticsActions.OnLongClick) },
+        waitFor = "home_pin_menu_item",
+    ) { Home(state()) }
+
+    /** The Brief after tapping hide: the "hide for today?" step. */
+    @Test fun briefConfirmToday() {
+        render(HeroCardStyle.COVER) { Home(state().copy(briefing = brief, briefingChapters = briefChapters)) }
+        scrollFeedTo(BRIEF_KEYS, BRIEF_HIDE_TAG)
+        click(BRIEF_HIDE_TAG)
+        awaitTag("home_brief_hide_today")
+        reveal("home_brief_always_hide")
+        fixture.capture("home-brief-confirm-today")
+    }
+
+    /** The Brief's second step, "always hide?". */
+    @Test fun briefConfirmForever() {
+        render(HeroCardStyle.COVER) { Home(state().copy(briefing = brief, briefingChapters = briefChapters)) }
+        scrollFeedTo(BRIEF_KEYS, BRIEF_HIDE_TAG)
+        click(BRIEF_HIDE_TAG)
+        awaitTag("home_brief_always_hide")
+        click("home_brief_always_hide")
+        awaitTag("home_brief_confirm_always_hide")
+        reveal("home_brief_confirm_always_hide")
+        fixture.capture("home-brief-confirm-forever")
+    }
+
+    /** The More genres sheet over Explore shows. */
+    @Test fun genresSheet() = capture(
+        "home-genres-sheet",
+        allWindows = true,
+        scrollTo = "discover_header" to GENRES_MORE_TAG,
+        act = { click(GENRES_MORE_TAG) },
+        waitFor = "home_genres_sheet",
+    ) { Home(state()) }
+
+    /**
+     * Because you like and the time-of-day picks, each rail scrolled by one and a half cards, so the
+     * captures show where cards are cut at the side while they move.
+     */
+    @Test fun railsScrolled() {
+        render(HeroCardStyle.COVER) { Home(railState()) }
+        scrollFeedTo(listOf("because_you_like"), RAIL_TAG)
+        scrollRails()
+        fixture.capture("home-rails-scrolled")
+        scrollFeedTo(listOf("editorial_${editorialRow.providerId}"), RAIL_TAG)
+        scrollRails()
+        fixture.capture("home-rails-scrolled-daypart")
+    }
+
+    private fun scrollRails() {
+        val compose = fixture.compose
+        compose.onAllNodesWithTag(RAIL_TAG, useUnmergedTree = true).fetchSemanticsNodes().indices.forEach { index ->
+            val rail = compose.onAllNodesWithTag(RAIL_TAG, useUnmergedTree = true)[index]
+            val firstCard = rail.onChildAt(0).fetchSemanticsNode().size.width
+            rail.performSemanticsAction(SemanticsActions.ScrollBy) { scroll -> scroll(firstCard * 1.5f, 0f) }
+        }
+        compose.waitForIdle()
+    }
+
     private fun hero(style: String) = capture("home-hero-many-${styleName(style)}", style) { Home(state()) }
 
     private fun loading(style: String) = capture("home-loading-${styleName(style)}", style) { Home(state(loading = true)) }
@@ -192,19 +274,66 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         allWindows: Boolean = false,
         scrollTo: Pair<String, String>? = null,
         miniPlayer: Boolean = false,
+        act: (() -> Unit)? = null,
+        waitFor: String? = null,
         content: @Composable () -> Unit,
     ) {
         render(style, miniPlayer, content)
         fixture.compose.onNodeWithTag(ROOT_TAG).assertExists()
         if (scrollTo != null) {
             val (key, tag) = scrollTo
-            val compose = fixture.compose
-            // Sections can wait on saved preferences, so give them a moment to appear before scrolling.
-            compose.waitUntil(SCENE_WAIT_MS) { runCatching { compose.onNodeWithTag(FEED_TAG).performScrollToKey(key) }.isSuccess }
-            compose.waitUntil(SCENE_WAIT_MS) { compose.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+            scrollFeedTo(listOf(key), tag)
         }
+        if (act != null) {
+            act()
+            fixture.compose.waitForIdle()
+        }
+        if (waitFor != null) awaitTag(waitFor)
         fixture.capture(name, allWindows)
     }
+
+    /** Scrolls Home's grid to the first of [keys] it has (tablets group some sections) and waits for [tag] there. */
+    private fun scrollFeedTo(keys: List<String>, tag: String) {
+        val compose = fixture.compose
+        // Sections can wait on saved preferences, so give them a moment to appear before scrolling.
+        compose.waitUntil(SCENE_WAIT_MS) { keys.any { key -> runCatching { compose.onNodeWithTag(FEED_TAG).performScrollToKey(key) }.isSuccess } }
+        awaitTag(tag)
+        reveal(tag)
+    }
+
+    /** Scrolls Home just enough to show [tag] whole; on short windows a tall section can leave it below the fold. */
+    private fun reveal(tag: String) {
+        val compose = fixture.compose
+        val grid = compose.onNodeWithTag(FEED_TAG).fetchSemanticsNode().boundsInRoot
+        val node = compose.onAllNodesWithTag(tag, useUnmergedTree = true).onFirst().fetchSemanticsNode().boundsInRoot
+        val bottomClearance = with(compose.density) { BOTTOM_BAR_CLEARANCE.toPx() }
+        val below = node.bottom - (grid.bottom - bottomClearance)
+        if (below <= 0f) return
+        // A slow drag that rests before lifting, so the grid moves by [below] without a fling.
+        compose.onNodeWithTag(FEED_TAG).performTouchInput {
+            val start = Offset(centerX, bottom - 1f)
+            down(start)
+            val steps = 20
+            repeat(steps) { moveBy(Offset(0f, -below / steps), delayMillis = 16) }
+            advanceEventTime(300)
+            up()
+        }
+        compose.mainClock.advanceTimeBy(SCENE_SETTLE_MS)
+    }
+
+    /** Captures run on a paused clock, so step it until [tag] shows, failing after [SCENE_WAIT_MS] of app time. */
+    private fun awaitTag(tag: String) {
+        val compose = fixture.compose
+        var waited = 0L
+        while (compose.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isEmpty()) {
+            check(waited < SCENE_WAIT_MS) { "$tag never showed" }
+            compose.mainClock.advanceTimeBy(SCENE_STEP_MS)
+            waited += SCENE_STEP_MS
+        }
+    }
+
+    /** Taps [tag] through its click action, as TalkBack would, so a bar drawn over it can't take the tap. */
+    private fun click(tag: String) = fixture.compose.onAllNodesWithTag(tag, useUnmergedTree = true).onFirst().performSemanticsAction(SemanticsActions.OnClick)
 
     private fun render(style: String, miniPlayer: Boolean = false, content: @Composable () -> Unit) {
         fixture.assumeAuditCapture()
@@ -239,6 +368,26 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         )
     }
 
+    private val brief = Briefing("2026-11-20", "us", "The world this morning, in eight stories", "", "", "")
+    private val briefChapters = List(8) { Chapter(startTime = it * 90.0, title = TestFixtures.briefingChapterTitle(it)) }
+    private val editorialRow = HomeEditorialRow("morning_picks", "Your morning picks", "Fresh shows to start the day", HomeEditorialIcon.entries.first(), podcasts)
+
+    private fun withDownload() = HomePlaybackUi(
+        currentPlayingPodcastId = null,
+        currentPlayingEpisodeId = null,
+        isPlaying = false,
+        completedDownloads = StableCompletedDownloadList(listOf(CompletedDownloadItem(episode.copy(id = "downloaded"), podcasts[1], downloadedAt = 1L))),
+    )
+
+    /** Because you like (with suggested shows) and one time-of-day row, both long enough to scroll. */
+    private fun railState() = state().copy(
+        seemsToLikePodcast = podcasts[2],
+        becauseYouLikeRecommendations = List(8) { episode.copy(id = "because-$it") },
+        becauseYouLikePodcasts = podcasts,
+        editorialRows = listOf(editorialRow),
+        isEditorialRowsLoading = false,
+    )
+
     private fun state(loading: Boolean = false) = HomeUiState(
         heroItems = if (loading) emptyList() else heroItems,
         discoverPodcasts = if (loading) emptyList() else podcasts,
@@ -250,10 +399,15 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     )
 
     @Composable
-    private fun Home(state: HomeUiState, sheets: HomeSheetUi = HomeSheetUi(), snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }) {
+    private fun Home(
+        state: HomeUiState,
+        sheets: HomeSheetUi = HomeSheetUi(),
+        snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+        playback: HomePlaybackUi = HomePlaybackUi(null, null, false),
+    ) {
         HomeScreen(
             uiState = state,
-            playback = HomePlaybackUi(null, null, false),
+            playback = playback,
             sheets = sheets,
             callbacks = HomeScreenCallbacks(feed = feedCallbacks()),
             snackbarHostState = snackbarHostState,
@@ -273,6 +427,16 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         private const val ROOT_TAG = "home_audit_root"
         private const val FEED_TAG = "home_feed_grid"
         private const val SCENE_WAIT_MS = 5_000L
+        private const val SCENE_STEP_MS = 100L
+        private const val SCENE_SETTLE_MS = 600L
+        private val BOTTOM_BAR_CLEARANCE = 140.dp
+        private const val MIX_TRIGGER_TAG = "home_mix_mode_trigger"
+        private const val BRIEF_HIDE_TAG = "home_brief_hide"
+        private const val GENRES_MORE_TAG = "home_genres_more"
+        private const val RAIL_TAG = "home_discovery_rail"
+
+        /** Phones list the Brief on its own; tablets put it beside Your shows. */
+        private val BRIEF_KEYS = listOf("briefing", "tablet_leading_sections")
 
         private fun styleName(style: String) = when (style) {
             HeroCardStyle.BLOCK -> "block"

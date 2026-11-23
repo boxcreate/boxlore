@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 
 @Composable
@@ -16,7 +17,7 @@ internal fun HomeDiscoveryRail(
 ) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val cardWidth = HomeFeedSpacing.railCardWidth(maxWidth, compact)
-        LazyRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(HomeFeedSpacing.RailItemGap)) {
+        LazyRow(modifier = Modifier.testTag("home_discovery_rail"), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(HomeFeedSpacing.RailItemGap)) {
             content(cardWidth)
         }
     }

@@ -406,6 +406,7 @@ private fun HomeMixDropdownHeading(
                         shape = RoundedCornerShape(10.dp),
                         onClick = { expanded = true },
                     )
+                    .testTag("home_mix_mode_trigger")
                     .padding(end = 4.dp)
             } else {
                 Modifier
@@ -472,6 +473,7 @@ private fun HomeMixDropdownMenu(
                     )
                 },
                 onClick = { onModeSelected(option) },
+                modifier = Modifier.testTag("home_mix_menu_${option.name.lowercase()}"),
                 leadingIcon = {
                     Icon(
                         imageVector =

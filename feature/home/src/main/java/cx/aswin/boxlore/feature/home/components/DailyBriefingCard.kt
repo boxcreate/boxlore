@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -151,11 +152,11 @@ fun DailyBriefingCard(
                                         Button(onClick = {
                                             track("dismissed_today")
                                             onDismiss()
-                                        }) { Text(stringResource(R.string.briefing_hide_today)) }
+                                        }, Modifier.testTag("home_brief_hide_today")) { Text(stringResource(R.string.briefing_hide_today)) }
                                         TextButton(onClick = {
                                             track("dismiss_forever_initiated")
                                             cardState = DailyBriefingCardState.CONFIRM_FOREVER
-                                        }) { Text(stringResource(R.string.briefing_always_hide)) }
+                                        }, Modifier.testTag("home_brief_always_hide")) { Text(stringResource(R.string.briefing_always_hide)) }
                                     }
                                     DailyBriefingCardState.CONFIRM_FOREVER -> {
                                         Text(stringResource(R.string.briefing_always_hide_title), style = MaterialTheme.typography.titleMedium)
@@ -163,7 +164,7 @@ fun DailyBriefingCard(
                                         Button(onClick = {
                                             track("dismissed_forever")
                                             onDismissForever()
-                                        }) { Text(stringResource(R.string.briefing_confirm_always_hide)) }
+                                        }, Modifier.testTag("home_brief_confirm_always_hide")) { Text(stringResource(R.string.briefing_confirm_always_hide)) }
                                         TextButton(onClick = {
                                             track("feedback_clicked")
                                             onFeedbackClick()
@@ -196,7 +197,7 @@ private fun BriefingDismissButton(state: DailyBriefingCardState, onStateChange: 
     IconButton(onClick = {
         track(if (normal) "dismiss_initiated" else "dismiss_cancelled")
         onStateChange(if (normal) DailyBriefingCardState.CONFIRM_DISMISS else DailyBriefingCardState.NORMAL)
-    }) {
+    }, Modifier.testTag("home_brief_hide")) {
         Icon(Icons.Rounded.Close, stringResource(if (normal) R.string.briefing_hide else R.string.briefing_cancel_hide), Modifier.size(20.dp))
     }
 }
