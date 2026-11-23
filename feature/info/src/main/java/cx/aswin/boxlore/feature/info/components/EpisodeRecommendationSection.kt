@@ -98,7 +98,8 @@ internal fun EpisodeRecommendationSection(
                         imageUrl = episode.imageUrl.orEmpty(),
                         fallbackImageUrls = listOf(episode.podcastImageUrl, state.fallbackImageUrl),
                         title = episode.title,
-                        subtitle = null,
+                        // These come from other shows, so each card names its show.
+                        subtitle = showName,
                         onClick = { onEpisodeClick(episode) },
                         presentation = FeedMediaCardPresentation.ExpressivePoster,
                         modifier = Modifier.width(160.dp).semantics { contentDescription = accessibleTitle },
