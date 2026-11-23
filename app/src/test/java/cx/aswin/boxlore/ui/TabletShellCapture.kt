@@ -51,7 +51,7 @@ internal fun TabletShellCapture(route: String, episode: Episode, podcast: Podcas
 /** The notification's open-player request as the app shell passes it: pending until a player reports it handled. */
 internal data class OpenPlayerRequest(val pending: Long = 0L, val onHandled: (Long) -> Unit = {})
 
-private fun tabletCapturePlayer(episode: Episode, podcast: Podcast): FullPlayerDependencies {
+internal fun tabletCapturePlayer(episode: Episode, podcast: Podcast): FullPlayerDependencies {
     val playback = mock(PlaybackRepository::class.java)
     `when`(playback.playerState).thenReturn(
         MutableStateFlow(

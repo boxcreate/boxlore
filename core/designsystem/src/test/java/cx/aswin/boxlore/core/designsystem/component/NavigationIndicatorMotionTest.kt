@@ -93,4 +93,31 @@ class NavigationIndicatorMotionTest {
         targetValue = end,
         initialVelocity = velocity,
     )
+
+    @Test
+    fun `rail indicator travel is unchanged for equal 64dp cells`() {
+        // At 1px per dp: icons 6dp into 64dp cells 80dp apart, the indicator 2dp into each icon box.
+        val equalCells = listOf(6f, 86f, 166f, 246f)
+        for (step in 0..300) {
+            val position = step / 100f
+            val today = 8f + position * 80f
+            assertEquals(today, railIndicatorTop(position, equalCells, 6f, 80f, 2f), 0.001f)
+            // Before the items are placed the fixed-cell path is used.
+            assertEquals(today, railIndicatorTop(position, emptyList(), 6f, 80f, 2f), 0.001f)
+        }
+    }
+
+    @Test
+    fun `rail indicator follows cells that grew for two-line labels`() {
+        // Library's label wrapped: its cell is taller, so Lore sits lower than the fixed path.
+        val grown = listOf(6f, 86f, 160f, 254f)
+        assertEquals(162f, railIndicatorTop(2f, grown, 6f, 80f, 2f), 0.001f)
+        assertEquals(256f, railIndicatorTop(3f, grown, 6f, 80f, 2f), 0.001f)
+        assertEquals((162f + 256f) / 2f, railIndicatorTop(2.5f, grown, 6f, 80f, 2f), 0.001f)
+        // Overshoot and invalid positions stay on the rail.
+        assertEquals(256f, railIndicatorTop(3.2f, grown, 6f, 80f, 2f), 0.001f)
+        assertEquals(8f, railIndicatorTop(Float.NaN, grown, 6f, 80f, 2f), 0.001f)
+        // A half-measured rail keeps the fixed path.
+        assertEquals(8f + 2f * 80f, railIndicatorTop(2f, listOf(6f, Float.NaN, 160f, 254f), 6f, 80f, 2f), 0.001f)
+    }
 }

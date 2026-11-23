@@ -8,6 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -20,6 +22,7 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.share.ShareCardText
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.ShareTarget
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -29,6 +32,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], qualifiers = "w1000dp-h1000dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -39,40 +43,48 @@ class ShareSheetBodyTest {
     private val drawn = mutableListOf<ShareCardText>()
     private val shared = mutableListOf<Pair<Long?, ShareTarget>>()
     private var dismissals = 0
+    private var sheetDismissals = 0
     private var position by mutableStateOf(65_000L)
     private var linkOpensShow = false
     private var cardDraws = true
 
-    private fun show(restoration: StateRestorationTester? = null) {
+    private fun show(restoration: StateRestorationTester? = null, inSheet: Boolean = false) {
         val content: @androidx.compose.runtime.Composable () -> Unit = {
             BoxLoreTheme(darkTheme = false, dynamicColor = false) {
                 CompositionLocalProvider(LocalBoxloreWindowLayout provides window) {
-                    Box(Modifier.width(window.widthDp.dp)) {
-                        ShareSheetBody(
-                            id = "ep1",
-                            type = "episode",
-                            title = "The Buried Bodies Case",
-                            subtitle = "Radiolab",
-                            imageUrl = null,
-                            durationMs = 3_600_000L,
-                            currentPositionMs = position,
-                            showTimestampOption = true,
-                            episode = null,
-                            details = "49 min · 30 Oct",
-                            onShare = { _, _, timestampMs, target -> shared += timestampMs to target },
-                            onDismissRequest = { dismissals++ },
-                            renderPreview = { card, _ ->
-                                drawn += card
-                                if (cardDraws) ImageBitmap(8, 8) else null
-                            },
-                            opensShow = { linkOpensShow },
-                        )
+                    if (inSheet) {
+                        BoxloreModalBottomSheet(onDismissRequest = { sheetDismissals++ }) { body() }
+                    } else {
+                        Box(Modifier.width(window.widthDp.dp)) { body() }
                     }
                 }
             }
         }
         if (restoration != null) restoration.setContent(content) else compose.setContent(content)
         compose.waitForIdle()
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun body() {
+        ShareSheetBody(
+            id = "ep1",
+            type = "episode",
+            title = "The Buried Bodies Case",
+            subtitle = "Radiolab",
+            imageUrl = null,
+            durationMs = 3_600_000L,
+            currentPositionMs = position,
+            showTimestampOption = true,
+            episode = null,
+            details = "49 min · 30 Oct",
+            onShare = { _, _, timestampMs, target -> shared += timestampMs to target },
+            onDismissRequest = { dismissals++ },
+            renderPreview = { card, _ ->
+                drawn += card
+                if (cardDraws) ImageBitmap(8, 8) else null
+            },
+            opensShow = { linkOpensShow },
+        )
     }
 
     private fun resize(widthDp: Float, heightDp: Float) {
@@ -117,6 +129,42 @@ class ShareSheetBodyTest {
         compose.onNodeWithText("Send artwork card").performClick()
         assertEquals(listOf(65_000L to ShareTarget.MESSAGE), shared)
         assertEquals(1, dismissals)
+    }
+
+    @Test
+    fun `the start time and the drawn card stay from the Fold 8 cover to the inner screen and back`() {
+        window = BoxloreTestWindows.COVER_475
+        show()
+        compose.onNodeWithText("Start at 1:05").performClick()
+        compose.waitForIdle()
+        val draws = drawn.size
+
+        for (next in listOf(BoxloreTestWindows.FOLD_FLAT, BoxloreTestWindows.COVER_475)) {
+            resize(next.widthDp, next.heightDp)
+            compose.onNodeWithTag(SharePreviewTag).assertExists()
+        }
+        assertEquals(draws, drawn.size)
+        assertEquals("Starts at 1:05", drawn.last().moment)
+        compose.onNodeWithText("Instagram Story").performClick()
+        assertEquals(listOf(65_000L to ShareTarget.INSTAGRAM_STORY), shared)
+    }
+
+    @Test
+    fun `the start time stays on when the sheet becomes a centred panel at 840dp and back`() {
+        window = BoxloreWindowLayout(839f, 900f)
+        show(inSheet = true)
+        compose.onNodeWithText("Start at 1:05").performClick()
+        compose.waitForIdle()
+        val draws = drawn.size
+
+        for ((w, h) in listOf(841f to 900f, 839f to 900f, 841f to 900f)) {
+            resize(w, h)
+            compose.onNode(isToggleable()).assertIsOn()
+        }
+        assertEquals(draws, drawn.size)
+        assertEquals(0, sheetDismissals)
+        compose.onNodeWithText("Instagram Story").performClick()
+        assertEquals(listOf(65_000L to ShareTarget.INSTAGRAM_STORY), shared)
     }
 
     @Test

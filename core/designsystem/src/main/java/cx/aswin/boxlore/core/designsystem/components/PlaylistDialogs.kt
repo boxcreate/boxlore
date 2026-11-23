@@ -4,12 +4,8 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -71,22 +67,18 @@ fun PlaylistNameDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = GoogleSansWeight.bold) },
         text = {
-            OutlinedTextField(
+            BoxloreTextField(
                 value = name,
                 onValueChange = { onNameChange(it.take(PLAYLIST_NAME_MAX_LENGTH)) },
-                label = { Text(stringResource(PlaylistCopy.NAME_LABEL)) },
+                label = stringResource(PlaylistCopy.NAME_LABEL),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { confirm() }),
                 modifier = Modifier.fillMaxWidth().testTag(PLAYLIST_NAME_FIELD_TAG),
             )
         },
-        confirmButton = {
-            Button(onClick = confirm, enabled = normalized.isNotEmpty()) { Text(confirmLabel) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text(stringResource(PlaylistCopy.CANCEL)) }
-        },
+        confirmButton = { BoxloreDialogConfirmButton(confirmLabel, onClick = confirm, enabled = normalized.isNotEmpty()) },
+        dismissButton = { BoxloreDialogDismissButton(stringResource(PlaylistCopy.CANCEL), onClick = onDismissRequest) },
     )
 }
 
@@ -97,15 +89,8 @@ fun DeletePlaylistDialog(name: String, onConfirm: () -> Unit, onDismissRequest: 
         onDismissRequest = onDismissRequest,
         title = { Text(stringResource(PlaylistCopy.DELETE_TITLE), style = MaterialTheme.typography.headlineSmall, fontWeight = GoogleSansWeight.bold) },
         text = { Text(PlaylistCopy.deleteBody(name).asString(), style = MaterialTheme.typography.bodyMedium) },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
-            ) { Text(stringResource(PlaylistCopy.DELETE)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text(stringResource(PlaylistCopy.CANCEL)) }
-        },
+        confirmButton = { BoxloreDialogConfirmButton(stringResource(PlaylistCopy.DELETE), onClick = onConfirm, destructive = true) },
+        dismissButton = { BoxloreDialogDismissButton(stringResource(PlaylistCopy.CANCEL), onClick = onDismissRequest) },
     )
 }
 

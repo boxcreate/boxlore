@@ -65,6 +65,7 @@ fun DiscoveryExpressiveTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
+@Suppress("LongParameterList") // Mirrors FeedMediaCard's source-compatible parameters.
 internal fun ExpressiveFeedMediaCard(
     imageUrl: String,
     title: String,
@@ -73,6 +74,7 @@ internal fun ExpressiveFeedMediaCard(
     modifier: Modifier,
     imageChrome: @Composable (BoxScope.() -> Unit)?,
     fallbackImageUrls: List<String?>,
+    subtitle: String? = null,
 ) {
     DiscoveryExpressiveTheme {
         Card(
@@ -96,18 +98,23 @@ internal fun ExpressiveFeedMediaCard(
                         if (presentation != FeedMediaCardPresentation.ExpressiveFeatured) imageChrome?.invoke(this)
                     }
                 },
-                title = { titleModifier -> ExpressiveMediaTitle(title, titleModifier, presentation) },
+                title = { titleModifier, leading -> ExpressiveMediaTitle(title, titleModifier, presentation, leading) },
+                subtitle = subtitle?.takeIf { it.isNotBlank() }?.let { text -> { ExpressiveMediaSubtitle(text, presentation) } },
                 openIndicator = { FeaturedOpenIndicator() },
             )
         }
     }
 }
 
-/** Shares the real card's measurement, including the font-scaled three-line title. */
+/**
+ * Shares the real card's measurement, including the font-scaled three-line title. [showSubtitle]
+ * adds the one-line show name slot, for cards that show one.
+ */
 @Composable
 fun FeedMediaCardSkeleton(
     modifier: Modifier = Modifier,
     presentation: FeedMediaCardPresentation = FeedMediaCardPresentation.ExpressivePoster,
+    showSubtitle: Boolean = false,
     placeholder: @Composable (Modifier) -> Unit,
 ) {
     Card(
@@ -120,9 +127,9 @@ fun FeedMediaCardSkeleton(
         ExpressiveMediaLayout(
             presentation = presentation,
             artwork = placeholder,
-            title = { titleModifier ->
+            title = { titleModifier, leading ->
                 Box(titleModifier) {
-                    ExpressiveMediaTitle("", Modifier.fillMaxWidth(), presentation)
+                    ExpressiveMediaTitle("", Modifier.fillMaxWidth(), presentation, leading)
                     val markerHeight = with(LocalDensity.current) { 12.sp.toDp() }
                     Column(Modifier.matchParentSize()) {
                         listOf(0.9f, 0.75f, 0.55f).forEach { fraction ->
@@ -133,16 +140,27 @@ fun FeedMediaCardSkeleton(
                     }
                 }
             },
+            subtitle = if (showSubtitle) {
+                {
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        ExpressiveMediaSubtitle("", presentation)
+                        val markerHeight = with(LocalDensity.current) { 10.sp.toDp() }
+                        placeholder(Modifier.fillMaxWidth(0.5f).height(markerHeight))
+                    }
+                }
+            } else {
+                null
+            },
             openIndicator = { placeholder(Modifier.size(24.dp)) },
         )
     }
 }
 
 @Composable
-private fun ExpressiveMediaTitle(title: String, modifier: Modifier, presentation: FeedMediaCardPresentation) {
-    val style = expressiveMediaTitleStyle(presentation)
+private fun ExpressiveMediaTitle(title: String, modifier: Modifier, presentation: FeedMediaCardPresentation, leading: Boolean) {
+    val style = expressiveMediaTitleStyle(presentation, leading)
     val titleHeight = expressiveMediaTitleHeight(style)
-    Box(modifier.height(titleHeight), contentAlignment = Alignment.CenterStart) {
+    Box(modifier.height(titleHeight), contentAlignment = if (leading) Alignment.TopStart else Alignment.CenterStart) {
         Text(
             text = title,
             style = style,
@@ -153,18 +171,52 @@ private fun ExpressiveMediaTitle(title: String, modifier: Modifier, presentation
     }
 }
 
+/** One line under the title, such as the show an episode comes from. */
 @Composable
-private fun expressiveMediaTitleStyle(presentation: FeedMediaCardPresentation): TextStyle {
+private fun ExpressiveMediaSubtitle(text: String, presentation: FeedMediaCardPresentation) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        // The featured card sits on tertiary-container, so it keeps the card's own content colour.
+        color = if (presentation == FeedMediaCardPresentation.ExpressiveFeatured) {
+            LocalContentColor.current
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+/**
+ * The card's title style. [leading] is the featured card in a tablet text column of at least
+ * [FeaturedLeadingTitleMinWidth]: its title is `titleLarge`, pinned to the top. Everything else keeps
+ * the small title.
+ */
+@Composable
+private fun expressiveMediaTitleStyle(presentation: FeedMediaCardPresentation, leading: Boolean = false): TextStyle {
     val featured = presentation == FeedMediaCardPresentation.ExpressiveFeatured
-    return LocalTextStyle.current.merge(
+    val base = if (featured && leading) {
+        MaterialTheme.typography.titleLarge
+    } else {
         MaterialTheme.typography.titleSmall.copy(
             fontSize = if (featured) 16.sp else 14.sp,
             lineHeight = if (featured) 24.sp else 20.sp,
+        )
+    }
+    return LocalTextStyle.current.merge(
+        base.copy(
             platformStyle = PlatformTextStyle(includeFontPadding = false),
             lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None),
         ),
     )
 }
+
+private val FeaturedLeadingTitleMinWidth = 200.dp
+private val FeaturedTextPadding = 16.dp
+private val FeaturedLeadingTextPadding = 20.dp
+private val SubtitleGap = 2.dp
 
 @Composable
 private fun expressiveMediaTitleHeight(style: TextStyle): Dp {
@@ -172,33 +224,48 @@ private fun expressiveMediaTitleHeight(style: TextStyle): Dp {
     return with(LocalDensity.current) { measured.size.height.toDp() }
 }
 
-/** Artwork plus the same measured three-line foot used by real posters and skeletons. */
+/**
+ * Artwork plus the same measured three-line foot used by real posters and skeletons, and the show
+ * name line when [withSubtitle].
+ */
 @Composable
-fun expressivePosterCardHeight(artworkWidth: Dp): Dp {
+fun expressivePosterCardHeight(artworkWidth: Dp, withSubtitle: Boolean = false): Dp {
     val titleHeight = expressiveMediaTitleHeight(expressiveMediaTitleStyle(FeedMediaCardPresentation.ExpressivePoster))
-    return with(LocalDensity.current) { (artworkWidth.roundToPx() + titleHeight.roundToPx() + 2 * 12.dp.roundToPx()).toDp() }
+    val measurer = rememberTextMeasurer()
+    val subtitleStyle = MaterialTheme.typography.bodySmall
+    return with(LocalDensity.current) {
+        val subtitlePx = if (withSubtitle) {
+            measurer.measure(AnnotatedString(""), style = subtitleStyle, maxLines = 1).size.height + SubtitleGap.roundToPx()
+        } else {
+            0
+        }
+        (artworkWidth.roundToPx() + titleHeight.roundToPx() + subtitlePx + 2 * 12.dp.roundToPx()).toDp()
+    }
 }
 
 @Composable
 private fun ExpressiveMediaLayout(
     presentation: FeedMediaCardPresentation,
     artwork: @Composable (Modifier) -> Unit,
-    title: @Composable (Modifier) -> Unit,
+    title: @Composable (Modifier, Boolean) -> Unit,
+    subtitle: (@Composable () -> Unit)?,
     openIndicator: @Composable () -> Unit,
 ) {
     if (presentation == FeedMediaCardPresentation.ExpressiveFeatured) {
         val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
         BoxWithConstraints(Modifier.fillMaxWidth().then(if (tablet) Modifier.fillMaxHeight() else Modifier), propagateMinConstraints = tablet) {
             val artworkWidth = (maxWidth * 0.44f).coerceAtMost(176.dp)
+            // Phones keep today's card; only a tablet text column (beside the artwork) with room gives the title the lead.
+            val leading = tablet && maxWidth - artworkWidth >= FeaturedLeadingTitleMinWidth
             Row(
                 modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).heightIn(min = 152.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = if (leading) Alignment.Top else Alignment.CenterVertically,
             ) {
                 Column(
-                    modifier = Modifier.weight(1f).padding(16.dp),
+                    modifier = Modifier.weight(1f).padding(if (leading) FeaturedLeadingTextPadding else FeaturedTextPadding),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    title(Modifier.fillMaxWidth())
+                    TitleWithSubtitle(Modifier.fillMaxWidth(), leading, title, subtitle)
                     openIndicator()
                 }
                 artwork(
@@ -211,7 +278,25 @@ private fun ExpressiveMediaLayout(
     } else {
         Column {
             artwork(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)))
-            title(Modifier.fillMaxWidth().padding(12.dp))
+            TitleWithSubtitle(Modifier.fillMaxWidth().padding(12.dp), leading = false, title, subtitle)
+        }
+    }
+}
+
+/** Without a subtitle the title takes [modifier] directly, so cards without one keep their height. */
+@Composable
+private fun TitleWithSubtitle(
+    modifier: Modifier,
+    leading: Boolean,
+    title: @Composable (Modifier, Boolean) -> Unit,
+    subtitle: (@Composable () -> Unit)?,
+) {
+    if (subtitle == null) {
+        title(modifier, leading)
+    } else {
+        Column(modifier, verticalArrangement = Arrangement.spacedBy(SubtitleGap)) {
+            title(Modifier.fillMaxWidth(), leading)
+            subtitle()
         }
     }
 }

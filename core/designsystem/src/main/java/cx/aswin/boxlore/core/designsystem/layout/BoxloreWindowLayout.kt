@@ -73,6 +73,18 @@ data class BoxloreWindowLayout(
                 it.bounds.bottom < heightDp
         }
 
+    /**
+     * A vertical hinge splits this window into two regions at least 360dp wide, so a detail or the
+     * player can open in the second half, whatever the aspect ratio (an upright book foldable too).
+     */
+    val usesHingeSplit: Boolean
+        get() {
+            if (!usesTabletLayout || tabletopFold != null) return false
+            val vertical = folds.any { it.orientation == BoxloreFoldOrientation.Vertical && it.splitsRegions }
+            val regions = foldSafeRegions()
+            return vertical && regions.size == 2 && regions.all { it.width >= HINGE_SPLIT_MIN_REGION_DP }
+        }
+
     companion object {
         /** Previews and isolated feature tests retain their existing phone layout by default. */
         val Unspecified = BoxloreWindowLayout(0f, 0f)
@@ -81,12 +93,25 @@ data class BoxloreWindowLayout(
 
 val LocalBoxloreWindowLayout = staticCompositionLocalOf { BoxloreWindowLayout.Unspecified }
 
+private const val HINGE_SPLIT_MIN_REGION_DP = 360f
+
+private val BoxloreFold.splitsRegions: Boolean get() = isSeparating || isOccluding || state == BoxloreFoldState.HalfOpened
+
 /** Contiguous regions are used for pane placement; no region includes an occluding hinge. */
 fun BoxloreWindowLayout.foldSafeRegions(): List<BoxloreLayoutBounds> =
-    folds.filter { it.isSeparating || it.isOccluding || it.state == BoxloreFoldState.HalfOpened }
+    folds.filter { it.splitsRegions }
         .fold(listOf(BoxloreLayoutBounds(0f, 0f, widthDp, heightDp))) { regions, fold ->
         regions.flatMap { region -> splitAtFold(region, fold) }
     }
+
+/**
+ * The one region a screen that must stay in a single half uses: the lower half in tabletop (the
+ * half by the listener's hands), otherwise the widest region. With one region this is the window.
+ */
+fun BoxloreWindowLayout.foldSafeBrowsingRegion(): BoxloreLayoutBounds {
+    val regions = foldSafeRegions()
+    return if (tabletopFold != null) regions.last() else regions.maxBy { it.width }
+}
 
 private fun splitAtFold(region: BoxloreLayoutBounds, fold: BoxloreFold): List<BoxloreLayoutBounds> {
     val bounds = fold.bounds
@@ -97,4 +122,38 @@ private fun splitAtFold(region: BoxloreLayoutBounds, fold: BoxloreFold): List<Bo
             listOf(region.copy(right = bounds.left), region.copy(left = bounds.right))
         else -> listOf(region)
     }
+}
+
+/**
+ * The fold-safe region that overlaps [bounds] most, such as the half a pane, an anchor or a panel
+ * sits in. Bounds that overlap no region (inside the hinge, or with no area) use the region under
+ * their centre, then the first region. With one region this is the whole window.
+ */
+fun BoxloreWindowLayout.foldSafeRegionContaining(bounds: BoxloreLayoutBounds): BoxloreLayoutBounds {
+    val regions = foldSafeRegions()
+    val best = regions.maxBy { overlapArea(it, bounds) }
+    if (overlapArea(best, bounds) > 0f) return best
+    val centreX = (bounds.left + bounds.right) / 2f
+    val centreY = (bounds.top + bounds.bottom) / 2f
+    return regions.firstOrNull { it.contains(centreX, centreY) } ?: regions.first()
+}
+
+/** The fold-safe region under a window point, or the nearest one when the point is on the hinge. */
+fun BoxloreWindowLayout.foldSafeRegionAt(xDp: Float, yDp: Float): BoxloreLayoutBounds {
+    val regions = foldSafeRegions()
+    return regions.firstOrNull { it.contains(xDp, yDp) } ?: regions.minBy { it.distanceTo(xDp, yDp) }
+}
+
+private fun BoxloreLayoutBounds.contains(x: Float, y: Float): Boolean = x >= left && x < right && y >= top && y < bottom
+
+private fun BoxloreLayoutBounds.distanceTo(x: Float, y: Float): Float {
+    val dx = maxOf(left - x, 0f, x - right)
+    val dy = maxOf(top - y, 0f, y - bottom)
+    return dx * dx + dy * dy
+}
+
+private fun overlapArea(a: BoxloreLayoutBounds, b: BoxloreLayoutBounds): Float {
+    val width = minOf(a.right, b.right) - maxOf(a.left, b.left)
+    val height = minOf(a.bottom, b.bottom) - maxOf(a.top, b.top)
+    return if (width > 0f && height > 0f) width * height else 0f
 }

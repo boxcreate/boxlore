@@ -7,6 +7,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
@@ -53,6 +54,7 @@ import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPaddin
 import cx.aswin.boxlore.core.designsystem.component.appMiniPlayerTopOffset
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.dockedPlayerCoversPane
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.model.Episode
@@ -807,6 +809,8 @@ fun BoxLoreAppRoot(
                 }
 
                 val screenHeightDp = maxHeight
+                // Side system buttons, the camera cutout and the 560dp cap on wide, short windows.
+                val (chromeLeftInset, chromeRightInset) = phoneChromeSideOffsets(navigationStyle, maxWidth)
                 val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 val chromeMetrics = navigationChromeMetrics(navigationStyle)
                 val bottomChromeClearance = chromeMetrics.bottomNavigationClearance
@@ -822,13 +826,22 @@ fun BoxLoreAppRoot(
                         level = navigationBlurLevel,
                         bottomChrome = FloatingNavigationBlur.barChrome(navigationStyle, systemNavigationInset = systemNavBarHeight),
                         pageColor = navigationBackground,
-                        modifier = Modifier.align(Alignment.BottomCenter),
+                        modifier = Modifier.align(Alignment.BottomCenter).absolutePadding(left = chromeLeftInset, right = chromeRightInset),
                     )
                 }
 
                 if (showBottomNav && !windowLayout.usesTabletLayout) {
                     val activeTab = resolveBottomNavTab(currentRoute, remember(navBackStackEntry) { snapshotNavBackStack(navController) })
-                    PhoneBottomNavigation(navController, tabletNavigation, activeTab, navigationStyle, navigationColors, isInitialHomeContentReady, adaptivePlayer.progress)
+                    PhoneBottomNavigation(
+                        navController,
+                        tabletNavigation,
+                        activeTab,
+                        navigationStyle,
+                        navigationColors,
+                        isInitialHomeContentReady,
+                        adaptivePlayer.progress,
+                        chromeLeftInset to chromeRightInset,
+                    )
                 }
 
                 AppPlaybackNotices(
@@ -858,6 +871,8 @@ fun BoxLoreAppRoot(
                             } else {
                                 12.dp
                             },
+                            collapsedLeftInset = chromeLeftInset,
+                            collapsedRightInset = chromeRightInset,
                             navigationStyle = navigationStyle,
                             miniPlayerSeekButtonsEnabled = miniPlayerSeekButtonsEnabled,
                             expandTrigger = playerOpenRequest,

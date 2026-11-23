@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,15 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -57,16 +55,18 @@ fun RepairProgressPopup(visible: Boolean, modifier: Modifier = Modifier,) {
             ),
         modifier = modifier,
     ) {
+        val colors = MaterialTheme.colorScheme
+        // The same solid theme surface as the other playback notices, at most a card's width.
         Surface(
-            shape = RoundedCornerShape(30.dp),
-            color = Color(0xFF161618),
-            contentColor = Color.White,
-            shadowElevation = 20.dp,
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
+            shape = MaterialTheme.shapes.extraLarge,
+            color = colors.surfaceContainerHigh,
+            contentColor = colors.onSurface,
+            shadowElevation = 8.dp,
             modifier =
             Modifier
-                .fillMaxWidth()
                 .widthIn(max = 420.dp)
+                .fillMaxWidth()
+                .testTag(REPAIR_PROGRESS_TAG)
                 .semantics { liveRegion = LiveRegionMode.Polite },
         ) {
             Row(
@@ -83,15 +83,18 @@ fun RepairProgressPopup(visible: Boolean, modifier: Modifier = Modifier,) {
                         text = stringResource(R.string.repair_progress_title),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = GoogleSansWeight.bold,
-                        color = Color.White,
+                        color = colors.onSurface,
                     )
                     Text(
                         text = stringResource(R.string.repair_progress_body),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.68f),
+                        color = colors.onSurfaceVariant,
                     )
                 }
             }
         }
     }
 }
+
+/** Test tag on the repair pill's surface. */
+internal const val REPAIR_PROGRESS_TAG = "repair_progress"

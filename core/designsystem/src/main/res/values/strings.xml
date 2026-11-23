@@ -115,4 +115,5 @@
     <string name="top_bar_feedback">Send Feedback</string>
     <string name="top_bar_feedback_reply">Feedback, new reply</string>
     <string name="top_bar_settings">Settings</string>
+    <string name="search_field_clear">Clear search</string>
 </resources>

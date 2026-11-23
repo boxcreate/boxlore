@@ -4,8 +4,14 @@ import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
@@ -16,6 +22,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onNodeWithTag
@@ -26,11 +33,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreBottomChromeReserved
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import cx.aswin.boxlore.core.testing.SystemInsets
+import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
+import cx.aswin.boxlore.core.testing.walkWindows
 import cx.aswin.boxlore.navigation.TabletContextRoot
 import cx.aswin.boxlore.navigation.TabletDetailNavigation
 import cx.aswin.boxlore.navigation.rememberTabletDetailNavigation
@@ -53,6 +66,11 @@ class TabletAppShellTest {
     private val allowed = mutableStateOf(true)
     private val navigationVisible = mutableStateOf(true)
     private var paneBounds: cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds? = null
+    private var homeEntry: androidx.navigation.NavBackStackEntry? = null
+    private var primaryTopInset = -1f
+    private var detailChromeReserved: Boolean? = null
+    private var detailBottomPadding = -1f
+    private lateinit var homeScroll: androidx.compose.foundation.ScrollState
 
     /** Each rail tap with what the shell reported: whether it only closed a detail covering the primary pane. */
     private val tabTaps = mutableListOf<Pair<String, Boolean>>()
@@ -268,6 +286,132 @@ class TabletAppShellTest {
         fixture.compose.onNodeWithText("Count 0").assertExists()
     }
 
+    @Test
+    fun `folding half open and back keeps browsing, its scroll and the player`() {
+        playing.value = true
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        fixture.compose.onNodeWithText("Count 0").performClick()
+        fixture.compose.runOnIdle { kotlinx.coroutines.runBlocking { homeScroll.scrollTo(400) } }
+        advance()
+        val owner = requireNotNull(homeEntry)
+        val expected = mapOf(
+            BoxloreTestWindows.FOLD_BOOK to BoxloreLayoutBounds(477f, 0f, 932f, 650f),
+            BoxloreTestWindows.FOLD_TABLETOP to BoxloreLayoutBounds(0f, 0f, 932f, 315f),
+        )
+        fixture.compose.walkWindows(
+            window,
+            BoxloreTestWindows.FOLD_BOOK,
+            BoxloreTestWindows.FOLD_TABLETOP,
+            BoxloreTestWindows.FOLD_FLAT,
+            BoxloreTestWindows.FOLD_TABLETOP,
+            BoxloreTestWindows.FOLD_BOOK,
+            BoxloreTestWindows.FOLD_FLAT,
+        ) { step ->
+            advance()
+            fixture.compose.onNodeWithText("Count 1").assertExists()
+            assertEquals(400, homeScroll.value)
+            assertTrue(owner === homeEntry)
+            fixture.compose.onNodeWithText("Pane playback").assertExists()
+            assertTrue(!navigation.playerDocked)
+            expected[step]?.let { pane ->
+                val player = fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot
+                assertEquals(pane.left, player.left, 1f)
+                assertEquals(pane.top, player.top, 1f)
+                assertEquals(pane.right, player.right, 1f)
+                assertEquals(pane.bottom, player.bottom, 1f)
+            }
+        }
+        // Back still closes a detail opened on the fold.
+        fixture.compose.runOnIdle { window.value = BoxloreTestWindows.FOLD_BOOK }
+        advance()
+        fixture.compose.onNodeWithText("Open show").performClick()
+        advance()
+        fixture.compose.onNodeWithText("Show detail rss:show/test").assertExists()
+        fixture.compose.runOnUiThread { fixture.compose.activity.onBackPressedDispatcher.onBackPressed() }
+        advance()
+        assertTrue(!navigation.hasDetail)
+        fixture.compose.onNodeWithText("Pane playback").assertExists()
+    }
+
+    @Test
+    fun `tabletop panes pad from their own top edge, not the window's`() {
+        playing.value = true
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets.TABLETOP_STATUS) }
+        advance()
+        fixture.compose.runOnIdle { kotlinx.coroutines.runBlocking { homeScroll.scrollTo(300) } }
+        advance()
+        val owner = requireNotNull(homeEntry)
+        fixture.compose.walkWindows(window, BoxloreTestWindows.FOLD_FLAT, BoxloreTestWindows.FOLD_TABLETOP, BoxloreTestWindows.FOLD_FLAT) { step ->
+            advance()
+            val paneTop = if (step.tabletopFold != null) 336f else 0f
+            val statusInset = if (step.tabletopFold != null) 0f else 24f
+            val railItem = fixture.compose.onNodeWithText("Home").fetchSemanticsNode().boundsInRoot
+            // The rail's own 4dp and 8dp paddings sit below the pane top and the inset.
+            assertEquals(paneTop + statusInset + 12f, railItem.top, 1f)
+            assertEquals(statusInset, primaryTopInset, 0.5f)
+            assertEquals(paneTop + statusInset, fixture.compose.onNodeWithText("Status probe").fetchSemanticsNode().boundsInRoot.top, 1f)
+            assertEquals(300, homeScroll.value)
+            assertTrue(owner === homeEntry)
+        }
+    }
+
+    @Test
+    fun `a show open when folding to the cover reserves the bottom bar once`() {
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        fixture.compose.onNodeWithText("Open show").performClick()
+        advance()
+        assertEquals(false, detailChromeReserved)
+        fixture.compose.walkWindows(window, BoxloreTestWindows.COVER_475, BoxloreTestWindows.FOLD_FLAT, BoxloreTestWindows.COVER_475) { step ->
+            advance()
+            fixture.compose.onNodeWithText("Show detail rss:show/test").assertExists()
+            val compact = !step.usesTabletLayout
+            assertEquals(compact, detailChromeReserved)
+            // On the cover the shell's footer already holds the bar and system navigation.
+            if (compact) assertEquals(0f, detailBottomPadding, 0.5f)
+        }
+    }
+
+    @Test
+    fun `a show open on the cover keeps the keyboard space the bottom bar does not cover`() {
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        fixture.compose.onNodeWithText("Open show").performClick()
+        fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets(imeBottom = 300)) }
+        advance()
+        fixture.compose.walkWindows(window, BoxloreTestWindows.COVER_475, BoxloreTestWindows.FOLD_FLAT, BoxloreTestWindows.COVER_475) { step ->
+            advance()
+            val pane = fixture.compose.onNodeWithTag("detail_pane").fetchSemanticsNode().boundsInRoot
+            val probe = fixture.compose.onNodeWithTag("ime_probe").fetchSemanticsNode().boundsInRoot
+            val footer = step.heightDp - pane.bottom
+            if (!step.usesTabletLayout) assertTrue("$step $pane", footer > 0f)
+            // The pane only clears the part of the keyboard that reaches above the shell's footer.
+            assertEquals("$step", (300f - footer).coerceAtLeast(0f), pane.bottom - probe.bottom, 1f)
+        }
+    }
+
+    @Test
+    fun `starting and stopping playback on a Pixel Fold keeps Home and shows the mini player`() {
+        window.value = BoxloreTestWindows.PIXEL_FOLD
+        render()
+        fixture.compose.runOnIdle { kotlinx.coroutines.runBlocking { homeScroll.scrollTo(200) } }
+        advance()
+        val owner = requireNotNull(homeEntry)
+        val browsing = fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot
+        listOf(true, false, true).forEach { episode ->
+            fixture.compose.runOnIdle { playing.value = episode }
+            advance()
+            assertEquals(200, homeScroll.value)
+            assertTrue(owner === homeEntry)
+            assertEquals(browsing, fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot)
+            if (episode) fixture.compose.onNodeWithText("Docked playback").assertExists()
+            fixture.compose.onNodeWithText("Pane playback").assertDoesNotExist()
+        }
+    }
+
     private fun render() {
         fixture.prepare()
         restoration = StateRestorationTester(fixture.compose)
@@ -290,12 +434,20 @@ class TabletAppShellTest {
                             TabletShellContent(
                             primary = {
                                 paneBounds = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current
+                                primaryTopInset = cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset().value
+                                Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { Text("Status probe") }
                                 NavHost(primary, "home") {
-                                    composable("home") {
+                                    composable("home") { entry ->
                                         var count by rememberSaveable { mutableIntStateOf(0) }
+                                        homeEntry = entry
+                                        val scroll = androidx.compose.foundation.rememberScrollState()
+                                        homeScroll = scroll
                                         androidx.compose.foundation.layout.Column {
                                             Button(onClick = { count++ }) { Text("Count $count") }
                                             Button(onClick = { navigation.navigate(primary, "podcast/rss%3Ashow%2Ftest") }) { Text("Open show") }
+                                            androidx.compose.foundation.layout.Column(Modifier.height(120.dp).verticalScroll(scroll)) {
+                                                repeat(30) { Text("Row $it", Modifier.height(40.dp)) }
+                                            }
                                         }
                                     }
                                     composable("settings") { Text("Primary settings") }
@@ -309,11 +461,17 @@ class TabletAppShellTest {
                                     composable(TabletContextRoot) {}
                                     composable("podcast/{id}") { entry ->
                                         var count by rememberSaveable { mutableIntStateOf(0) }
-                                        androidx.compose.foundation.layout.Column {
-                                            Button(onClick = { navigation.detail.popBackStack() }) { Text("Back") }
-                                            Text("Show detail ${entry.arguments?.getString("id")}")
-                                            Button(onClick = { count++ }) { Text("Show state $count") }
-                                            Button(onClick = { navigation.navigate(navigation.detail, "episode/one") }) { Text("Open episode") }
+                                        detailChromeReserved = LocalBoxloreBottomChromeReserved.current
+                                        detailBottomPadding = cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding(false, 48.dp).value
+                                        Box(Modifier.fillMaxSize()) {
+                                            androidx.compose.foundation.layout.Column {
+                                                Button(onClick = { navigation.detail.popBackStack() }) { Text("Back") }
+                                                Text("Show detail ${entry.arguments?.getString("id")}")
+                                                Button(onClick = { count++ }) { Text("Show state $count") }
+                                                Button(onClick = { navigation.navigate(navigation.detail, "episode/one") }) { Text("Open episode") }
+                                            }
+                                            // What a search field's keyboard clearance pads by in this pane.
+                                            Box(Modifier.fillMaxSize().imePadding().testTag("ime_probe"))
                                         }
                                     }
                                     composable("episode/{id}", deepLinks = listOf(navDeepLink { uriPattern = "boxlore://episode/{id}" })) { Text("Episode detail") }

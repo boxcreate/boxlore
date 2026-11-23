@@ -195,11 +195,19 @@ fun shareMessage(title: String, subtitle: String, moment: String?, url: String):
 }
 
 /**
- * How big the card preview in the share sheet is, from the window's height. Short windows (a phone
- * on its side, a small split-screen pane) leave it out, so the share buttons stay on screen.
+ * How big the card preview in the share sheet is, from the height the sheet or panel can give its
+ * content. The card shows only when the start-time switch and every share action still fit with it;
+ * otherwise the sheet shows the name row, so Copy link and Instagram Story stay on screen on a
+ * sideways phone, a foldable's cover screen or the lower half of a half-open fold.
  */
-fun sharePreviewSizeDp(windowHeightDp: Float): Int = when {
-    windowHeightDp >= 760f -> 240
-    windowHeightDp >= 600f -> 176
+fun sharePreviewSizeDp(availableHeightDp: Float): Int = when {
+    availableHeightDp >= SHARE_SHEET_WITHOUT_CARD_DP + LARGE_SHARE_PREVIEW_DP -> LARGE_SHARE_PREVIEW_DP
+    availableHeightDp >= SHARE_SHEET_WITHOUT_CARD_DP + SMALL_SHARE_PREVIEW_DP -> SMALL_SHARE_PREVIEW_DP
     else -> 0
 }
+
+private const val LARGE_SHARE_PREVIEW_DP = 240
+private const val SMALL_SHARE_PREVIEW_DP = 176
+
+/** The share sheet's own height without the card: its heading, the start-time switch and the actions. */
+private const val SHARE_SHEET_WITHOUT_CARD_DP = 440f

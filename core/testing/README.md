@@ -11,7 +11,9 @@ Owns shared JVM test support for core and feature modules: fixtures, fakes for `
 - `fakes.FakeLocalEpisodeCatalogPort`: pages, sorts and searches episodes in memory; `findByCatalogKey` returns null when guid and enclosure are both blank. `refreshOutcome`, `publisherFeedUnchanged` and `lastRefreshRequest` drive and inspect `refresh`.
 - `fakes.FakeLocalCatalogPort`, `FakePodcastCatalogPort`, `FakeEpisodeOfflineLookup`, `FakeRssSubscriptionPort`, `FakeRankingResetPort`, `FakeHistoryRecommendationSource` and `FakeConnectivityStatusPort`: in-memory fakes for the matching ports.
 - `fakes.FakeDeviceIdentityPort`: a fixed or mutable device ID for sync tests.
-- `PhoneGoldenRule` and `PhoneGoldenConfiguration`: the local capture rule and its matrix. Phone runs cover three sizes in light and dark; `-PtabletCaptures=before|after` switches to tablet, landscape and flat/tabletop fold sizes.
+- `PhoneGoldenRule` and `PhoneGoldenConfiguration`: the local capture rule and its matrix. Phone runs cover three sizes in light and dark; `-PtabletCaptures=before|after` switches to tablet, landscape and flat/tabletop fold sizes, and `audit` to the adaptive review matrix (`auditConfigurations`, filtered by `-PauditSizes`). `capture(screen, allWindows)` can composite sheets, dialogs and popups; `captureSequence` writes numbered motion frames, optionally with system animations off (`setReducedMotion`); `assumeAuditCapture` skips audit-only fixtures elsewhere.
+- `BoxloreTestWindows`: named windows (phones, the Fold 8 cover, a split half, pairs either side of the 600, 480 and 840dp gates, book foldables with their hinges, tablets) and `walkWindows`, which moves a window state through steps and checks each once composition settles.
+- `SystemInsets` and `applyFakeSystemInsets`: fake status and navigation bars, camera cutout and keyboard sent to a test window. `insets` and `tabletop-insets` audit sizes send the `SIDEWAYS_3_BUTTON` and `TABLETOP_STATUS` presets and tint the inset areas red in the capture.
 - Phone verification compares dimensions and every ARGB pixel against `screenshots/baselines/phone`; recording refuses to overwrite an existing baseline. Tablet captures are review images only. How to run them: [`docs/TESTING.md`](../../docs/TESTING.md#screenshots).
 - `PhoneGoldenRule.setContent` composes phone captures unchanged; tablet "after" captures get the shared window model, and `foldSafeViewport` places standalone screens in the shell's fold-safe region.
 - Modules that declare `testImplementation(projects.core.testing)` also get its test libraries (see Dependencies).
@@ -23,6 +25,8 @@ src/main/java/cx/aswin/boxlore/core/testing/
   MainDispatcherExtension.kt
   TestFixtures.kt
   PhoneGoldenRule.kt               # PhoneGoldenConfiguration and PhoneGoldenRule
+  BoxloreTestWindows.kt            # named test windows and walkWindows
+  SystemInsetsFixture.kt           # fake system insets and the capture overlay
   GoldenFoldSafeViewport.kt        # fold-safe region for standalone tablet captures
   fakes/FakePorts.kt
 src/test/java/cx/aswin/boxlore/core/testing/
@@ -56,7 +60,7 @@ src/test/resources/module-readme-budget.txt   # allowances for READMEs not yet r
 
 - No app persistence is owned here.
 - Architecture guards read project files (`settings.gradle.kts`, build files, sources, resources, module READMEs, `docs/analytics/*.csv`, `docs/i18n/hardcoded-text-baseline.txt`) and define no app storage. Translation rules: [`docs/i18n/TRANSLATING.md`](../../docs/i18n/TRANSLATING.md).
-- System properties: `boxlore.projectRoot`, `boxlore.phoneGoldens` (`record` / `verify`) and `boxlore.tabletCaptures` (`before` / `after`), set by the root build from `-PphoneGoldens` and `-PtabletCaptures`.
+- System properties: `boxlore.projectRoot`, `boxlore.phoneGoldens` (`record` / `verify`), `boxlore.tabletCaptures` (`before` / `after` / `audit`) and `boxlore.auditSizes`, set by the root build from `-PphoneGoldens`, `-PtabletCaptures` and `-PauditSizes`.
 
 ## Testing notes
 
@@ -70,6 +74,7 @@ src/test/resources/module-readme-budget.txt   # allowances for READMEs not yet r
 | Translations in every module's `res/values-<language>` | `TranslationResourcesGuardTest` |
 | Hard-coded listener text, against a baseline that only shrinks (`BOXLORE_I18N_BASELINE=write` regenerates it) | `HardcodedTextGuardTest` |
 | Fakes and fixtures | `FakePortsTest` |
+| Capture matrix and size filter, test windows, fake insets, en-XA in library resources | `PhoneGoldenConfigurationTest` in `:core:designsystem` |
 
 ```bash
 ./gradlew :core:testing:testDebugUnitTest
@@ -79,7 +84,7 @@ src/test/resources/module-readme-budget.txt   # allowances for READMEs not yet r
 
 - `unit-tests.yml` runs these guards in the `core` shard.
 - The guards complement the shell checks under `scripts/ci`.
-- `*PhoneGoldenTest` classes are excluded from every test run unless `-PphoneGoldens` is set, so phone goldens stay local.
+- `*PhoneGoldenTest` and `*AuditCaptureTest` classes are excluded from every test run unless `-PphoneGoldens` or `-PtabletCaptures` is set, so captures stay local.
 
 ## See also
 

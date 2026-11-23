@@ -5,6 +5,7 @@ package cx.aswin.boxlore.core.designsystem.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,9 +49,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.share.ShareCardText
@@ -161,172 +164,190 @@ internal fun ShareSheetBody(
     val timestampOffered = canStartAtTime && (includeTimestamp || currentPositionMs > 1000L)
     val sharedStartMs = startsAtMs?.takeIf { canStartAtTime }
     val toggleTimestamp = { startsAtMs = if (startsAtMs == null) currentPositionMs else null }
+    val window = LocalBoxloreWindowLayout.current
 
-    Column(
-        modifier =
-        Modifier
-            .fillMaxWidth().tabletSheetScroll()
-            .padding(horizontal = 20.dp)
-            .padding(bottom = 28.dp),
-        horizontalAlignment = Alignment.Start,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Share,
-                    contentDescription = null,
-                    modifier = Modifier.padding(12.dp).size(24.dp),
-                )
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(if (type == "podcast") R.string.share_sheet_title_podcast else R.string.share_sheet_title_episode),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = GoogleSansWeight.bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(R.string.share_sheet_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(20.dp))
-
-        val previewSize = sharePreviewSizeDp(LocalBoxloreWindowLayout.current.heightDp)
-        val preview by produceState<ImageBitmap?>(initialValue = null, title, subtitle, details, imageUrl, sharedStartMs, previewSize > 0) {
-            value = null
-            if (previewSize == 0) return@produceState
-            val moment = shareMoment(
-                opensShow = sharedStartMs != null && opensShow(),
-                timestampMs = sharedStartMs,
-                startMs = null,
-                endMs = null,
-            )
-            val card = ShareCardText(title, subtitle, ShareManager.shareMomentLabel(context, moment), details)
-            value = renderPreview(card, shareProgress(moment, (durationMs / 1000L).toInt()))
-        }
-        if (previewSize > 0) {
-            SharePreview(
-                preview = preview,
-                sizeDp = previewSize,
-                title = title,
-                subtitle = subtitle,
-                description = stringResource(R.string.share_preview_description, title),
-            )
-        } else {
-            ShareSummaryRow(title = title, subtitle = subtitle, imageUrl = imageUrl)
-        }
-
-        if (timestampOffered) {
-            Spacer(modifier = Modifier.height(14.dp))
-            Surface(
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .expressiveClickable(
-                        shape = MaterialTheme.shapes.extraLarge,
-                        onClick = toggleTimestamp,
-                    ),
-                shape = MaterialTheme.shapes.extraLarge,
-                color =
-                if (includeTimestamp) {
-                    MaterialTheme.colorScheme.secondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.surfaceContainerHigh
-                },
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+    // Outside the scroll, so maxHeight is what the sheet or the centred panel really has.
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val previewSize = sharePreviewSizeDp(shareSheetAvailableHeightDp(maxHeight, window))
+        Column(
+            modifier =
+            Modifier
+                .fillMaxWidth().tabletSheetScroll()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
+            horizontalAlignment = Alignment.Start,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 ) {
-                    Surface(
-                        shape = MaterialTheme.shapes.large,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Schedule,
-                            contentDescription = null,
-                            modifier = Modifier.padding(9.dp).size(20.dp),
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.share_sheet_start_at, formatShareTime(startsAtMs ?: currentPositionMs)),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = GoogleSansWeight.bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.share_sheet_start_at_body),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = includeTimestamp,
-                        onCheckedChange = { if (it != includeTimestamp) toggleTimestamp() },
-                        colors =
-                        SwitchDefaults.colors(
-                            checkedTrackColor = MaterialTheme.colorScheme.primary,
-                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                        ),
+                    Icon(
+                        imageVector = Icons.Rounded.Share,
+                        contentDescription = null,
+                        modifier = Modifier.padding(12.dp).size(24.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(if (type == "podcast") R.string.share_sheet_title_podcast else R.string.share_sheet_title_episode),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = GoogleSansWeight.bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.share_sheet_body),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-        }
+            Spacer(modifier = Modifier.height(20.dp))
 
-        Spacer(modifier = Modifier.height(22.dp))
-        Text(
-            text = stringResource(R.string.share_sheet_choose).uppercase(currentLocale()),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = GoogleSansWeight.bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        SharePrimaryAction(
-            icon = Icons.Rounded.ChatBubble,
-            title = stringResource(R.string.share_sheet_send_card),
-            subtitle = stringResource(R.string.share_sheet_send_card_body),
-            onClick = {
-                onShare(id, type, sharedStartMs, ShareTarget.MESSAGE)
-                onDismissRequest()
-            },
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            ShareSecondaryAction(
-                icon = Icons.Rounded.ContentCopy,
-                title = stringResource(R.string.share_sheet_copy_link),
-                subtitle = stringResource(R.string.share_sheet_copy_link_body),
+            val preview by produceState<ImageBitmap?>(initialValue = null, title, subtitle, details, imageUrl, sharedStartMs, previewSize > 0) {
+                value = null
+                if (previewSize == 0) return@produceState
+                val moment = shareMoment(
+                    opensShow = sharedStartMs != null && opensShow(),
+                    timestampMs = sharedStartMs,
+                    startMs = null,
+                    endMs = null,
+                )
+                val card = ShareCardText(title, subtitle, ShareManager.shareMomentLabel(context, moment), details)
+                value = renderPreview(card, shareProgress(moment, (durationMs / 1000L).toInt()))
+            }
+            if (previewSize > 0) {
+                SharePreview(
+                    preview = preview,
+                    sizeDp = previewSize,
+                    title = title,
+                    subtitle = subtitle,
+                    description = stringResource(R.string.share_preview_description, title),
+                )
+            } else {
+                ShareSummaryRow(title = title, subtitle = subtitle, imageUrl = imageUrl)
+            }
+
+            if (timestampOffered) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Surface(
+                    modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .expressiveClickable(
+                            shape = MaterialTheme.shapes.extraLarge,
+                            onClick = toggleTimestamp,
+                        ),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color =
+                    if (includeTimestamp) {
+                        MaterialTheme.colorScheme.secondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHigh
+                    },
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Surface(
+                            shape = MaterialTheme.shapes.large,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Schedule,
+                                contentDescription = null,
+                                modifier = Modifier.padding(9.dp).size(20.dp),
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.share_sheet_start_at, formatShareTime(startsAtMs ?: currentPositionMs)),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = GoogleSansWeight.bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = stringResource(R.string.share_sheet_start_at_body),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = includeTimestamp,
+                            onCheckedChange = { if (it != includeTimestamp) toggleTimestamp() },
+                            colors =
+                            SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(22.dp))
+            Text(
+                text = stringResource(R.string.share_sheet_choose).uppercase(currentLocale()),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = GoogleSansWeight.bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            SharePrimaryAction(
+                icon = Icons.Rounded.ChatBubble,
+                title = stringResource(R.string.share_sheet_send_card),
+                subtitle = stringResource(R.string.share_sheet_send_card_body),
                 onClick = {
-                    copyShareLink(context, id, type, episode, sharedStartMs)
+                    onShare(id, type, sharedStartMs, ShareTarget.MESSAGE)
                     onDismissRequest()
                 },
-                modifier = Modifier.weight(1f),
             )
-            ShareSecondaryAction(
-                icon = Icons.Rounded.AutoAwesome,
-                title = stringResource(R.string.share_sheet_instagram),
-                subtitle = stringResource(R.string.share_sheet_instagram_body),
-                onClick = {
-                    onShare(id, type, sharedStartMs, ShareTarget.INSTAGRAM_STORY)
-                    onDismissRequest()
-                },
-                modifier = Modifier.weight(1f),
-            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                ShareSecondaryAction(
+                    icon = Icons.Rounded.ContentCopy,
+                    title = stringResource(R.string.share_sheet_copy_link),
+                    subtitle = stringResource(R.string.share_sheet_copy_link_body),
+                    onClick = {
+                        copyShareLink(context, id, type, episode, sharedStartMs)
+                        onDismissRequest()
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+                ShareSecondaryAction(
+                    icon = Icons.Rounded.AutoAwesome,
+                    title = stringResource(R.string.share_sheet_instagram),
+                    subtitle = stringResource(R.string.share_sheet_instagram_body),
+                    onClick = {
+                        onShare(id, type, sharedStartMs, ShareTarget.INSTAGRAM_STORY)
+                        onDismissRequest()
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
+    }
+}
+
+/**
+ * The height the share sheet's content can use: what its sheet or panel gives it, never more than
+ * the window. Isolated previews without a window model, or a caller that doesn't bound the height,
+ * fall back to whichever of the two is known.
+ */
+internal fun shareSheetAvailableHeightDp(maxHeight: Dp, window: BoxloreWindowLayout): Float {
+    val bounded = maxHeight.takeIf { it != Dp.Infinity }?.value
+    val windowHeight = window.heightDp.takeIf { window.isSpecified }
+    return when {
+        bounded != null && windowHeight != null -> minOf(bounded, windowHeight)
+        else -> bounded ?: windowHeight ?: Float.MAX_VALUE
     }
 }
 

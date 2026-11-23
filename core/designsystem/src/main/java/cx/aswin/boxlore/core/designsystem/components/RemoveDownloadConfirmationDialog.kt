@@ -3,12 +3,9 @@ package cx.aswin.boxlore.core.designsystem.components
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -68,25 +65,8 @@ fun RemoveDownloadConfirmationDialog(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError,
-                ),
-            ) {
-                Text(
-                    text = stringResource(R.string.remove_download_confirm),
-                    fontWeight = GoogleSansWeight.bold,
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.remove_download_cancel))
-            }
-        },
+        confirmButton = { BoxloreDialogConfirmButton(stringResource(R.string.remove_download_confirm), onClick = onConfirm, destructive = true) },
+        dismissButton = { BoxloreDialogDismissButton(stringResource(R.string.remove_download_cancel), onClick = onDismiss) },
         shape = RoundedCornerShape(28.dp),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = modifier,

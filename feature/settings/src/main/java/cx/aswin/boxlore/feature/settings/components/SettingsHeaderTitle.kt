@@ -1,32 +1,28 @@
 package cx.aswin.boxlore.feature.settings.components
 
 import androidx.compose.material3.Typography
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.lerp
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.component.BoxloreLargeTitlePresentation
+import cx.aswin.boxlore.core.designsystem.component.boxloreLargeTitlePresentation
 
-internal data class SettingsHeaderTitlePresentation(
-    val style: TextStyle,
-    val maxLines: Int = 2,
-)
+internal typealias SettingsHeaderTitlePresentation = BoxloreLargeTitlePresentation
 
-/** Keep wrapping available throughout collapse so long page names remain readable. */
+/**
+ * Settings' page titles: the shared large title in `displaySmall`, wrapping to two lines throughout
+ * the collapse and in the collapsed row too, so long page names remain readable. Like the shared
+ * bars, it is one type step smaller at a large [fontScale] or in a narrow pane ([paneWidthDp]).
+ */
 internal fun settingsHeaderTitlePresentation(
     typography: Typography,
     collapsedFraction: Float,
     expanded: Boolean = true,
-): SettingsHeaderTitlePresentation {
-    val fraction = if (collapsedFraction.isFinite()) collapsedFraction.coerceIn(0f, 1f) else 0f
-    val compactStyle = typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold)
-    return SettingsHeaderTitlePresentation(
-        style = if (expanded) {
-            lerp(
-                start = typography.displaySmall.copy(fontWeight = GoogleSansWeight.bold),
-                stop = compactStyle,
-                fraction = fraction,
-            )
-        } else {
-            compactStyle
-        },
-    )
-}
+    fontScale: Float = 1f,
+    paneWidthDp: Float = Float.POSITIVE_INFINITY,
+): SettingsHeaderTitlePresentation = boxloreLargeTitlePresentation(
+    typography = typography,
+    collapsedFraction = collapsedFraction,
+    expanded = expanded,
+    fontScale = fontScale,
+    paneWidthDp = paneWidthDp,
+    largeStyle = typography.displaySmall,
+    collapsedMaxLines = 2,
+)

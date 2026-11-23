@@ -50,15 +50,18 @@ import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
  */
 val LocalFeedbackReplyWaiting = compositionLocalOf { false }
 
-/** Connected action segments; screen owners retain navigation and shortcut callbacks. */
+/**
+ * Connected action segments; screen owners retain navigation and shortcut callbacks. Each icon-only
+ * segment names itself in a tooltip on hover or long-press.
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TopBarUtilityActions(
     onFeedbackClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onFeedbackLongClick: () -> Unit = {},
-    onSettingsLongClick: () -> Unit = {},
+    onFeedbackLongClick: (() -> Unit)? = null,
+    onSettingsLongClick: (() -> Unit)? = null,
     settingsButtonModifier: Modifier = Modifier,
 ) {
     val onUpdate = LocalUpdateAvailableAction.current
@@ -71,47 +74,47 @@ fun TopBarUtilityActions(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (onUpdate != null) {
-            UtilityActionSegment(
-                onClick = onUpdate,
-                onLongClick = {},
-                shape = leading,
-                modifier = Modifier.clip(leading).then(updateShimmerModifier()),
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ) {
-                UpdateAvailableIcon(Modifier.size(22.dp))
+            BoxloreTooltip(stringResource(R.string.update_available_action)) {
+                UtilityActionSegment(
+                    onClick = onUpdate,
+                    onLongClick = null,
+                    shape = leading,
+                    modifier = Modifier.clip(leading).then(updateShimmerModifier()),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ) {
+                    UpdateAvailableIcon(Modifier.size(22.dp))
+                }
             }
         }
         val replyWaiting = LocalFeedbackReplyWaiting.current
         val feedbackShape = if (onUpdate == null) leading else middle
+        val feedbackLabel = stringResource(if (replyWaiting) R.string.top_bar_feedback_reply else R.string.top_bar_feedback)
         Box {
-            UtilityActionSegment(
-                onClick = onFeedbackClick,
-                onLongClick = onFeedbackLongClick,
-                shape = feedbackShape,
-                modifier = if (replyWaiting) Modifier.clip(feedbackShape).then(updateShimmerModifier()) else Modifier,
-                containerColor = if (replyWaiting) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = if (replyWaiting) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Feedback,
-                    contentDescription = stringResource(if (replyWaiting) R.string.top_bar_feedback_reply else R.string.top_bar_feedback),
-                    modifier = Modifier.size(20.dp),
-                )
+            BoxloreTooltip(feedbackLabel) {
+                UtilityActionSegment(
+                    onClick = onFeedbackClick,
+                    onLongClick = onFeedbackLongClick,
+                    shape = feedbackShape,
+                    modifier = if (replyWaiting) Modifier.clip(feedbackShape).then(updateShimmerModifier()) else Modifier,
+                    containerColor = if (replyWaiting) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = if (replyWaiting) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                ) {
+                    Icon(imageVector = Icons.Rounded.Feedback, contentDescription = feedbackLabel, modifier = Modifier.size(20.dp))
+                }
             }
             if (replyWaiting) FeedbackReplyDot(Modifier.align(Alignment.TopEnd))
         }
-        UtilityActionSegment(
-            onClick = onSettingsClick,
-            onLongClick = onSettingsLongClick,
-            shape = trailing,
-            modifier = settingsButtonModifier,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Tune,
-                contentDescription = stringResource(R.string.top_bar_settings),
-                modifier = Modifier.size(20.dp),
-            )
+        val settingsLabel = stringResource(R.string.top_bar_settings)
+        BoxloreTooltip(settingsLabel) {
+            UtilityActionSegment(
+                onClick = onSettingsClick,
+                onLongClick = onSettingsLongClick,
+                shape = trailing,
+                modifier = settingsButtonModifier,
+            ) {
+                Icon(imageVector = Icons.Rounded.Tune, contentDescription = settingsLabel, modifier = Modifier.size(20.dp))
+            }
         }
     }
 }
@@ -136,7 +139,7 @@ const val FEEDBACK_REPLY_DOT_TAG = "top_bar_feedback_reply_dot"
 @Composable
 private fun UtilityActionSegment(
     onClick: () -> Unit,
-    onLongClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
     shape: Shape,
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,

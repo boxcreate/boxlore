@@ -193,4 +193,35 @@ class FloatingNavigationChromeTest {
             floatingNavigationLayout(328.dp, 1.2f),
         )
     }
+
+    @Test
+    fun `floating chrome clears side insets and centres at most 560dp wide`() {
+        // A sideways phone: 32dp cutout on the left, 48dp of system buttons on the right.
+        val (left, right) = floatingChromeSideOffsets(915.dp, 32.dp, 48.dp)
+        val barWidth = 915.dp - left - right - AppNavigationBarHorizontalInset * 2
+        val loreRight = left + AppNavigationBarHorizontalInset + floatingNavigationLayout(barWidth, 0f).let { it.loreStart + it.loreSize }
+        assertTrue(loreRight <= 915.dp - 48.dp - 16.dp)
+        // Both insets get the same spare width, so the bar is centred between them.
+        assertEquals(left - 32.dp, right - 48.dp)
+        assertEquals(AppFloatingChromeMaxWidth, barWidth)
+        // A narrower sideways window has no spare width: the bar clears exactly the insets.
+        assertEquals(32.dp to 48.dp, floatingChromeSideOffsets(600.dp, 32.dp, 48.dp))
+        // A wide, short window: one 560dp bar in the middle.
+        val (wideLeft, wideRight) = floatingChromeSideOffsets(1_280.dp, 0.dp, 0.dp)
+        assertEquals(560.dp, 1_280.dp - wideLeft - wideRight - AppNavigationBarHorizontalInset * 2)
+        assertEquals(wideLeft, wideRight)
+    }
+
+    @Test
+    fun `portrait phones keep today's floating chrome geometry`() {
+        listOf(360, 412, 430).forEach { width ->
+            assertEquals(0.dp to 0.dp, floatingChromeSideOffsets(width.dp, 0.dp, 0.dp))
+        }
+        val today = floatingNavigationLayout(412.dp - AppNavigationBarHorizontalInset * 2, 0f)
+        assertEquals(314.dp, today.pillWidth)
+        assertEquals(328.dp, today.loreStart)
+        assertEquals(52.dp, today.loreSize)
+        // Negative insets never widen the bar.
+        assertEquals(0.dp to 0.dp, floatingChromeSideOffsets(412.dp, (-8).dp, (-8).dp))
+    }
 }
