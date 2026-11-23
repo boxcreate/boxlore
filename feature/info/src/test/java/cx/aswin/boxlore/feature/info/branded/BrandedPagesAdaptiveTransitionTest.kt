@@ -49,6 +49,7 @@ import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import cx.aswin.boxlore.core.testing.walkWindows
 import cx.aswin.boxlore.feature.info.PodcastInfoScreen
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
+import cx.aswin.boxlore.feature.info.PODCAST_INFO_BRANDED_SPOTLIGHT_TAG
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import cx.aswin.boxlore.feature.info.branded.rottenmango.RottenMangoPage
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformPage
@@ -214,6 +215,29 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         val phone = requireNotNull(heights[BoxloreTestWindows.PHONE])
         assertEquals("The cover's photo is a phone's", phone, requireNotNull(heights[BoxloreTestWindows.COVER_475]), 1f)
         assertTrue("A tablet still gets the larger photo", requireNotNull(heights[BoxloreWindowLayout(600f, 960f)]) > phone + 1f)
+    }
+
+    @Test
+    fun `the spotlight stops at a comfortable width on wide pages and keeps its episode`() {
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        fixture.compose.walkWindows(
+            window,
+            BoxloreTestWindows.UPRIGHT_BOOK,
+            BoxloreWindowLayout(600f, 960f),
+            BoxloreTestWindows.PHONE,
+        ) { size ->
+            fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasTestTag(PODCAST_INFO_BRANDED_SPOTLIGHT_TAG))
+            val spotlight = fixture.compose.onNodeWithTag(PODCAST_INFO_BRANDED_SPOTLIGHT_TAG).getBoundsInRoot()
+            val width = spotlight.right.value - spotlight.left.value
+            if (size == BoxloreTestWindows.PHONE) {
+                // Some spotlights keep their own 16dp sides inside the tagged card.
+                assertTrue("A phone's spotlight spans the page, was $width", width >= size.widthDp - 32.5f)
+            } else {
+                assertTrue("At most 512dp at $size, was $width", width <= 512.5f)
+            }
+            spotlightOnce()
+        }
     }
 
     private fun descriptionOpen(): Boolean {
