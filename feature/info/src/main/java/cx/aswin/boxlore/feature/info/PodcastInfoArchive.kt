@@ -2,8 +2,10 @@ package cx.aswin.boxlore.feature.info
 
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
@@ -67,7 +69,11 @@ internal class EpisodeArchiver(
  * changed with Undo, which puts exactly those back.
  */
 @Composable
-internal fun rememberSelectionArchive(viewModel: PodcastInfoViewModel, snackbarHostState: SnackbarHostState): (List<Episode>, Boolean) -> Unit {
+internal fun rememberSelectionArchive(
+    viewModel: PodcastInfoViewModel,
+    snackbarHostState: SnackbarHostState,
+    pendingUndo: MutableState<PendingUndo?> = remember { mutableStateOf(null) },
+): (List<Episode>, Boolean) -> Unit {
     val scope = rememberCoroutineScope()
     val resources = LocalContext.current.resources
     return { selected, archive ->
@@ -78,10 +84,10 @@ internal fun rememberSelectionArchive(viewModel: PodcastInfoViewModel, snackbarH
                 changed.size,
                 changed.size,
             )
-            scope.launch {
-                snackbarHostState.currentSnackbarData?.dismiss()
-                val result = snackbarHostState.showSnackbar(message, resources.getString(R.string.episode_archive_undo), duration = SnackbarDuration.Short)
-                if (result == SnackbarResult.ActionPerformed) viewModel.setEpisodesArchived(changed, !archive, undo = true)
+            val kind = if (archive) UndoKind.Archive else UndoKind.Unarchive
+            val undo = PendingUndo(kind, changed.map(Episode::id), undoClockMs() + PendingUndo.durationMs(kind))
+            scope.offerUndo(snackbarHostState, pendingUndo, undo, message, resources.getString(R.string.episode_archive_undo), SnackbarDuration.Short) {
+                viewModel.setEpisodesArchived(changed, !archive, undo = true)
             }
         }
     }

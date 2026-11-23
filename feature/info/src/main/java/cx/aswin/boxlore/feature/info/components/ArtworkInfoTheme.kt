@@ -23,8 +23,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
-import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneOwnsStatusBar
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkColorTransitionMillis
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkPalette
@@ -109,8 +107,9 @@ internal fun ArtworkInfoTheme(
         MaterialTheme(colorScheme = colors, typography = MaterialTheme.typography, shapes = MaterialTheme.shapes) {
             Surface(modifier = Modifier.fillMaxSize(), color = colors.background, contentColor = colors.onBackground) {
                 // Surface propagates its minimum size. Keep that on one page container,
-                // rather than forcing sibling header overlays to fill the whole viewport.
-                Box(modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxSize()) {
+                // rather than forcing sibling header overlays to fill the whole viewport. The
+                // container spans the pane; each page keeps its own text to a reading column.
+                Box(modifier = Modifier.fillMaxSize()) {
                     content()
                 }
             }

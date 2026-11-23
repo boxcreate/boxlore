@@ -57,8 +57,12 @@ internal data class ShowPageTitleMotion(
     val titleEndPadding: Dp,
 )
 
+/**
+ * [sideStart] and [sideEnd] are the room the page keeps clear at each side (side system buttons, a
+ * camera cutout, the space beside a tablet's reading column); the floating title stays inside it.
+ */
 @Composable
-internal fun rememberShowPageTitleMotion(listState: LazyListState): ShowPageTitleMotion {
+internal fun rememberShowPageTitleMotion(listState: LazyListState, sideStart: Dp = 0.dp, sideEnd: Dp = 0.dp): ShowPageTitleMotion {
     val scrollOffset by remember {
         derivedStateOf {
             // Fully collapsed once the first item has scrolled away.
@@ -84,12 +88,12 @@ internal fun rememberShowPageTitleMotion(listState: LazyListState): ShowPageTitl
         label = "titleY",
     )
     val titleStartPadding by animateDpAsState(
-        targetValue = lerp(20.dp, 56.dp, scrollFraction),
+        targetValue = sideStart + lerp(20.dp, 56.dp, scrollFraction),
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "titleStartPadding",
     )
     val titleEndPadding by animateDpAsState(
-        targetValue = lerp(20.dp, 112.dp, scrollFraction),
+        targetValue = sideEnd + lerp(20.dp, 112.dp, scrollFraction),
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "titleEndPadding",
     )
