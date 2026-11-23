@@ -17,6 +17,8 @@ internal data class TabletPlayerRegions(
     val controls: BoxloreLayoutBounds,
     val support: BoxloreLayoutBounds,
     val artworkSizeDp: Float,
+    /** Where the controls and the supporting panel stack in one scrolling column, when they share a region. */
+    val stack: BoxloreLayoutBounds = controls.copy(bottom = support.bottom),
 )
 
 /** Regions remain in window coordinates so a context pane never mistakes a hinge for local dp. */
@@ -48,7 +50,8 @@ internal fun tabletPlayerRegions(
             TabletPlayerArrangement.Columns,
             header,
             null,
-            body.copy(right = middle),
+            // Both columns end the same distance above the window's bottom edge.
+            body.copy(right = middle, bottom = body.bottom - SUPPORT_EDGE_DP),
             insetSupport(body.copy(left = middle + 16f)),
             artworkSize(body, 0.4f, maximum = if (body.width >= LARGE_PLAYER_WIDTH_DP) LARGE_ARTWORK_DP else ARTWORK_DP),
         )
@@ -120,8 +123,45 @@ private fun separatedPlayerRegions(
         controlRegion.copy(bottom = division),
         if (arrangement == TabletPlayerArrangement.VerticalFold) insetSupport(support) else support,
         artworkSize(art, 0.8f),
+        // Book posture: the panel sits under the measured controls on the right-hand screen.
+        stack = controlRegion,
     )
 }
+
+/** What the player's hero shows; it decides how a height budget turns into a cover size. */
+internal enum class TabletHeroKind { Audio, Video, Remote }
+
+/** The cover size for [TabletHeroKind], or [compact] when an audio cover would be too small to read well. */
+internal data class TabletArtworkPlan(val sizeDp: Float, val compact: Boolean = false)
+
+/**
+ * Turns the height left above the controls into a hero size. Audio covers are square; video is 16:9,
+ * so its width may be 16/9 of the height left (within the column and [maximumDp]); the Cast panel has
+ * a fixed height and keeps [maximumDp]. An audio cover under [COMPACT_COVER_BELOW_DP] switches to the
+ * compact heading (a small cover beside the title) when [compactAvailable].
+ */
+internal fun planTabletArtwork(
+    kind: TabletHeroKind,
+    remainingHeightDp: Float,
+    maximumDp: Float,
+    columnWidthDp: Float,
+    compactAvailable: Boolean,
+): TabletArtworkPlan = when (kind) {
+    TabletHeroKind.Remote -> TabletArtworkPlan(maximumDp)
+    TabletHeroKind.Video -> TabletArtworkPlan(
+        min(maximumDp, min(remainingHeightDp.coerceAtLeast(MIN_HERO_DP * 9f / 16f) * 16f / 9f, columnWidthDp)).coerceAtLeast(MIN_HERO_DP),
+    )
+    TabletHeroKind.Audio ->
+        if (compactAvailable && remainingHeightDp < COMPACT_COVER_BELOW_DP) {
+            TabletArtworkPlan(COMPACT_COVER_DP, compact = true)
+        } else {
+            TabletArtworkPlan(min(maximumDp, remainingHeightDp.coerceAtLeast(MIN_HERO_DP)))
+        }
+}
+
+private const val MIN_HERO_DP = 96f
+private const val COMPACT_COVER_BELOW_DP = 140f
+private const val COMPACT_COVER_DP = 112f
 
 private fun artworkSize(region: BoxloreLayoutBounds, heightShare: Float, maximum: Float = ARTWORK_DP): Float {
     val available = min(region.width, region.height).coerceAtLeast(0f)

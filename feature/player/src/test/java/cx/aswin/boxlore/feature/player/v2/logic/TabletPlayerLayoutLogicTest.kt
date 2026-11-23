@@ -72,11 +72,28 @@ class TabletPlayerLayoutLogicTest {
         val columns = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(1_280f, 800f), viewport, false))
         assertEquals(viewport.right - 16f, columns.support.right, 0f)
         assertEquals(viewport.bottom - 16f, columns.support.bottom, 0f)
+        assertEquals("Both columns end on one line", columns.support.bottom, columns.controls.bottom, 0f)
         val hinge = BoxloreFold(BoxloreFoldState.HalfOpened, BoxloreFoldOrientation.Vertical, BoxloreLayoutBounds(456f, 0f, 476f, 650f), true, true)
         val book = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(932f, 650f, listOf(hinge)), BoxloreLayoutBounds(0f, 24f, 932f, 626f), false))
         assertEquals(TabletPlayerArrangement.VerticalFold, book.arrangement)
         assertTrue(book.support.right <= 932f - 16f)
         assertTrue(book.support.bottom <= 626f - 16f)
+        assertEquals("Book posture stacks controls and panel on the right-hand screen", BoxloreLayoutBounds(476f, 24f, 932f, 626f), book.stack)
+    }
+
+    @Test
+    fun `the hero gives way by its own shape and a cramped audio cover becomes the small heading`() {
+        assertEquals(TabletArtworkPlan(217f), planTabletArtwork(TabletHeroKind.Audio, 260f, 217f, 600f, compactAvailable = true))
+        assertEquals(TabletArtworkPlan(150f), planTabletArtwork(TabletHeroKind.Audio, 150f, 217f, 600f, compactAvailable = true))
+        assertTrue(planTabletArtwork(TabletHeroKind.Audio, 108f, 217f, 600f, compactAvailable = true).compact)
+        assertEquals(TabletArtworkPlan(96f), planTabletArtwork(TabletHeroKind.Audio, 60f, 217f, 600f, compactAvailable = false))
+        // 16:9 video uses the height left as its height, not its width.
+        assertEquals(192f, planTabletArtwork(TabletHeroKind.Video, 108f, 360f, 600f, compactAvailable = true).sizeDp, 0.01f)
+        assertEquals(217f, planTabletArtwork(TabletHeroKind.Video, 200f, 217f, 600f, compactAvailable = true).sizeDp, 0.01f)
+        assertEquals(300f, planTabletArtwork(TabletHeroKind.Video, 200f, 360f, 300f, compactAvailable = true).sizeDp, 0.01f)
+        assertTrue(planTabletArtwork(TabletHeroKind.Video, 10f, 360f, 600f, compactAvailable = true).sizeDp >= 96f)
+        // The Cast panel has a fixed height and keeps its width.
+        assertEquals(TabletArtworkPlan(217f), planTabletArtwork(TabletHeroKind.Remote, 40f, 217f, 600f, compactAvailable = true))
     }
 
     @Test

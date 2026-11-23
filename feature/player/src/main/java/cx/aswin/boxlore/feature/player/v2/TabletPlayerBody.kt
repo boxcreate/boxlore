@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,9 +55,11 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import cx.aswin.boxlore.core.playback.CastMediaEligibility
 import cx.aswin.boxlore.feature.player.R
+import cx.aswin.boxlore.feature.player.v2.logic.TabletHeroKind
 import cx.aswin.boxlore.feature.player.v2.logic.TabletPlayerArrangement
 import cx.aswin.boxlore.feature.player.v2.logic.TabletPlayerRegions
 import cx.aswin.boxlore.feature.player.v2.logic.intersectPlayerBounds
+import cx.aswin.boxlore.feature.player.v2.logic.planTabletArtwork
 import cx.aswin.boxlore.feature.player.v2.logic.tabletPlayerRegions
 import cx.aswin.boxlore.feature.player.v2.logic.usesLargePlayerTitle
 import kotlin.math.max
@@ -93,15 +96,19 @@ internal fun TabletFullPlayerBody(
             window.heightDp - safe.getBottom(this).toDp().value,
         )
     }
+    // One supporting panel for every arrangement, so its tab content keeps its list position when a
+    // resize moves it between the scrolling stack and its own column.
+    val support = remember { movableContentOf { args: TabletSupportArgs -> TabletPlayerSupport(args.model, args.dependencies, args.display, args.actions, args.flows, args.ui, args.resources) } }
     MaterialTheme(colorScheme = display.colorScheme) {
         BoxWithConstraints(resources.body.modifier.fillMaxSize().playerCanvas(display.colorScheme)) {
             val origin = pane ?: BoxloreLayoutBounds(0f, 0f, maxWidth.value, min(maxHeight.value, window.heightDp))
             val viewport = intersectPlayerBounds(origin, safeWindow) ?: origin
             val regions = tabletPlayerRegions(window, viewport, display.isContextPane) ?: return@BoxWithConstraints
+            val supportArgs = TabletSupportArgs(model, dependencies, display, actions, flows, ui, resources)
             TabletPlayerRegionLayout(
                 regions = regions,
                 origin = origin,
-                scrollStack = !resources.minimal && regions.arrangement in listOf(TabletPlayerArrangement.Stacked, TabletPlayerArrangement.HorizontalFold),
+                scrollStack = !resources.minimal && regions.arrangement in STACKED_ARRANGEMENTS,
                 header = { TabletPlayerHeader(model, display, actions, ui) },
                 artwork = {
                     if (resources.minimal) {
@@ -128,15 +135,28 @@ internal fun TabletFullPlayerBody(
                             section = if (regions.artwork == null) MinimalPlayerSection.Embedded else MinimalPlayerSection.Transport,
                         )
                     } else {
-                        TabletPlayerControls(model, dependencies, display, actions, flows, ui, resources, regions, scrollContent = regions.arrangement !in listOf(TabletPlayerArrangement.Stacked, TabletPlayerArrangement.HorizontalFold))
+                        TabletPlayerControls(model, dependencies, display, actions, flows, ui, resources, regions, scrollContent = regions.arrangement !in STACKED_ARRANGEMENTS)
                     }
                 },
-                support = { TabletPlayerSupport(model, dependencies, display, actions, flows, ui, resources) },
+                support = { support(supportArgs) },
             )
             PlayerSnackbarHost(resources.body.snackbarHostState, display.visibleHeight, resources.body.navBarPadding)
         }
     }
 }
+
+/** Arrangements whose controls and supporting panel share one scrolling column. */
+private val STACKED_ARRANGEMENTS = setOf(TabletPlayerArrangement.Stacked, TabletPlayerArrangement.HorizontalFold, TabletPlayerArrangement.VerticalFold)
+
+private data class TabletSupportArgs(
+    val model: FullPlayerBodyModel,
+    val dependencies: FullPlayerDependencies,
+    val display: FullPlayerDisplay,
+    val actions: FullPlayerActions,
+    val flows: FullPlayerFlows,
+    val ui: FullPlayerUiState,
+    val resources: TabletPlayerResources,
+)
 
 @Composable
 private fun TabletPlayerRegionLayout(
@@ -149,7 +169,7 @@ private fun TabletPlayerRegionLayout(
     support: @Composable () -> Unit,
 ) {
     val empty = BoxloreLayoutBounds(origin.left, origin.top, origin.left, origin.top)
-    val body = regions.controls.copy(bottom = regions.support.bottom)
+    val body = regions.stack
     val bounds = if (scrollStack) listOf(regions.header, regions.artwork ?: empty, body) else listOf(regions.header, regions.artwork ?: empty, regions.controls, regions.support)
     Layout(content = {
         Box(Modifier.clipToBounds()) { header() }
@@ -320,6 +340,9 @@ private fun TabletPlayerControls(
         )
     }
     val columns = regions.arrangement == TabletPlayerArrangement.Columns
+    val heroKind = tabletHeroKind(model)
+    val artwork: @Composable (Float) -> Unit = { size -> TabletPlayerArtwork(model, dependencies, display, actions, flows, ui, size) }
+    val compactHeadingContent: @Composable () -> Unit = { TabletCompactHeading(model, display, actions, flows) }
     Column(
         Modifier.fillMaxWidth().nestedScroll(display.sheetNestedScrollConnection)
             .tabletControlsFrame(scrollContent, centeredHeight = regions.controls.height.dp.takeIf { columns })
@@ -331,56 +354,32 @@ private fun TabletPlayerControls(
             MeasuredTabletPlayerColumn(
                 viewportHeightDp = regions.controls.height - 16f,
                 maximumArtworkDp = regions.artworkSizeDp,
-                artwork = { size -> TabletPlayerArtwork(model, dependencies, display, actions, flows, ui, size) },
-                chrome = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        TabletPlayerMetadata(model, display, actions, compact = false, large = usesLargePlayerTitle(regions))
-                        Spacer(Modifier.height(12.dp))
-                        playbackControls()
-                    }
-                },
+                heroKind = heroKind,
+                artwork = artwork,
+                heading = { TabletPlayerMetadata(model, display, actions, compact = false, large = usesLargePlayerTitle(regions)) },
+                controls = playbackControls,
             )
         } else {
             if (compactHeading) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    // 8dp of room around the card keeps its shadow whole.
-                    Box(Modifier.size(128.dp), contentAlignment = Alignment.Center) {
-                        CompactPlayerArtwork(
-                            PlayerHeroArtwork(
-                                episodeId = model.episode.id,
-                                artworkUrl = model.episode.imageUrl?.takeIf { it.isNotBlank() } ?: model.podcast.imageUrl,
-                                nextArtworkUrl = null,
-                                nextEpisodeTitle = null,
-                                chapterArtFlow = remember(model.state.currentChapters, flows.position) { chapterArtFlow(flows.position, model.state.currentChapters) },
-                                fallbackArtworkUrls = listOf(model.episode.podcastImageUrl, model.podcast.imageUrl, model.podcast.fallbackImageUrl),
-                            ),
-                            display.colorScheme,
-                            112.dp,
-                        )
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Column(Modifier.weight(1f)) { TabletPlayerMetadata(model, display, actions, compact = true) }
-                }
+                compactHeadingContent()
             } else {
                 if (regions.artwork == null && regions.arrangement == TabletPlayerArrangement.Stacked) {
-                    // The cover gives way first, so the supporting panel keeps its minimum on screen.
-                    val stackHeight = regions.support.bottom - regions.controls.top
+                    // The cover gives way first, so the supporting panel keeps its minimum on screen; a
+                    // cover that would get too small becomes the small cover beside the title.
+                    val stackHeight = regions.stack.height
                     MeasuredTabletPlayerColumn(
                         viewportHeightDp = stackHeight - SUPPORT_MIN_HEIGHT.value - SUPPORT_GAP.value - SUPPORT_BOTTOM_MARGIN.value - 16f,
                         maximumArtworkDp = regions.artworkSizeDp,
-                        artwork = { size -> TabletPlayerArtwork(model, dependencies, display, actions, flows, ui, size) },
-                        chrome = {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                TabletPlayerMetadata(model, display, actions, compact = false)
-                                Spacer(Modifier.height(12.dp))
-                                playbackControls()
-                            }
-                        },
+                        heroKind = heroKind,
+                        artwork = artwork,
+                        heading = { TabletPlayerMetadata(model, display, actions, compact = false) },
+                        controls = playbackControls,
+                        compactHeading = compactHeadingContent,
                     )
                     return@Column
                 }
                 if (regions.artwork == null) {
-                    TabletPlayerArtwork(model, dependencies, display, actions, flows, ui, regions.artworkSizeDp)
+                    artwork(regions.artworkSizeDp)
                     Spacer(Modifier.height(12.dp))
                 }
                 if (regions.arrangement != TabletPlayerArrangement.HorizontalFold) TabletPlayerMetadata(model, display, actions, compact = false)
@@ -391,6 +390,36 @@ private fun TabletPlayerControls(
     }
 }
 
+private fun tabletHeroKind(model: FullPlayerBodyModel): TabletHeroKind = when {
+    model.state.playbackRoute.isRemote -> TabletHeroKind.Remote
+    model.isVideo -> TabletHeroKind.Video
+    else -> TabletHeroKind.Audio
+}
+
+/** A small cover beside the title and show: beside a page, and where a full cover would be too small. */
+@Composable
+private fun TabletCompactHeading(model: FullPlayerBodyModel, display: FullPlayerDisplay, actions: FullPlayerActions, flows: FullPlayerFlows) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // 8dp of room around the card keeps its shadow whole.
+        Box(Modifier.size(128.dp), contentAlignment = Alignment.Center) {
+            CompactPlayerArtwork(
+                PlayerHeroArtwork(
+                    episodeId = model.episode.id,
+                    artworkUrl = model.episode.imageUrl?.takeIf { it.isNotBlank() } ?: model.podcast.imageUrl,
+                    nextArtworkUrl = null,
+                    nextEpisodeTitle = null,
+                    chapterArtFlow = remember(model.state.currentChapters, flows.position) { chapterArtFlow(flows.position, model.state.currentChapters) },
+                    fallbackArtworkUrls = listOf(model.episode.podcastImageUrl, model.podcast.imageUrl, model.podcast.fallbackImageUrl),
+                ),
+                display.colorScheme,
+                112.dp,
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        Column(Modifier.weight(1f)) { TabletPlayerMetadata(model, display, actions, compact = true) }
+    }
+}
+
 /** Scrolls when the controls own a region; with [centeredHeight] the column is at least that tall so its content can sit in the middle. */
 @Composable
 private fun Modifier.tabletControlsFrame(scrollContent: Boolean, centeredHeight: androidx.compose.ui.unit.Dp?): Modifier =
@@ -398,19 +427,41 @@ private fun Modifier.tabletControlsFrame(scrollContent: Boolean, centeredHeight:
         // Beside the supporting panel the player sits in the middle of its column, top to bottom.
         .then(if (centeredHeight != null) Modifier.heightIn(min = centeredHeight) else Modifier)
 
-/** Reserve the real text and controls before choosing artwork, including the safe bottom inset. */
+/**
+ * Reserve the real title, show and controls before choosing the hero, so the cover (or the 16:9
+ * video) gives way first. With [compactHeading], an audio cover that would end up too small is
+ * replaced by the small cover beside the title.
+ */
 @Composable
-internal fun MeasuredTabletPlayerColumn(viewportHeightDp: Float, maximumArtworkDp: Float, artwork: @Composable (Float) -> Unit, chrome: @Composable () -> Unit) {
+@Suppress("LongParameterList")
+internal fun MeasuredTabletPlayerColumn(
+    viewportHeightDp: Float,
+    maximumArtworkDp: Float,
+    heroKind: TabletHeroKind,
+    artwork: @Composable (Float) -> Unit,
+    heading: @Composable () -> Unit,
+    controls: @Composable () -> Unit,
+    compactHeading: (@Composable () -> Unit)? = null,
+) {
     SubcomposeLayout(Modifier.fillMaxWidth()) { constraints ->
         val loose = constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity)
-        val controls = subcompose("controls", chrome).single().measure(loose)
         val gap = 12.dp.roundToPx()
-        val remaining = (viewportHeightDp * density - controls.height - gap).coerceAtLeast(96.dp.toPx())
-        val artworkSize = min(maximumArtworkDp, remaining / density)
-        val hero = subcompose("artwork") { artwork(artworkSize) }.single().measure(loose)
-        layout(constraints.maxWidth, hero.height + gap + controls.height) {
+        val controlsPlaceable = subcompose("controls") { Column(horizontalAlignment = Alignment.CenterHorizontally) { controls() } }.single().measure(loose)
+        val headingPlaceable = subcompose("heading") { Column { heading() } }.single().measure(loose)
+        val remainingDp = viewportHeightDp - (controlsPlaceable.height + headingPlaceable.height + 2 * gap) / density
+        val plan = planTabletArtwork(heroKind, remainingDp, maximumArtworkDp, constraints.maxWidth / density, compactHeading != null)
+        if (plan.compact && compactHeading != null) {
+            val compact = subcompose("compact", compactHeading).single().measure(loose)
+            return@SubcomposeLayout layout(constraints.maxWidth, compact.height + gap + controlsPlaceable.height) {
+                compact.placeRelative(0, 0)
+                controlsPlaceable.placeRelative(0, compact.height + gap)
+            }
+        }
+        val hero = subcompose("artwork") { artwork(plan.sizeDp) }.single().measure(loose)
+        layout(constraints.maxWidth, hero.height + gap + headingPlaceable.height + gap + controlsPlaceable.height) {
             hero.placeRelative((constraints.maxWidth - hero.width) / 2, 0)
-            controls.placeRelative(0, hero.height + gap)
+            headingPlaceable.placeRelative(0, hero.height + gap)
+            controlsPlaceable.placeRelative(0, hero.height + gap + headingPlaceable.height + gap)
         }
     }
 }
