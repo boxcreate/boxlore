@@ -53,6 +53,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import cx.aswin.boxlore.core.designsystem.components.ArtworkPrefetch
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkShade
 import cx.aswin.boxlore.core.designsystem.theme.cachedArtworkPalette
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -318,6 +319,7 @@ internal fun MarqueeHeroCard(
         Column(
             Modifier.align(Alignment.BottomStart).fillMaxWidth().marqueeWordsScrim(shade.deep)
                 .marqueeFadesUnderBar()
+                .boxloreHorizontalSafePadding()
                 .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = MarqueeCopyBottom),
         ) {
             MarqueeChip(marqueeContext(item), shade, tag = "home_hero_marquee_chip")

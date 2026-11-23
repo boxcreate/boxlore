@@ -16,6 +16,7 @@ import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -62,7 +63,8 @@ fun HeroCarousel(
         modifier =
         Modifier
             .fillMaxWidth()
-            .height(homeHeroHeight()),
+            .height(homeHeroHeight())
+            .testTag("home_hero_row"),
     ) { i ->
         val item = heroItems.list[i]
         val onCollectionPlayback = collectionPlaybackAction(

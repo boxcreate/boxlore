@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.components.TopBarUtilityActions
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 
 private const val TAG = "StylizedLogo"
 
@@ -130,7 +131,9 @@ fun TopControlBar(
                 layout(placeable.width, height) {
                     placeable.place(0, paddingPx)
                 }
-            }.padding(horizontal = 12.dp),
+            }.boxloreHorizontalSafePadding()
+            .padding(horizontal = 12.dp)
+            .testTag("home_top_bar"),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

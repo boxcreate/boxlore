@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkShade
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
@@ -116,6 +117,7 @@ internal fun MarqueeCollectionCard(
         Column(
             Modifier.align(Alignment.BottomStart).fillMaxWidth().marqueeWordsScrim(shade.deep)
                 .marqueeFadesUnderBar()
+                .boxloreHorizontalSafePadding()
                 .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = MarqueeCopyBottom),
         ) {
             // The collection's name and position sit in the words' own column, so nothing can overlap them.

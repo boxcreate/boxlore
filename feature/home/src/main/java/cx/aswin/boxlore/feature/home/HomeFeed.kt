@@ -23,6 +23,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeContentPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeInsetsDp
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.model.Briefing
@@ -153,7 +155,8 @@ internal fun PodcastFeed(
             columns = StaggeredGridCells.Fixed(posterColumns),
             state = layout.gridState,
             modifier = layout.modifier.fillMaxSize().testTag("home_feed_grid"),
-            contentPadding = PaddingValues(start = GridSidePadding, end = GridSidePadding, bottom = 160.dp),
+            // The side gutter starts past the camera cutout and side system buttons of a sideways phone.
+            contentPadding = boxloreHorizontalSafeContentPadding(PaddingValues(start = GridSidePadding, end = GridSidePadding, bottom = 160.dp)),
             horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.GridGap),
             verticalItemSpacing = HomeFeedSpacing.GridGap,
         ) {
@@ -245,7 +248,9 @@ private fun LazyStaggeredGridScope.smartHeroItem(
         return
     }
     item(span = StaggeredGridItemSpan.FullLine, key = "hero", contentType = "hero") {
-        PinnedGridItemContent(if (marqueeTopInset != null) Modifier.bleed(GridSidePadding) else Modifier) {
+        // Marquee's cover runs past the gutter and the side insets to both screen edges; its words keep clear of them.
+        val (safeStart, safeEnd) = boxloreHorizontalSafeInsetsDp()
+        PinnedGridItemContent(if (marqueeTopInset != null) Modifier.bleed(GridSidePadding + safeStart, GridSidePadding + safeEnd) else Modifier) {
             // The carousel draws its position dots in the 12dp strip under the cards; the skeleton
             // keeps the same strip, so the gap to Your shows never changes.
             HomeLoadingReveal(
@@ -276,12 +281,12 @@ internal fun PinnedGridItemContent(modifier: Modifier = Modifier, content: @Comp
 /** The feed's side padding, which Marquee's hero runs past to reach both screen edges. */
 private val GridSidePadding = 16.dp
 
-/** Lays the content out [amount] wider on each side than the item, so it reaches past the grid's padding. */
-private fun Modifier.bleed(amount: androidx.compose.ui.unit.Dp): Modifier = layout { measurable, constraints ->
-    val extra = amount.roundToPx() * 2
-    val width = constraints.maxWidth + extra
+/** Lays the content out [start] and [end] wider than the item on each side, so it reaches past the grid's padding. */
+private fun Modifier.bleed(start: androidx.compose.ui.unit.Dp, end: androidx.compose.ui.unit.Dp): Modifier = layout { measurable, constraints ->
+    val startPx = start.roundToPx()
+    val width = constraints.maxWidth + startPx + end.roundToPx()
     val placeable = measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
-    layout(constraints.maxWidth, placeable.height) { placeable.placeRelative(-extra / 2, 0) }
+    layout(constraints.maxWidth, placeable.height) { placeable.placeRelative(-startPx, 0) }
 }
 
 @Composable
