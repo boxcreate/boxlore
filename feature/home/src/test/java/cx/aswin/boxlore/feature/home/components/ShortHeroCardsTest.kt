@@ -83,18 +83,24 @@ class ShortHeroCardsTest {
                     show(current, collection = false, scale, height)
                     failures += singleCardFailures("$current at ${height.value}dp, text ${scale}x", tide = current == HeroCardStyle.TIDE)
                 }
-                // A split-screen half's card and a sideways phone's wider one.
-                for (width in listOf(320.dp, 520.dp)) {
-                    cardWidth.value = width
-                    SINGLE_STYLES.forEach { current ->
-                        show(current, collection = true, scale, height)
-                        failures += collectionFailures("$current collection ${width.value}x${height.value}dp, text ${scale}x")
-                    }
-                }
-                cardWidth.value = 320.dp
+                failures += collectionsAt(scale, height)
             }
         }
         assertTrue(failures.joinToString("\n"), failures.isEmpty())
+    }
+
+    /** Every style's collection at [height] and text [scale], on a split-screen half's card and a sideways phone's wider one. */
+    private fun collectionsAt(scale: Float, height: Dp): List<String> {
+        val failures = mutableListOf<String>()
+        for (width in listOf(320.dp, 520.dp)) {
+            cardWidth.value = width
+            SINGLE_STYLES.forEach { current ->
+                show(current, collection = true, scale, height)
+                failures += collectionFailures("$current collection ${width.value}x${height.value}dp, text ${scale}x")
+            }
+        }
+        cardWidth.value = 320.dp
+        return failures
     }
 
     @Composable
