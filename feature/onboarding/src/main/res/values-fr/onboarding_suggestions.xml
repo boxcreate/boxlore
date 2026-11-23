@@ -63,4 +63,8 @@
     <string name="suggestions_details_remove">Retirer</string>
     <string name="suggestions_details_fallback">Découvrez les épisodes et les sujets de %1$s.</string>
     <string name="suggestions_details_fallback_with_host">Découvrez les épisodes et les sujets de %1$s, par %2$s.</string>
+    <plurals name="suggestions_show_all">
+        <item quantity="one">Voir les %d</item>
+        <item quantity="other">Voir les %d</item>
+    </plurals>
 </resources>

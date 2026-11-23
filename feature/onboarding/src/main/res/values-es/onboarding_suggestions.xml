@@ -82,4 +82,9 @@
     <string name="suggestions_details_fallback">Explora episodios y temas de %1$s.</string>
     <!-- When a show has no description. %1$s is the show's name, %2$s its host or publisher. -->
     <string name="suggestions_details_fallback_with_host">Explora episodios y temas de %1$s, de %2$s.</string>
+    <plurals name="suggestions_show_all">
+        <item quantity="one">Ver los %d</item>
+        <item quantity="many">Ver los %d</item>
+        <item quantity="other">Ver los %d</item>
+    </plurals>
 </resources>

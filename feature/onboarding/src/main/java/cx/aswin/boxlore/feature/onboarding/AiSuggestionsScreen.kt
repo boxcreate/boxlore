@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
@@ -53,7 +54,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -63,6 +66,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -73,6 +77,8 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.RegionSegmentedSelector
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.text.asString
@@ -125,7 +131,10 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
     val lanes = remember(uiState.aiCurriculumRows, uiState.genreChartsPodcasts, uiState.selectedGenres, uiState.aiPicks, origin) {
         OnboardingSuggestionsPresentation.lanes(uiState)
     }
-    var details by remember { mutableStateOf<Podcast?>(null) }
+    // Kept by id, so the details sheet stays open through a fold, turn or display-size change.
+    var detailsId by rememberSaveable { mutableStateOf<String?>(null) }
+    val details = detailsId?.let { id -> lanes.firstNotNullOfOrNull { lane -> lane.podcasts.find { it.id == id } } ?: uiState.selectedPodcasts[id] }
+    val wide = LocalBoxloreWindowLayout.current.widthDp >= SuggestionGridWindowWidth
     val list = rememberLazyListState()
     LaunchedEffect(list) {
         snapshotFlow { list.firstVisibleItemIndex > 0 }.first { it }
@@ -140,7 +149,7 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
         else -> SuggestionsFooterState.Finish(OnboardingSuggestionsPresentation.addCount(uiState))
     }
     Scaffold(
-        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxSize().testTag("suggestions_screen"),
+        modifier = Modifier.boxloreCardWidth(if (wide) BoxloreCardFamily.Grid else BoxloreCardFamily.Utility).fillMaxSize().testTag("suggestions_screen"),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { SuggestionsTopBar(callbacks.onBack) },
@@ -171,7 +180,7 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
                     item(key = "header") { SuggestionsHeader(uiState, origin) }
                     lanes.forEachIndexed { index, lane ->
                         item(key = lane.id) {
-                            SuggestionLane(lane, index, uiState, callbacks, onDetails = { details = it })
+                            SuggestionLane(lane, index, uiState, callbacks, onDetails = { detailsId = it.id })
                         }
                     }
                 }
@@ -182,7 +191,7 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
         SuggestionPodcastDetailSheet(
             podcast = podcast,
             isSubscribed = podcast.id in uiState.subscribedPodcastIds,
-            onDismiss = { details = null },
+            onDismiss = { detailsId = null },
             onToggleSubscription = callbacks.onToggle,
         )
     }
@@ -191,7 +200,7 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
 @Composable
 private fun SuggestionsTopBar(onBack: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().statusBarsPadding().height(64.dp).padding(horizontal = 4.dp),
+        Modifier.fillMaxWidth().statusBarsPadding().height(if (boxloreIsShortPane()) 56.dp else 64.dp).padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.suggestions_back)) }
@@ -310,18 +319,73 @@ private fun SuggestionLane(lane: OnboardingSuggestionsLane, index: Int, uiState:
         if (lane.isCharts && uiState.isLoadingPodcasts) {
             SuggestionCardsSkeleton(Modifier.padding(top = 12.dp))
         } else {
-            LazyRow(
-                Modifier.fillMaxWidth().padding(top = 12.dp),
-                contentPadding = PaddingValues(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                itemsIndexed(shows, key = { _, show -> LazyListKeyPolicy.safeKey(show.id, prefix = "suggestion_${lane.id}") }) { position, show ->
-                    SuggestionShowCard(show, show.id in selectedIds, shapeIndex = index * 3 + position, onToggle = callbacks.onToggle, onOpenDetails = onDetails)
+            BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                if (maxWidth >= SuggestionGridMinWidth) {
+                    SuggestionLaneGrid(lane, index, shows, selectedIds, maxWidth, callbacks.onToggle, onDetails)
+                } else {
+                    LazyRow(
+                        Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        itemsIndexed(shows, key = { _, show -> LazyListKeyPolicy.safeKey(show.id, prefix = "suggestion_${lane.id}") }) { position, show ->
+                            SuggestionShowCard(show, show.id in selectedIds, shapeIndex = index * 3 + position, onToggle = callbacks.onToggle, onOpenDetails = onDetails)
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+/**
+ * A lane on a wide column: its shows in rows, as many across as fit, two rows deep, then "Show all"
+ * for the rest. Whether a lane is open is kept through window changes.
+ */
+@Composable
+@Suppress("LongParameterList")
+private fun SuggestionLaneGrid(
+    lane: OnboardingSuggestionsLane,
+    index: Int,
+    shows: List<Podcast>,
+    selectedIds: Set<String>,
+    width: Dp,
+    onToggle: (String) -> Unit,
+    onDetails: (Podcast) -> Unit,
+) {
+    var open by rememberSaveable(lane.id) { mutableStateOf(false) }
+    val columns = suggestionGridColumns(width.value)
+    val shown = if (open) shows else shows.take(columns * SuggestionGridRows)
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).testTag("suggestions_grid_${lane.id}"), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        shown.chunked(columns).forEachIndexed { row, cards ->
+            Row(horizontalArrangement = Arrangement.spacedBy(SuggestionGridGap)) {
+                cards.forEachIndexed { column, show ->
+                    key(show.id) {
+                        SuggestionShowCard(show, show.id in selectedIds, shapeIndex = index * 3 + row * columns + column, onToggle = onToggle, onOpenDetails = onDetails)
+                    }
+                }
+            }
+        }
+        if (shown.size < shows.size) {
+            TextButton(onClick = { open = true }, modifier = Modifier.heightIn(min = 48.dp).testTag("suggestions_show_all_${lane.id}")) {
+                Text(pluralStringResource(R.plurals.suggestions_show_all, shows.size, shows.size))
+            }
+        }
+    }
+}
+
+/** How many 140dp cards fit across a [widthDp] lane, 12dp apart inside its 20dp sides. */
+internal fun suggestionGridColumns(widthDp: Float): Int =
+    ((widthDp - SuggestionGridSides + SuggestionGridGap.value) / (SuggestionCardWidth.value + SuggestionGridGap.value)).toInt().coerceAtLeast(1)
+
+/** Lanes this wide (dp) set their shows in rows; narrower ones scroll sideways. */
+private val SuggestionGridMinWidth = 600.dp
+
+/** Windows this wide (dp) widen the page to the grid column. */
+private const val SuggestionGridWindowWidth = 840f
+private const val SuggestionGridRows = 2
+private const val SuggestionGridSides = 40f
+private val SuggestionGridGap = 12.dp
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private val SuggestionLaneShapes = listOf(MaterialShapes.Cookie9Sided, MaterialShapes.Clover4Leaf, MaterialShapes.Sunny, MaterialShapes.Puffy, MaterialShapes.SoftBurst)

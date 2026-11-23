@@ -79,4 +79,8 @@
     <string name="suggestions_details_fallback">Explore episódios e temas de %1$s.</string>
     <!-- When a show has no description. %1$s is the show's name, %2$s its host or publisher. -->
     <string name="suggestions_details_fallback_with_host">Explore episódios e temas de %1$s, por %2$s.</string>
+    <plurals name="suggestions_show_all">
+        <item quantity="one">Ver todos os %d</item>
+        <item quantity="other">Ver todos os %d</item>
+    </plurals>
 </resources>

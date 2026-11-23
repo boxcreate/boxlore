@@ -63,4 +63,8 @@
     <string name="suggestions_details_remove">Entfernen</string>
     <string name="suggestions_details_fallback">Entdecke Folgen und Themen aus %1$s.</string>
     <string name="suggestions_details_fallback_with_host">Entdecke Folgen und Themen aus %1$s von %2$s.</string>
+    <plurals name="suggestions_show_all">
+        <item quantity="one">Alle %d zeigen</item>
+        <item quantity="other">Alle %d zeigen</item>
+    </plurals>
 </resources>

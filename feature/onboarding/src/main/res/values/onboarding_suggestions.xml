@@ -79,4 +79,9 @@
     <string name="suggestions_details_fallback">Explore episodes and topics from %1$s.</string>
     <!-- When a show has no description. %1$s is the show's name, %2$s its host or publisher. -->
     <string name="suggestions_details_fallback_with_host">Explore episodes and topics from %1$s by %2$s.</string>
+    <!-- Under a lane on wide screens: shows the rest of its shows. %d is how many shows the lane has. -->
+    <plurals name="suggestions_show_all">
+        <item quantity="one">Show all %d</item>
+        <item quantity="other">Show all %d</item>
+    </plurals>
 </resources>

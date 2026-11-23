@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +22,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -45,6 +49,7 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.catalog.genreLabelRes
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
@@ -113,23 +118,28 @@ internal fun SuggestionShowCard(
                 EchoSelectionBadge(selected, if (selected) Icons.Rounded.Check else Icons.Rounded.Add, size = 36.dp, shapeIndex = shapeIndex)
             }
         }
-        Text(
-            podcast.title,
-            Modifier.padding(top = 8.dp),
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold),
-            color = colors.onSurface,
-            minLines = 2,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            podcast.artist,
-            Modifier.padding(bottom = 4.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = colors.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        // The host follows the name directly; the block keeps two name lines' height so a row's cards end level.
+        val titleStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold)
+        val bylineStyle = MaterialTheme.typography.bodySmall
+        val textBlock = with(LocalDensity.current) { titleStyle.lineHeight.toDp() * 2 + bylineStyle.lineHeight.toDp() + 12.dp }
+        Column(Modifier.heightIn(min = textBlock)) {
+            Text(
+                podcast.title,
+                Modifier.padding(top = 8.dp),
+                style = titleStyle,
+                color = colors.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                podcast.artist,
+                Modifier.padding(bottom = 4.dp),
+                style = bylineStyle,
+                color = colors.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -164,12 +174,13 @@ internal fun SuggestionPodcastDetailSheet(
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = description,
-                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                // Only as tall as the text, up to a few lines; longer descriptions scroll inside.
                 modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .heightIn(max = 160.dp)
                     .verticalScroll(rememberScrollState()),
             )
             Spacer(modifier = Modifier.height(20.dp))
@@ -201,14 +212,14 @@ private fun SuggestionDetailHeader(podcast: Podcast) {
                 .clip(MaterialTheme.shapes.medium),
         )
         Column(modifier = Modifier.weight(1f)) {
-            val genre = podcast.genre.trim()
-            if (genre.isNotEmpty() && !genre.equals("Podcast", ignoreCase = true)) {
+            // The genre in the listener's language; none for the "Podcast" placeholder or an unknown genre.
+            genreLabelRes(podcast.genre)?.let { label ->
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.secondaryContainer,
                 ) {
                     Text(
-                        text = genre,
+                        text = stringResource(label),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = GoogleSansWeight.semiBold,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -235,6 +246,7 @@ private fun SuggestionDetailHeader(podcast: Podcast) {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SuggestionDetailActions(
     isSubscribed: Boolean,
@@ -247,16 +259,17 @@ private fun SuggestionDetailActions(
     ) {
         TextButton(
             onClick = onDismiss,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
         ) {
             Text(stringResource(R.string.suggestions_details_close))
         }
-        FilledTonalButton(
+        Button(
             onClick = {
                 onToggleSubscription()
                 onDismiss()
             },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+            shapes = ButtonDefaults.shapes(shape = RoundedCornerShape(28.dp), pressedShape = RoundedCornerShape(18.dp)),
         ) {
             Text(stringResource(if (isSubscribed) R.string.suggestions_details_remove else R.string.suggestions_details_add))
         }
