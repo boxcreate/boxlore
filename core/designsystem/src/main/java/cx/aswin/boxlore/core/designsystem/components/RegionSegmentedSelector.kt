@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -36,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.R
@@ -50,7 +53,8 @@ import java.util.Locale
 
 /**
  * Content region picker (11 chart storefronts). Opens a Material 3 bottom sheet list.
- * Shared by settings and onboarding.
+ * Shared by settings and onboarding. [compact] shows a small chip with the country instead of the
+ * labelled card, for a line under a section title.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,17 +63,22 @@ fun RegionSegmentedSelector(
     onSwitchRegion: (String) -> Unit,
     modifier: Modifier = Modifier,
     supportingText: String = stringResource(R.string.content_region_supporting),
+    compact: Boolean = false,
 ) {
     val selected = ContentRegions.canonicalize(activeRegion)
     val label = contentRegionName(selected, currentLocale())
     var showSheet by remember { mutableStateOf(false) }
 
-    RegionPickerTrigger(
-        label = label,
-        supportingText = supportingText,
-        onClick = { showSheet = true },
-        modifier = modifier,
-    )
+    if (compact) {
+        RegionPickerChip(label = label, onClick = { showSheet = true }, modifier = modifier)
+    } else {
+        RegionPickerTrigger(
+            label = label,
+            supportingText = supportingText,
+            onClick = { showSheet = true },
+            modifier = modifier,
+        )
+    }
 
     if (showSheet) {
         RegionPickerBottomSheet(
@@ -105,6 +114,36 @@ fun canonicalRegionCode(code: String): String? = ContentRegions.canonicalizeOrNu
 
 /** Display label for a stored region code (e.g. charts header chip) in [locale]; see [contentRegionName]. */
 fun regionDisplayLabel(code: String, locale: Locale = Locale.ENGLISH): String = contentRegionName(code, locale)
+
+/** A 32dp tonal pill (globe, country, arrow) inside a 48dp touch target. */
+@Composable
+private fun RegionPickerChip(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .heightIn(min = 48.dp)
+            .expressiveClickable(shape = CircleShape, onClick = onClick)
+            .semantics { role = Role.Button },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Surface(
+            Modifier.heightIn(min = 32.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        ) {
+            Row(
+                Modifier.padding(start = 10.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                // Read with the country, as "Content region, <country>".
+                Icon(Icons.Rounded.Public, stringResource(R.string.content_region_label), Modifier.size(18.dp))
+                Text(label, style = MaterialTheme.typography.labelLarge)
+                Icon(Icons.Rounded.ExpandMore, null, Modifier.size(18.dp))
+            }
+        }
+    }
+}
 
 @Composable
 private fun RegionPickerTrigger(label: String, supportingText: String, onClick: () -> Unit, modifier: Modifier = Modifier,) {

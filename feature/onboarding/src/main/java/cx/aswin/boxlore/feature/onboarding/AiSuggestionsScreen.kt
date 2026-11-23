@@ -302,7 +302,7 @@ private fun SuggestionLane(lane: OnboardingSuggestionsLane, index: Int, uiState:
             }
             Text(
                 lane.title.asString(),
-                Modifier.weight(1f).padding(start = 12.dp, end = 4.dp).semantics { heading() },
+                Modifier.weight(1f).padding(start = SuggestionLaneTitleStart - 60.dp, end = 4.dp).semantics { heading() },
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
                 color = colors.onSurface,
                 maxLines = 2,
@@ -315,7 +315,13 @@ private fun SuggestionLane(lane: OnboardingSuggestionsLane, index: Int, uiState:
             }
         }
         if (lane.isCharts) {
-            RegionSegmentedSelector(activeRegion = uiState.currentRegion, onSwitchRegion = callbacks.onRegionChange, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp))
+            // A small country chip on its own line, lined up with the lane title.
+            RegionSegmentedSelector(
+                activeRegion = uiState.currentRegion,
+                onSwitchRegion = callbacks.onRegionChange,
+                modifier = Modifier.padding(start = SuggestionLaneTitleStart, end = 20.dp).testTag("suggestions_region"),
+                compact = true,
+            )
         }
         if (lane.isCharts && uiState.isLoadingPodcasts) {
             SuggestionCardsSkeleton(Modifier.padding(top = 12.dp))
@@ -607,3 +613,6 @@ private fun SuggestionsFooterLabel(state: SuggestionsFooterState) {
         }
     }
 }
+
+/** Where a lane's title starts: the 20dp edge, its 40dp icon and a 12dp gap. */
+private val SuggestionLaneTitleStart = 72.dp
