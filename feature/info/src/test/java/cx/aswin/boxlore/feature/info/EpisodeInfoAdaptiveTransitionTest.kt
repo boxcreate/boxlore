@@ -124,9 +124,10 @@ class EpisodeInfoAdaptiveTransitionTest {
 
     @Test
     fun `a link to another of the episode's IDs shows the phone's download across window changes`() {
+        render()
+        // After the page's own stubs, which answer every other ID with "not downloaded".
         `when`(model.isDownloaded("-9")).thenReturn(flowOf(true))
         `when`(model.isDownloading("-9")).thenReturn(flowOf(false))
-        render()
         val episode = TestFixtures.episode(id = "-9", title = "Stored episode", podcastId = "920666", podcastTitle = "Curious world")
         uiState.value = EpisodeInfoUiState.Success(
             episode,
@@ -212,15 +213,7 @@ class EpisodeInfoAdaptiveTransitionTest {
     }
 
     private fun render() {
-        `when`(model.uiState).thenReturn(uiState)
-        `when`(model.moreLikeThisOn).thenReturn(MutableStateFlow(false))
-        `when`(model.likedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
-        `when`(model.completedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
-        `when`(model.archivedEpisodeIds).thenReturn(archived)
-        `when`(model.queuedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
-        `when`(model.isDownloaded(LINK_ID)).thenReturn(flowOf(false))
-        `when`(model.isDownloading(LINK_ID)).thenReturn(flowOf(false))
-        `when`(model.showRemoveDownloadDialog).thenReturn(MutableStateFlow(false))
+        stubEpisodeInfoViewModel(model, uiState, moreLikeThisOn = false, archived = archived)
         fixture.prepare()
         fixture.compose.mainClock.autoAdvance = true
         restoration = StateRestorationTester(fixture.compose)
