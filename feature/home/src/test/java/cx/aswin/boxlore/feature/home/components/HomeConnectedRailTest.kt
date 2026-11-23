@@ -282,6 +282,24 @@ class HomeConnectedRailTest {
         composeRule.onNodeWithText("You’re all caught up").assertExists()
     }
 
+    /** Tablets used to show one heading in the corner of a large, empty panel. */
+    @Test fun `a caught-up Daily Mix on tablets centres its message in the panel and phones keep the heading`() {
+        state.value = Scenario(empty = true, width = 1_200, tablet = true)
+        render()
+        for (count in listOf(3, 14)) {
+            state.value = Scenario(empty = true, count = count, width = 1_200, tablet = true)
+            composeRule.waitForIdle()
+            val panel = bounds("home_shows_content_pane")
+            val message = bounds("home_mix_caught_up")
+            assertTrue("$count shows: the message leaves the panel", message.top >= panel.top - 0.5f && message.bottom <= panel.bottom + 0.5f)
+            assertEquals("$count shows: the message is centred across the panel", panel.center.x, message.center.x, 8f)
+        }
+        state.value = Scenario(empty = true)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home_mix_caught_up").assertDoesNotExist()
+        composeRule.onNodeWithText("You’re all caught up").assertExists()
+    }
+
     @Test fun `caught up collapse animates the same surface without moving selectors`() {
         render()
         composeRule.waitForIdle()

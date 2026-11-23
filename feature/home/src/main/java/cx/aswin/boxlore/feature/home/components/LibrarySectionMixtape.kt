@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,10 +36,13 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,9 +58,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
 import cx.aswin.boxlore.core.designsystem.components.BoxloreMenuState
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -123,13 +130,16 @@ internal fun HomeMixModule(
             .padding(top = HomeMixLayout.TopPadding, bottom = HomeMixLayout.BottomPadding),
     ) {
         if (mode == HomeMixMode.DAILY && visibleItemCount == 0) {
+            val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
             HomeMixDropdownHeading(
                 mode = mode,
-                subtitle = stringResource(R.string.home_mix_caught_up_title),
+                // On tablets the caught-up message below says it; phones keep it in the heading.
+                subtitle = if (tablet) "" else stringResource(R.string.home_mix_caught_up_title),
                 enabled = canOfferOffline,
                 onModeSelected = onModeChanged,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = HomeMixLayout.ContentInset),
             )
+            if (tablet) HomeMixCaughtUpPanel()
         } else {
             HomeMixHeader(
                 mode = mode,
@@ -494,6 +504,39 @@ private fun OfflineMixEpisodeCard(
         isPlaying = isPlaying,
         isDownloaded = true,
     )
+}
+
+/**
+ * A caught-up Daily Mix in the tablet module: the message centred in the panel, its icon in a soft
+ * badge, instead of one heading in the corner of an empty panel.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun HomeMixCaughtUpPanel() {
+    Column(
+        modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = HomeMixLayout.RailHeight).padding(horizontal = HomeMixLayout.ContentInset).testTag("home_mix_caught_up"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+    ) {
+        Box(
+            Modifier.size(56.dp).background(MaterialTheme.colorScheme.secondaryContainer, MaterialShapes.Cookie9Sided.toShape()),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.AutoMirrored.Rounded.QueueMusic, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(28.dp))
+        }
+        Text(
+            text = stringResource(R.string.home_mix_caught_up_title),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = GoogleSansWeight.bold,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            text = stringResource(R.string.home_mix_caught_up_body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
 }
 
 @Composable
