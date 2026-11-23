@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.designsystem.theme.SkeletonBlock
 import cx.aswin.boxlore.core.designsystem.theme.SkeletonTextLines
+import cx.aswin.boxlore.feature.info.EpisodePageBlockGutter
+import cx.aswin.boxlore.feature.info.EpisodePageTextGutter
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.logic.EpisodeHeroForm
 
@@ -68,7 +70,8 @@ internal fun EpisodePageSkeleton(
                 SkeletonPiece(artModifier.size(artSize).testTag(EPISODE_SKELETON_ART_TAG), RoundedCornerShape(if (form == EpisodeHeroForm.Row) 24.dp else 30.dp))
             }
             val rail: @Composable (Modifier) -> Unit = { railModifier -> SkeletonRail(railModifier) }
-            val hero = Modifier.padding(horizontal = 22.dp)
+            val hero = Modifier.padding(horizontal = EpisodePageTextGutter)
+            val railEdge = Modifier.padding(horizontal = EpisodePageBlockGutter)
             when (form) {
                 EpisodeHeroForm.Stacked -> Column(hero.fillMaxWidth()) {
                     art(Modifier.align(Alignment.CenterHorizontally))
@@ -89,8 +92,8 @@ internal fun EpisodePageSkeleton(
                 }
             }
             when (form) {
-                EpisodeHeroForm.Stacked -> rail(hero)
-                EpisodeHeroForm.Row -> rail(hero.widthIn(max = railMaxWidth))
+                EpisodeHeroForm.Stacked -> rail(railEdge)
+                EpisodeHeroForm.Row -> rail(railEdge.widthIn(max = railMaxWidth))
                 EpisodeHeroForm.TwoColumn -> Unit
             }
             Box(blockModifier.padding(horizontal = 16.dp)) {

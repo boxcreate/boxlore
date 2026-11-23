@@ -318,7 +318,7 @@ fun EpisodeInfoScreen(
                                         isArchived = state.episode.id in archivedEpisodeIds,
                                     ),
                                     onToggleCompletion = viewModel::onToggleCompletion,
-                                    modifier = Modifier.padding(horizontal = 22.dp),
+                                    modifier = Modifier.padding(horizontal = EpisodePageTextGutter),
                                     onMarkPlayedTipDismissed = onMarkPlayedTipDismissed,
                                     form = heroForm,
                                     artSize = heroArtSize,
@@ -329,7 +329,7 @@ fun EpisodeInfoScreen(
                             if (heroForm != EpisodeHeroForm.TwoColumn) {
                                 item(key = "rail") {
                                     val railCap = if (heroForm == EpisodeHeroForm.Stacked) Modifier else Modifier.widthIn(max = EpisodeRailMaxWidth)
-                                    actionRail(Modifier.padding(horizontal = 22.dp).then(railCap))
+                                    actionRail(Modifier.padding(horizontal = EpisodePageBlockGutter).then(railCap))
                                 }
                             }
 
@@ -531,6 +531,10 @@ private fun LazyListScope.episodeShowNotes(
         }
     }
 }
+
+/** Cards, rows and the Play row start here; text without a card (the title, headings) starts at the text gutter. */
+internal val EpisodePageBlockGutter = 16.dp
+internal val EpisodePageTextGutter = 20.dp
 
 /** Back and Share sit this far from the page edges, matching the show page's top bar. */
 private val EpisodeHeaderButtonInset = 4.dp
