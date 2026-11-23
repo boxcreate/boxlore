@@ -17,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
@@ -181,6 +182,52 @@ class TabletLoreLayoutTest {
             gaps.forEach { assertEquals("$pair: header to card gap", gaps.first(), it, 1f) }
         }
     }
+
+    @Test
+    fun `skipped and queued cards leave the window before the next card takes their place`() {
+        val host = LoreDeckHost(fixture)
+        // A phone-like density, where the old fixed travel stopped short on wide windows.
+        host.density.floatValue = 2.625f
+        host.render()
+        for ((step, pair) in listOf(TABLET to true, PHONE_LAND to false).withIndex()) {
+            val (window, skip) = pair
+            // The ViewModel is a mock, so the deck moves on only when the test says so.
+            host.show(LearnUiState.Success(LoreDeckHost.cards().drop(step)))
+            host.moveTo(window)
+            val question = host.questionOf(step)
+            val before = dismissalsAndQueues(host)
+            fixture.compose.mainClock.autoAdvance = false
+            if (skip) {
+                host.onActiveCard(androidx.compose.ui.test.hasContentDescription(host.string(R.string.lore_action_skip))).performClick()
+            } else {
+                host.activeText(question).performTouchInput { swipeRight(startX = centerX, endX = centerX + 200.dp.toPx()) }
+            }
+            var lastLeft = Float.NaN
+            var lastRight = Float.NaN
+            var frames = 0
+            while (dismissalsAndQueues(host) == before && frames < 200) {
+                fixture.compose.onNode(androidx.compose.ui.test.hasText(question), useUnmergedTree = true).fetchSemanticsNode().let {
+                    lastLeft = it.positionInRoot.x
+                    lastRight = it.positionInRoot.x + it.size.width
+                }
+                fixture.compose.mainClock.advanceTimeByFrame()
+                frames++
+            }
+            fixture.compose.mainClock.autoAdvance = true
+            assertEquals("$window: one card left the deck", before + 1, dismissalsAndQueues(host))
+            val root = fixture.compose.onNode(hasTestTag(LoreDeckHost.ROOT)).fetchSemanticsNode()
+            val rootLeft = root.positionInRoot.x
+            val rootRight = rootLeft + root.size.width
+            if (skip) {
+                assertTrue("$window: a skipped card's text ended at $lastRight, the window starts at $rootLeft", lastRight <= rootLeft)
+            } else {
+                assertTrue("$window: a queued card's text started at $lastLeft, the window ends at $rootRight", lastLeft >= rootRight)
+            }
+        }
+    }
+
+    private fun dismissalsAndQueues(host: LoreDeckHost) =
+        mockingDetails(host.viewModel).invocations.count { it.method.name == "dismissCuriosity" }
 
     private fun gap(host: LoreDeckHost): Float =
         (host.bounds(host.activeCard()).top - host.bounds(fixture.compose.onNode(hasTestTag(LORE_DECK_HEADER_TAG))).bottom).value

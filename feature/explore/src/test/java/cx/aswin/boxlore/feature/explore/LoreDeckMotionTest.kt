@@ -46,4 +46,14 @@ class LoreDeckMotionTest {
             assertEquals(loreSwipeFeedbackMotion(sign * 40f, threshold, direction), loreSwipeCueMotion(sign * 40f, 0f, exiting = false, exitFade = 1f, threshold = threshold, direction = direction))
         }
     }
+
+    @Test
+    fun `a leaving card clears the window edge on wide windows and phones keep their travel`() {
+        val margin = 48f
+        for ((window, card, density) in listOf(Triple(1200f, 520f, 2f), Triple(761f, 520f, 2.625f), Triple(915f, 520f, 2.625f))) {
+            val distance = loreExitDistancePx(window * density, card * density, margin * density)
+            assertTrue(distance >= window * density / 2 + card * density / 2, "$window dp window")
+        }
+        assertEquals(LORE_MIN_EXIT_PX, loreExitDistancePx(412f * 2.625f, 372f * 2.625f, margin * 2.625f))
+    }
 }

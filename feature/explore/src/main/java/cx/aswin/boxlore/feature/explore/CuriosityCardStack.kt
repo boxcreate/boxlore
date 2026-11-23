@@ -89,13 +89,18 @@ fun CuriosityCardStack(
     }
     // A fourth card waits hidden behind the deck and fades into third place during a swipe.
     val visibleCards = questions.take(LoreDeckDepth + 1)
+    // The card is centred and at most 520dp wide, so this carries it fully past the window's edge.
+    val windowWidth = boxloreVisibleWindowSize().width
+    val exitDistancePx = with(LocalDensity.current) {
+        loreExitDistancePx(windowWidth.toPx(), minOf(windowWidth, 520.dp).toPx(), LoreExitMargin.toPx())
+    }
 
     LoreDeckFrame(modifier) { short ->
         visibleCards.asReversed().forEach { card ->
             key(card.episodeId) {
                 val depth = visibleCards.indexOf(card)
                 val isActive = depth == 0
-                val cardModifier = deckCardModifier(card, depth, swipeProgress, swipeState, swipeThresholdPx)
+                val cardModifier = deckCardModifier(card, depth, swipeProgress, swipeState, swipeThresholdPx, exitDistancePx)
                 val isCurrent = playerState.currentEpisode?.id == card.episodeId
 
                 CuriosityCardContent(
@@ -109,7 +114,7 @@ fun CuriosityCardStack(
                     modifier = cardModifier,
                     onAction = { action ->
                         if (isActive && swipeState.phase != LoreSwipePhase.Exiting) {
-                            routeCardAction(action, card, swipeState, onCardAction)
+                            routeCardAction(action, card, swipeState, exitDistancePx, onCardAction)
                         }
                     }
                 )
@@ -163,6 +168,9 @@ private const val LORE_TABLET_DECK_SHARE = 0.62f
 private const val LORE_TABLET_DECK_MIN_DP = 640f
 private const val LORE_TABLET_DECK_MAX_DP = 760f
 
+/** Room past the window's edge before a leaving card is dropped (its tilt and shadow clear it). */
+private val LoreExitMargin = 48.dp
+
 /** Below this deck height the card drops its bottom rest and uses its tightest padding. */
 internal val LoreShortDeckHeight = 260.dp
 
@@ -171,11 +179,12 @@ private fun routeCardAction(
     action: CardAction,
     card: LearnCuriosityCard,
     swipeState: SwipeableCardState,
+    exitDistancePx: Float,
     onCardAction: (CardAction, LearnCuriosityCard) -> Unit,
 ) {
     when (action) {
-        CardAction.Dismiss -> swipeState.swipe(SwipeDirection.Left)
-        CardAction.Queue -> swipeState.swipe(SwipeDirection.Right)
+        CardAction.Dismiss -> swipeState.swipe(SwipeDirection.Left, exitDistancePx)
+        CardAction.Queue -> swipeState.swipe(SwipeDirection.Right, exitDistancePx)
         else -> onCardAction(action, card)
     }
 }
@@ -186,6 +195,7 @@ private fun BoxScope.deckCardModifier(
     swipeProgress: State<Float>,
     swipeState: SwipeableCardState,
     swipeThresholdPx: Float,
+    exitDistancePx: Float,
 ): Modifier = if (depth > 0) {
     // The waiting card is hidden, so screen readers skip it until it joins the deck.
     val hidden = if (depth > LoreDeckDepth) Modifier.clearAndSetSemantics {} else Modifier
@@ -211,15 +221,15 @@ private fun BoxScope.deckCardModifier(
                 .coerceIn(-2.5f, 2.5f)
             cameraDistance = 12f * density
         }
-        .pointerInput(card.episodeId) {
+        .pointerInput(card.episodeId, exitDistancePx) {
             detectHorizontalDragGestures(
                 onDragStart = { swipeState.beginDrag() },
                 onDragEnd = {
                     val offsetX = swipeState.offset.value.x
                     if (offsetX > swipeThresholdPx) {
-                        swipeState.swipe(SwipeDirection.Right)
+                        swipeState.swipe(SwipeDirection.Right, exitDistancePx)
                     } else if (offsetX < -swipeThresholdPx) {
-                        swipeState.swipe(SwipeDirection.Left)
+                        swipeState.swipe(SwipeDirection.Left, exitDistancePx)
                     } else {
                         swipeState.reset()
                     }

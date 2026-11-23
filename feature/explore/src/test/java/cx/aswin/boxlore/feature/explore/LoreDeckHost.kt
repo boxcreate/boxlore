@@ -45,6 +45,9 @@ internal class LoreDeckHost(private val fixture: PhoneGoldenRule) {
     val window = mutableStateOf(BoxloreTestWindows.PHONE)
     val pane = mutableStateOf<BoxloreLayoutBounds?>(null)
     val fontScale = mutableFloatStateOf(1f)
+
+    /** Screen density for the deck; 0 keeps the test window's own. */
+    val density = mutableFloatStateOf(0f)
     val state = MutableStateFlow<LearnUiState>(LearnUiState.Success(cards()))
     val playerState = MutableStateFlow(PlayerState())
     val viewModel: LearnViewModel = mock(LearnViewModel::class.java)
@@ -67,7 +70,7 @@ internal class LoreDeckHost(private val fixture: PhoneGoldenRule) {
                 LocalBoxloreWindowLayout provides size,
                 LocalBoxlorePaneWidth provides width,
                 LocalBoxlorePaneBounds provides bounds,
-                LocalDensity provides Density(LocalDensity.current.density, fontScale.floatValue),
+                LocalDensity provides Density(density.floatValue.takeIf { it > 0f } ?: LocalDensity.current.density, fontScale.floatValue),
             ) {
                 BoxLoreTheme(dynamicColor = false) {
                     Box(Modifier.requiredSize(width.dp, height.dp).testTag(ROOT)) {
