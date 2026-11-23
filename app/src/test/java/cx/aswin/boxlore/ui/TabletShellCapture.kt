@@ -26,7 +26,7 @@ import org.mockito.Mockito.`when`
 
 /** Real shell/player presentation with fixed local data, never an Application-backed service. */
 @Composable
-internal fun TabletShellCapture(route: String, episode: Episode, podcast: Podcast, playing: Boolean, content: @Composable () -> Unit) {
+internal fun TabletShellCapture(route: String, episode: Episode, podcast: Podcast, playing: Boolean, content: @Composable () -> Unit, openRequest: OpenPlayerRequest = OpenPlayerRequest()) {
     val navigation = rememberTabletDetailNavigation(rememberNavController())
     val dependencies = remember { tabletCapturePlayer(episode, podcast) }
     RetainedPlayerPresentation(cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.usesTabletLayout) {
@@ -41,12 +41,15 @@ internal fun TabletShellCapture(route: String, episode: Episode, podcast: Podcas
             primary = content,
             details = { NavHost(navigation.detail, TabletContextRoot) { composable(TabletContextRoot) {} } },
             player = { contextPane ->
-                TabletAppPlayer(dependencies, navigation, contextPane, PlayerSheetActions(), TabletPlayerOptions(NavigationStyle.Floating, false, 0, true))
+                TabletAppPlayer(dependencies, navigation, contextPane, PlayerSheetActions(onExpandRequestHandled = openRequest.onHandled), TabletPlayerOptions(NavigationStyle.Floating, false, openRequest.pending, true))
             },
             ),
         )
     }
 }
+
+/** The notification's open-player request as the app shell passes it: pending until a player reports it handled. */
+internal data class OpenPlayerRequest(val pending: Long = 0L, val onHandled: (Long) -> Unit = {})
 
 private fun tabletCapturePlayer(episode: Episode, podcast: Podcast): FullPlayerDependencies {
     val playback = mock(PlaybackRepository::class.java)

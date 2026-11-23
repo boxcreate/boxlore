@@ -2,11 +2,6 @@
 
 boxlore's own text ships in English (`res/values/`) and in Spanish (`values-es`), Brazilian Portuguese (`values-pt-rBR`), German (`values-de`) and French (`values-fr`). Translations are drafted with AI help, checked by the tests below and reviewed by native speakers. Listeners can pick the language in **Settings › Appearance › App language**.
 
-## What gets translated
-
-- Everything boxlore itself writes: screens, buttons, dialogs, empty and error states, screen-reader labels, notifications and their channel names, widgets, Android Auto and the watch.
-- Not translated: server text (Echo's onboarding replies, briefings, curiosity cards, announcements, support replies, release notes), show and episode names and descriptions, debug-only screens, log messages, analytics values, preference keys and IDs.
-- The Privacy page stays in English for now: its strings are `translatable="false"` with a comment. Translating it needs the maintainer's approval of the exact wording, one language at a time.
 
 ## Glossary
 

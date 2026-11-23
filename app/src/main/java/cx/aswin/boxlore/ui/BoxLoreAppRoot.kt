@@ -182,6 +182,12 @@ fun BoxLoreAppRoot(
         }
     }
 
+    // A notification's open-player request reaches the players until one acts on it, so a player
+    // composed again after a rotation or window change never replays it.
+    var handledPlayerOpenRequest by rememberSaveable { mutableLongStateOf(0L) }
+    val playerOpenRequest = expandPlayerTrigger.takeIf { it != handledPlayerOpenRequest } ?: 0L
+    val onPlayerOpenRequestHandled: (Long) -> Unit = { handledPlayerOpenRequest = it }
+
     val navBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentRoute = navBackStackEntry?.destination?.route ?: "home"
     val startupWorkGate = application.startupWorkGate
@@ -735,8 +741,8 @@ fun BoxLoreAppRoot(
                             cx.aswin.boxlore.feature.player.v2.FullPlayerDependencies(playbackRepository, downloadRepository, userPrefs),
                             tabletNavigation,
                             contextPane,
-                            playerSheetActions(navController, playbackRepository, {}, navigate = { tabletNavigation.navigate(navController, it) { launchSingleTop = true } }),
-                            TabletPlayerOptions(navigationStyle, miniPlayerSeekButtonsEnabled, expandPlayerTrigger, windowLayout.usesTabletLayout),
+                            playerSheetActions(navController, playbackRepository, {}, onPlayerOpenRequestHandled, navigate = { tabletNavigation.navigate(navController, it) { launchSingleTop = true } }),
+                            TabletPlayerOptions(navigationStyle, miniPlayerSeekButtonsEnabled, playerOpenRequest, windowLayout.usesTabletLayout),
                         )
                     },
                     primary = {
@@ -854,7 +860,7 @@ fun BoxLoreAppRoot(
                             },
                             navigationStyle = navigationStyle,
                             miniPlayerSeekButtonsEnabled = miniPlayerSeekButtonsEnabled,
-                            expandTrigger = expandPlayerTrigger,
+                            expandTrigger = playerOpenRequest,
                             compactProgress = adaptivePlayer.progress,
                             compactTargetY = with(density) {
                                 (
@@ -864,7 +870,7 @@ fun BoxLoreAppRoot(
                             },
                         ),
                         actions =
-                        playerSheetActions(navController, playbackRepository, adaptivePlayer.onSheetInteractionChanged),
+                        playerSheetActions(navController, playbackRepository, adaptivePlayer.onSheetInteractionChanged, onPlayerOpenRequestHandled),
                         modifier = Modifier.align(Alignment.TopStart),
                     )
                 }
@@ -976,22 +982,4 @@ fun BoxLoreAppRoot(
         }
         }
     }
-}
-
-/**
- * The route a Play install referrer opens: the shared show, or the shared episode with its time,
- * clip and, for newer links, its show ([cx.aswin.boxlore.core.catalog.ReferralIntent.showId]) in the
- * route's `podcastId`, so an episode only its show's feed lists is found on a fresh install too.
- * Null for an unknown type.
- */
-internal fun installReferralRoute(referral: cx.aswin.boxlore.core.catalog.ReferralIntent): String? = when (referral.type) {
-    "podcast" -> "podcast/${referral.id}?entryPoint=install_referrer"
-    "episode" -> {
-        val tQuery = if (referral.timestamp != null) "&t=${referral.timestamp}" else ""
-        val startQuery = if (referral.start != null) "&start=${referral.start}" else ""
-        val endQuery = if (referral.end != null) "&end=${referral.end}" else ""
-        val showQuery = referral.showId?.let { "&podcastId=$it" }.orEmpty()
-        "episode/${referral.id}?entryPoint=install_referrer$tQuery$startQuery$endQuery$showQuery"
-    }
-    else -> null
 }

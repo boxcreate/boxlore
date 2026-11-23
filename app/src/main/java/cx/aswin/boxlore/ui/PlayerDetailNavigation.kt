@@ -12,9 +12,11 @@ internal fun playerSheetActions(
     navController: NavController,
     playbackRepository: PlaybackRepository,
     onSheetInteractionChanged: (Boolean) -> Unit,
+    onExpandRequestHandled: (Long) -> Unit,
     navigate: (String) -> Unit = { route -> navController.navigate(route) { launchSingleTop = true } },
 ): PlayerSheetActions = PlayerSheetActions(
     onSheetInteractionChanged = onSheetInteractionChanged,
+    onExpandRequestHandled = onExpandRequestHandled,
     onEpisodeInfoClick = { episode ->
         navigate(playerEpisodeDetailRoute(episode, playbackRepository.playerState.value.currentPodcast, EpisodeShowTitle.PLACEHOLDER))
     },

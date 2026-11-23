@@ -72,9 +72,7 @@ internal fun TabletAppPlayer(
     }
     val dockedActions = rememberDockedPlayerActions(navigation, presentation, actions)
     BackHandler(enabled = navigation.immersive, onBack = closeImmersive)
-    LaunchedEffect(options.expandTrigger) {
-        if (options.expandTrigger > 0 && contextPane) openImmersive()
-    }
+    TabletPlayerOpenRequest(options.expandTrigger, contextPane, navigation.immersive, openImmersive, actions.onExpandRequestHandled)
     CompositionLocalProvider(LocalPlayerFullscreenRequest provides fullscreenRequest) {
     androidx.compose.runtime.key("retained_tablet_player") {
         if (contextPane || navigation.immersive) {
@@ -126,6 +124,17 @@ internal fun TabletAppPlayer(
             }
         }
     }
+    }
+}
+
+/** An open pane or immersive player acts on an outside open request here; a docked sheet acts on it itself. */
+@Composable
+private fun TabletPlayerOpenRequest(request: Long, contextPane: Boolean, immersive: Boolean, open: () -> Unit, onHandled: (Long) -> Unit) {
+    LaunchedEffect(request) {
+        if (request > 0 && (contextPane || immersive)) {
+            open()
+            onHandled(request)
+        }
     }
 }
 

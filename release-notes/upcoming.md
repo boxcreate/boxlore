@@ -40,3 +40,4 @@ Announcement title:
 - Casting to a TV or speaker no longer leaves your phone on "Connecting…" once the episode is playing there. The device list now shows which one you're casting to.
 - Reopening boxlore while it's casting no longer pauses the episode on your TV, jumps it back or resets its speed.
 - An episode boxlore picked up where you left off now shows its cover when you cast it to a TV, instead of a placeholder.
+- Turning your phone sideways and back, unfolding it or resizing boxlore's window no longer opens the full player by itself.
