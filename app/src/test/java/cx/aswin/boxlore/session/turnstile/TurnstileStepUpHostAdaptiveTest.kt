@@ -211,6 +211,11 @@ class TurnstileStepUpHostAdaptiveTest {
         // Until Cloudflare's box draws over it, a placeholder of its size shimmers in the 72dp frame.
         compose.onNodeWithTag(CHALLENGE_PLACEHOLDER_TAG).assertIsDisplayed()
         assertEquals(72f, compose.onNodeWithTag(CHALLENGE_PAGE_TAG).getUnclippedBoundsInRoot().let { it.bottom - it.top }.value, 0.5f)
+        // Once the box has had time to draw, the placeholder goes and the frame keeps its height.
+        compose.mainClock.advanceTimeBy(CHECK_PLACEHOLDER_MILLIS + 100)
+        compose.waitForIdle()
+        compose.onNodeWithTag(CHALLENGE_PLACEHOLDER_TAG).assertDoesNotExist()
+        assertEquals(72f, compose.onNodeWithTag(CHALLENGE_PAGE_TAG).getUnclippedBoundsInRoot().let { it.bottom - it.top }.value, 0.5f)
 
         compose.onNodeWithText("Skip").performClick()
 

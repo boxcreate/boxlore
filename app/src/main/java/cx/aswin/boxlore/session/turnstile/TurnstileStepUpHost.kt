@@ -24,9 +24,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -49,6 +52,7 @@ import cx.aswin.boxlore.core.designsystem.echo.EchoGaze
 import cx.aswin.boxlore.core.designsystem.echo.EchoIdle
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.SkeletonBlock
+import kotlinx.coroutines.delay
 
 /** Builds the page view for one run; [onMessage] and [onFailed] report back to the controller. */
 internal fun interface TurnstilePageFactory {
@@ -127,15 +131,24 @@ internal fun TurnstileStepUpHost(
 
 /**
  * The check's 72dp frame. The page is see-through: a placeholder the size of Cloudflare's box
- * shimmers under it until the box draws over it, so the card never sits empty while the check loads.
+ * shimmers under it while the box draws over it, so the card never sits empty while the check
+ * loads. After [CHECK_PLACEHOLDER_MILLIS] the placeholder goes, so the sheet doesn't redraw every
+ * frame for as long as the check stays open.
  */
 @Composable
 internal fun TurnstileChallengeFrame(page: @Composable () -> Unit) {
+    var loading by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        delay(CHECK_PLACEHOLDER_MILLIS)
+        loading = false
+    }
     Box(Modifier.fillMaxWidth().height(72.dp), contentAlignment = Alignment.Center) {
-        SkeletonBlock(
-            Modifier.widthIn(max = CHECK_BOX_WIDTH).fillMaxWidth().height(CHECK_BOX_HEIGHT).testTag(CHALLENGE_PLACEHOLDER_TAG),
-            shape = MaterialTheme.shapes.small,
-        )
+        if (loading) {
+            SkeletonBlock(
+                Modifier.widthIn(max = CHECK_BOX_WIDTH).fillMaxWidth().height(CHECK_BOX_HEIGHT).testTag(CHALLENGE_PLACEHOLDER_TAG),
+                shape = MaterialTheme.shapes.small,
+            )
+        }
         page()
     }
 }
@@ -215,6 +228,9 @@ private val CHECK_BOX_WIDTH = 300.dp
 private val CHECK_BOX_HEIGHT = 65.dp
 
 internal const val CHALLENGE_PLACEHOLDER_TAG = "turnstile_challenge_placeholder"
+
+/** How long the placeholder stays under the check: long enough for Cloudflare's box to draw. */
+internal const val CHECK_PLACEHOLDER_MILLIS = 4_000L
 internal const val INVISIBLE_PAGE_TAG = "turnstile_invisible_page"
 internal const val CHALLENGE_PAGE_TAG = "turnstile_challenge_page"
 internal const val CHALLENGE_CARD_TAG = "turnstile_challenge_card"
