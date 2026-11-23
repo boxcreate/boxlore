@@ -357,6 +357,31 @@ class EpisodeInfoAdaptiveTransitionTest {
         assertEquals("Back works while loading", 1, backs)
     }
 
+    @Test
+    fun `a load error offers Try again and Back in short windows and keeps them across the 600dp gate`() {
+        window.value = BoxloreTestWindows.PHONE_LAND
+        render()
+        uiState.value = EpisodeInfoUiState.Error
+        fixture.compose.waitForIdle()
+        var retries = 0
+        fixture.compose.walkWindows(
+            window,
+            BoxloreTestWindows.PHONE_LAND,
+            BoxloreTestWindows.SPLIT_HALF,
+            BoxloreTestWindows.W599_H900,
+            BoxloreTestWindows.W600_H900,
+            BoxloreTestWindows.W599_H900,
+        ) { size ->
+            fixture.compose.onNodeWithText("Couldn’t load this episode").assertExists()
+            fixture.compose.onNodeWithText(TRY_AGAIN).performScrollTo().performClick()
+            retries++
+            assertEquals("one retry per tap at $size", retries, mockingDetails(model).invocations.count { it.method.name == "retry" })
+        }
+        fixture.compose.onNodeWithText(BACK).performScrollTo().performClick()
+        fixture.compose.waitForIdle()
+        assertEquals(1, backs)
+    }
+
     private fun playBounds() = fixture.compose.onNode(hasText(PLAY) and hasClickAction()).getBoundsInRoot()
 
     private fun listScroll(): Float =
@@ -462,6 +487,7 @@ class EpisodeInfoAdaptiveTransitionTest {
         const val LINK_ID = "4503599627370500"
         const val BACK = "Back"
         const val SHARE = "Share episode"
+        const val TRY_AGAIN = "Try again"
         const val SHARE_SHEET_TITLE = "Share this episode"
         const val FULL_TITLE = "Show full title"
         const val SHOW_LESS = "Show less"

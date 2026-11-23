@@ -116,6 +116,7 @@
     <string name="genre_edit_placeholder">Appuyez pour définir une étiquette</string>
     <string name="episode_info_episode_from_show">%1$s, de %2$s</string>
     <string name="podcast_info_load_error">Impossible de charger ce podcast</string>
+    <string name="info_load_error_body">Vérifiez votre connexion Internet, puis réessayez.</string>
     <string name="podcast_info_retry">Réessayer</string>
     <!-- End of a show's episode list when its next page couldn't load; Try again (podcast_info_retry) sits under it. -->
     <string name="podcast_info_more_episodes_failed">Impossible de charger plus d’épisodes</string>

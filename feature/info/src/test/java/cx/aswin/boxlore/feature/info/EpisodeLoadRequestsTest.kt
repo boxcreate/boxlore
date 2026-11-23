@@ -30,6 +30,11 @@ class EpisodeLoadRequestsTest {
     }
 
     @Test
+    fun `a finished load error never covers the same request, so Try again loads it`() {
+        assertFalse(EpisodeLoadRequests.isCovered(request, false, EpisodeInfoUiState.Error, request.episodeId, request.podcastId))
+    }
+
+    @Test
     fun `a request that brings the show restarts the load`() {
         assertFalse(EpisodeLoadRequests.isCovered(request, true, EpisodeInfoUiState.Loading, request.episodeId, "920666"))
         assertFalse(EpisodeLoadRequests.isCovered(request, false, EpisodeInfoUiState.NotFound(""), request.episodeId, "920666"))

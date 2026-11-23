@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -246,14 +247,15 @@ fun EpisodeInfoScreen(
                         }
                     }
                 }
-                is EpisodeInfoUiState.Error -> {
-                    Box(
-                        modifier = modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(androidx.compose.ui.res.stringResource(R.string.episode_info_load_error), color = MaterialTheme.colorScheme.error)
-                    }
-                }
+                is EpisodeInfoUiState.Error ->
+                    cx.aswin.boxlore.feature.info.components.InfoStatusMessage(
+                        icon = Icons.Rounded.CloudOff,
+                        title = stringResource(R.string.episode_info_load_error),
+                        body = stringResource(R.string.info_load_error_body),
+                        primary = cx.aswin.boxlore.feature.info.components.InfoStatusAction(stringResource(R.string.podcast_info_retry), viewModel::retry),
+                        secondary = cx.aswin.boxlore.feature.info.components.InfoStatusAction(stringResource(R.string.episode_info_back), onBack),
+                        modifier = modifier,
+                    )
                 is EpisodeInfoUiState.ReadingFeed ->
                     cx.aswin.boxlore.feature.info.components.EpisodeLinkStatus(true, "", onPodcastClick, onBack, modifier)
                 is EpisodeInfoUiState.NotFound ->

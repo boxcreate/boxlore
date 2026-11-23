@@ -112,6 +112,7 @@
     <string name="genre_edit_placeholder">Toca para poner una etiqueta personalizada</string>
     <string name="episode_info_episode_from_show">%1$s, de %2$s</string>
     <string name="podcast_info_load_error">No se pudo cargar este podcast</string>
+    <string name="info_load_error_body">Comprueba tu conexión a internet y vuelve a intentarlo.</string>
     <string name="podcast_info_retry">Reintentar</string>
     <string name="podcast_info_more_episodes_failed">No se pudieron cargar más episodios</string>
     <string name="podcast_info_episodes_failed">No se pudieron cargar los episodios</string>

@@ -116,6 +116,8 @@
     <string name="genre_edit_placeholder">Click to set custom tag</string>
     <string name="episode_info_episode_from_show">%1$s, from %2$s</string>
     <string name="podcast_info_load_error">Couldn’t load this podcast</string>
+    <!-- Under "Couldn’t load this episode" or "Couldn’t load this podcast"; Try again (podcast_info_retry) and Back sit below it. -->
+    <string name="info_load_error_body">Check your internet connection, then try again.</string>
     <string name="podcast_info_retry">Try again</string>
     <!-- End of a show's episode list when its next page couldn't load; Try again (podcast_info_retry) sits under it. -->
     <string name="podcast_info_more_episodes_failed">Couldn’t load more episodes</string>

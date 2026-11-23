@@ -252,6 +252,37 @@ class EpisodeInfoViewModel(
         }
     }
 
+    /** What the page last asked to load, so Try again on the error page repeats exactly that. */
+    private data class LoadArguments(
+        val episodeId: String,
+        val episodeTitle: String,
+        val episodeDescription: String,
+        val episodeImageUrl: String,
+        val episodeAudioUrl: String,
+        val episodeDuration: Int,
+        val podcastId: String,
+        val podcastTitle: String,
+        val entryPointContext: android.os.Bundle?,
+    )
+
+    private var lastLoad: LoadArguments? = null
+
+    /** Try again after a failed load: the same request, which a finished error never covers. */
+    fun retry() {
+        val load = lastLoad ?: return
+        loadEpisode(
+            episodeId = load.episodeId,
+            episodeTitle = load.episodeTitle,
+            episodeDescription = load.episodeDescription,
+            episodeImageUrl = load.episodeImageUrl,
+            episodeAudioUrl = load.episodeAudioUrl,
+            episodeDuration = load.episodeDuration,
+            podcastId = load.podcastId,
+            podcastTitle = load.podcastTitle,
+            entryPointContext = load.entryPointContext,
+        )
+    }
+
     fun loadEpisode(
         episodeId: String,
         episodeTitle: String = "",
@@ -265,6 +296,7 @@ class EpisodeInfoViewModel(
     ) {
         // If we already have this episode loaded (or are loading it with at least as much to go on), don't reload.
         if (EpisodeLoadRequests.isCovered(loadRequest, loadJob?.isActive == true, _uiState.value, episodeId, podcastId)) return
+        lastLoad = LoadArguments(episodeId, episodeTitle, episodeDescription, episodeImageUrl, episodeAudioUrl, episodeDuration, podcastId, podcastTitle, entryPointContext)
         loadJob?.cancel()
         loadRequest = EpisodeLoadRequests.Request(episodeId, podcastId)
         // A new episode stops the previous one's Try these episodes request straight away.
