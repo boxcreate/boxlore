@@ -32,6 +32,7 @@ Announcement title:
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.
 - On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.
+- The player fits more screens: a phone turned sideways and an unfolded foldable show it in two columns with every control in view, and on tablets Up next fills the space under the controls.
 
 ## Fixed
 
@@ -46,3 +47,7 @@ Announcement title:
 - Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.
+- After a video plays full screen, your phone turns with you again instead of staying upright.
+- The player keeps an open speed or sleep panel when you fold, unfold or rotate, and a running sleep timer stays highlighted when you come back to it.
+- Removing an episode from Up next is remembered even when you rotate the screen before Undo goes away.
+- On a half-open foldable, the full-screen transcript now sits above the fold with its controls below.
