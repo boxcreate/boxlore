@@ -151,7 +151,7 @@ class PhoneGoldenConfigurationTest {
             val values = listOf(insets.getLeft(density, direction), insets.getTop(density), insets.getRight(density, direction), insets.getBottom(density))
             SideEffect { safe = values }
         }
-        compose.runOnUiThread { applyFakeSystemInsets(compose.activity, statusTop = 24, navEnd = 48, cutoutStart = 32, imeBottom = 200) }
+        compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets(statusTop = 24, navEnd = 48, cutoutStart = 32, imeBottom = 200)) }
         compose.waitForIdle()
 
         assertEquals(listOf(32, 24, 48, 200), safe)

@@ -57,6 +57,7 @@ data class BoxloreLargeTitlePresentation(
  * from [largeStyle] in bold to `titleLarge` in semi-bold and may wrap to two lines while expanded.
  * The collapsed row ([expanded] false) uses `titleLarge` on [collapsedMaxLines]. With text over 115%
  * or a pane under 400dp the large style is one type step smaller, so long and translated titles fit.
+ * A [paneWidthDp] of 0 or less is an unknown width (no app shell around the page), not a narrow one.
  */
 @Suppress("LongParameterList")
 fun boxloreLargeTitlePresentation(
@@ -71,7 +72,7 @@ fun boxloreLargeTitlePresentation(
     val fraction = if (collapsedFraction.isFinite()) collapsedFraction.coerceIn(0f, 1f) else 0f
     val compactStyle = typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold)
     if (!expanded) return BoxloreLargeTitlePresentation(compactStyle, collapsedMaxLines)
-    val smaller = fontScale > LARGE_TEXT_FONT_SCALE || paneWidthDp < NARROW_PANE_DP
+    val smaller = fontScale > LARGE_TEXT_FONT_SCALE || paneWidthDp in Float.MIN_VALUE..<NARROW_PANE_DP
     val large = (if (smaller) typography.oneStepSmaller(largeStyle) else largeStyle).copy(fontWeight = GoogleSansWeight.bold)
     return BoxloreLargeTitlePresentation(lerp(large, compactStyle, fraction), maxLines = 2)
 }

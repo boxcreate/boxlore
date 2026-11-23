@@ -1,9 +1,7 @@
 package cx.aswin.boxlore.core.designsystem.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,14 +25,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.takeOrElse
 import androidx.compose.ui.window.DialogProperties
@@ -134,23 +132,49 @@ private fun AlertDialogPanel(slots: AlertDialogSlots, style: AlertDialogPanelSty
     }
 }
 
-/** Confirm sits after dismiss in a row and above it when the buttons wrap, as in Material. */
+/**
+ * Confirm sits after dismiss in a row, and above it at the end edge when they don't fit side by
+ * side, as in Material. Stacked buttons keep [DialogButtonGap] between their visible containers: a
+ * default Material button's touch target already holds part of it, a full-height boxlore button none.
+ */
 @Composable
 private fun DialogButtons(confirmButton: @Composable () -> Unit, dismissButton: @Composable (() -> Unit)?) {
-    val direction = LocalLayoutDirection.current
-    val flipped = if (direction == LayoutDirection.Ltr) LayoutDirection.Rtl else LayoutDirection.Ltr
-    // Touch-target padding already separates stacked buttons, so only the remainder is added.
-    val touchPadding = LocalMinimumInteractiveComponentSize.current.takeOrElse { 0.dp } - ButtonDefaults.MinHeight
-    val stackedSpacing = (8.dp - touchPadding).coerceIn(0.dp, 8.dp)
-    CompositionLocalProvider(LocalLayoutDirection provides flipped) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(stackedSpacing)) {
-            CompositionLocalProvider(LocalLayoutDirection provides direction) {
-                confirmButton()
-                dismissButton?.invoke()
+    // The room above and below a default button's container inside its touch target.
+    val touchInset = ((LocalMinimumInteractiveComponentSize.current.takeOrElse { 0.dp } - ButtonDefaults.MinHeight) / 2).coerceAtLeast(0.dp)
+    Layout(content = {
+        confirmButton()
+        dismissButton?.invoke()
+    }) { measurables, constraints ->
+        val gap = DialogButtonGap.roundToPx()
+        val buttons = measurables.map { it.measure(constraints.copy(minWidth = 0, minHeight = 0)) }
+        val rowWidth = buttons.sumOf { it.width } + gap * (buttons.size - 1).coerceAtLeast(0)
+        if (rowWidth <= constraints.maxWidth) {
+            val height = buttons.maxOfOrNull { it.height } ?: 0
+            layout(rowWidth, height) {
+                var end = rowWidth
+                buttons.forEach { button ->
+                    end -= button.width
+                    button.placeRelative(end, (height - button.height) / 2)
+                    end -= gap
+                }
+            }
+        } else {
+            val insets = measurables.map { if (it.layoutId == FullHeightDialogButton) 0 else touchInset.roundToPx() }
+            val spacings = insets.zipWithNext { above, below -> (gap - above - below).coerceAtLeast(0) }
+            val width = buttons.maxOfOrNull { it.width } ?: 0
+            layout(width, buttons.sumOf { it.height } + spacings.sum()) {
+                var top = 0
+                buttons.forEachIndexed { index, button ->
+                    button.placeRelative(width - button.width, top)
+                    top += button.height + spacings.getOrElse(index) { 0 }
+                }
             }
         }
     }
 }
+
+/** Marks a dialog button whose container fills its whole height, with no touch-target room around it. */
+private object FullHeightDialogButton
 
 @Composable
 private fun ProvideColorAndStyle(color: Color, style: TextStyle, content: @Composable () -> Unit) {
@@ -167,7 +191,7 @@ fun BoxloreDialogConfirmButton(text: String, onClick: () -> Unit, destructive: B
     Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.heightIn(min = DialogButtonMinHeight),
+        modifier = Modifier.heightIn(min = DialogButtonMinHeight).layoutId(FullHeightDialogButton),
         colors = if (destructive) {
             ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError)
         } else {
@@ -181,7 +205,7 @@ fun BoxloreDialogConfirmButton(text: String, onClick: () -> Unit, destructive: B
 /** A dialog's quiet way out (Cancel, Not now): a text button with no container. */
 @Composable
 fun BoxloreDialogDismissButton(text: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.heightIn(min = DialogButtonMinHeight)) {
+    TextButton(onClick = onClick, modifier = Modifier.heightIn(min = DialogButtonMinHeight).layoutId(FullHeightDialogButton)) {
         Text(text, textAlign = TextAlign.Center)
     }
 }
@@ -204,5 +228,6 @@ fun BoxloreDialogIcon(icon: ImageVector, tone: BoxloreDialogIconTone = BoxloreDi
 }
 
 private val DialogButtonMinHeight = 48.dp
+private val DialogButtonGap = 8.dp
 private val DialogMinWidth = 280.dp
 private val DialogMaxWidth = 560.dp

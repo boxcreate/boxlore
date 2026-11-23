@@ -201,8 +201,11 @@ class FloatingNavigationChromeTest {
         val barWidth = 915.dp - left - right - AppNavigationBarHorizontalInset * 2
         val loreRight = left + AppNavigationBarHorizontalInset + floatingNavigationLayout(barWidth, 0f).let { it.loreStart + it.loreSize }
         assertTrue(loreRight <= 915.dp - 48.dp - 16.dp)
-        assertTrue(left >= 32.dp)
+        // Both insets get the same spare width, so the bar is centred between them.
+        assertEquals(left - 32.dp, right - 48.dp)
         assertEquals(AppFloatingChromeMaxWidth, barWidth)
+        // A narrower sideways window has no spare width: the bar clears exactly the insets.
+        assertEquals(32.dp to 48.dp, floatingChromeSideOffsets(600.dp, 32.dp, 48.dp))
         // A wide, short window: one 560dp bar in the middle.
         val (wideLeft, wideRight) = floatingChromeSideOffsets(1_280.dp, 0.dp, 0.dp)
         assertEquals(560.dp, 1_280.dp - wideLeft - wideRight - AppNavigationBarHorizontalInset * 2)

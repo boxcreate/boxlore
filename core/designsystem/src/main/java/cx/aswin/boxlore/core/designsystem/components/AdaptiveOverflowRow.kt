@@ -77,6 +77,7 @@ fun AdaptiveOverflowRow(
 }
 
 /** The previous signature, which closed the More sheet on every width change. */
+@Suppress("kotlin:S1133") // Home's and Explore's genre rows still use it until they keep their sheet open.
 @Deprecated(
     "Read rememberAdaptiveOverflowState().remaining and keep the More sheet open across resizes.",
     ReplaceWith("AdaptiveOverflowRow(itemCount, selectedIndex, onOverflow, modifier, item = item, more = more)"),

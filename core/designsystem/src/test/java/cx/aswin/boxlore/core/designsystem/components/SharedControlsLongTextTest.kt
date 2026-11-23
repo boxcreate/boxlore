@@ -66,6 +66,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.designsystem.component.BoxloreTopBar
@@ -110,6 +111,7 @@ class SharedControlsLongTextTest {
         )
         assertEquals(32.sp, boxloreLargeTitlePresentation(typography, 0f, paneWidthDp = 412f).style.fontSize)
         assertEquals(28.sp, boxloreLargeTitlePresentation(typography, 0f, paneWidthDp = 360f).style.fontSize)
+        assertEquals("an unknown width is not narrow", 32.sp, boxloreLargeTitlePresentation(typography, 0f, paneWidthDp = 0f).style.fontSize)
         assertEquals(28.sp, boxloreLargeTitlePresentation(typography, 0f, fontScale = 1.3f, paneWidthDp = 412f).style.fontSize)
         val collapsed = boxloreLargeTitlePresentation(typography, 0f, expanded = false, fontScale = 1.3f, paneWidthDp = 360f)
         assertEquals(22.sp, collapsed.style.fontSize)
@@ -173,7 +175,7 @@ class SharedControlsLongTextTest {
             Page(window.value) {
                 val behavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
                 Column(Modifier.fillMaxSize().nestedScroll(behavior.nestedScrollConnection)) {
-                    BoxloreTopBar("Downloads", onBack = {}, scrollBehavior = behavior)
+                    BoxloreTopBar("Downloads", Modifier.testTag("bar"), onBack = {}, scrollBehavior = behavior)
                     LazyColumn(Modifier.fillMaxSize().testTag("list"), state = list) { items(200) { Text("Row $it", Modifier.padding(16.dp)) } }
                 }
             }
@@ -186,6 +188,10 @@ class SharedControlsLongTextTest {
         var last = scrolled()
         assertTrue("the first swipe moved the list", last > 0)
         compose.walkWindows(window, BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND) { step ->
+            if (step == BoxloreTestWindows.PHONE) {
+                val bar = compose.onNodeWithTag("bar").fetchSemanticsNode().boundsInRoot.height
+                assertEquals("$step: a scrolled page keeps the bar collapsed", TopAppBarDefaults.LargeAppBarCollapsedHeight.value, bar, 0.5f)
+            }
             val next = scrolled()
             assertTrue("$step: $last then $next", next > last)
             last = next
@@ -519,6 +525,10 @@ class SharedControlsLongTextTest {
             assertFalse("$label is shortened", layout.isLineEllipsized(layout.lineCount - 1))
             assertTrue("$label breaks inside a word", (0 until layout.lineCount - 1).all { label[layout.getLineEnd(it) - 1] == ' ' || label[layout.getLineEnd(it)] == ' ' })
         }
+        // Stacked, the filled confirm keeps Material's 8dp above Cancel.
+        val confirm = compose.onNodeWithText(labels[0]).fetchSemanticsNode().boundsInRoot
+        val dismiss = compose.onNodeWithText(labels[1]).fetchSemanticsNode().boundsInRoot
+        assertEquals(8f, dismiss.top - confirm.bottom, 0.5f)
     }
 
     @Test
@@ -527,9 +537,14 @@ class SharedControlsLongTextTest {
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, fontScale = fontScale.value)) {
                 Page(BoxloreTestWindows.PHONE) {
-                    Row {
-                        SkeletonTextLines(MaterialTheme.typography.titleMedium, 2, Modifier.width(160.dp).testTag("lines"))
-                        Text("Line one\nLine two", style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("text"))
+                    // A theme style, an unset one, and an em line height.
+                    Column {
+                        listOf(MaterialTheme.typography.titleMedium, TextStyle(), TextStyle(fontSize = 14.sp, lineHeight = 1.2.em)).forEachIndexed { index, style ->
+                            Row {
+                                SkeletonTextLines(style, 2, Modifier.width(160.dp).testTag("lines$index"))
+                                Text("Line one\nLine two", style = style, modifier = Modifier.testTag("text$index"))
+                            }
+                        }
                     }
                 }
             }
@@ -537,8 +552,10 @@ class SharedControlsLongTextTest {
         listOf(1f, 1.3f, 1f).forEach { scale ->
             fontScale.value = scale
             compose.waitForIdle()
-            val text = compose.onNodeWithTag("text").fetchSemanticsNode().boundsInRoot.height
-            assertEquals("font scale $scale", text, compose.onNodeWithTag("lines").fetchSemanticsNode().boundsInRoot.height, 0.5f)
+            repeat(3) { index ->
+                val text = compose.onNodeWithTag("text$index").fetchSemanticsNode().boundsInRoot.height
+                assertEquals("style $index, font scale $scale", text, compose.onNodeWithTag("lines$index").fetchSemanticsNode().boundsInRoot.height, 0.5f)
+            }
         }
     }
 

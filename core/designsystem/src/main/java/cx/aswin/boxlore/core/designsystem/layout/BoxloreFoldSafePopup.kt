@@ -143,7 +143,7 @@ internal fun popupHeightBesideAnchor(anchor: IntRect, region: IntRect, offsetY: 
  * above it, else on the side with more room, so it never covers the anchor while it fits beside it.
  * The result stays inside the region when the popup fits in it.
  */
-@Suppress("LongParameterList") // Material's inputs plus the region and the end-first choice.
+@Suppress("LongParameterList", "kotlin:S107") // Material's inputs plus the region and the end-first choice.
 internal fun placePopupInRegion(
     anchor: IntRect,
     region: IntRect,

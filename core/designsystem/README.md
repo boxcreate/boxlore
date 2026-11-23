@@ -81,7 +81,7 @@ Owns boxlore's shared Compose visuals: theme, type, shapes, motion, press feedba
 - `ArtworkAttempts`, `ArtworkLoadPolicy`: optimized then original, one retry for a transient failure, and failures and working routes remembered for a while.
 - Alternate artwork (`fallbackUrls`, `fallbackImageUrls`) is used only after a load fails. Failed tiles retry on foreground return or reconnection, never by polling.
 - Missing art shows the decorative `ic_boxlore_app_mark` on a solid fallback; the card's description stays its accessible name.
-- `optimizedImageUrl(width)` and `proxyWidth` take pixels, clamped in `ImageRequestSizing.kt`; one value sizes request and decode, in measured buckets on tablets and windows wider than 430dp.
+- `optimizedImageUrl(width)` and `proxyWidth` take pixels, clamped in `ImageRequestSizing.kt`; one value sizes request and decode, in measured buckets on tablets and wide windows.
 - `loadArtworkBitmap`: the bounded loader for widgets, share cards and notifications, on Coil's cache.
 - `ArtworkPrefetch.prefetch` warms the exact request `OptimizedImage` makes on portrait phones; `OnScreenArtwork` lets colour extraction reuse it.
 

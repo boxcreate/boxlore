@@ -22,6 +22,9 @@ class SettingsHeaderTitleTest {
         assertEquals(40.sp, presentation.style.lineHeight)
         assertEquals(2, presentation.maxLines)
         assertTrue(presentation.style.fontSize.value < typography.displayMedium.fontSize.value)
+        // Large text and narrow panes take the next size down, as the shared bars do.
+        assertEquals(typography.headlineLarge.fontSize, settingsHeaderTitlePresentation(typography, 0f, fontScale = 1.3f).style.fontSize)
+        assertEquals(typography.headlineLarge.fontSize, settingsHeaderTitlePresentation(typography, 0f, paneWidthDp = 360f).style.fontSize)
     }
 
     @Test

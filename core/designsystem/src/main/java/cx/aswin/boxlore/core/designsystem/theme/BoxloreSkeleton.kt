@@ -15,8 +15,10 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.isSpecified
+import androidx.compose.ui.unit.sp
 
 /** Skeleton colours that read on any surface in light, dark and Pure. */
 object BoxloreSkeletonDefaults {
@@ -54,10 +56,7 @@ fun SkeletonTextLines(
     highlightColor: Color = BoxloreSkeletonDefaults.highlightColor,
 ) {
     val count = lines.coerceAtLeast(1)
-    val barHeight = with(LocalDensity.current) {
-        val line = if (style.lineHeight.isSpecified) style.lineHeight.toDp() else style.fontSize.toDp()
-        (style.fontSize.takeIf { it.isSpecified }?.toDp()?.times(SkeletonBarToFontSize) ?: line / 2).coerceAtMost(line)
-    }
+    val barHeight = with(LocalDensity.current) { skeletonBarHeight(style) }
     Box(modifier.fillMaxWidth()) {
         // Blank lines of the real style give the block the loaded text's exact height.
         Text(
@@ -78,4 +77,23 @@ fun SkeletonTextLines(
     }
 }
 
+/**
+ * One bar's height for [style]: three quarters of its font size, never taller than its line. An
+ * unset font size is `Text`'s default, and an em size or line height is relative to the font size.
+ */
+internal fun Density.skeletonBarHeight(style: TextStyle): Dp {
+    val fontSize = when {
+        style.fontSize.isSp -> style.fontSize.toDp()
+        style.fontSize.isEm -> DefaultTextSize.toDp() * style.fontSize.value
+        else -> DefaultTextSize.toDp()
+    }
+    val line = when {
+        style.lineHeight.isSp -> style.lineHeight.toDp()
+        style.lineHeight.isEm -> fontSize * style.lineHeight.value
+        else -> fontSize
+    }
+    return (fontSize * SkeletonBarToFontSize).coerceAtMost(line)
+}
+
 private const val SkeletonBarToFontSize = 0.75f
+private val DefaultTextSize = 14.sp

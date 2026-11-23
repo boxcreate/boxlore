@@ -34,10 +34,13 @@ fun BoxloreTabletopSplit(top: @Composable () -> Unit, bottom: @Composable () -> 
         contents = listOf(top, bottom),
         modifier = modifier.onGloballyPositioned { originY = it.positionInWindow().y },
     ) { (topSlot, bottomSlot), constraints ->
-        val origin = if (originY.isNaN()) paneTop * density else originY
-        // The hinge's top and bottom in this layout's px, when it runs across the layout.
+        // The hinge's top and bottom in this layout's px, when it runs across the layout. The origin is
+        // read only with a hinge, so moving this layout remeasures it only on a half-open fold.
         val split = hinge
-            ?.let { (it.top * density - origin).roundToInt() to (it.bottom * density - origin).roundToInt() }
+            ?.let {
+                val origin = if (originY.isNaN()) paneTop * density else originY
+                (it.top * density - origin).roundToInt() to (it.bottom * density - origin).roundToInt()
+            }
             ?.takeIf { (hingeTop, hingeBottom) -> constraints.hasBoundedHeight && hingeTop > 0 && hingeBottom < constraints.maxHeight }
         if (split != null) {
             placeAroundHinge(topSlot, bottomSlot, constraints, split.first, split.second)

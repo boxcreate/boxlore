@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,6 +46,7 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.feature.settings.LocalSettingsPaneBackVisible
 import cx.aswin.boxlore.feature.settings.LocalSettingsSplitPane
 import cx.aswin.boxlore.feature.settings.R
@@ -104,6 +106,8 @@ private fun SettingsScaffoldFrame(
     val titlePresentation = settingsHeaderTitlePresentation(
         typography = MaterialTheme.typography,
         collapsedFraction = scrollBehavior.state.collapsedFraction,
+        fontScale = LocalDensity.current.fontScale,
+        paneWidthDp = boxloreContentWidthDp(),
     )
     val compactTitlePresentation = settingsHeaderTitlePresentation(
         typography = MaterialTheme.typography,

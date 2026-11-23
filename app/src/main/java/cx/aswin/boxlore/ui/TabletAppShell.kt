@@ -65,7 +65,7 @@ internal data class TabletShellGeometry(
  * Pane bounds for the shell. Routes without navigation (onboarding, account, support) stay in one
  * half of a half-open fold unless [hiddenNavFullWindow] lets them use the whole window.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "kotlin:S107") // One flag per shell input; every caller passes them by position.
 internal fun tabletShellGeometry(
     window: BoxloreWindowLayout,
     navigationVisible: Boolean,

@@ -175,7 +175,7 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
     val compose = createAndroidComposeRule<ComponentActivity>()
     private var originalImageLoader: ImageLoader? = null
     private var fixtureImageLoader: ImageLoader? = null
-    private var reducedMotion = false
+    private val motion = MotionSetting(::applyReducedMotion)
 
     override fun apply(base: Statement, description: Description): Statement = object : Statement() {
         override fun evaluate() {
@@ -188,7 +188,7 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
             try {
                 compose.apply(base, description).evaluate()
             } finally {
-                if (reducedMotion) setReducedMotion(false)
+                if (motion.reduced) motion.set(false)
                 if (configuration.fontScale != 1f) RuntimeEnvironment.setFontScale(1f)
                 originalImageLoader?.let(Coil::setImageLoader)
                 fixtureImageLoader?.shutdown()
@@ -281,8 +281,9 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
      * Turns system animations off (animator duration scale 0, as with "Remove animations") or back
      * on. The rule turns them back on after the test. Set it before content that reads it once.
      */
-    fun setReducedMotion(enabled: Boolean) {
-        reducedMotion = enabled
+    fun setReducedMotion(enabled: Boolean) = motion.set(enabled)
+
+    private fun applyReducedMotion(enabled: Boolean) {
         val scale = if (enabled) 0f else 1f
         Settings.Global.putFloat(RuntimeEnvironment.getApplication().contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, scale)
         ValueAnimator::class.java.getDeclaredMethod("setDurationScale", Float::class.javaPrimitiveType).invoke(null, scale)
@@ -322,8 +323,8 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
     /**
      * Review frames of a motion: pauses the clock, runs [trigger], then writes
      * `screen-fNN-config.png` ([frames] of them, [stepMs] apart, the first one frame after
-     * [trigger]). [reducedMotion] turns system animations off first and names the files
-     * `screen-reduced-fNN-config.png`. Phone golden runs skip sequences: they have no baselines.
+     * [trigger]). [reducedMotion] turns system animations off for this sequence only and names the
+     * files `screen-reduced-fNN-config.png`. Phone golden runs skip sequences: they have no baselines.
      */
     fun captureSequence(
         screen: String,
@@ -336,16 +337,17 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
         require(frames > 0 && stepMs > 0) { "A sequence needs at least one frame and a positive step" }
         if (System.getProperty(TABLET_CAPTURES_PROPERTY) == null) return
         compose.mainClock.autoAdvance = false
-        if (reducedMotion) setReducedMotion(true)
-        dispatchSystemInsets()
-        compose.waitForIdle()
-        compose.runOnUiThread(trigger)
-        val name = if (reducedMotion) "$screen-reduced" else screen
-        repeat(frames) { frame ->
-            Snapshot.sendApplyNotifications()
-            if (frame == 0) compose.mainClock.advanceTimeByFrame() else compose.mainClock.advanceTimeBy(stepMs)
+        motion.during(reducedMotion) {
+            dispatchSystemInsets()
             compose.waitForIdle()
-            record("$name-f${frame.toString().padStart(2, '0')}-$configuration.png", allWindows)
+            compose.runOnUiThread(trigger)
+            val name = if (reducedMotion) "$screen-reduced" else screen
+            repeat(frames) { frame ->
+                Snapshot.sendApplyNotifications()
+                if (frame == 0) compose.mainClock.advanceTimeByFrame() else compose.mainClock.advanceTimeBy(stepMs)
+                compose.waitForIdle()
+                record("$name-f${frame.toString().padStart(2, '0')}-$configuration.png", allWindows)
+            }
         }
     }
 

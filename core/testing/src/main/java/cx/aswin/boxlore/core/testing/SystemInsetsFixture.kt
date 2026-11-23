@@ -58,22 +58,9 @@ data class SystemInsets(
 }
 
 /**
- * Sends fake insets to [activity]'s window the way the system does, so Compose's `WindowInsets`
+ * Sends fake [insets] to [activity]'s window the way the system does, so Compose's `WindowInsets`
  * (safe drawing, system bars, cutout, IME) see them. The test window must draw edge to edge.
  */
-@Suppress("LongParameterList")
-fun applyFakeSystemInsets(
-    activity: Activity,
-    statusTop: Int = 24,
-    navBottom: Int = 0,
-    navStart: Int = 0,
-    navEnd: Int = 0,
-    cutoutStart: Int = 0,
-    cutoutTop: Int = 0,
-    imeBottom: Int = 0,
-) = applyFakeSystemInsets(activity, SystemInsets(statusTop, navBottom, navStart, navEnd, cutoutStart, cutoutTop, imeBottom))
-
-/** Sends [insets] to [activity]'s decor view; see the overload above. */
 fun applyFakeSystemInsets(activity: Activity, insets: SystemInsets) {
     ViewCompat.dispatchApplyWindowInsets(activity.window.decorView, insets.toWindowInsets())
 }
