@@ -18,6 +18,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -90,7 +91,8 @@ internal fun TvSignInDialog(approver: TvSignInApprover, onDismiss: () -> Unit) {
     TrackScreenView("tv_sign_in")
     val scope = rememberCoroutineScope()
     var code by rememberSaveable { mutableStateOf("") }
-    var sending by rememberSaveable { mutableStateOf(false) }
+    // Not saved across a rebuilt screen: the send that would clear it does not survive one either.
+    var sending by remember { mutableStateOf(false) }
     var result by rememberSaveable { mutableStateOf<TvApproval?>(null) }
     val done = result == TvApproval.Approved
     val send = {

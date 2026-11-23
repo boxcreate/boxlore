@@ -26,6 +26,7 @@ class TvSignInAdapterTest {
             fun answering(status: Int?) = TvSignInAdapter(user = { verified }, idToken = { "id-token" }, send = { _, _ -> status })
 
             assertEquals(TvApproval.WrongCode, answering(404).approve("K7QX4M2P"))
+            assertEquals(TvApproval.WrongCode, answering(400).approve("K7QX4M2P"))
             assertEquals(TvApproval.SignInNeeded, answering(401).approve("K7QX4M2P"))
             assertEquals(TvApproval.NoConnection, answering(null).approve("K7QX4M2P"))
             assertEquals(TvApproval.NoConnection, answering(503).approve("K7QX4M2P"))
