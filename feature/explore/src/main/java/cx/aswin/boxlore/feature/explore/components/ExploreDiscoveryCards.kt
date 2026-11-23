@@ -17,16 +17,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.catalog.genreLabelRes
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCard
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardSkeleton
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.PodcastGenres
 import cx.aswin.boxlore.feature.explore.R
 
-/** Browse, curated topics and show-search results share Home's card presentation. */
+/**
+ * Browse, curated topics and show-search results share Home's card presentation. [showGenre] allows
+ * the genre tag, which appears only for a real genre, in the listener's language. [rank] is the
+ * show's place in Top charts, shown on the cover.
+ */
 @Composable
-internal fun ExploreBrowsePodcastCard(podcast: Podcast, featured: Boolean, showGenre: Boolean, onClick: () -> Unit) {
+internal fun ExploreBrowsePodcastCard(podcast: Podcast, featured: Boolean, showGenre: Boolean, rank: Int? = null, onClick: () -> Unit) {
+    if (featured && rank != null) {
+        // The featured card draws no cover chrome, so its number sits on the card's corner instead.
+        Box(Modifier.fillMaxWidth()) {
+            ExploreBrowsePodcastCard(podcast, featured = true, showGenre = showGenre, rank = null, onClick = onClick)
+            ExploreRankBadge(rank = rank, title = podcast.title, modifier = Modifier.align(Alignment.TopStart).padding(12.dp))
+        }
+        return
+    }
+    val genre = if (showGenre) exploreGenreTag(podcast.genre) else null
     FeedMediaCard(
         imageUrl = podcast.imageUrl,
         fallbackImageUrls = listOf(podcast.fallbackImageUrl, podcast.latestEpisode?.imageUrl),
@@ -36,14 +51,18 @@ internal fun ExploreBrowsePodcastCard(podcast: Podcast, featured: Boolean, showG
         modifier = Modifier.fillMaxWidth(),
         presentation = if (featured) FeedMediaCardPresentation.ExpressiveFeatured else FeedMediaCardPresentation.ExpressivePoster,
         imageChrome = {
-            if (showGenre && podcast.genre.isNotBlank()) {
+            if (rank != null) {
+                ExploreRankBadge(rank = rank, title = podcast.title, modifier = Modifier.align(Alignment.TopStart).padding(8.dp))
+            }
+            if (genre != null) {
                 Surface(
                     shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
+                    // With a rank on top, the tag moves to the bottom corner.
+                    modifier = Modifier.align(if (rank != null) Alignment.BottomStart else Alignment.TopStart).padding(8.dp),
                 ) {
                     Text(
-                        podcast.genre,
+                        genre,
                         style = MaterialTheme.typography.labelSmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -76,4 +95,14 @@ internal fun ExploreBrowseCardSkeleton(featured: Boolean) {
         modifier = Modifier.fillMaxWidth(),
         presentation = if (featured) FeedMediaCardPresentation.ExpressiveFeatured else FeedMediaCardPresentation.ExpressivePoster,
     ) { placeholder -> Box(placeholder.m3Shimmer(base, highlight)) }
+}
+
+/**
+ * The tag for a show's genre: its translated name, the feed's own text for a genre boxlore has no
+ * name for, or null for none or the "Podcast" placeholder a show with no category gets.
+ */
+@Composable
+internal fun exploreGenreTag(raw: String?): String? {
+    if (raw.isNullOrBlank() || PodcastGenres.isPlaceholder(raw)) return null
+    return genreLabelRes(raw)?.let { stringResource(it) } ?: raw.trim()
 }

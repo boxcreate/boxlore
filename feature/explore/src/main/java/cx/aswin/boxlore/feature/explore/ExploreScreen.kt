@@ -596,7 +596,8 @@ fun ExploreContent(
                                             podcast = displayList[0],
                                             featured = true,
                                             onClick = { onPodcastClick(displayList[0].id, "explore_hero", state.currentCategory, 0) },
-                                            showGenre = state.currentCategory == "All"
+                                            showGenre = state.currentCategory == "All",
+                                            rank = 1,
                                         )
                                     }
 
@@ -606,6 +607,8 @@ fun ExploreContent(
                                             podcast = podcast,
                                             featured = false,
                                             showGenre = showGenreChip,
+                                            // The chart's place: the featured show is 1, so the grid starts at 2.
+                                            rank = index + 2,
                                             onClick = { onPodcastClick(podcast.id, "explore_grid", state.currentCategory, index + 1) }
                                         )
                                     }

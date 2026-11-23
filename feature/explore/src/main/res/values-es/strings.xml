@@ -126,4 +126,5 @@
     <string name="lore_history_earlier">Antes</string>
     <string name="explore_search_placeholder_shows">Busca por nombre del podcast</string>
     <string name="explore_search_placeholder_questions">Pregunta por cualquier idea o tema</string>
+    <string name="explore_chart_rank_description">Número %1$d, %2$s</string>
 </resources>

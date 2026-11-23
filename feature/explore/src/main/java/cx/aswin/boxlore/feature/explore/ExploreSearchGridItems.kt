@@ -166,7 +166,7 @@ internal fun LazyStaggeredGridScope.exploreShowSearchItems(
                 ExploreBrowsePodcastCard(
                     podcast = podcast,
                     featured = false,
-                    showGenre = showGenreChip && !podcast.genre.trim().equals("Podcast", ignoreCase = true),
+                    showGenre = showGenreChip,
                     onClick = { onPodcastClick(podcast.id, "explore_search", content.category, index) },
                 )
             }
@@ -182,7 +182,7 @@ internal fun LazyStaggeredGridScope.exploreShowSearchItems(
                     ExploreBrowsePodcastCard(
                         podcast = podcast,
                         featured = false,
-                        showGenre = showGenreChip && !podcast.genre.trim().equals("Podcast", ignoreCase = true),
+                        showGenre = showGenreChip,
                         onClick = { onPodcastClick(podcast.id, "explore_search_also_found", content.category, content.matches.size + index) },
                     )
                 }

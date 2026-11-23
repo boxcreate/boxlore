@@ -135,4 +135,6 @@
     <string name="explore_search_placeholder_shows">Search by show name</string>
     <!-- Search box hint in Ask anything: type a question or topic. -->
     <string name="explore_search_placeholder_questions">Ask about any idea or topic</string>
+    <!-- Screen reader label for a show's place in Top charts: the number, then the show's name. -->
+    <string name="explore_chart_rank_description">Number %1$d, %2$s</string>
 </resources>

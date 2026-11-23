@@ -70,7 +70,7 @@ internal fun LazyStaggeredGridScope.tabletRecommendationItems(episodes: List<Epi
 
 internal fun LazyStaggeredGridScope.tabletTrendingItems(hero: Podcast, posters: List<Podcast>, columns: Int, category: String, onPodcastClick: (String, String, String?, Int?) -> Unit) {
     tabletExploreItems(columns, hero, posters, LazyListKeyPolicy.safeKey(hero.id, prefix = "trending_hero"), { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }) { podcast, featured, position ->
-        ExploreBrowsePodcastCard(podcast, featured, category == "All") {
+        ExploreBrowsePodcastCard(podcast, featured, category == "All", rank = position + 1) {
             onPodcastClick(podcast.id, if (featured) "explore_hero" else "explore_grid", category, position)
         }
     }
