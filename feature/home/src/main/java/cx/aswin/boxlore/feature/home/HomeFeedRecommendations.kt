@@ -114,8 +114,10 @@ private fun LazyStaggeredGridScope.becauseYouLikeItem(
 internal fun LazyStaggeredGridScope.discoveryGreetingItem(
     feedState: PodcastFeedUiState,
     callbacks: HomeFeedCallbacks,
+    editorialRowsLoading: Boolean,
+    editorialRowCount: Int,
 ) {
-    if (!feedState.showDiscoveryGreeting) return
+    if (!showsDiscoveryGreeting(feedState.showDiscoveryGreeting, editorialRowsLoading, editorialRowCount)) return
     item(
         span = StaggeredGridItemSpan.FullLine,
         key = "discovery_greeting",
@@ -248,3 +250,10 @@ private fun DiscoveryGreetingHeader(
         modifier = modifier,
     )
 }
+
+/**
+ * The time-of-day greeting heads its picks, so it shows only while they load or once some arrive:
+ * an empty or failed set leaves no heading sitting on top of the next one.
+ */
+internal fun showsDiscoveryGreeting(settingOn: Boolean, rowsLoading: Boolean, rowCount: Int): Boolean =
+    settingOn && (rowsLoading || rowCount > 0)

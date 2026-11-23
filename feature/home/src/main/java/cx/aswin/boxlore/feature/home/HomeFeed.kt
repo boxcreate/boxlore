@@ -179,7 +179,7 @@ internal fun PodcastFeed(
                 dailyBriefingItem(feedState, playback, callbacks, context)
             }
             curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState, HomeRecommendationLayout(posterColumns, tablet))
-            discoveryGreetingItem(feedState, callbacks)
+            discoveryGreetingItem(feedState, callbacks, loadingState.isEditorialRowsLoading, content.editorialRows.list.size)
             editorialFeedItems(content, feedState, loadingState, callbacks)
             discoverFeedItems(feedState, derivedState, callbacks, posterColumns)
         }

@@ -164,7 +164,8 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         )
     }
 
-    @Test fun greetingEmpty() = capture("home-greeting-empty", scrollTo = "discovery_greeting" to "home_discovery_greeting") {
+    /** The greeting's place with its picks empty: where the greeting was, Explore shows' heading now follows. */
+    @Test fun greetingEmpty() = capture("home-greeting-empty", scrollTo = "discover_header" to GENRES_MORE_TAG) {
         Home(state().copy(editorialRows = emptyList(), isEditorialRowsLoading = false, recommendations = emptyList(), isRecommendationsLoading = false))
     }
 
