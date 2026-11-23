@@ -29,6 +29,7 @@ Announcement title:
 - The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.
 - Home keeps your place in Your shows, the Brief and its menus when a foldable opens or closes or a tablet window changes size.
 - Home's menus, the show picker under Because you like, the genre picker and the rating sheets now match the rest of boxlore.
+- On Home, the next top card peeks in as a picture instead of cut-off words, and the time left on each card matches the mini player.
 - The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.
 - In Android Auto, a show's page now lists its episodes from newest to oldest. Episodes you've started stay in their place and show the time left.
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
