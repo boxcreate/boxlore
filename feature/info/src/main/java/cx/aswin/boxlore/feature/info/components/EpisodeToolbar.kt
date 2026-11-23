@@ -71,6 +71,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltipPosition
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.contrastColor
 import cx.aswin.boxlore.feature.info.EpisodeSort
@@ -391,6 +393,9 @@ private fun ConnectedToolbarAction(
     trailing: Boolean = false,
     style: BrandedToolbarStyle? = null,
 ) {
+    // Long-press or hover names the icon-only button.
+    Box(modifier) {
+    BoxloreTooltip(label, position = BoxloreTooltipPosition.Above) {
     Button(
         onClick = onClick,
         shapes = ButtonDefaults.shapes(
@@ -406,9 +411,11 @@ private fun ConnectedToolbarAction(
             contentColor = style?.actionContent ?: MaterialTheme.colorScheme.onSurfaceVariant,
         ),
         contentPadding = PaddingValues(0.dp),
-        modifier = modifier.size(48.dp).semantics { contentDescription = label },
+        modifier = Modifier.size(48.dp).semantics { contentDescription = label },
     ) {
         Icon(icon, null, Modifier.size(21.dp))
+    }
+    }
     }
 }
 
@@ -435,6 +442,8 @@ private fun SubscriptionToggle(
     val offContent = style?.toggleContent ?: scheme.onSurfaceVariant
     val on = if (blocked) scheme.errorContainer else style?.toggleCheckedContainer ?: scheme.primaryContainer
     val onContent = if (blocked) scheme.onErrorContainer else style?.toggleCheckedContent ?: scheme.onPrimaryContainer
+    Box(modifier) {
+    BoxloreTooltip(label, position = BoxloreTooltipPosition.Above) {
     FilledTonalToggleButton(
         checked = checked,
         onCheckedChange = { onClick() },
@@ -449,7 +458,7 @@ private fun SubscriptionToggle(
             disabledContentColor = if (checked) onContent else offContent,
         ),
         contentPadding = PaddingValues(0.dp),
-        modifier = modifier.size(48.dp).semantics {
+        modifier = Modifier.size(48.dp).semantics {
             contentDescription = label
             if (blocked) stateDescription = blockedLabel
         },
@@ -463,6 +472,8 @@ private fun SubscriptionToggle(
                 )
             }
         }
+    }
+    }
     }
 }
 
