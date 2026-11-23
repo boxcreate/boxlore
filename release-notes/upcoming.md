@@ -36,6 +36,10 @@ Announcement title:
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.
 - On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.
+- Listening history fits large text and German better, uses two columns of Insights on large tablets, and its menus, loading screens and Clear all confirmation now match the rest of boxlore.
+- The monthly story now waits for you when part of a card is off screen, and shows previous, pause and next buttons beside it on tablets.
+- On tablets and unfolded foldables, the Brief now shows every story beside the edition, and on a tablet held upright it lists the stories one after another.
+- The Brief's back button is now at the top left, its edition menu marks the edition you're on, and each story's play button is smaller so Listen stands out.
 
 ## Fixed
 
@@ -50,3 +54,5 @@ Announcement title:
 - Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.
+- Undo after removing an episode from Listening history now shows above the bottom bar, where you can tap it.
+- On sideways phones and the Galaxy Z Fold cover, Listening history and the Brief keep their buttons clear of the system buttons and the bottom bar, and the Brief's error page scrolls to Try again.
