@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneBottomInset
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
@@ -105,10 +106,8 @@ fun TranscriptView(
     ) {
         if (transcript.isEmpty()) {
             if (transcriptUrl != null) {
-                CircularProgressIndicator(
-                    color = colorScheme.primary,
-                    modifier = Modifier.size(36.dp)
-                )
+                // The same boxlore loader as the tablet transcript tab.
+                BoxLoreLoader.Expressive(size = 40.dp)
             } else {
                 Text(
                     text = stringResource(R.string.player_no_transcript),

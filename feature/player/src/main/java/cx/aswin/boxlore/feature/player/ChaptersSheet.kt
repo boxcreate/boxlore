@@ -1,25 +1,37 @@
 package cx.aswin.boxlore.feature.player
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
+import cx.aswin.boxlore.core.designsystem.theme.SkeletonBlock
+import cx.aswin.boxlore.core.designsystem.theme.SkeletonTextLines
+import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Chapter
 
 @Composable
@@ -37,8 +49,9 @@ private fun ChaptersHeader(onClose: () -> Unit, colorScheme: ColorScheme) {
             fontWeight = GoogleSansWeight.bold,
             color = colorScheme.onSurface
         )
-        TextButton(onClick = onClose) {
-            Text(stringResource(R.string.player_close), color = colorScheme.primary)
+        // The same close icon as the queue sheet's header.
+        IconButton(onClick = onClose) {
+            Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.player_close), tint = colorScheme.onSurface)
         }
     }
 }
@@ -57,7 +70,7 @@ private fun ChaptersEmptyPlaceholder(
         Text(
             text = stringResource(R.string.player_no_chapters),
             style = MaterialTheme.typography.bodyMedium,
-            color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            color = colorScheme.onSurfaceVariant
         )
     }
 }
@@ -75,9 +88,11 @@ fun ChaptersSheetContent(
     showHeader: Boolean = true,
 ) {
     val positionMs by positionFlow.collectAsState(initial = 0L)
+    // In the tablet panel (no header) the rows sit on the panel's own colour, one step lighter.
+    val inactiveRowColor = if (showHeader) colorScheme.surfaceContainerHigh else colorScheme.surfaceContainer
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = colorScheme.surface
+        color = if (showHeader) colorScheme.surface else Color.Transparent
     ) {
         Column(
             modifier = Modifier
@@ -87,17 +102,7 @@ fun ChaptersSheetContent(
             if (showHeader) ChaptersHeader(onClose = onClose, colorScheme = colorScheme)
 
             if (isChaptersLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = colorScheme.primary,
-                        modifier = Modifier.size(36.dp)
-                    )
-                }
+                ChapterRowsSkeleton(inactiveRowColor)
             } else if (chapters.isEmpty()) {
                 ChaptersEmptyPlaceholder(
                     colorScheme = colorScheme
@@ -122,7 +127,8 @@ fun ChaptersSheetContent(
                             startMs = startMs,
                             isActive = isActive,
                             colorScheme = colorScheme,
-                            onClick = { onSeek(startMs) }
+                            onClick = { onSeek(startMs) },
+                            inactiveColor = inactiveRowColor
                         )
                     }
                 }
@@ -137,12 +143,13 @@ fun ChapterRow(
     startMs: Long,
     isActive: Boolean,
     colorScheme: ColorScheme,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    inactiveColor: Color = colorScheme.surfaceContainerHigh
 ) {
     val backgroundColor = if (isActive) {
         colorScheme.primaryContainer
     } else {
-        colorScheme.surfaceContainerLow
+        inactiveColor
     }
 
     val contentColor = if (isActive) {
@@ -151,14 +158,14 @@ fun ChapterRow(
         colorScheme.onSurface
     }
 
-    val shape = RoundedCornerShape(12.dp)
+    val shape = MaterialTheme.shapes.medium
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .expressiveClickable(shape = shape, onClick = onClick)
             .clip(shape)
             .background(backgroundColor)
-            .clickable(onClick = onClick)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -171,7 +178,7 @@ fun ChapterRow(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(MaterialTheme.shapes.small)
                     .background(colorScheme.surfaceVariant)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -192,9 +199,35 @@ fun ChapterRow(
             Text(
                 text = formatTime(startMs),
                 style = MaterialTheme.typography.labelMedium,
-                color = if (isActive) colorScheme.primary else colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                color = if (isActive) colorScheme.primary else colorScheme.onSurfaceVariant,
                 fontWeight = GoogleSansWeight.semiBold
             )
         }
     }
 }
+
+/** Chapters loading: placeholder rows shaped like the real ones, so the list keeps its shape when they arrive. */
+@Composable
+private fun ChapterRowsSkeleton(rowColor: Color) {
+    ShimmerScope(active = true) {
+        Column(Modifier.fillMaxWidth().testTag(CHAPTER_SKELETON_TAG), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            repeat(CHAPTER_SKELETON_ROWS) {
+                Row(
+                    Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).background(rowColor).padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SkeletonBlock(Modifier.size(48.dp), shape = MaterialTheme.shapes.small)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        SkeletonTextLines(MaterialTheme.typography.bodyLarge, lines = 1, widths = listOf(0.8f))
+                        Spacer(Modifier.height(4.dp))
+                        SkeletonTextLines(MaterialTheme.typography.labelMedium, lines = 1, widths = listOf(0.25f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+internal const val CHAPTER_SKELETON_TAG = "chapter_skeleton"
+private const val CHAPTER_SKELETON_ROWS = 5
