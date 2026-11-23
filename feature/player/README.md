@@ -12,7 +12,7 @@ Used by `:app`:
 
 - `v2.PlayerSheetScaffold`: the mini/full player overlay the app shell composes. It takes the app's one UI-scoped `PlaybackRepository`, `DownloadRepository` and `UserPreferencesRepository`; it never creates its own `PlaybackRepository`.
 - `PlayerSheetLayout`: placement from the shell: collapsed position, navigation style, the floating-navigation compact morph (`compactProgress`, `compactTargetY`), the optional mini-player seek buttons and fold-safe side insets.
-- `PlayerSheetActions`: episode and show navigation, `onSheetInteractionChanged` (full player visible, sheet dragging or fullscreen video, so the shell can pause browsing-driven morphs) and `onOpenRequest` (lets the host open the player elsewhere instead of expanding the sheet).
+- `PlayerSheetActions`: episode and show navigation, `onSheetInteractionChanged` (full player visible, sheet dragging or fullscreen video, so the shell can pause browsing-driven morphs) `onOpenRequest` (lets the host open the player elsewhere instead of expanding the sheet) and `onExpandRequestHandled` (the sheet has acted on an outside open request, so the host clears it and a recomposed sheet never replays it).
 - `v2.FullPlayerV2` with `FullPlayerDependencies`, `FullPlayerDisplay` and `FullPlayerActions`: the full player, also hosted directly by the tablet shell as a pane or docked player.
 - `v2.MiniPlayerV2` with `MiniPlayerContent`, `MiniPlayerColors` and `MiniPlayerActions`: the collapsed bar.
 - `RetainedPlayerPresentation(tabletLayout)` and `playerPresentationController()`: an app-owned scope that keeps supporting tabs, transient controls and expanded state while the same episode moves between pane, docked and sheet presentations.
