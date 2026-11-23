@@ -142,13 +142,13 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
         when (view) {
             "shows" -> {
                 val shows = text(HistoryR.string.history_group_shows)
-                timelineList().performScrollToNode(hasText(shows))
+                withRunningClock { timelineList().performScrollToNode(hasText(shows)) }
                 tap(fixture.compose.onNodeWithText(shows))
-                timelineList().performScrollToIndex(0)
+                withRunningClock { timelineList().performScrollToIndex(0) }
             }
             "insights-mosaic", "insights-when", "insights-records" -> {
                 val key = mapOf("insights-mosaic" to "mosaic", "insights-when" to "when", "insights-records" to "records").getValue(view)
-                fixture.compose.onNodeWithTag(INSIGHTS_LIST_TAG).performScrollToKey(key)
+                withRunningClock { fixture.compose.onNodeWithTag(INSIGHTS_LIST_TAG).performScrollToKey(key) }
             }
             "timeline-menu" -> tap(firstRowMore())
             "history-menu", "clear-dialog" -> {
@@ -180,8 +180,19 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
     /** Today's first row's More button, scrolled into view: short windows start with the search box and Jump back in. */
     private fun firstRowMore(): SemanticsNodeInteraction {
         val more = hasContentDescription(text(HistoryR.string.history_more_options_for, "Was Jack the Ripper a Freemason?"))
-        timelineList().performScrollToNode(more)
+        withRunningClock { timelineList().performScrollToNode(more) }
         return fixture.compose.onAllNodes(more).onFirst()
+    }
+
+    /** Lazy lists scroll over frames: run the clock while [scroll] happens, then pause it again. */
+    private fun withRunningClock(scroll: () -> Unit) {
+        fixture.compose.mainClock.autoAdvance = true
+        try {
+            scroll()
+            fixture.compose.waitForIdle()
+        } finally {
+            fixture.compose.mainClock.autoAdvance = false
+        }
     }
 
     /** Clicks [node] through its semantics (popups open on the paused clock) and lets the result draw. */
