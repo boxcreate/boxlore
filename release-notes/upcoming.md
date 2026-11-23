@@ -29,6 +29,7 @@ Announcement title:
 - The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.
 - The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.
 - Episode pages now fit sideways phones, foldables and tablets, with the cover beside the title on wide or short screens, an outline while they load and links listed like chapters. Show pages in a show's own style keep their latest-episode card at a comfortable width on wide screens.
+- Show pages now fit sideways phones, foldables and tablets: the cover sits beside the title on wide or short screens, episodes fit on one line on wide screens, and the sort button opens Sort and view, which says when the list is oldest first.
 - In Android Auto, a show's page now lists its episodes from newest to oldest. Episodes you've started stay in their place and show the time left.
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.
@@ -48,3 +49,4 @@ Announcement title:
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.
 - Episode and show pages that don't load now offer Try again and Back, and on an episode page the date no longer scrolls sideways and an open Share sheet stays open when the screen changes size.
+- On show pages, Back, Share and More stay clear of the side buttons on a sideways phone, open menus and Undo stay put when a foldable folds or unfolds, and a long support message no longer pushes the other details away.
