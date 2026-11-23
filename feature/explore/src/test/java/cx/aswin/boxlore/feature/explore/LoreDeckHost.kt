@@ -6,6 +6,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -56,7 +57,7 @@ internal class LoreDeckHost(private val fixture: PhoneGoldenRule) {
         val playback = mock(PlaybackRepository::class.java)
         `when`(playback.playerState).thenReturn(playerState)
         fixture.prepare()
-        fixture.compose.mainClock.autoAdvance = true
+        fixture.compose.mainClock.autoAdvance = !state.value.animatesForever()
         fixture.compose.setContent {
             val size = window.value
             val bounds = pane.value
@@ -88,7 +89,19 @@ internal class LoreDeckHost(private val fixture: PhoneGoldenRule) {
         settle()
     }
 
+    /** Shows [next]; the clock pauses while it is Loading, whose placeholder never stops moving. */
+    fun show(next: LearnUiState) {
+        fixture.compose.mainClock.autoAdvance = false
+        state.value = next
+        settle()
+        fixture.compose.mainClock.autoAdvance = !next.animatesForever()
+        if (!next.animatesForever()) fixture.compose.waitForIdle()
+    }
+
+    private fun LearnUiState.animatesForever() = this is LearnUiState.Loading
+
     fun settle() {
+        Snapshot.sendApplyNotifications()
         fixture.compose.mainClock.advanceTimeBy(SETTLE_MS)
         fixture.compose.waitForIdle()
     }
