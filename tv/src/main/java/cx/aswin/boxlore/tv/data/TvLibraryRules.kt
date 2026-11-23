@@ -4,13 +4,23 @@ import cx.aswin.boxlore.tv.model.ShowSort
 import cx.aswin.boxlore.tv.model.TvEpisode
 import cx.aswin.boxlore.tv.model.TvShow
 
-/** Where loading a show's episodes stands. */
-internal enum class EpisodeLoad { Loading, Loaded, Failed }
+/** Where loading a show's episodes stands. LoadingMore: the newest are in, the rest of the feed is on its way. */
+internal enum class EpisodeLoad { Loading, LoadingMore, Loaded, Failed }
 
 /** How the TV puts its lists together: pure rules for [LiveTvLibrary]. */
 internal object TvLibraryRules {
     /** A followed show's feed is read again for Daily Mix at most this often. */
     const val REFRESH_AFTER_MS = 6L * 60L * 60L * 1_000L
+
+    /** A show's whole feed is read for its page at most this often. */
+    const val WHOLE_FEED_AGAIN_MS = 30L * 60L * 1_000L
+
+    /**
+     * Whether a show page reads the show's whole feed after its newest [read] episodes: only a feed
+     * that filled the first [page], so more may follow, and not again soon after the last time.
+     */
+    fun wantsWholeFeed(fromFeed: Boolean, read: Int, page: Int, lastReadAtMillis: Long?, nowMillis: Long): Boolean =
+        fromFeed && read >= page && (lastReadAtMillis == null || nowMillis - lastReadAtMillis >= WHOLE_FEED_AGAIN_MS)
 
     /** Whether a feed read at [readAtMillis] is old enough to read again. */
     fun wantsRefresh(readAtMillis: Long?, nowMillis: Long): Boolean = readAtMillis == null || nowMillis - readAtMillis >= REFRESH_AFTER_MS
@@ -29,7 +39,7 @@ internal object TvLibraryRules {
     /** What the page shows. A list on screen stays there even when a later read fails. */
     fun state(load: EpisodeLoad?, episodes: List<TvEpisode>, showUnknown: Boolean): ShowEpisodes =
         when {
-            episodes.isNotEmpty() || load == EpisodeLoad.Loaded -> ShowEpisodes.Loaded(episodes)
+            episodes.isNotEmpty() || load == EpisodeLoad.Loaded -> ShowEpisodes.Loaded(episodes, more = load == EpisodeLoad.LoadingMore)
             showUnknown || load == EpisodeLoad.Failed -> ShowEpisodes.Failed
             else -> ShowEpisodes.Loading
         }

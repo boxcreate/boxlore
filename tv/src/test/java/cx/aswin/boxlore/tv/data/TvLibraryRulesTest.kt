@@ -4,6 +4,7 @@ import cx.aswin.boxlore.tv.model.ShowSort
 import cx.aswin.boxlore.tv.model.TvEpisode
 import cx.aswin.boxlore.tv.model.TvShow
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -28,6 +29,8 @@ class TvLibraryRulesTest {
         assertEquals(ShowEpisodes.Failed, TvLibraryRules.state(null, emptyList(), showUnknown = true))
         assertEquals(ShowEpisodes.Loading, TvLibraryRules.state(EpisodeLoad.Loading, emptyList(), showUnknown = false))
         assertEquals(ShowEpisodes.Loaded(emptyList()), TvLibraryRules.state(EpisodeLoad.Loaded, emptyList(), showUnknown = false))
+        // The newest are on the page while the rest of the feed is read.
+        assertEquals(ShowEpisodes.Loaded(list, more = true), TvLibraryRules.state(EpisodeLoad.LoadingMore, list, showUnknown = false))
     }
 
     @Test
@@ -55,5 +58,15 @@ class TvLibraryRulesTest {
         assertTrue(TvLibraryRules.wantsRefresh(null, 0))
         assertTrue(!TvLibraryRules.wantsRefresh(1_000, 1_000 + sixHours - 1))
         assertTrue(TvLibraryRules.wantsRefresh(1_000, 1_000 + sixHours))
+    }
+
+    @Test
+    fun `a show page reads the whole feed only when the newest filled the page, and not again soon`() {
+        val now = 10 * TvLibraryRules.WHOLE_FEED_AGAIN_MS
+        assertTrue(TvLibraryRules.wantsWholeFeed(fromFeed = true, read = 50, page = 50, lastReadAtMillis = null, nowMillis = now))
+        assertFalse(TvLibraryRules.wantsWholeFeed(fromFeed = true, read = 12, page = 50, lastReadAtMillis = null, nowMillis = now))
+        assertFalse(TvLibraryRules.wantsWholeFeed(fromFeed = false, read = 50, page = 50, lastReadAtMillis = null, nowMillis = now))
+        assertFalse(TvLibraryRules.wantsWholeFeed(fromFeed = true, read = 50, page = 50, lastReadAtMillis = now - 1, nowMillis = now))
+        assertTrue(TvLibraryRules.wantsWholeFeed(fromFeed = true, read = 50, page = 50, lastReadAtMillis = now - TvLibraryRules.WHOLE_FEED_AGAIN_MS, nowMillis = now))
     }
 }

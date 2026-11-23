@@ -62,7 +62,8 @@ interface TvLibrary {
 sealed interface ShowEpisodes {
     data object Loading : ShowEpisodes
 
-    data class Loaded(val episodes: List<TvEpisode>) : ShowEpisodes
+    /** [more]: the rest of the show's feed is still being read. */
+    data class Loaded(val episodes: List<TvEpisode>, val more: Boolean = false) : ShowEpisodes
 
     data object Failed : ShowEpisodes
 }

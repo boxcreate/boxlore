@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
@@ -69,10 +68,7 @@ fun HomeScreen(container: TvContainer, go: TvNavigator) {
     var placedFirstFocus by rememberSaveable { mutableStateOf(false) }
     val first = Modifier.focusRequester(firstFocus).onFocusChanged { firstHasFocus = it.isFocused }
 
-    val listState = rememberLazyListState()
-
     LazyColumn(
-        state = listState,
         // Coming back from the rail returns to the row the remote left; each row returns to its item.
         modifier = Modifier.fillMaxSize().focusRestorer(),
         contentPadding = PaddingValues(start = TvSpace.contentStart, end = TvSpace.safeSide, top = TvSpace.safeTop, bottom = TvSpace.safeTop),
@@ -81,12 +77,12 @@ fun HomeScreen(container: TvContainer, go: TvNavigator) {
         if (resume != null) {
             item(key = "resume") {
                 // Anywhere on the top card, Home scrolls right to the top, so the card is never left half cut off.
-                ListTop(listState) {
+                ListTop {
                     NowPlayingCard(resume, playback, first, onOpenPlayer = { go.player() }, onOpenEpisode = { go.episode(resume.id) })
                 }
             }
         } else {
-            item(key = "first-show") { ListTop(listState) { FirstShowCard(first, onSearch = { go.tab(TvRoutes.SEARCH) }) } }
+            item(key = "first-show") { ListTop { FirstShowCard(first, onSearch = { go.tab(TvRoutes.SEARCH) }) } }
         }
         val play = { episode: TvEpisode ->
             playback.play(episode.id)

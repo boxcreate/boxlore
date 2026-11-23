@@ -90,7 +90,8 @@ src/release/java/...         # release TvContainerFactory
   `TvLibraryStore` keeps it in a file.
 - A show's episodes come from its own feed, as on the phone (address from `/v2/podcast`, the shared
   feed reader and episode IDs); the API's list stands in only when the feed cannot be read. Only
-  `/v2` routes are used. A show page keeps a list once shown (`TvLibraryRules`).
+  `/v2` routes are used. A show page keeps a list once shown (`TvLibraryRules`). It shows the newest 50 episodes at once, then reads
+  the whole feed in the background, at most every 30 minutes per show; `ui.show.EpisodeSearch` searches it.
 - Daily Mix is worked out on the TV: one unfinished episode per followed show, its newest, newest
   first. Followed shows' feeds are read again, a few at a time, at most every six hours.
 - Your shows on Home use the Smart order: shows listened to most recently first, then as followed.

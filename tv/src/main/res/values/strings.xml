@@ -141,6 +141,11 @@
     <string name="tv_show_and_time">%1$s · %2$s</string>
     <!-- Show page -->
     <string name="tv_episodes_loading">Loading episodes…</string>
+    <!-- At the end of a show's episode list while its older episodes load -->
+    <string name="tv_episodes_loading_more">Loading older episodes…</string>
+    <!-- Show page search field -->
+    <string name="tv_search_episodes">Search episodes</string>
+    <string name="tv_episodes_no_match">No episodes match “%1$s”.</string>
     <string name="tv_episodes_failed">Couldn\'t load episodes. Check the TV\'s internet connection.</string>
     <string name="tv_episodes_none">No episodes yet.</string>
     <string name="tv_show_failed">Couldn\'t load this show. Check the TV\'s internet connection.</string>

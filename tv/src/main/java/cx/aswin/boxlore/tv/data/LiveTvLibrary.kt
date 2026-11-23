@@ -6,13 +6,16 @@ import cx.aswin.boxlore.tv.model.TvSearchResult
 import cx.aswin.boxlore.tv.model.TvShow
 import java.util.Collections
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -38,6 +41,9 @@ class LiveTvLibrary(
     private val showEpisodes = MutableStateFlow<Map<String, List<String>>>(emptyMap())
     private val episodeLoads = MutableStateFlow<Map<String, EpisodeLoad>>(emptyMap())
     private val inFlight: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
+
+    // When each show's whole feed was last read for its page, by show ID.
+    private val wholeFeedReadAt = ConcurrentHashMap<String, Long>()
 
     // Feeds read at once for Daily Mix, across every refresh: old TVs and slow networks share them.
     private val reads = Semaphore(PARALLEL_READS)
@@ -69,6 +75,8 @@ class LiveTvLibrary(
             val listed = byShow[showId].orEmpty().mapNotNull(fetched::get).map(state::shown)
             TvLibraryRules.state(loads[showId], listed, showId in unknown)
         }.distinctUntilChanged().onStart { scope.launch { loadEpisodes(showId) } }
+            // A whole feed can list thousands of episodes: matched with the library off the main thread.
+            .flowOn(Dispatchers.Default)
 
     override fun episode(episodeId: String): Flow<TvEpisode?> =
         combine(fetchedEpisodes, store.state) { fetched, state -> (fetched[episodeId] ?: state.episodes[episodeId])?.let(state::shown) }.distinctUntilChanged()
@@ -147,11 +155,21 @@ class LiveTvLibrary(
     }
 
     /**
-     * Reads a show's episodes for its page. A list once on screen stays when a later read fails;
-     * with nothing to show, the page says the episodes could not be loaded.
+     * Reads a show's episodes for its page: the newest at once, then, for a feed with more, the
+     * whole feed (at most every [TvLibraryRules.WHOLE_FEED_AGAIN_MS] per show) while the page
+     * shows the newest. A list once on screen stays when a later read fails; with nothing to show,
+     * the page says the episodes could not be loaded.
      */
     private suspend fun loadEpisodes(showId: String) {
         if (!inFlight.add(showId)) return
+        fun keep(read: TvShowSource.Read) {
+            fetchedEpisodes.update { it + read.episodes.associateBy(TvEpisode::id) }
+            showEpisodes.update { byShow ->
+                val shown = byShow[showId].orEmpty().mapNotNull(fetchedEpisodes.value::get)
+                val listed = if (read.fromFeed) TvLibraryRules.replaced(shown, read.episodes) else read.episodes
+                byShow + (showId to listed.map(TvEpisode::id))
+            }
+        }
         try {
             episodeLoads.update { if (it[showId] == EpisodeLoad.Loaded) it else it + (showId to EpisodeLoad.Loading) }
             val read = source.episodes(showId, PAGE_EPISODES)
@@ -159,14 +177,16 @@ class LiveTvLibrary(
                 if (showEpisodes.value[showId].isNullOrEmpty()) episodeLoads.update { it + (showId to EpisodeLoad.Failed) }
                 return
             }
-            fetchedEpisodes.update { it + read.episodes.associateBy(TvEpisode::id) }
-            showEpisodes.update { byShow ->
-                val shown = byShow[showId].orEmpty().mapNotNull(fetchedEpisodes.value::get)
-                val listed = if (read.fromFeed) TvLibraryRules.replaced(shown, read.episodes) else read.episodes
-                byShow + (showId to listed.map(TvEpisode::id))
+            keep(read)
+            read.episodes.maxByOrNull { it.releasedAtMillis ?: 0L }?.let { newest -> store.update { it.newest(newest, clock()) } }
+            if (TvLibraryRules.wantsWholeFeed(read.fromFeed, read.episodes.size, PAGE_EPISODES, wholeFeedReadAt[showId], clock())) {
+                episodeLoads.update { it + (showId to EpisodeLoad.LoadingMore) }
+                source.episodes(showId, WHOLE_FEED)?.takeIf { it.fromFeed }?.let { whole ->
+                    keep(whole)
+                    wholeFeedReadAt[showId] = clock()
+                }
             }
             episodeLoads.update { it + (showId to EpisodeLoad.Loaded) }
-            read.episodes.maxByOrNull { it.releasedAtMillis ?: 0L }?.let { newest -> store.update { it.newest(newest, clock()) } }
         } finally {
             inFlight.remove(showId)
         }
@@ -177,6 +197,9 @@ class LiveTvLibrary(
         const val PARALLEL_READS = 3
         const val NEWEST_ONLY = 3
         const val PAGE_EPISODES = 50
+
+        // Every episode the feed lists; the feed reader still stops at its size limit.
+        const val WHOLE_FEED = Int.MAX_VALUE
         const val ALL_GENRES = ""
     }
 }

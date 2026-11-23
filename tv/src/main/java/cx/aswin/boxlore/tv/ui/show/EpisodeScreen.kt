@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
@@ -67,17 +66,15 @@ fun EpisodeScreen(episodeId: String, container: TvContainer, go: TvNavigator) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     var openLink by rememberSaveable { mutableStateOf<String?>(null) }
     val playFocus = remember { FocusRequester() }
-    val listState = rememberLazyListState()
     val current = episode ?: return
 
     LazyColumn(
-        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = TvSpace.contentStart, end = TvSpace.safeSide, top = TvSpace.safeTop, bottom = TvSpace.safeTop),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         item(key = "header") {
-            ListTop(listState) {
+            ListTop {
             EpisodeHeader(
                 episode = current,
                 playFocus = playFocus,

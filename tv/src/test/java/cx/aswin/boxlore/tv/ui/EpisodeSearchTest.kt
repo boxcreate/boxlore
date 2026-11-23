@@ -1,0 +1,29 @@
+package cx.aswin.boxlore.tv.ui
+
+import cx.aswin.boxlore.tv.model.TvEpisode
+import cx.aswin.boxlore.tv.ui.show.EpisodeSearch
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+
+class EpisodeSearchTest {
+    private fun episode(id: String, title: String, notes: String = "") = TvEpisode(id, "show", title, "Show", null, 30, description = notes)
+
+    private val episodes =
+        listOf(
+            episode("1", "The Tesla Roadster, again"),
+            episode("2", "Macbook review", notes = "We talk about the new Tesla screen."),
+            episode("3", "Phones of the year"),
+        )
+
+    @Test
+    fun `every word must appear in the title or the notes, in any case`() {
+        assertEquals(listOf("1", "2"), EpisodeSearch.filter(episodes, "tesla").map(TvEpisode::id))
+        assertEquals(listOf("2"), EpisodeSearch.filter(episodes, "  TESLA   screen ").map(TvEpisode::id))
+        assertEquals(emptyList<String>(), EpisodeSearch.filter(episodes, "tesla phones").map(TvEpisode::id))
+    }
+
+    @Test
+    fun `an empty search keeps every episode in order`() {
+        assertEquals(episodes, EpisodeSearch.filter(episodes, "   "))
+    }
+}
