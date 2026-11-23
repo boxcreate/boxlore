@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
@@ -25,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -181,5 +183,29 @@ class BoxloreModalBottomSheetTransitionTest {
 
         assertEquals(1, dismissals)
         assertFalse(sheetState!!.isVisible)
+    }
+
+    @Test
+    fun `a centred panel gives content the drag handle's room, and no extra room when the sheet has no handle`() {
+        val withHandle = mutableStateOf(true)
+        window.value = BoxloreTestWindows.PHONE
+        compose.setContent {
+            BoxLoreTheme(darkTheme = false, dynamicColor = false) {
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                    BoxloreModalBottomSheet(
+                        onDismissRequest = {},
+                        dragHandle = if (withHandle.value) ({ BottomSheetDefaults.DragHandle() }) else null,
+                    ) { Text("Title", Modifier.testTag("first")) }
+                }
+            }
+        }
+        compose.walkWindows(window, BoxloreTestWindows.FOLD_FLAT) {}
+        fun gap() =
+            compose.onNodeWithTag("first").getUnclippedBoundsInRoot().top -
+                compose.onNodeWithTag("expanded_sheet_panel").getUnclippedBoundsInRoot().top
+        val withHandleGap = gap()
+        withHandle.value = false
+        compose.waitForIdle()
+        assertEquals(CenteredSheetTopSpace.value, (withHandleGap - gap()).value, 0.5f)
     }
 }

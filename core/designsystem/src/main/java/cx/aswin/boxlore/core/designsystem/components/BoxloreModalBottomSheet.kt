@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -93,11 +94,16 @@ fun BoxloreModalBottomSheet(
         ExpandedSheetDialog(
             onDismissRequest, modifier, sheetMaxWidth, containerColor, contentColor, tonalElevation, scrimColor,
             contentWindowInsets, properties, centeredDismissAllowed,
+            // The panel has no drag handle, so content that sat under one gets the handle's room back.
+            topSpace = if (dragHandle != null) CenteredSheetTopSpace else 0.dp,
         ) { handoff.Slot(SheetHost.Centered, retained) }
     }
 }
 
 internal enum class SheetHost { Sheet, Centered }
+
+/** Space above a centred panel's content when the phone sheet would show a drag handle there. */
+internal val CenteredSheetTopSpace = 24.dp
 
 /**
  * Which hosts are open and which one draws the content. Each host is its own window, so the content
@@ -159,6 +165,7 @@ private fun ExpandedSheetDialog(
     insets: @Composable () -> WindowInsets,
     properties: ModalBottomSheetProperties,
     dismissAllowed: Boolean,
+    topSpace: Dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BoxloreDialog(
@@ -173,7 +180,7 @@ private fun ExpandedSheetDialog(
         panelTag = "expanded_sheet_panel",
     ) {
         Surface(modifier, shape = MaterialTheme.shapes.extraLarge, color = containerColor, contentColor = contentColor, tonalElevation = elevation) {
-            Column(Modifier.windowInsetsPadding(insets()), content = content)
+            Column(Modifier.windowInsetsPadding(insets()).padding(top = topSpace), content = content)
         }
     }
 }
