@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -53,6 +55,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
@@ -76,6 +79,7 @@ internal data class PodcastEpisodeActionsCallbacks(
     val onQueue: () -> Unit,
 )
 
+@Suppress("LongParameterList") // The row's state and callbacks, plus how wide Play may be.
 @Composable
 internal fun PodcastEpisodeActions(
     state: PodcastEpisodeActionsState,
@@ -83,8 +87,13 @@ internal fun PodcastEpisodeActions(
     accentColor: Color,
     playBorder: BorderStroke? = null,
     tooltips: Boolean = false,
+    /** List cards stop Play here on wide pages, grouped with its toggles; Showcase spotlights keep theirs. */
+    playMaxWidth: Dp = Dp.Infinity,
+    /** A fixed Play width (the one-line wide card), in place of taking the row's remaining width. */
+    playWidth: Dp? = null,
+    modifier: Modifier = Modifier,
 ) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.then(if (playWidth == null) Modifier.fillMaxWidth() else Modifier), horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.Start), verticalAlignment = Alignment.CenterVertically) {
         Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             PodcastEpisodeToggle(
                 active = state.isLiked,
@@ -110,7 +119,8 @@ internal fun PodcastEpisodeActions(
                 tooltip = tooltips,
             )
         }
-        PodcastEpisodePlayButton(state, callbacks.onPlay, accentColor, playBorder, Modifier.weight(1f))
+        val play = if (playWidth != null) Modifier.width(playWidth) else Modifier.weight(1f, fill = false).widthIn(max = playMaxWidth)
+        PodcastEpisodePlayButton(state, callbacks.onPlay, accentColor, playBorder, play.testTag(EPISODE_PLAY_BUTTON_TAG))
     }
 }
 
@@ -194,6 +204,11 @@ private fun PodcastEpisodePlayButton(state: PodcastEpisodeActionsState, onClick:
         }
     }
 }
+
+/** Where a list card's Play stops on wide pages. */
+internal val ListPlayMaxWidth = 220.dp
+
+internal const val EPISODE_PLAY_BUTTON_TAG = "podcast_episode_play"
 
 /** Completion and unknown progress never reserve a strip of space in an episode card. */
 internal fun podcastEpisodeCardProgress(isResume: Boolean, isCompleted: Boolean, progress: Float): Float? =
