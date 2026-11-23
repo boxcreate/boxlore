@@ -84,7 +84,7 @@
     <string name="player_show_less">Show less</string>
 
     <!-- Queue sheet -->
-    <string name="player_queue_title">Up Next</string>
+    <string name="player_queue_title">Up next</string>
     <string name="player_close_queue">Close queue</string>
     <string name="player_queue_empty">Queue is empty</string>
     <string name="player_smart_queue_off">Smart queue is off, so nothing is added automatically.</string>
