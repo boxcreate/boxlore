@@ -315,10 +315,13 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         if (below <= 0f) return
         // A slow drag that rests before lifting, so the grid moves by [below] without a fling.
         compose.onNodeWithTag(FEED_TAG).performTouchInput {
-            val start = Offset(centerX, bottom - 1f)
+            // From the middle: the floating nav bar over the grid's foot would take the touch.
+            val start = Offset(centerX, centerY + minOf(below, centerY) / 2f)
             down(start)
             val steps = 20
-            repeat(steps) { moveBy(Offset(0f, -below / steps), delayMillis = 16) }
+            // Plus the touch slop, which the grid takes before it starts to scroll.
+            val distance = below + viewConfiguration.touchSlop
+            repeat(steps) { moveBy(Offset(0f, -distance / steps), delayMillis = 16) }
             advanceEventTime(300)
             up()
         }
