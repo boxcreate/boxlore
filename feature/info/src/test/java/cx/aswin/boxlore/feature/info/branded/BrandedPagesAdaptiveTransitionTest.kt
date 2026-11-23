@@ -176,6 +176,10 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
                 window.value = size
             }
             fixture.compose.waitForIdle()
+            // Robolectric sends the window's own (empty) insets again when a page sets the status
+            // bar's icon colour, which a device never does; send the fake status bar again.
+            fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets.TABLETOP_STATUS) }
+            fixture.compose.waitForIdle()
             assertTrue("The description stays open at $size", descriptionOpen())
             fixture.compose.onNodeWithContentDescription("Copyright information").getBoundsInRoot().top.value
         }
