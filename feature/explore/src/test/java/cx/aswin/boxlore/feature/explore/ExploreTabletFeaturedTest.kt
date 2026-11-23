@@ -48,11 +48,11 @@ class ExploreTabletFeaturedTest {
         assertEquals(listOf("0" to null, "1" to null), taps)
     }
 
-    @Test fun `tablet search rows preserve visual rank and fill the search field`() {
+    @Test fun `tablet search rows preserve visual rank and the search box stops at a readable width`() {
         render(ExploreUiState.Success(searchQuery = "space", isSearching = true, searchResults = List(15) { TestFixtures.podcast(id = "$it", title = "Show $it", imageUrl = PhoneGoldenRule.ARTWORK_URL) }))
         assertVisualRank()
         val clear = fixture.compose.onNodeWithContentDescription("Clear search").fetchSemanticsNode().boundsInRoot
-        assertTrue("Clear follows the search field trailing edge", clear.left > 1180f)
+        assertTrue("Clear sits at the end of a box no wider than 720dp, not at ${clear.right}", clear.right in 600f..760f)
         fixture.compose.onNodeWithText("Show 14").performClick()
         assertEquals(listOf("14" to 14), taps)
     }

@@ -113,4 +113,6 @@
     <string name="lore_history_yesterday">Hier</string>
     <string name="lore_history_this_week">Cette semaine</string>
     <string name="lore_history_earlier">Plus tôt</string>
+    <string name="explore_search_placeholder_shows">Rechercher par nom de podcast</string>
+    <string name="explore_search_placeholder_questions">Posez une question sur une idée ou un sujet</string>
 </resources>

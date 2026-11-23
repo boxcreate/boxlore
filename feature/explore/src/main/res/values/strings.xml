@@ -131,4 +131,8 @@
     <string name="lore_history_this_week">This week</string>
     <!-- Lore history group heading: older cards saved without a date. -->
     <string name="lore_history_earlier">Earlier</string>
+    <!-- Search box hint in Find a show: type a show's name. -->
+    <string name="explore_search_placeholder_shows">Search by show name</string>
+    <!-- Search box hint in Ask anything: type a question or topic. -->
+    <string name="explore_search_placeholder_questions">Ask about any idea or topic</string>
 </resources>

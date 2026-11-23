@@ -125,4 +125,6 @@
     <string name="lore_history_yesterday">Ontem</string>
     <string name="lore_history_this_week">Esta semana</string>
     <string name="lore_history_earlier">Antes</string>
+    <string name="explore_search_placeholder_shows">Pesquise pelo nome do podcast</string>
+    <string name="explore_search_placeholder_questions">Pergunte sobre qualquer ideia ou tema</string>
 </resources>

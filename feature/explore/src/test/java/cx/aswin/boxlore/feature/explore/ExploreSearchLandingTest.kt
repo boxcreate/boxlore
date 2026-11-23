@@ -87,6 +87,17 @@ class ExploreSearchLandingTest {
         composeRule.onNodeWithText("Explore collections").assertDoesNotExist()
     }
 
+    @Test fun `the search box hint says what to type in each mode`() {
+        show()
+        fun hint(text: String) = composeRule.onAllNodes(hasText(text), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        assertTrue("browsing", hint("Search podcasts"))
+        composeRule.onNode(hasSetTextAction()).performClick()
+        assertTrue("Find a show", hint("Search by show name"))
+        composeRule.onNode(hasText("Ask anything") and isSelectable()).performClick()
+        assertTrue("Ask anything", hint("Ask about any idea or topic"))
+        assertTrue("no second Ask anything in the box", !hint("Search podcasts"))
+    }
+
     @Test fun `both search headings and their hints align to the center of the feed`() {
         show()
         composeRule.onNode(hasSetTextAction()).performClick()
