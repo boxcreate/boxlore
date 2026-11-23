@@ -343,9 +343,9 @@ class DesignSystemAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     }
 
     /** An Undo message over a page, with stand-ins where the shell draws the bar and the mini player. */
-    @Test fun snackbar() = render("snackbar") { SnackbarPage(miniPlayer = true) }
+    @Test fun snackbar() = render("snackbar-host") { SnackbarPage(miniPlayer = true) }
 
-    @Test fun snackbarNoMiniPlayer() = render("snackbar-no-mini-player") { SnackbarPage(miniPlayer = false) }
+    @Test fun snackbarNoMiniPlayer() = render("snackbar-host-no-mini-player") { SnackbarPage(miniPlayer = false) }
 
     /** The shared page header with Back and a long title, over a list that scrolls it shut. */
     @OptIn(ExperimentalMaterial3Api::class)
