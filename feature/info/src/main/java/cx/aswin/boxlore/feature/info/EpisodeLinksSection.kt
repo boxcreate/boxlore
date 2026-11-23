@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -70,18 +73,21 @@ internal fun EpisodeLinksSection(links: List<EpisodeLink>, showName: String, mod
             val rows = remember(links, columns, expanded) { episodeLinkListRows(links, columns, expanded) }
             val expandable = links.size > COLLAPSED_EPISODE_LINKS
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                // The expand row closes the grid, so the last links then keep tight bottom corners.
+                val gridRows = rows.size + if (expandable) 1 else 0
                 rows.forEachIndexed { rowIndex, row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                        row.forEach { link ->
-                            val shape = linkRowShape(first = rowIndex == 0, last = rowIndex == rows.lastIndex && !expandable)
-                            EpisodeLinkRow(link, showName, shape, Modifier.weight(1f)) { openEpisodeLink(context, link.url) }
+                    // Cells in a row share the tallest one's height.
+                    Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                        row.forEachIndexed { columnIndex, link ->
+                            val shape = linkCellShape(rowIndex, columnIndex, gridRows, row.size)
+                            EpisodeLinkRow(link, showName, shape, Modifier.weight(1f).fillMaxHeight()) { openEpisodeLink(context, link.url) }
                         }
                         // An odd last link keeps its column's width.
                         repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                     }
                 }
                 if (expandable) {
-                    val shape = linkRowShape(first = false, last = true)
+                    val shape = linkCellShape(row = gridRows - 1, column = 0, rows = gridRows, columns = 1)
                     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = shape, modifier = Modifier.fillMaxWidth()) {
                         EpisodeExpandRow(
                             label = stringResource(if (expanded) R.string.episode_info_fewer_links else R.string.episode_info_all_links),
