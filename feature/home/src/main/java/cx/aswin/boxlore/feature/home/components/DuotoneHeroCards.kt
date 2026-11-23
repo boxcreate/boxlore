@@ -58,11 +58,12 @@ internal fun DuotoneHeroCard(
     val look = rememberDuotoneLook(imageUrl)
     val shade = look.shade
     val filter = remember(look.duotone) { look.duotone.colorFilter() }
+    val cardPeek = heroPeekContent()
     Card(
         onClick = onArrowClick,
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = look.duotone.shadow, contentColor = shade.content),
-        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_duotone"),
+        modifier = modifier.heroPeekCardLabel(cardPeek, heroTitle(item)).boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_duotone"),
     ) {
         Box(Modifier.fillMaxSize()) {
             OptimizedImage(

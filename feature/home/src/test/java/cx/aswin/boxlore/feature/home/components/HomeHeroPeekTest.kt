@@ -15,22 +15,33 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.StableHeroList
@@ -214,6 +225,87 @@ class HomeHeroPeekTest {
         assertEquals(0, played)
     }
 
+    /**
+     * Tablets, the Pixel Fold's inner screen and sideways phones use material3's uncontained row, where
+     * every card keeps its full size and the row's edge cuts the last one. That card used to show chopped
+     * words and half a Play button; it now shows only its artwork until it slides fully into view.
+     */
+    @Test
+    @Config(qualifiers = "w1300dp-h1500dp-mdpi")
+    fun `a card cut by the tablet row's edge shows no words or Play until it slides into view`() {
+        val window = mutableStateOf(BoxloreTestWindows.TABLET)
+        composeRule.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value, LocalHeroCardStyle provides HeroCardStyle.COVER) {
+                BoxLoreTheme(dynamicColor = false) {
+                    key(window.value) {
+                        val items = List(6) { index ->
+                            val podcast = Podcast("show_$index", "Show $index", "Creator", "", latestEpisode = Episode("episode_$index", "Row episode $index", "", "", duration = 3600))
+                            SmartHeroItem(HeroType.RESUME, podcast, "")
+                        }
+                        HeroCarousel(
+                            heroItems = StableHeroList(items),
+                            onPlayClick = { _, _ -> },
+                            onDetailsClick = {},
+                            onArrowClick = { _, _ -> },
+                            onToggleSubscription = {},
+                            onTogglePlayback = {},
+                            modifier = Modifier.width(window.value.widthDp.dp).testTag("carousel"),
+                        )
+                    }
+                }
+            }
+        }
+        val failures = mutableListOf<String>()
+        for (layout in listOf(BoxloreTestWindows.TABLET, BoxloreTestWindows.TABLET_PORTRAIT, BoxloreTestWindows.PIXEL_FOLD, BoxloreTestWindows.PHONE_LAND)) {
+            window.value = layout
+            composeRule.waitForIdle()
+            val label = "${layout.widthDp.toInt()}x${layout.heightDp.toInt()}"
+            val atRest = rowCards()
+            failures += rowFailures("$label at rest", atRest)
+            if (atRest.none { it.cut }) failures += "$label: no card is cut at rest, so the case isn't covered"
+            // Bring the cut card to the row's start, where it shows whole.
+            val cutIndex = atRest.first { it.cut }.title.substringAfterLast(' ').toInt()
+            composeRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.ScrollToIndex)).performScrollToIndex(cutIndex)
+            composeRule.waitForIdle()
+            val scrolled = rowCards()
+            failures += rowFailures("$label scrolled", scrolled)
+            val revealed = atRest.filter { it.cut }.map { it.title }.toSet().intersect(scrolled.filter { it.words }.map { it.title }.toSet())
+            if (revealed.isEmpty()) failures += "$label: no cut card showed its words once it slid into view"
+        }
+        assertTrue(failures.joinToString("\n"), failures.isEmpty())
+    }
+
+    private data class RowCard(val title: String, val cut: Boolean, val words: Boolean, val bounds: Rect)
+
+    /** Each Cover card in the row: its name (words or, while hidden, its label), whether the row's edge cuts it, and whether its words show. */
+    private fun rowCards(): List<RowCard> {
+        val row = composeRule.onNodeWithTag("carousel").fetchSemanticsNode().let { Rect(it.positionInRoot, it.size.toSize()) }
+        return composeRule.onAllNodesWithTag("home_hero_cover").fetchSemanticsNodes().mapNotNull { node ->
+            val bounds = Rect(node.positionInRoot, node.size.toSize())
+            if (bounds.right <= row.left || bounds.left >= row.right) return@mapNotNull null
+            val text = node.config.getOrNull(SemanticsProperties.Text).orEmpty().joinToString(" ") { it.text }
+            val description = node.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().joinToString(" ")
+            val title = Regex("Row episode \\d").find("$text $description")?.value ?: return@mapNotNull null
+            RowCard(title, cut = bounds.left < row.left - 0.5f || bounds.right > row.right + 0.5f, words = "Row episode" in text, bounds = bounds)
+        }
+    }
+
+    /** A cut card has no words and no Play inside it; every tappable node has a name for TalkBack. */
+    private fun rowFailures(label: String, cards: List<RowCard>): List<String> {
+        val failures = mutableListOf<String>()
+        val plays = composeRule.onAllNodesWithTag("home_hero_play").fetchSemanticsNodes().map { Rect(it.positionInRoot, it.size.toSize()) }
+        cards.filter { it.cut }.forEach { card ->
+            if (card.words) failures += "$label: ${card.title} shows its words while cut at ${card.bounds}"
+            if (plays.any { it.center.x in card.bounds.left..card.bounds.right }) failures += "$label: ${card.title} keeps a Play button while cut"
+        }
+        composeRule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick)).fetchSemanticsNodes().forEach { node ->
+            val text = node.config.getOrNull(SemanticsProperties.Text).orEmpty().joinToString { it.text }
+            val description = node.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().joinToString()
+            if (text.isBlank() && description.isBlank()) failures += "$label: a tappable node at ${node.boundsInRoot} has no name"
+        }
+        return failures
+    }
+
     @Test fun `words fade in across the swipe and stay put outside the carousel`() {
         val reveal = HeroPeekReveal(info, minimumPeekWidth = 40f)
         size.floatValue = 40f
@@ -264,10 +356,16 @@ class HomeHeroPeekTest {
         }
     }
 
-    /** Nodes that show or read out [words]: Tide's square collection names its covers instead of printing titles. */
+    /**
+     * Nodes that show or read out [words]: Tide's square collection names its covers instead of printing
+     * titles. A peeking card's own name for its tap (it opens the episode) isn't words on the card.
+     */
     private fun wordNodes(words: String): Int =
         composeRule.onAllNodesWithText(words, substring = true).fetchSemanticsNodes().size +
-            composeRule.onAllNodesWithContentDescription(words, substring = true).fetchSemanticsNodes().size
+            composeRule.onAllNodes(hasContentDescription(words, substring = true) and !hasText(words, substring = true) and !isHeroCard).fetchSemanticsNodes().size
+
+    /** The hero cards themselves, whose tap keeps a name while they peek. */
+    private val isHeroCard = HERO_CARD_TAGS.map { hasTestTag(it) }.reduce { a, b -> a or b }
 
     private fun headingBounds(): Rect = textBounds("home_hero_collection_heading")
 
@@ -298,5 +396,9 @@ class HomeHeroPeekTest {
                 }
             }
         }
+    }
+
+    private companion object {
+        val HERO_CARD_TAGS = listOf("home_hero_block", "home_hero_cover", "home_hero_duotone", "home_hero_halo", "home_hero_tide")
     }
 }

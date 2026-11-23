@@ -98,11 +98,12 @@ internal fun CoverHeroCard(
     val progressState = if (item.type == HeroType.RESUME && progress > 0f) HeroProgressState(progress, pause) else null
     val imageUrl = heroArtworkUrl(item.podcast, showFirst = item.type == HeroType.SPOTLIGHT)
     val shade = rememberCoverShade(imageUrl)
+    val cardPeek = heroPeekContent()
     Card(
         onClick = onArrowClick,
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = shade.deep, contentColor = shade.content),
-        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_cover"),
+        modifier = modifier.heroPeekCardLabel(cardPeek, heroTitle(item)).boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_cover"),
     ) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val short = maxHeight < ShortHeroHeight

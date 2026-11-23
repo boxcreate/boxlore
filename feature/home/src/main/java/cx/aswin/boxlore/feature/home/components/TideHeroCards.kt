@@ -105,11 +105,12 @@ internal fun TideHeroCard(
     val shade = rememberCoverShade(imageUrl)
     val hasEpisode = item.podcast.latestEpisode != null
     val label = heroActionLabel(item, pause, resume = item.type == HeroType.RESUME || current)
+    val cardPeek = heroPeekContent()
     Card(
         onClick = onArrowClick,
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = shade.deep, contentColor = shade.content),
-        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_tide"),
+        modifier = modifier.heroPeekCardLabel(cardPeek, heroTitle(item)).boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_tide"),
     ) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val short = maxHeight < ShortHeroHeight

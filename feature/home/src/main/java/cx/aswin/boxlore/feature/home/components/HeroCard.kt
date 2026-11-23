@@ -76,11 +76,12 @@ fun HeroCard(
     val progress = HomeHeroStyle.progress(item.podcast)
     val progressState = if (item.type == HeroType.RESUME && progress > 0f) HeroProgressState(progress, pause) else null
 
+    val cardPeek = heroPeekContent()
     Card(
         onClick = onArrowClick,
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = container, contentColor = foreground),
-        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize(),
+        modifier = modifier.heroPeekCardLabel(cardPeek, heroTitle(item)).boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_block"),
     ) {
         Column(Modifier.fillMaxSize()) {
             val window = LocalBoxloreWindowLayout.current

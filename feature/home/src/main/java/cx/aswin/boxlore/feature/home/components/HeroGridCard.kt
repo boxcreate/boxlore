@@ -99,12 +99,15 @@ fun HeroGridCard(
         Box(Modifier.fillMaxSize()) {
             // Material's minSize includes an off-screen anchor; visible peeks start at 40dp.
             val minimumPeekWidth = with(LocalDensity.current) { 40.dp.toPx() }
-            val contentVisible by remember(carouselItemDrawInfo, minimumPeekWidth) {
-                derivedStateOf { carouselItemDrawInfo == null || HeroPeekMotion.contentAlpha(carouselItemDrawInfo.expansion(minimumPeekWidth)) > 0f }
+            // In the carousel the reveal also hides the words while the tablet row's edge cuts the card.
+            val reveal = LocalHeroPeekReveal.current
+            val contentAlpha = { reveal?.alpha ?: HeroPeekMotion.contentAlpha(carouselItemDrawInfo.expansion(minimumPeekWidth)) }
+            val contentVisible by remember(carouselItemDrawInfo, minimumPeekWidth, reveal) {
+                derivedStateOf { carouselItemDrawInfo == null || contentAlpha() > 0f }
             }
             Column(
                 Modifier.fillMaxSize().padding(18.dp)
-                    .graphicsLayer { alpha = HeroPeekMotion.contentAlpha(carouselItemDrawInfo.expansion(minimumPeekWidth)) }
+                    .graphicsLayer { alpha = contentAlpha() }
                     .then(if (contentVisible) Modifier else Modifier.clearAndSetSemantics {}),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

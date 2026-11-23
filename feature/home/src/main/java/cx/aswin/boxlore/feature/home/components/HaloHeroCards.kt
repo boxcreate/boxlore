@@ -123,11 +123,12 @@ private fun HaloFullHeroCard(
     val shade = rememberCoverShade(imageUrl)
     val wide = LocalDensity.current.fontScale > HaloWideFontScale
     val rotation = rememberHaloRotation(item.podcast.latestEpisode?.id ?: item.podcast.id, running = pause)
+    val cardPeek = heroPeekContent()
     Card(
         onClick = onArrowClick,
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = shade.deep, contentColor = shade.content),
-        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_halo"),
+        modifier = modifier.heroPeekCardLabel(cardPeek, heroTitle(item)).boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_halo"),
     ) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val contextHeight = if (wide) heroWideContextHeight(item, maxWidth - HaloInset * 2) else 0.dp

@@ -30,8 +30,8 @@ import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.StableHeroList
 import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
-import kotlin.math.floor
 import kotlinx.coroutines.flow.drop
+import kotlin.math.floor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,6 +67,7 @@ fun HeroCarousel(
         }
     }
 
+    val rowMode = heroRowMode(LocalBoxloreWindowLayout.current)
     Column(modifier.fillMaxWidth()) {
     ResponsiveHeroCarousel(
         state = carouselState,
@@ -96,7 +97,7 @@ fun HeroCarousel(
         }
 
         // A peeking card shows its artwork or colour; its words and buttons fade in as it slides into place.
-        ProvideHeroPeekReveal(carouselItemDrawInfo) {
+        ProvideHeroPeekReveal(carouselItemDrawInfo, cutByRowEdge = rowMode == HeroRowMode.Row) {
         when {
             HeroCardStyle.usesArtworkColors(style) ->
                 FullArtworkHeroItem(style, item, i, onCollectionPlayback, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, playing)
