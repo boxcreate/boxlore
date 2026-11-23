@@ -50,7 +50,7 @@ internal fun tabletPlayerRegions(
             null,
             body.copy(right = middle),
             insetSupport(body.copy(left = middle + 16f)),
-            artworkSize(body, 0.4f),
+            artworkSize(body, 0.4f, maximum = if (body.width >= LARGE_PLAYER_WIDTH_DP) LARGE_ARTWORK_DP else ARTWORK_DP),
         )
     }
     val controlHeight = min(784f, min(body.height * 0.74f, (body.height - 150f).coerceAtLeast(0f)))
@@ -76,7 +76,14 @@ internal fun usesPlayerColumns(body: BoxloreLayoutBounds, contextPane: Boolean):
 private fun insetSupport(support: BoxloreLayoutBounds): BoxloreLayoutBounds =
     support.copy(right = support.right - SUPPORT_EDGE_DP, bottom = support.bottom - SUPPORT_EDGE_DP)
 
+/** Big screens beside the supporting panel: a larger title, and a cover up to [LARGE_ARTWORK_DP]. */
+internal fun usesLargePlayerTitle(regions: TabletPlayerRegions): Boolean =
+    regions.arrangement == TabletPlayerArrangement.Columns && regions.support.right - regions.controls.left >= LARGE_PLAYER_WIDTH_DP
+
 private const val COLUMNS_MIN_WIDTH_DP = 840f
+private const val LARGE_PLAYER_WIDTH_DP = 1_200f
+private const val ARTWORK_DP = 360f
+private const val LARGE_ARTWORK_DP = 420f
 private const val SUPPORT_EDGE_DP = 16f
 
 private fun playerHorizontalFold(window: BoxloreWindowLayout, viewport: BoxloreLayoutBounds, safe: List<BoxloreLayoutBounds>): BoxloreFold? =
@@ -116,9 +123,9 @@ private fun separatedPlayerRegions(
     )
 }
 
-private fun artworkSize(region: BoxloreLayoutBounds, heightShare: Float): Float {
+private fun artworkSize(region: BoxloreLayoutBounds, heightShare: Float, maximum: Float = ARTWORK_DP): Float {
     val available = min(region.width, region.height).coerceAtLeast(0f)
-    return min(360f, min(region.width * 0.6f, region.height * heightShare))
+    return min(maximum, min(region.width * 0.6f, region.height * heightShare))
         .coerceIn(min(96f, available), available)
 }
 

@@ -55,6 +55,18 @@ class TabletPlayerLayoutLogicTest {
     }
 
     @Test
+    fun `big screens get the larger title and cover and inner screens keep today's`() {
+        val tablet = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(1_280f, 800f), BoxloreLayoutBounds(0f, 24f, 1_280f, 776f), false))
+        assertTrue(usesLargePlayerTitle(tablet))
+        val desktop = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(1_600f, 1_000f), BoxloreLayoutBounds(0f, 24f, 1_600f, 976f), false))
+        assertTrue(usesLargePlayerTitle(desktop) && desktop.artworkSizeDp <= 420f)
+        val inner = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(932f, 650f), BoxloreLayoutBounds(0f, 24f, 932f, 626f), false))
+        assertEquals(TabletPlayerArrangement.Columns, inner.arrangement)
+        assertTrue(!usesLargePlayerTitle(inner))
+        assertTrue(inner.artworkSizeDp <= 360f)
+    }
+
+    @Test
     fun `the supporting panel keeps a 16dp margin from the window edges beside the controls`() {
         val viewport = BoxloreLayoutBounds(0f, 24f, 1_280f, 776f)
         val columns = requireNotNull(tabletPlayerRegions(BoxloreWindowLayout(1_280f, 800f), viewport, false))

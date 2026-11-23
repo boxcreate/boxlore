@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -57,6 +58,7 @@ import cx.aswin.boxlore.feature.player.v2.logic.TabletPlayerArrangement
 import cx.aswin.boxlore.feature.player.v2.logic.TabletPlayerRegions
 import cx.aswin.boxlore.feature.player.v2.logic.intersectPlayerBounds
 import cx.aswin.boxlore.feature.player.v2.logic.tabletPlayerRegions
+import cx.aswin.boxlore.feature.player.v2.logic.usesLargePlayerTitle
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -317,11 +319,15 @@ private fun TabletPlayerControls(
             primaryControlHeight = if (display.isContextPane || regions.arrangement == TabletPlayerArrangement.HorizontalFold) 80.dp else 104.dp,
         )
     }
+    val columns = regions.arrangement == TabletPlayerArrangement.Columns
     Column(
         Modifier.fillMaxWidth().nestedScroll(display.sheetNestedScrollConnection)
             .then(if (scrollContent) Modifier.fillMaxSize().verticalScroll(rememberScrollState()) else Modifier)
+            // Beside the supporting panel the player sits in the middle of its column, top to bottom.
+            .then(if (columns) Modifier.heightIn(min = regions.controls.height.dp) else Modifier)
             .boxloreCardWidth(BoxloreCardFamily.Hero).padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = if (columns) Arrangement.Center else Arrangement.Top,
     ) {
         if (regions.arrangement == TabletPlayerArrangement.Columns) {
             MeasuredTabletPlayerColumn(
@@ -330,7 +336,7 @@ private fun TabletPlayerControls(
                 artwork = { size -> TabletPlayerArtwork(model, dependencies, display, actions, flows, ui, size) },
                 chrome = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        TabletPlayerMetadata(model, display, actions, compact = false)
+                        TabletPlayerMetadata(model, display, actions, compact = false, large = usesLargePlayerTitle(regions))
                         Spacer(Modifier.height(12.dp))
                         playbackControls()
                     }
@@ -405,7 +411,7 @@ internal fun MeasuredTabletPlayerColumn(viewportHeightDp: Float, maximumArtworkD
 }
 
 @Composable
-private fun TabletPlayerMetadata(model: FullPlayerBodyModel, display: FullPlayerDisplay, actions: FullPlayerActions, compact: Boolean) {
+private fun TabletPlayerMetadata(model: FullPlayerBodyModel, display: FullPlayerDisplay, actions: FullPlayerActions, compact: Boolean, large: Boolean = false) {
     val alignment = if (compact) TextAlign.Start else TextAlign.Center
     val titleSource = remember { MutableInteractionSource() }
     val showSource = remember { MutableInteractionSource() }
@@ -417,7 +423,11 @@ private fun TabletPlayerMetadata(model: FullPlayerBodyModel, display: FullPlayer
             actions.onEpisodeInfoClick(model.episode)
         },
         color = display.colorScheme.onSurface,
-        style = (if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge).copy(fontWeight = GoogleSansWeight.bold),
+        style = when {
+            compact -> MaterialTheme.typography.titleMedium
+            large -> MaterialTheme.typography.headlineSmall
+            else -> MaterialTheme.typography.titleLarge
+        }.copy(fontWeight = GoogleSansWeight.bold),
         maxLines = if (compact) 3 else 2,
         overflow = TextOverflow.Ellipsis,
         textAlign = alignment,
@@ -431,7 +441,11 @@ private fun TabletPlayerMetadata(model: FullPlayerBodyModel, display: FullPlayer
             actions.onPodcastInfoClick(model.podcast)
         },
         color = display.colorScheme.onSurfaceVariant,
-        style = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
+        style = when {
+            compact -> MaterialTheme.typography.bodyMedium
+            large -> MaterialTheme.typography.titleMedium
+            else -> MaterialTheme.typography.bodyLarge
+        },
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
         textAlign = alignment,
