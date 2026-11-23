@@ -27,6 +27,8 @@ Announcement title:
 ## Improved
 
 - The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.
+- Home keeps your place in Your shows, the Brief and its menus when a foldable opens or closes or a tablet window changes size.
+- Home's menus, the show picker under Because you like, the genre picker and the rating sheets now match the rest of boxlore.
 - The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.
 - In Android Auto, a show's page now lists its episodes from newest to oldest. Episodes you've started stay in their place and show the time left.
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
@@ -35,6 +37,9 @@ Announcement title:
 
 ## Fixed
 
+- On the Galaxy Z Fold cover screen and in split-screen windows, Home's top cards now show one full card and a peek of the next, instead of squeezed cards with broken titles.
+- On a phone turned sideways, Home's buttons and cards stay clear of the navigation buttons and camera, and Home keeps your place when you turn the phone.
+- The message that you can't pin another show now appears above the bottom bar instead of behind it.
 - Importing an OPML file that lists a show you already follow no longer turns off that show's new-episode notifications and auto-download.
 - Importing an OPML file that lists a show twice now adds every show in the file in one go.
 - When you use boxlore on more than one device, one that was offline or signed out no longer sets your progress or likes back to an older point, and devices that showed different progress now agree.
