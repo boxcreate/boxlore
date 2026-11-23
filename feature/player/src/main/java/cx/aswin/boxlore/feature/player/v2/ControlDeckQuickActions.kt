@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
@@ -285,7 +286,7 @@ internal fun InlineSpeedSelector(
         }
         Spacer(Modifier.height(3.dp))
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             presets.forEach { speed ->
@@ -329,6 +330,8 @@ internal fun InlineSleepSelector(
         (sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis())
     // The length the listener picked stays selected while it counts down; no guessing from what is left.
     val remainingMinutes = presetMinutes.takeIf { timerActive && !sleepAtEndOfEpisode }
+    // The selected length shows how long is left under its name.
+    val countdown = rememberSleepCountdown(sleepTimerEnd).takeIf { it.isNotEmpty() && remainingMinutes != null }
     val selectDurationAndBack: (Int) -> Unit = { minutes ->
         onDurationSelected(minutes)
         onBack()
@@ -336,7 +339,7 @@ internal fun InlineSleepSelector(
 
     Column {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             UtilityAction(
@@ -360,6 +363,7 @@ internal fun InlineSleepSelector(
                 minutes = 15,
                 label = sleepChipLabel(15),
                 active = !sleepAtEndOfEpisode && remainingMinutes == 15,
+                status = countdown.takeIf { remainingMinutes == 15 },
                 colorScheme = colorScheme,
                 shape = shapes.middle,
                 onDurationSelected = selectDurationAndBack,
@@ -369,6 +373,7 @@ internal fun InlineSleepSelector(
                 minutes = 30,
                 label = sleepChipLabel(30),
                 active = !sleepAtEndOfEpisode && remainingMinutes == 30,
+                status = countdown.takeIf { remainingMinutes == 30 },
                 colorScheme = colorScheme,
                 shape = shapes.topEnd,
                 onDurationSelected = selectDurationAndBack,
@@ -377,36 +382,21 @@ internal fun InlineSleepSelector(
         }
         Spacer(Modifier.height(3.dp))
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            SleepDurationAction(
-                minutes = 45,
-                label = sleepChipLabel(45),
-                active = !sleepAtEndOfEpisode && remainingMinutes == 45,
-                colorScheme = colorScheme,
-                shape = shapes.bottomStart,
-                onDurationSelected = selectDurationAndBack,
-                modifier = Modifier.weight(1f)
-            )
-            SleepDurationAction(
-                minutes = 60,
-                label = sleepChipLabel(60),
-                active = !sleepAtEndOfEpisode && remainingMinutes == 60,
-                colorScheme = colorScheme,
-                shape = shapes.middle,
-                onDurationSelected = selectDurationAndBack,
-                modifier = Modifier.weight(1f)
-            )
-            SleepDurationAction(
-                minutes = 120,
-                label = sleepChipLabel(120),
-                active = !sleepAtEndOfEpisode && remainingMinutes == 120,
-                colorScheme = colorScheme,
-                shape = shapes.middle,
-                onDurationSelected = selectDurationAndBack,
-                modifier = Modifier.weight(1f)
-            )
+            listOf(45 to shapes.bottomStart, 60 to shapes.middle, 120 to shapes.middle).forEach { (minutes, shape) ->
+                SleepDurationAction(
+                    minutes = minutes,
+                    label = sleepChipLabel(minutes),
+                    active = remainingMinutes == minutes,
+                    status = countdown.takeIf { remainingMinutes == minutes },
+                    colorScheme = colorScheme,
+                    shape = shape,
+                    onDurationSelected = selectDurationAndBack,
+                    modifier = Modifier.weight(1f)
+                )
+            }
             SleepDurationAction(
                 minutes = SleepTimerConstants.END_OF_EPISODE_MINUTES,
                 label = stringResource(R.string.player_sleep_end),
@@ -421,6 +411,7 @@ internal fun InlineSleepSelector(
 }
 
 @Composable
+@Suppress("LongParameterList")
 internal fun SleepDurationAction(
     minutes: Int,
     label: String,
@@ -428,12 +419,14 @@ internal fun SleepDurationAction(
     colorScheme: ColorScheme,
     shape: androidx.compose.ui.graphics.Shape,
     onDurationSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    status: String? = null
 ) {
     LabelAction(
         label = label,
         active = active,
         selected = active,
+        status = status,
         colorScheme = colorScheme,
         shape = shape,
         onClick = { onDurationSelected(minutes) },
@@ -442,6 +435,7 @@ internal fun SleepDurationAction(
 }
 
 @Composable
+@Suppress("LongParameterList")
 internal fun LabelAction(
     label: String,
     colorScheme: ColorScheme,
@@ -450,7 +444,9 @@ internal fun LabelAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     /** Set for one choice among several (a speed or sleep length): announced as selected or not. */
-    selected: Boolean? = null
+    selected: Boolean? = null,
+    /** A second line under the label, such as the time left on the selected sleep length. */
+    status: String? = null
 ) {
     val container by animateColorAsState(
         targetValue = if (active) colorScheme.primary else colorScheme.surfaceContainerHigh,
@@ -473,15 +469,28 @@ internal fun LabelAction(
             .padding(horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Long names in some languages shrink a little, and end with "…" only as a last resort.
-        Text(
-            text = label,
-            style = labelStyle,
-            color = content,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            autoSize = TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = labelStyle.fontSize)
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // Long names in some languages shrink a little, and end with "…" only as a last resort.
+            Text(
+                text = label,
+                style = labelStyle,
+                color = content,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                autoSize = TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = labelStyle.fontSize)
+            )
+            if (status != null) {
+                val statusStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.bold)
+                Text(
+                    text = status,
+                    style = statusStyle,
+                    color = content,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = statusStyle.fontSize)
+                )
+            }
+        }
     }
 }
 
@@ -582,7 +591,7 @@ internal fun UtilityAction(
                     color = content,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = statusStyle.fontSize)
+                    autoSize = TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = statusStyle.fontSize)
                 )
             }
         }
@@ -608,22 +617,7 @@ internal fun SleepAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var remainingTime by remember { mutableStateOf("") }
-    LaunchedEffect(sleepTimerEnd) {
-        if (sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis()) {
-            while (isActive) {
-                val left = sleepTimerEnd - System.currentTimeMillis()
-                if (left <= 0) {
-                    remainingTime = ""
-                    break
-                }
-                remainingTime = formatTime(left)
-                delay(1000)
-            }
-        } else {
-            remainingTime = ""
-        }
-    }
+    val remainingTime = rememberSleepCountdown(sleepTimerEnd)
     val hasCountdown = sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis()
     val active = hasCountdown || sleepAtEndOfEpisode
     val status = when {
@@ -640,6 +634,28 @@ internal fun SleepAction(
         onClick = onClick,
         modifier = modifier
     )
+}
+
+/** The time left on a running sleep timer, such as "24:59", ticking every second; empty when none runs. */
+@Composable
+private fun rememberSleepCountdown(sleepTimerEnd: Long?): String {
+    var remainingTime by remember { mutableStateOf("") }
+    LaunchedEffect(sleepTimerEnd) {
+        if (sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis()) {
+            while (isActive) {
+                val left = sleepTimerEnd - System.currentTimeMillis()
+                if (left <= 0) {
+                    remainingTime = ""
+                    break
+                }
+                remainingTime = formatTime(left)
+                delay(1000)
+            }
+        } else {
+            remainingTime = ""
+        }
+    }
+    return remainingTime
 }
 
 /** A sleep chip's short length, such as "15m" or "1h", in the screen's language. */

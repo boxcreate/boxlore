@@ -30,6 +30,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -56,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
@@ -565,10 +568,13 @@ fun SleepSheet(
     sleepTimerEnd: Long?,
     colorScheme: ColorScheme,
     onDurationSelected: (Int) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    /** The length the listener picked for the running timer, so it stays selected while it counts down. */
+    presetMinutes: Int? = null,
+    sleepAtEndOfEpisode: Boolean = false
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val timerActive = sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis()
+    val timerActive = sleepAtEndOfEpisode || (sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis())
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -592,15 +598,20 @@ fun SleepSheet(
             val options = listOf(0 to stringResource(R.string.player_off)) +
                 listOf(15, 30, 45, 60, 120).map { minutes -> minutes to LocaleFormats.duration(minutes * 60L, locale) } +
                 (SleepTimerConstants.END_OF_EPISODE_MINUTES to stringResource(R.string.player_sleep_end_of_episode))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(modifier = Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(options) { (minutes, label) ->
-                    val selected = minutes == 0 && !timerActive
+                    // The same rule as the tray: Off only with no timer, otherwise the length that runs.
+                    val selected = when (minutes) {
+                        0 -> !timerActive
+                        SleepTimerConstants.END_OF_EPISODE_MINUTES -> sleepAtEndOfEpisode
+                        else -> timerActive && !sleepAtEndOfEpisode && presetMinutes == minutes
+                    }
                     Box(
                         modifier = Modifier
                             .height(44.dp)
                             .clip(CircleShape)
                             .background(if (selected) colorScheme.primary else colorScheme.surfaceContainerHigh)
-                            .clickable { onDurationSelected(minutes) }
+                            .selectable(selected = selected, role = Role.RadioButton) { onDurationSelected(minutes) }
                             .padding(horizontal = 18.dp),
                         contentAlignment = Alignment.Center
                     ) {

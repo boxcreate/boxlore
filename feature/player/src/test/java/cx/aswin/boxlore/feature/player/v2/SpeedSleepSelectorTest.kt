@@ -3,16 +3,21 @@ package cx.aswin.boxlore.feature.player.v2
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,6 +51,32 @@ class SpeedSleepSelectorTest {
         compose.onNodeWithText("Off").assertIsNotSelected()
         compose.onNodeWithText("15", substring = true).assertIsNotSelected()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
+        // The selected length shows the time left under its name; the choices are announced as one group.
+        compose.onNodeWithText("30", substring = true).assert(hasText("24:", substring = true))
+        compose.onNodeWithText("15", substring = true).assert(hasText(":", substring = true).not())
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.SelectableGroup)).assertCountEquals(2)
+    }
+
+    @Test
+    fun `the sleep sheet keeps the running timer's length selected, and Off only with no timer`() {
+        val picked = mutableListOf<Int>()
+        compose.setContent {
+            BoxLoreTheme(darkTheme = false, dynamicColor = false) {
+                SleepSheet(
+                    sleepTimerEnd = System.currentTimeMillis() + 25 * 60_000L,
+                    colorScheme = MaterialTheme.colorScheme,
+                    onDurationSelected = { picked += it },
+                    onDismiss = {},
+                    presetMinutes = 30,
+                )
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("30", substring = true, useUnmergedTree = false).assertIsSelected()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
+        compose.onNodeWithText("Off").assertIsNotSelected()
+        compose.onNodeWithText("15", substring = true).assertIsNotSelected().performSemanticsAction(SemanticsActions.OnClick)
+        compose.runOnIdle { assertEquals(listOf(15), picked) }
     }
 
     @Test

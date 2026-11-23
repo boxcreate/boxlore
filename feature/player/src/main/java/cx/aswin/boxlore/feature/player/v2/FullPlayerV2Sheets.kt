@@ -222,7 +222,9 @@ internal fun PlayerSleepSheet(
             playbackRepository.setSleepTimer(minutes)
             ui.showSleepSheet = false
         },
-        onDismiss = { ui.showSleepSheet = false }
+        onDismiss = { ui.showSleepSheet = false },
+        presetMinutes = model.state.sleepTimerPresetMinutes,
+        sleepAtEndOfEpisode = model.state.sleepAtEndOfEpisode
     )
 }
 
