@@ -54,8 +54,8 @@
     <string name="suggestions_lane_for_you">For you</string>
     <string name="suggestions_lane_popular_now">Popular now</string>
     <!-- Fallback lanes when suggestions fall back to the charts. -->
-    <string name="suggestions_lane_trending_hits">Trending Hits</string>
-    <string name="suggestions_lane_trending_genres">Trending in your Genres</string>
+    <string name="suggestions_lane_trending_hits">Trending hits</string>
+    <string name="suggestions_lane_trending_genres">Trending in your genres</string>
     <!-- One line about what a lane is for. -->
     <string name="suggestions_lane_purpose_matched">Shows matched to this taste lane.</string>
     <string name="suggestions_lane_purpose_themed">A themed set based on what you told us.</string>
