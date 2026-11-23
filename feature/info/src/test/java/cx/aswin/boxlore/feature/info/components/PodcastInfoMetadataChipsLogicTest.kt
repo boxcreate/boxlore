@@ -61,4 +61,16 @@ class PodcastInfoMetadataChipsLogicTest {
 
         assertTrue(days != null && days in 1..3)
     }
+
+    @Test
+    fun `genre chip translates catalog genres, keeps typed tags and offers Add genre only to followers`() {
+        assertEquals(GenreChipLabel.AddGenre, genreChipLabel("Podcast", custom = false, canEdit = true))
+        assertEquals(GenreChipLabel.AddGenre, genreChipLabel("", custom = false, canEdit = true))
+        assertEquals(GenreChipLabel.None, genreChipLabel("Podcast", custom = false, canEdit = false))
+        val catalog = genreChipLabel("Society & Culture", custom = false, canEdit = false) as GenreChipLabel.Name
+        assertEquals(cx.aswin.boxlore.core.catalog.R.string.auto_genre_society, catalog.res)
+        // A listener's own tag is never swapped for a translation, even when it names a genre.
+        assertEquals(GenreChipLabel.Name(null, "History"), genreChipLabel("History", custom = true, canEdit = true))
+        assertEquals(GenreChipLabel.Name(null, "Cozy mysteries"), genreChipLabel("Cozy mysteries", custom = false, canEdit = true))
+    }
 }

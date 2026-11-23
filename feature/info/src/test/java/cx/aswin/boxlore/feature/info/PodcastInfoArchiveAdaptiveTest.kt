@@ -90,7 +90,7 @@ class PodcastInfoArchiveAdaptiveTest {
         recreate(COMPACT)
         archivedRowShown("Episode 1")
 
-        openMenuItem("Hide archived episodes")
+        openMenuItem("Show archived episodes (2)")
         acrossWindowChanges { notListed("Episode 1") }
     }
 
@@ -145,6 +145,43 @@ class PodcastInfoArchiveAdaptiveTest {
     }
 
     @Test
+    fun `an Undo still on offer comes back after a fold recreates the page, and acts once`() {
+        render()
+        fixture.compose.onNodeWithText("Episode 0").performTouchInput { longClick() }
+        fixture.compose.onNodeWithContentDescription("More selection options").performClick()
+        fixture.compose.onNodeWithText("Archive selected episodes").performClick()
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithText("Archived 1 episode").assertExists()
+
+        // Reported: folding or unfolding dropped the Undo for Archive.
+        recreate(FOLD_FLAT)
+        fixture.compose.onNodeWithText("Archived 1 episode").assertExists()
+        recreate(COMPACT)
+        fixture.compose.onAllNodes(hasText("Archived 1 episode")).fetchSemanticsNodes().let { assertEquals("offered once", 1, it.size) }
+        fixture.compose.onNodeWithText("Undo").performClick()
+        fixture.compose.waitForIdle()
+        assertEquals(listOf(Triple(listOf("e0"), true, false), Triple(listOf("e0"), false, true)), archiveCalls)
+    }
+
+    @Test
+    fun `an Undo whose time ran out isn't offered again after recreation`() {
+        render()
+        fixture.compose.onNodeWithText("Episode 0").performTouchInput { longClick() }
+        fixture.compose.onNodeWithContentDescription("More selection options").performClick()
+        fixture.compose.onNodeWithText("Archive selected episodes").performClick()
+        fixture.compose.waitForIdle()
+        val now = System.currentTimeMillis()
+        undoClockMs = { now + 60_000L }
+        try {
+            recreate(FOLD_FLAT)
+            fixture.compose.onNodeWithText("Archived 1 episode").assertDoesNotExist()
+        } finally {
+            undoClockMs = System::currentTimeMillis
+        }
+        assertEquals(1, archiveCalls.size)
+    }
+
+    @Test
     fun `a selection of archived episodes offers Unarchive`() {
         render()
         openMenuItem("Show archived episodes (2)")
@@ -186,8 +223,9 @@ class PodcastInfoArchiveAdaptiveTest {
         fixture.compose.onNode(hasText(count) and hasAnySibling(hasContentDescription("Play selected episodes"))).assertIsDisplayed()
     }
 
+    /** Turns a row of the sort button's Sort and view menu on or off. */
     private fun openMenuItem(label: String) {
-        fixture.compose.onNodeWithContentDescription("More Options").performClick()
+        fixture.compose.onNodeWithContentDescription("Sort and view").performClick()
         fixture.compose.onNodeWithText(label).performClick()
         fixture.compose.waitForIdle()
     }
