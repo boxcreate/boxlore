@@ -67,6 +67,10 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <ul align="left">
 <li>boxlore now has an Android TV app: browse charts and your shows, pick up where you left off, and keep listening as one episode leads to the next.</li>
 </ul>
+<b>🆕 New:</b>
+<ul align="left">
+<li>To bring your shows to your TV, open Cloud Sync & Backups on your phone, choose Sign in on a TV, and enter the code your TV shows.</li>
+</ul>
 <b>⚡ Improved:</b>
 <ul align="left">
 <li>The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.</li>
