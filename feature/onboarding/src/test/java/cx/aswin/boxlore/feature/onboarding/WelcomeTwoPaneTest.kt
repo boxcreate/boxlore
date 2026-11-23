@@ -188,6 +188,22 @@ class WelcomeTwoPaneTest {
         }
     }
 
+    @Test
+    fun `the wordmark and the app mark never run together in a narrow panel`() {
+        window.value = BoxloreWindowLayout(600f, 480f)
+        show(SystemInsets.SIDEWAYS_3_BUTTON)
+        compose.mainClock.advanceTimeBy(500)
+        compose.walkWindows(window, BoxloreWindowLayout(600f, 480f), BoxloreTestWindows.COVER_LAND, BoxloreTestWindows.PHONE_LAND, BoxloreWindowLayout(600f, 480f)) { step ->
+            compose.mainClock.advanceTimeBy(100)
+            val wordmark = compose.onAllNodesWithTag(OpeningWordmarkTag).fetchSemanticsNodes().single().boundsInRoot
+            val panel = compose.onAllNodesWithTag(OpeningPanelTag).fetchSemanticsNodes().single().boundsInRoot
+            assertTrue("the wordmark runs out of the panel on $step", wordmark.right <= panel.right + 0.5f)
+            compose.onAllNodesWithTag(OpeningMarkTag).fetchSemanticsNodes().singleOrNull()?.boundsInRoot?.let { mark ->
+                assertTrue("the wordmark is ${mark.left - wordmark.right}dp from the mark on $step", mark.left - wordmark.right >= OpeningLogoGap.value - 0.5f)
+            }
+        }
+    }
+
     /** Whether Echo's peek stands above Find shows for me, or null where Echo doesn't show. */
     private fun echoRisen(): Boolean? {
         val echo = compose.onAllNodesWithTag("welcome_echo").fetchSemanticsNodes().singleOrNull()?.boundsInRoot ?: return null

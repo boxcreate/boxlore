@@ -82,17 +82,34 @@ internal fun OpeningPanel(
             .statusBarsPadding().padding(top = 16.dp, bottom = bottomPadding),
         verticalArrangement = verticalArrangement,
     ) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 26.dp).testTag(OpeningLogoTag),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            BoxLoreLogo(textColor = colors.content, height = 24.dp)
-            Icon(painterResource(DesignR.drawable.ic_boxlore_app_mark), null, tint = colors.content, modifier = Modifier.size(34.dp))
-        }
+        OpeningLogoRow(colors)
         content()
     }
 }
+
+/**
+ * The wordmark and the app mark. In a narrow panel the wordmark shrinks to keep [OpeningLogoGap]
+ * from the mark, so the two never run together.
+ */
+@Composable
+private fun OpeningLogoRow(colors: LanguagePanelColors) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 26.dp).testTag(OpeningLogoTag),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BoxLoreLogo(
+            Modifier.weight(1f, fill = false).padding(end = OpeningLogoGap).testTag(OpeningWordmarkTag),
+            textColor = colors.content,
+            height = OpeningLogoHeight,
+        )
+        Icon(painterResource(DesignR.drawable.ic_boxlore_app_mark), null, tint = colors.content, modifier = Modifier.size(OpeningMarkSize).testTag(OpeningMarkTag))
+    }
+}
+
+private val OpeningLogoHeight = 24.dp
+private val OpeningMarkSize = 34.dp
+internal val OpeningLogoGap = 12.dp
 
 /**
  * The opening screens side by side: the panel on the start side at [OpeningPanelPaneShare] of the
@@ -148,3 +165,5 @@ internal val OpeningPaneEchoRoom = 64.dp
 
 internal const val OpeningPanelTag = "opening_panel"
 internal const val OpeningLogoTag = "opening_logo"
+internal const val OpeningWordmarkTag = "opening_wordmark"
+internal const val OpeningMarkTag = "opening_mark"
