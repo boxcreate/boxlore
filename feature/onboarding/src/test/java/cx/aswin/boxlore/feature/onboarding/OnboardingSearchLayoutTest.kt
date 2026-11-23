@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
@@ -128,11 +129,83 @@ class OnboardingSearchLayoutTest {
             compose.onNodeWithTag(SEARCH_PICKS_BUTTON_TAG).assertIsDisplayed()
             // At least the start of a second row of shows is on screen above the bar.
             val bar = compose.onNodeWithTag(SEARCH_PICKS_BAR_TAG).fetchSemanticsNode().boundsInRoot
-            val secondRow = compose.onNode(hasText("Show 3", substring = false) and SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState))
-                .fetchSemanticsNode().boundsInRoot
-            assertTrue("no second row of shows at ${next.widthDp}x${next.heightDp}", next.widthDp > 600f || secondRow.top < bar.top)
+            assertTrue("no second row of shows at ${next.widthDp}x${next.heightDp}", rowTops().getOrElse(1) { Float.MAX_VALUE } < bar.top)
         }
     }
+
+    @Test
+    fun `sideways phones show at least two whole rows of shows once the chips scroll away`() {
+        picked.value = setOf("1")
+        render()
+        listOf(BoxloreTestWindows.PHONE_LAND, BoxloreWindowLayout(740f, 360f)).forEach { next ->
+            resize(next)
+            val bar = compose.onNodeWithTag(SEARCH_PICKS_BAR_TAG).fetchSemanticsNode().boundsInRoot
+            assertTrue("no second row at entry at ${next.widthDp}x${next.heightDp}", rowTops().getOrElse(1) { Float.MAX_VALUE } < bar.top)
+            // The first show at the top: two whole rows, names included, above the bar.
+            compose.onNodeWithTag(SEARCH_GRID_TAG).performScrollToIndex(2)
+            compose.waitForIdle()
+            val shows = visibleShows(SEARCH_GRID_TAG)
+            val rows = shows.groupBy { it.positionInRoot.y }.filterValues { row -> row.all { it.positionInRoot.y + it.size.height <= bar.top + 1f } }
+            assertTrue("only ${rows.size} whole rows at ${next.widthDp}x${next.heightDp}", rows.size >= 2)
+            compose.onNodeWithTag(SEARCH_GRID_TAG).performScrollToIndex(0)
+            compose.waitForIdle()
+        }
+    }
+
+    @Test
+    fun `typing across the 600dp gate keeps the query, the picks and the results' place`() {
+        // A phone hides the picks bar while the keyboard is up; at 600dp the bar sits above the keyboard.
+        window.value = BoxloreTestWindows.W599_H900
+        picked.value = setOf("1", "2")
+        query.value = "true crime"
+        render(SystemInsets(imeBottom = 300))
+        compose.onNodeWithTag(SEARCH_RESULTS_TAG).performScrollToIndex(12)
+        compose.waitForIdle()
+        val first = firstShow(SEARCH_RESULTS_TAG)
+        listOf(BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900, BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900).forEach { next ->
+            resize(next)
+            val label = "${next.widthDp}x${next.heightDp}"
+            assertEquals("the query at $label", "true crime", query.value)
+            assertEquals("the picks at $label", setOf("1", "2"), picked.value)
+            assertEquals("the first result at $label", first, firstShow(SEARCH_RESULTS_TAG))
+            val bars = compose.onAllNodesWithTag(SEARCH_PICKS_BAR_TAG).fetchSemanticsNodes()
+            if (next.widthDp < 600f) {
+                assertTrue("the picks bar shows over the keyboard at $label", bars.isEmpty())
+            } else {
+                assertEquals("no picks bar at $label", 1, bars.size)
+                assertTrue("the picks bar is under the keyboard at $label", bars.single().boundsInRoot.bottom <= next.heightDp - 300f + 1f)
+            }
+        }
+    }
+
+    @Test
+    fun `the trending grid keeps its first show through sideways turns and the cover`() {
+        picked.value = setOf("1")
+        render()
+        compose.onNodeWithTag(SEARCH_GRID_TAG).performScrollToIndex(12)
+        compose.waitForIdle()
+        val first = firstShow(SEARCH_GRID_TAG)
+        listOf(BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE, BoxloreTestWindows.COVER_443, BoxloreTestWindows.PHONE).forEach { next ->
+            resize(next)
+            assertEquals("the first show at ${next.widthDp}x${next.heightDp}", first, firstShow(SEARCH_GRID_TAG))
+        }
+    }
+
+    /** The shows (one checkbox each) inside [tag] whose own top (not the part left showing) is on screen inside it. */
+    private fun visibleShows(tag: String): List<SemanticsNode> {
+        val container = compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+        return compose.onAllNodes(hasAnyAncestor(hasTestTag(tag)) and SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState))
+            .fetchSemanticsNodes()
+            .filter { it.positionInRoot.y >= container.top - 1f && it.positionInRoot.y < container.bottom }
+    }
+
+    /** The title of the top-left show inside [tag]. */
+    private fun firstShow(tag: String): String =
+        visibleShows(tag).minWith(compareBy({ it.positionInRoot.y }, { it.positionInRoot.x }))
+            .config[SemanticsProperties.Text].first().text
+
+    /** The tops of the grid's rows of shows on screen, top first. */
+    private fun rowTops(): List<Float> = visibleShows(SEARCH_GRID_TAG).map { it.positionInRoot.y }.distinct().sorted()
 
     @Test
     fun `typed results scroll clear of the keyboard, and the picks bar waits under it`() {

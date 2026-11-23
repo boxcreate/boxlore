@@ -6,10 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -19,32 +16,24 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.semantics.toggleableState
-import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreSearchField
-import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -55,12 +44,7 @@ import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
-import cx.aswin.boxlore.core.designsystem.theme.SkeletonBlock
-import cx.aswin.boxlore.core.designsystem.theme.SkeletonTextLines
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
-import cx.aswin.boxlore.core.model.artworkUrls
 
 /** A category chip on the onboarding search: [categoryValue] is the genre key sent to search, null for Trending. */
 data class SearchCategoryItem(
@@ -119,9 +103,10 @@ internal fun OnboardingSearchScreen(
         LazyListKeyPolicy.deduplicateById(subscribedIds.mapNotNull { selectedPodcasts[it] }) { it.id }
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val width = boxloreContentWidthDp().coerceAtMost(OnboardingSearchMaxWidth)
+        val width = onboardingSearchGridWidth(boxloreContentWidthDp(), tablet)
         val columns = boxlorePosterColumns(window, width)
-        val compactHeader = boxloreIsShortPane() || onboardingSearchHeaderCompact(width, maxHeight.value, columns, hasPicks = subscribedIds.isNotEmpty())
+        val shortPane = boxloreIsShortPane()
+        val compactHeader = shortPane || onboardingSearchHeaderCompact(width, maxHeight.value, columns, hasPicks = subscribedIds.isNotEmpty())
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -134,7 +119,7 @@ internal fun OnboardingSearchScreen(
             if (query.isEmpty() && !compactHeader) SearchCategoryRow(selectedSearchGenre, onGenreSelect)
             SearchBody(
                 SearchBodyState(query, results, alsoFoundResults, isSearching, searchFailed, popularPodcasts, isPopularLoading, selectedSearchGenre, subscribedIds),
-                SearchLayout(columns, compactHeader, listBottom),
+                SearchLayout(columns, compactHeader, listBottom, trendingAsRows = shortPane),
                 SearchBodyActions(onRetrySearch, onSubscribe, onGenreSelect),
                 Modifier.fillMaxWidth().weight(1f),
             )
@@ -182,8 +167,12 @@ private class SearchBodyState(
     val subscribedIds: Set<String>,
 )
 
-/** The grid's columns, whether the chips ride in the grid, and the room left under the lists. */
-private class SearchLayout(val columns: Int, val compactHeader: Boolean, val listBottom: Dp)
+/**
+ * The grid's columns, whether the chips ride in the grid, and the room left under the lists. On
+ * short windows ([trendingAsRows]) the trending shows are set as result rows, several across, so
+ * a few rows of shows and their names show at once.
+ */
+private class SearchLayout(val columns: Int, val compactHeader: Boolean, val listBottom: Dp, val trendingAsRows: Boolean)
 
 private class SearchBodyActions(val onRetrySearch: () -> Unit, val onSubscribe: (Podcast) -> Unit, val onGenreSelect: (String?) -> Unit)
 
@@ -197,7 +186,8 @@ private fun SearchBody(state: SearchBodyState, layout: SearchLayout, actions: Se
             PopularShowsGrid(
                 shows = state.popularPodcasts,
                 loading = state.isPopularLoading,
-                columns = layout.columns,
+                cells = if (layout.trendingAsRows) GridCells.Adaptive(OnboardingSearchRowMinWidth) else GridCells.Fixed(layout.columns),
+                asRows = layout.trendingAsRows,
                 subscribedIds = state.subscribedIds,
                 onSubscribe = actions.onSubscribe,
                 bottomPadding = layout.listBottom,
@@ -223,6 +213,10 @@ internal fun onboardingSearchHeaderCompact(widthDp: Float, heightDp: Float, colu
     return viewport < tile * MinVisibleRows
 }
 
+/** The grid's drawn width: tablets cap the page at a readable width; compact windows draw it edge to edge. */
+internal fun onboardingSearchGridWidth(contentWidthDp: Float, tablet: Boolean): Float =
+    if (tablet) contentWidthDp.coerceAtMost(OnboardingSearchMaxWidth) else contentWidthDp
+
 private const val PosterGridSides = 32f
 private const val PosterGridGap = 16f
 private const val PosterTextHeight = 46f
@@ -231,10 +225,11 @@ private const val PicksBarHeight = 104f
 private const val NavigationAllowance = 24f
 private const val MinVisibleRows = 1.5f
 private const val OnboardingSearchMaxWidth = 720f
+internal val OnboardingSearchRowMinWidth = 280.dp
 private val OnboardingSearchListPadding = 8.dp
 
 @Composable
-private fun SearchCategoryRow(selected: String?, onSelect: (String?) -> Unit) {
+internal fun SearchCategoryRow(selected: String?, onSelect: (String?) -> Unit) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 6.dp),
@@ -252,7 +247,7 @@ private fun SearchCategoryRow(selected: String?, onSelect: (String?) -> Unit) {
 }
 
 @Composable
-private fun SearchSectionTitle(selectedSearchGenre: String?) {
+internal fun SearchSectionTitle(selectedSearchGenre: String?) {
     val category = SEARCH_CATEGORIES.find { it.categoryValue == selectedSearchGenre }
     Text(
         text = if (selectedSearchGenre == null || category == null) {
@@ -264,83 +259,6 @@ private fun SearchSectionTitle(selectedSearchGenre: String?) {
         fontWeight = GoogleSansWeight.bold,
         modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 8.dp).semantics { heading() },
     )
-}
-
-/**
- * The trending posters. While they load, the grid fills with posters' shapes, so nothing jumps
- * when the shows arrive. [header], on short windows, puts the chips and the heading first in the
- * grid so they scroll away.
- */
-@Composable
-@Suppress("LongParameterList")
-private fun PopularShowsGrid(
-    shows: List<Podcast>,
-    loading: Boolean,
-    columns: Int,
-    subscribedIds: Set<String>,
-    onSubscribe: (Podcast) -> Unit,
-    bottomPadding: Dp,
-    header: SearchGridHeader?,
-    modifier: Modifier,
-) {
-    val distinct = remember(shows) { LazyListKeyPolicy.deduplicateById(shows) { it.id } }
-    if (!loading && distinct.isEmpty() && header == null) {
-        Box(modifier, contentAlignment = Alignment.Center) {
-            Text(stringResource(R.string.onboarding_search_no_popular), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        return
-    }
-    val grid = rememberLazyGridState()
-    // The grid keeps its first show in place when the header moves in; at the very top, show the header too.
-    LaunchedEffect(header != null) {
-        if (header != null && grid.firstVisibleItemIndex == SearchGridHeaderItems && grid.firstVisibleItemScrollOffset == 0) grid.scrollToItem(0)
-    }
-    ShimmerScope(active = loading) {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(columns),
-            state = grid,
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = bottomPadding),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = modifier.testTag(SEARCH_GRID_TAG),
-        ) {
-            if (header != null) {
-                item(key = "search_categories", span = { GridItemSpan(maxLineSpan) }) { Box(Modifier.bleedSideways(16.dp)) { SearchCategoryRow(header.selectedGenre, header.onGenreSelect) } }
-                item(key = "search_heading", span = { GridItemSpan(maxLineSpan) }) { Box(Modifier.bleedSideways(16.dp)) { SearchSectionTitle(header.selectedGenre) } }
-            }
-            when {
-                loading -> items(SkeletonPosterCount, key = { "skeleton-$it" }) { PopularPodcastSkeleton() }
-                distinct.isEmpty() -> item(key = "search_no_popular", span = { GridItemSpan(maxLineSpan) }) {
-                    Text(
-                        stringResource(R.string.onboarding_search_no_popular),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(24.dp),
-                    )
-                }
-                else -> items(distinct, key = { LazyListKeyPolicy.safeKey(it.id, prefix = "popular_show") }) { podcast ->
-                    PopularPodcastGridItem(podcast = podcast, isSubscribed = podcast.id in subscribedIds, onClick = { onSubscribe(podcast) })
-                }
-            }
-        }
-    }
-}
-
-private const val SkeletonPosterCount = 6
-private const val SearchGridHeaderItems = 2
-
-/** On short windows the topic chips and the heading ride at the top of the grid. */
-private class SearchGridHeader(val selectedGenre: String?, val onGenreSelect: (String?) -> Unit)
-
-/** A trending poster's shape while the shows load: the square art and its two lines of text. */
-@Composable
-private fun PopularPodcastSkeleton() {
-    Column(Modifier.fillMaxWidth().boxloreCardWidth(BoxloreCardFamily.Poster).testTag(SEARCH_SKELETON_TAG)) {
-        SkeletonBlock(Modifier.aspectRatio(1f).fillMaxWidth(), shape = MaterialTheme.shapes.large)
-        Spacer(modifier = Modifier.height(6.dp))
-        SkeletonTextLines(MaterialTheme.typography.bodyMedium, 1, Modifier.padding(horizontal = 4.dp), widths = listOf(0.8f))
-        SkeletonTextLines(MaterialTheme.typography.bodySmall, 1, Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp), widths = listOf(0.5f))
-    }
 }
 
 @Composable
@@ -432,58 +350,6 @@ private fun OnboardingSearchEmpty(modifier: Modifier) {
     }
 }
 
-/**
- * A trending poster. The whole tile is one checkbox; its mark is Echo's solid badge, which blooms
- * into a shape when picked.
- */
-@Composable
-private fun PopularPodcastGridItem(podcast: Podcast, isSubscribed: Boolean, onClick: () -> Unit) {
-    val state = stringResource(if (isSubscribed) R.string.onboarding_search_selected else R.string.onboarding_search_select)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .boxloreCardWidth(BoxloreCardFamily.Poster)
-            .clip(MaterialTheme.shapes.large)
-            .semantics(mergeDescendants = true) {
-                role = Role.Checkbox
-                toggleableState = ToggleableState(isSubscribed)
-                stateDescription = state
-            }
-            .expressiveClickable(onClick = onClick),
-    ) {
-        Box(Modifier.aspectRatio(1f).fillMaxWidth().clip(MaterialTheme.shapes.large)) {
-            OptimizedImage(
-                url = podcast.imageUrl,
-                fallbackUrls = podcast.artworkUrls(),
-                proxyWidth = 400,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerHigh),
-            )
-            Box(Modifier.align(Alignment.BottomEnd).padding(8.dp)) {
-                EchoSelectionBadge(selected = isSubscribed, icon = if (isSubscribed) Icons.Rounded.Check else Icons.Rounded.Add, size = 32.dp)
-            }
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = podcast.title,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = GoogleSansWeight.bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 4.dp),
-        )
-        Text(
-            text = podcast.artist,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp),
-        )
-    }
-}
-
 internal const val SEARCH_GRID_TAG = "onboarding_search_grid"
 internal const val SEARCH_RESULTS_TAG = "onboarding_search_results"
 internal const val SEARCH_CATEGORIES_TAG = "onboarding_search_categories"
@@ -491,13 +357,6 @@ internal const val SEARCH_SKELETON_TAG = "onboarding_search_skeleton"
 internal const val SEARCH_PICKS_BAR_TAG = "onboarding_search_picks_bar"
 internal const val SEARCH_PICKS_BUTTON_TAG = "onboarding_search_picks"
 internal const val SEARCH_PICKS_SHEET_TAG = "onboarding_search_picks_sheet"
-
-/** Lets a full-width header inside the padded grid reach the grid's edges, [by] on each side. */
-private fun Modifier.bleedSideways(by: Dp): Modifier = layout { measurable, constraints ->
-    val extra = by.roundToPx() * 2
-    val placeable = measurable.measure(constraints.copy(minWidth = constraints.minWidth + extra, maxWidth = constraints.maxWidth + extra))
-    layout(constraints.maxWidth, placeable.height) { placeable.place(-extra / 2, 0) }
-}
 
 /** A show search that couldn't be read says so and offers Try again, never "No Podcasts Found". */
 @Composable
