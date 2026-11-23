@@ -38,6 +38,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -113,55 +114,14 @@ fun YourShowsSection(
     val sidebar = tablet && wideWithoutBrief && boxloreContentWidthDp() >= 672f
     val moduleModifier = if (sidebar) modifier.wrapContentWidth().widthIn(max = 1_200.dp) else modifier.boxloreCardWidth(BoxloreCardFamily.Utility)
     Column(modifier = moduleModifier) {
-        // --- Header ---
-        Row(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 0.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier =
-                Modifier.expressiveClickable {
-                    if (selectedPodcastId != null) {
-                        onPodcastSelected(null) // clear selection
-                    }
-                },
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Bookmarks,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.home_your_shows_heading),
-                    style =
-                    MaterialTheme.typography.headlineMedium.copy(
-                        fontFamily = rememberSectionHeaderFontFamily(),
-                        fontWeight = GoogleSansWeight.semiBold,
-                    ),
-                    letterSpacing = (-0.5).sp,
-                    // Explicit, so an artwork-coloured shell cannot leak its foreground into Home.
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-
-            // The 48dp button is taller than the title, so it is centred on the title line without
-            // setting the row height; otherwise it adds empty space between the hero and this title.
-            Box(Modifier.centredWithoutHeight()) {
-                HomeChapterBrowseButton(
-                    chapter = HomeDiscoveryChapter.LIBRARY,
-                    description = stringResource(R.string.home_view_library),
-                    onClick = onViewLibrary,
-                    icon = Icons.Rounded.ChevronRight,
-                )
-            }
-        }
+        YourShowsHeader(
+            onHeadingClick = {
+                if (selectedPodcastId != null) {
+                    onPodcastSelected(null) // clear selection
+                }
+            },
+            onViewLibrary = onViewLibrary,
+        )
 
         // One surface persists across Mix, show filtering, loading and caught-up states.
         YourShowsModuleFrame(
@@ -448,6 +408,64 @@ private fun SeeAllEpisodesRow(shape: androidx.compose.ui.graphics.Shape, onClick
 }
 
 /** Reports no height, so the row keeps its text height; the content is centred on the row and overflows evenly. */
+/**
+ * Your shows' heading row, shared with its loading placeholder so nothing moves when Home loads: the
+ * [lead] (icon and title) at the start and the 48dp [action], centred on the title line, at the end.
+ */
+@Composable
+internal fun YourShowsHeaderRow(modifier: Modifier = Modifier, lead: @Composable () -> Unit, action: @Composable () -> Unit) {
+    Row(
+        modifier = modifier.fillMaxWidth().padding(bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        lead()
+        // The 48dp button is taller than the title, so it is centred on the title line without
+        // setting the row height; otherwise it adds empty space between the hero and this title.
+        Box(Modifier.centredWithoutHeight()) { action() }
+    }
+}
+
+/** The heading's type, for the title and its placeholder. */
+@Composable
+internal fun yourShowsHeadingStyle(): TextStyle = MaterialTheme.typography.headlineMedium.copy(
+    fontFamily = rememberSectionHeaderFontFamily(),
+    fontWeight = GoogleSansWeight.semiBold,
+    letterSpacing = (-0.5).sp,
+)
+
+@Composable
+internal fun YourShowsHeader(onHeadingClick: () -> Unit, onViewLibrary: () -> Unit) {
+    YourShowsHeaderRow(
+        modifier = Modifier.testTag("home_your_shows_header"),
+        lead = {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.expressiveClickable(onClick = onHeadingClick)) {
+                Icon(
+                    imageVector = Icons.Outlined.Bookmarks,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.home_your_shows_heading),
+                    style = yourShowsHeadingStyle(),
+                    // Explicit, so an artwork-coloured shell cannot leak its foreground into Home.
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        },
+        action = {
+            HomeChapterBrowseButton(
+                chapter = HomeDiscoveryChapter.LIBRARY,
+                description = stringResource(R.string.home_view_library),
+                onClick = onViewLibrary,
+                icon = Icons.Rounded.ChevronRight,
+            )
+        },
+    )
+}
+
 private fun Modifier.centredWithoutHeight(): Modifier = layout { measurable, constraints ->
     val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
     layout(placeable.width, 0) { placeable.place(0, -placeable.height / 2) }
