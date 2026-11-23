@@ -325,6 +325,8 @@
     <string name="history_story_card_of">Karte %1$d von %2$d</string>
     <string name="history_story_previous">Vorherige Karte</string>
     <string name="history_story_next">Nächste Karte</string>
+    <string name="history_story_pause">Story pausieren</string>
+    <string name="history_story_play">Story abspielen</string>
     <string name="history_story_clock">Höruhr: %1$s</string>
     <string name="history_story_hello_eyebrow">Dein Hörmonat</string>
     <string name="history_story_hello_eyebrow_year">Dein Hörmonat · %1$d</string>

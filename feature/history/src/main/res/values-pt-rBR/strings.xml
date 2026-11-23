@@ -325,6 +325,8 @@
     <string name="history_story_card_of">Card %1$d de %2$d</string>
     <string name="history_story_previous">Card anterior</string>
     <string name="history_story_next">Próximo card</string>
+    <string name="history_story_pause">Pausar história</string>
+    <string name="history_story_play">Reproduzir história</string>
     <string name="history_story_clock">Relógio de escuta: %1$s</string>
     <string name="history_story_hello_eyebrow">Seu mês em podcasts</string>
     <string name="history_story_hello_eyebrow_year">Seu mês em podcasts · %1$d</string>

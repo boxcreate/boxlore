@@ -288,6 +288,8 @@
     <string name="history_story_card_of">Carte %1$d sur %2$d</string>
     <string name="history_story_previous">Carte précédente</string>
     <string name="history_story_next">Carte suivante</string>
+    <string name="history_story_pause">Mettre la story en pause</string>
+    <string name="history_story_play">Lire la story</string>
     <string name="history_story_clock">Horloge d’écoute : %1$s</string>
     <string name="history_story_hello_eyebrow">Votre mois d’écoute</string>
     <string name="history_story_hello_eyebrow_year">Votre mois d’écoute · %1$d</string>

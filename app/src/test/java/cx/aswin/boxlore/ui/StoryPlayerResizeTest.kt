@@ -11,16 +11,24 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.echo.LocalEchoMotion
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.ListeningDayEpisode
 import cx.aswin.boxlore.core.model.ListeningPlayedShow
 import cx.aswin.boxlore.feature.history.story.STORY_FRAME_TAG
+import cx.aswin.boxlore.feature.history.story.STORY_SIDE_NEXT_TAG
+import cx.aswin.boxlore.feature.history.story.STORY_SIDE_PAUSE_TAG
+import cx.aswin.boxlore.feature.history.story.STORY_SIDE_PREVIOUS_TAG
 import cx.aswin.boxlore.feature.history.story.StoryCard
 import cx.aswin.boxlore.feature.history.story.StoryLogic
 import cx.aswin.boxlore.feature.history.story.StoryPlayer
@@ -76,6 +84,91 @@ class StoryPlayerResizeTest {
         assertEquals(scrolled, requireNotNull(frame.scroll()), 0.5f)
     }
 
+    @Test fun `the first card waits for a tap while part of it is off screen and moves on by itself when it fits`() {
+        val story = story()
+        window.value = COVER_SHORT
+        render(story, StoryCard.HELLO)
+        compose.mainClock.autoAdvance = false
+        waitPastCard()
+        compose.onNodeWithContentDescription("Card 1 of", substring = true).assertExists()
+
+        // Tall enough: its 8 seconds are up, so it moves on at once, as on a phone.
+        compose.runOnIdle { window.value = PHONE_TALL }
+        frames(10)
+        compose.onNodeWithContentDescription("Card 2 of", substring = true).assertExists()
+
+        // Short again: card 2 stays, and a tap on the next area still moves on.
+        compose.runOnIdle { window.value = COVER_SHORT }
+        waitPastCard()
+        compose.onNodeWithContentDescription("Card 2 of", substring = true).assertExists()
+        compose.onNodeWithContentDescription("Next card").performSemanticsAction(SemanticsActions.OnClick)
+        frames(3)
+        compose.onNodeWithContentDescription("Card 3 of", substring = true).assertExists()
+    }
+
+    @Test fun `on tablets the frame grows only a little and previous, pause and next sit beside it`() {
+        val story = story()
+        window.value = DpSize(800.dp, 1_280.dp)
+        render(story, StoryCard.HELLO)
+        compose.mainClock.autoAdvance = false
+        frames(3)
+        assertTrue(compose.onNodeWithTag(STORY_FRAME_TAG).fetchSemanticsNode().boundsInRoot.width <= 400f * 1.15f + 0.5f)
+
+        compose.runOnIdle { window.value = DpSize(1_280.dp, 800.dp) }
+        frames(3)
+        compose.onNodeWithTag(STORY_SIDE_NEXT_TAG).performClick()
+        frames(3)
+        compose.onNodeWithContentDescription("Card 2 of", substring = true).assertExists()
+        compose.onNodeWithTag(STORY_SIDE_PAUSE_TAG).assertContentDescriptionEquals("Pause story").performClick()
+        waitPastCard()
+        compose.onNodeWithContentDescription("Card 2 of", substring = true).assertExists()
+        compose.onNodeWithTag(STORY_SIDE_PREVIOUS_TAG).performClick()
+        frames(3)
+        compose.onNodeWithContentDescription("Card 1 of", substring = true).assertExists()
+
+        // A phone has no room beside the frame: no buttons, and the card is kept.
+        compose.runOnIdle { window.value = PHONE_TALL }
+        frames(3)
+        compose.onNodeWithTag(STORY_SIDE_PAUSE_TAG).assertDoesNotExist()
+        compose.onNodeWithContentDescription("Card 1 of", substring = true).assertExists()
+    }
+
+    private fun story() = requireNotNull(
+        StoryLogic.build(
+            YearMonth.of(2026, 10),
+            emptyList(),
+            (1..10).map { day -> ListeningDayEpisode(LocalDate.of(2026, 10, day).toEpochDay(), "dd-$day", "dd", 40 * 60_000L, 1, 0L, eveningMs = 40 * 60_000L) },
+            listOf(ListeningPlayedShow("dd", "Darknet Diaries", null, "True Crime", 0L, 0L)),
+            LocalDate.of(2026, 11, 2),
+            ZoneOffset.UTC,
+        ),
+    )
+
+    private fun render(story: cx.aswin.boxlore.feature.history.story.MonthStory, card: StoryCard) {
+        // A paused clock from the start: a running one would play every card through before the test looks.
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            CompositionLocalProvider(
+                LocalEchoMotion provides false,
+                LocalBoxloreWindowLayout provides BoxloreWindowLayout(window.value.width.value, window.value.height.value),
+            ) {
+                BoxLoreTheme(darkTheme = true, dynamicColor = false) {
+                    Box(Modifier.requiredSize(window.value)) { StoryPlayer(story, card, {}, {}, {}) }
+                }
+            }
+        }
+    }
+
+    /** Runs the paused clock past a card's 8 seconds, a frame at a time. */
+    private fun waitPastCard() = frames(CARD_MS.toInt() / 100 + 10, stepMs = 100)
+
+    private fun frames(count: Int, stepMs: Long = 16) {
+        repeat(count) {
+            compose.mainClock.advanceTimeBy(stepMs)
+            compose.waitForIdle()
+        }
+    }
+
     /** How far the frame is scrolled, or null when it doesn't scroll. */
     private fun SemanticsNodeInteraction.scroll(): Float? = fetchSemanticsNode().config.getOrNull(SemanticsProperties.VerticalScrollAxisRange)?.value?.invoke()
 
@@ -85,5 +178,14 @@ class StoryPlayerResizeTest {
 
         /** Tall enough for the whole frame. */
         val TALL = DpSize(800.dp, 1_200.dp)
+
+        /** A Fold 8 cover with its bars: the frame at its fit would be under 0.8, so it scrolls. */
+        val COVER_SHORT = DpSize(443.dp, 580.dp)
+
+        /** How long a card shows before moving on by itself. */
+        const val CARD_MS = 8_000L
+
+        /** A regular phone: the whole frame fits. */
+        val PHONE_TALL = DpSize(400.dp, 890.dp)
     }
 }

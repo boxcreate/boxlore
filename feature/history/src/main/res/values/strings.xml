@@ -325,6 +325,8 @@
     <string name="history_story_card_of">Card %1$d of %2$d</string>
     <string name="history_story_previous">Previous card</string>
     <string name="history_story_next">Next card</string>
+    <string name="history_story_pause">Pause story</string>
+    <string name="history_story_play">Play story</string>
     <string name="history_story_clock">Listening clock: %1$s</string>
     <string name="history_story_hello_eyebrow">Your month in listening</string>
     <string name="history_story_hello_eyebrow_year">Your month in listening · %1$d</string>

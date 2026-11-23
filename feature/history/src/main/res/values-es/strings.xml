@@ -344,6 +344,8 @@
     <string name="history_story_card_of">Tarjeta %1$d de %2$d</string>
     <string name="history_story_previous">Tarjeta anterior</string>
     <string name="history_story_next">Tarjeta siguiente</string>
+    <string name="history_story_pause">Pausar historia</string>
+    <string name="history_story_play">Reproducir historia</string>
     <string name="history_story_clock">Reloj de escucha: %1$s</string>
     <string name="history_story_hello_eyebrow">Tu mes de escucha</string>
     <string name="history_story_hello_eyebrow_year">Tu mes de escucha · %1$d</string>
