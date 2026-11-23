@@ -615,10 +615,6 @@ fun HomeScreen(
                 onChangePodcastClick = { showChangePodcastSheet = true },
                 discoverySections = LocalHomeDiscoverySections.current,
             )
-            BoxloreSnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
         }
     }
     CompositionLocalProvider(LocalHomeSectionsUiState provides sections) {
@@ -650,6 +646,11 @@ fun HomeScreen(
                 movableFeed()
             }
         }
+        // Over the whole screen, so it sits above the bottom bar and mini player in either layout.
+        BoxloreSnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
     }
 

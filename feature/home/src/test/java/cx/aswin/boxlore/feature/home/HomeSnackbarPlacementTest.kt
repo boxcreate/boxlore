@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
@@ -90,7 +89,9 @@ class HomeSnackbarPlacementTest {
             fontScale.floatValue = scale
             composeRule.waitForIdle()
             val label = "${layout.widthDp}x${layout.heightDp} $current at ${scale}x"
-            val message = composeRule.onAllNodesWithText(MESSAGE).onFirst().fetchSemanticsNode().boundsInRoot
+            val found = composeRule.onAllNodesWithText(MESSAGE).fetchSemanticsNodes()
+            assertTrue("$label: the message is gone", found.isNotEmpty())
+            val message = found.first().boundsInRoot
             val chromeTop = layout.heightDp - chrome.value
             assertTrue("$label: the message ends at ${message.bottom}, under the bar and mini player from $chromeTop", message.bottom <= chromeTop)
             assertTrue("$label: the message leaves the window", message.left >= 0f && message.right <= layout.widthDp)

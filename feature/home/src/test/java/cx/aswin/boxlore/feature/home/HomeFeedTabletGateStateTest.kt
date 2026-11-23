@@ -61,7 +61,6 @@ class HomeFeedTabletGateStateTest {
     private val uiState = mutableStateOf(state())
     private val sections = HomeSectionsUiState.initial()
 
-
     @Test
     fun `the Daily Mix rail and its open menu keep their place across the tablet gates`() {
         render()
@@ -70,8 +69,11 @@ class HomeFeedTabletGateStateTest {
         click("home_mix_mode_trigger")
         assertMenuAndRail("start")
         val steps = listOf(
-            BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900,
-            BoxloreTestWindows.GATE_600x480, BoxloreTestWindows.GATE_599x479, BoxloreTestWindows.GATE_600x480,
+            BoxloreTestWindows.W600_H900,
+            BoxloreTestWindows.W599_H900,
+            BoxloreTestWindows.GATE_600x480,
+            BoxloreTestWindows.GATE_599x479,
+            BoxloreTestWindows.GATE_600x480,
             BoxloreTestWindows.W599_H900,
         )
         for (layout in steps) {
