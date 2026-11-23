@@ -48,8 +48,8 @@ Used by `:app`:
 
 ## Tablets and foldables
 
-- `TabletPlayerBody`, `TabletPlayerSupport` and `TabletPlayerLayoutLogic` arrange the player as stacked, columns (from 1000dp wide, or from 840dp on landscape windows; never beside a page) or around a horizontal or vertical fold, keeping regions off the hinge. Stacked, the supporting panel takes the height left under the controls (at least 200dp) and the cover shrinks first.
-- Phones held sideways (shorter than 480dp, wider than tall) show the Standard player in two columns: cover and title, then seekbar, controls, quick actions, Up next and notes (`usesSidewaysPhoneColumns`).
+- `TabletPlayerBody`, `TabletPlayerSupport` and `TabletPlayerLayoutLogic` arrange the player as stacked, columns (from 1000dp wide, or from 840dp on landscape windows; never beside a page) or around a horizontal or vertical fold, keeping regions off the hinge. Stacked and in book posture, the supporting panel takes the height left under the controls (at least 200dp); stacked, the hero gives way first by its own shape, and a cover that would get too small becomes the small cover beside the title. The supporting panel is one movable piece, so its tab content keeps its place across arrangements.
+- Phones held sideways (a short pane, wider than tall, at least 600dp wide) show the Standard player in two columns: cover and title, then seekbar, controls, quick actions, Up next and notes (`usesSidewaysPhoneColumns`). The hero moves between the arrangements and each keeps its own scroll position, so turning the phone keeps the inline transcript, page position and seekbar label.
 - Up next, Chapters, Transcript and Notes become supporting tabs (`PlayerSupportingTab`) that survive recreation and window changes through `FullPlayerUiStateSaver` and `RetainedPlayerPresentation`.
 - A phone keeps its own player state until the first tablet frame, which continues it. Window gates and transition rules are in [adaptive UI and state](../../ARCHITECTURE.md#adaptive-ui-and-state).
 
