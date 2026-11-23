@@ -39,8 +39,8 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 - `AccountSettingsPage` serves Settings and onboarding. `accountPageMode` picks one state: signed in, signing in with a link, link failed, confirm email, check email, or signed out.
 - Signed out offers Google, an emailed link, or email and password; the chosen form replaces the cards (`AccountAuthState.methodChosen`, saved state).
 - A sign-in link shows progress or failure in `AccountEmailLinkUi` (from `SettingsRepositories.emailLinkSignIn`).
-- Signed in, Settings shows the sync panel (`AccountSyncPanel`) and account actions (sign out, password reset for password accounts, delete). Backend error text is never shown.
-- Echo (`AccountEcho`, the shared `EchoCharacter`) is decorative; tapping it cycles outfits (`AccountEchoOutfits`), except while syncing.
+- Signed in, Settings shows the sync panel (`AccountSyncPanel`) and account actions (sign out, password reset for password accounts, delete, TV sign-in via `SettingsScreenConfig.tvSignIn`). Backend error text is never shown.
+- Echo (`AccountEcho`, shared `EchoCharacter`) is decorative; tapping cycles outfits (`AccountEchoOutfits`) except while syncing.
 - Cloud Sync & Backups exports and imports a full JSON backup or OPML (`LibraryBackupWriters`; copy in `FULL_LIBRARY_EXPORT_SUMMARY`). Automatic backup (`AutoBackupControl`, from the app) sets the folder, frequency and retention, and shows the last backup or a folder problem with its fix. `SettingsScreen` hosts the folder picker above the adaptive layout, so it survives resizes and recreation.
 - Text lives in `res/values/` by area. The Privacy explanation, Support tier names and codenames stay English (`translatable="false"`); the last two are analytics values.
 

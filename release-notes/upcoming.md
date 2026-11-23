@@ -26,6 +26,8 @@ Announcement title:
 
 ## New
 
+- To bring your shows to your TV, open Cloud Sync & Backups on your phone, choose Sign in on a TV, and enter the code your TV shows.
+
 ## Improved
 
 - The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.
