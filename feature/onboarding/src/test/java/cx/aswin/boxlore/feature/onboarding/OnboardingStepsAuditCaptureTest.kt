@@ -309,6 +309,10 @@ class OnboardingStepsAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
                 PhoneGoldenConfiguration(932, 314, false),
                 PhoneGoldenConfiguration(841, 340, false),
                 PhoneGoldenConfiguration(673, 410, false),
+                // Dark, for the steps with new controls: a phone, a sideways phone and a tablet.
+                PhoneGoldenConfiguration(412, 915, true),
+                PhoneGoldenConfiguration(915, 412, true),
+                PhoneGoldenConfiguration(1_280, 800, true),
             ),
         )
     }
