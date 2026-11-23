@@ -7,6 +7,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -37,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -49,12 +53,16 @@ import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeContentPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeInsetsDp
 import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneStatusBarsPadding
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.info.logic.EpisodeHeroForm
 import cx.aswin.boxlore.feature.info.logic.EpisodeShowTitle
+import cx.aswin.boxlore.feature.info.logic.episodeHeroArtSizeDp
+import cx.aswin.boxlore.feature.info.logic.episodeHeroForm
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -199,245 +207,264 @@ fun EpisodeInfoScreen(
     // the show page) and of the side system buttons or camera cutout on a sideways phone.
     val titleHorizontalPadding = EpisodeHeaderButtonInset + 48.dp + 8.dp
 
+    val isShortPane = boxloreIsShortPane()
     cx.aswin.boxlore.core.designsystem.components.DiscoveryExpressiveTheme {
-        when (val state = uiState) {
-            is EpisodeInfoUiState.Loading -> {
-                Box(
-                    modifier = modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    BoxLoreLoader.Expressive(size = 80.dp)
-                }
-            }
-            is EpisodeInfoUiState.Error -> {
-                Box(
-                    modifier = modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(androidx.compose.ui.res.stringResource(R.string.episode_info_load_error), color = MaterialTheme.colorScheme.error)
-                }
-            }
-            is EpisodeInfoUiState.ReadingFeed ->
-                cx.aswin.boxlore.feature.info.components.EpisodeLinkStatus(true, "", onPodcastClick, onBack, modifier)
-            is EpisodeInfoUiState.NotFound ->
-                cx.aswin.boxlore.feature.info.components.EpisodeLinkStatus(false, state.podcastId, onPodcastClick, onBack, modifier)
-            is EpisodeInfoUiState.Success -> {
-                Box(modifier = modifier.fillMaxSize()) {
-                    cx.aswin.boxlore.feature.info.components.InfoArtworkBackground(
-                        imageUrl = state.episode.imageUrl,
-                        fallbackUrls = listOf(state.episode.podcastImageUrl),
-                        height = collapsedHeaderHeight + 400.dp,
-                        scrollOffset = scrollOffset,
-                        scrollFraction = scrollFraction,
-                    )
-                    // Content List
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding =
-                        boxloreHorizontalSafeContentPadding(
-                            PaddingValues(
-                                top = collapsedHeaderHeight + 16.dp,
-                                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + bottomContentPadding + 160.dp, // Extra for miniplayer
-                            ),
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(24.dp),
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            // The page's own width, not the window's: a detail pane beside a list keeps the phone layout.
+            val pageWidthDp = maxWidth.value
+            val heroForm = episodeHeroForm(pageWidthDp, isShortPane)
+            val heroArtSize = episodeHeroArtSizeDp(heroForm, pageWidthDp).dp
+            // Off the phone layout, cards and rows stop at a readable width, lined up with the cover.
+            val blockCap = if (heroForm == EpisodeHeroForm.Stacked) Modifier else Modifier.fillMaxWidth().wrapContentWidth(Alignment.Start).widthIn(max = EpisodeBlockMaxWidth)
+            when (val state = uiState) {
+                is EpisodeInfoUiState.Loading -> {
+                    Box(
+                        modifier = modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        item {
-                            cx.aswin.boxlore.feature.info.components.EpisodeInfoHero(
-                                episode = state.episode,
-                                podcastTitle = EpisodeShowTitle.displayName(state.podcastTitle, showStandIn),
-                                onPodcastClick = {
-                                    viewModel.onPodcastLinkClicked()
-                                    onPodcastClick(state.podcastId)
-                                },
-                                completionState = cx.aswin.boxlore.feature.info.components.EpisodeCompletionState(
-                                    isCompleted = state.episode.id in completedEpisodeIds,
-                                    showTip = showMarkPlayedTip,
-                                    isArchived = state.episode.id in archivedEpisodeIds,
+                        BoxLoreLoader.Expressive(size = 80.dp)
+                    }
+                }
+                is EpisodeInfoUiState.Error -> {
+                    Box(
+                        modifier = modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(androidx.compose.ui.res.stringResource(R.string.episode_info_load_error), color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                is EpisodeInfoUiState.ReadingFeed ->
+                    cx.aswin.boxlore.feature.info.components.EpisodeLinkStatus(true, "", onPodcastClick, onBack, modifier)
+                is EpisodeInfoUiState.NotFound ->
+                    cx.aswin.boxlore.feature.info.components.EpisodeLinkStatus(false, state.podcastId, onPodcastClick, onBack, modifier)
+                is EpisodeInfoUiState.Success -> {
+                    Box(modifier = modifier.fillMaxSize()) {
+                        cx.aswin.boxlore.feature.info.components.InfoArtworkBackground(
+                            imageUrl = state.episode.imageUrl,
+                            fallbackUrls = listOf(state.episode.podcastImageUrl),
+                            height = collapsedHeaderHeight + heroArtSize + 200.dp,
+                            scrollOffset = scrollOffset,
+                            scrollFraction = scrollFraction,
+                        )
+                        // Content List
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize().testTag(EpisodeInfoTags.LIST),
+                            contentPadding =
+                            boxloreHorizontalSafeContentPadding(
+                                PaddingValues(
+                                    top = collapsedHeaderHeight + 16.dp,
+                                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + bottomContentPadding + 160.dp, // Extra for miniplayer
                                 ),
-                                onToggleCompletion = viewModel::onToggleCompletion,
-                                modifier = Modifier.padding(horizontal = 22.dp),
-                                onMarkPlayedTipDismissed = onMarkPlayedTipDismissed,
-                            )
-                        }
-                        item {
-                            cx.aswin.boxlore.feature.info.components.EpisodeActionRail(
-                                state = cx.aswin.boxlore.feature.info.components.EpisodeActionRailState(
-                                    isPlaying = state.isPlaying,
-                                    isPlaybackLoading = state.isPlaybackLoading,
-                                    isLiked = state.episode.id in likedEpisodeIds,
-                                    isDownloaded = isDownloaded,
-                                    isDownloading = isDownloading,
-                                    isQueued = state.episode.id in queuedEpisodeIds,
-                                    isCompleted = state.episode.id in completedEpisodeIds,
-                                    positionMs = state.resumePositionMs,
-                                    durationMs = state.durationMs,
-                                ),
-                                callbacks = cx.aswin.boxlore.feature.info.components.EpisodeActionRailCallbacks(
-                                    onMainActionClick = { viewModel.onMainActionClick(entryPointContext) },
-                                    onLikeClick = { viewModel.onToggleLike(state.episode) },
-                                    onDownloadClick = { viewModel.toggleDownload(state.episode) },
-                                    onQueueClick = viewModel::toggleQueue,
-                                ),
-                                modifier = Modifier.padding(horizontal = 22.dp),
-                            )
-                        }
-
-                        // CROSS-PROMOTION CARD
-                        state.crossPromotion?.let { crossPromo ->
-                            item {
-                                CrossPromotionCard(
-                                    crossPromotion = crossPromo,
-                                    onPodcastClick = onPodcastClick,
-                                    modifier =
-                                    Modifier
-                                        .padding(horizontal = 16.dp),
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
+                        ) {
+                            val actionRail: @Composable (Modifier) -> Unit = { railModifier ->
+                                cx.aswin.boxlore.feature.info.components.EpisodeActionRail(
+                                    state = cx.aswin.boxlore.feature.info.components.EpisodeActionRailState(
+                                        isPlaying = state.isPlaying,
+                                        isPlaybackLoading = state.isPlaybackLoading,
+                                        isLiked = state.episode.id in likedEpisodeIds,
+                                        isDownloaded = isDownloaded,
+                                        isDownloading = isDownloading,
+                                        isQueued = state.episode.id in queuedEpisodeIds,
+                                        isCompleted = state.episode.id in completedEpisodeIds,
+                                        positionMs = state.resumePositionMs,
+                                        durationMs = state.durationMs,
+                                    ),
+                                    callbacks = cx.aswin.boxlore.feature.info.components.EpisodeActionRailCallbacks(
+                                        onMainActionClick = { viewModel.onMainActionClick(entryPointContext) },
+                                        onLikeClick = { viewModel.onToggleLike(state.episode) },
+                                        onDownloadClick = { viewModel.toggleDownload(state.episode) },
+                                        onQueueClick = viewModel::toggleQueue,
+                                    ),
+                                    modifier = railModifier.testTag(EpisodeInfoTags.RAIL),
                                 )
                             }
-                        }
-
-                        if (state.chapters.isNotEmpty()) {
-                            item {
-                                cx.aswin.boxlore.feature.info.components.EpisodeChaptersSection(
-                                    episodeId = state.episode.id,
-                                    chapters = state.chapters,
-                                    positionMs = state.resumePositionMs,
-                                    onSeekTo = viewModel::seekToPosition,
-                                    modifier = Modifier.padding(horizontal = 16.dp),
+                            item(key = "hero") {
+                                cx.aswin.boxlore.feature.info.components.EpisodeInfoHero(
+                                    episode = state.episode,
+                                    podcastTitle = EpisodeShowTitle.displayName(state.podcastTitle, showStandIn),
+                                    onPodcastClick = {
+                                        viewModel.onPodcastLinkClicked()
+                                        onPodcastClick(state.podcastId)
+                                    },
+                                    completionState = cx.aswin.boxlore.feature.info.components.EpisodeCompletionState(
+                                        isCompleted = state.episode.id in completedEpisodeIds,
+                                        showTip = showMarkPlayedTip,
+                                        isArchived = state.episode.id in archivedEpisodeIds,
+                                    ),
+                                    onToggleCompletion = viewModel::onToggleCompletion,
+                                    modifier = Modifier.padding(horizontal = 22.dp),
+                                    onMarkPlayedTipDismissed = onMarkPlayedTipDismissed,
+                                    form = heroForm,
+                                    artSize = heroArtSize,
+                                    rail = { actionRail(Modifier.widthIn(max = EpisodeRailMaxWidth)) },
                                 )
                             }
-                        }
-                        episodeShowNotes(state, viewModel::seekToPosition)
+                            // Beside the cover in the two-column layout, its own row otherwise.
+                            if (heroForm != EpisodeHeroForm.TwoColumn) {
+                                item(key = "rail") {
+                                    val railCap = if (heroForm == EpisodeHeroForm.Stacked) Modifier else Modifier.widthIn(max = EpisodeRailMaxWidth)
+                                    actionRail(Modifier.padding(horizontal = 22.dp).then(railCap))
+                                }
+                            }
 
-                        // Contextual "MORE LIKE THIS" RECOMMENDATIONS SECTION -> Card
-                        if (moreLikeThisOn == true && (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty())) {
-                            item {
-                                cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreLikeThisCard(
+                            // CROSS-PROMOTION CARD
+                            state.crossPromotion?.let { crossPromo ->
+                                item(key = "cross_promo") {
+                                    CrossPromotionCard(
+                                        crossPromotion = crossPromo,
+                                        onPodcastClick = onPodcastClick,
+                                        modifier =
+                                        blockCap
+                                            .padding(horizontal = 16.dp),
+                                    )
+                                }
+                            }
+
+                            if (state.chapters.isNotEmpty()) {
+                                item(key = "chapters") {
+                                    cx.aswin.boxlore.feature.info.components.EpisodeChaptersSection(
+                                        episodeId = state.episode.id,
+                                        chapters = state.chapters,
+                                        positionMs = state.resumePositionMs,
+                                        onSeekTo = viewModel::seekToPosition,
+                                        modifier = blockCap.padding(horizontal = 16.dp),
+                                    )
+                                }
+                            }
+                            episodeShowNotes(state, viewModel::seekToPosition, blockCap)
+
+                            // Contextual "MORE LIKE THIS" RECOMMENDATIONS SECTION -> Card
+                            if (moreLikeThisOn == true && (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty())) {
+                                item(key = "more_like_this") {
+                                    cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreLikeThisCard(
+                                        state = state,
+                                        onEpisodeClick = onEpisodeClick,
+                                    )
+                                }
+                            }
+
+                            // Latest episodes from this show, sharing the page's vertical scroll.
+                            item(key = "more_from_podcast") {
+                                cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreFromPodcastCard(
                                     state = state,
+                                    onPodcastClick = onPodcastClick,
                                     onEpisodeClick = onEpisodeClick,
+                                    onPodcastLinkClicked = viewModel::onPodcastLinkClicked,
+                                    onRelatedEpisodesScrolled = viewModel::onRelatedEpisodesScrolled,
+                                    isSectionScrollEngaged = isMoreFromScrolling,
+                                    onRelatedEpisodeClicked = viewModel::onRelatedEpisodeClicked,
                                 )
                             }
                         }
+                    }
 
-                        // Latest episodes from this show, sharing the page's vertical scroll.
-                        item(key = "more_from_podcast") {
-                            cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreFromPodcastCard(
-                                state = state,
-                                onPodcastClick = onPodcastClick,
-                                onEpisodeClick = onEpisodeClick,
-                                onPodcastLinkClicked = viewModel::onPodcastLinkClicked,
-                                onRelatedEpisodesScrolled = viewModel::onRelatedEpisodesScrolled,
-                                isSectionScrollEngaged = isMoreFromScrolling,
-                                onRelatedEpisodeClicked = viewModel::onRelatedEpisodeClicked,
+                    // HEADER OVERLAY (Back button + animated background)
+                    Box(
+                        modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(collapsedHeaderHeight)
+                            .background(headerColor)
+                            .boxlorePaneStatusBarsPadding()
+                            .boxloreHorizontalSafePadding(),
+                    ) {
+                        // Back Button
+                        cx.aswin.boxlore.feature.info.components.EpisodeInfoHeaderButton(
+                            icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                            label = androidx.compose.ui.res.stringResource(R.string.episode_info_back),
+                            onClick = onBack,
+                            modifier = Modifier.align(Alignment.CenterStart).padding(start = EpisodeHeaderButtonInset),
+                        )
+
+                        // Watch button: only while a watch is in reach; it sits beside Share.
+                        watchActions?.let { actions ->
+                            cx.aswin.boxlore.feature.info.components.EpisodeWatchButton(
+                                episode = state.episode,
+                                actions = actions,
+                                onMessage = { watchMessage = it },
+                                modifier = Modifier.align(Alignment.CenterEnd).padding(end = EpisodeHeaderButtonInset + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.ButtonSlot),
+                            )
+                        }
+
+                        // Share Button
+                        var showShareSheet by remember { mutableStateOf(false) }
+                        cx.aswin.boxlore.feature.info.components.EpisodeInfoHeaderButton(
+                            icon = Icons.Rounded.Share,
+                            label = androidx.compose.ui.res.stringResource(R.string.episode_info_share),
+                            onClick = { showShareSheet = true },
+                            modifier = Modifier.align(Alignment.CenterEnd).padding(end = EpisodeHeaderButtonInset),
+                        )
+
+                        if (showShareSheet) {
+                            val currentSuccessState = uiState as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
+                            val shareEpisode =
+                                currentSuccessState?.let(EpisodeLoadRequests::shareEpisode) ?: cx.aswin.boxlore.core.model.Episode(
+                                    id = episodeId,
+                                    title = episodeTitle,
+                                    description = episodeDescription,
+                                    audioUrl = episodeAudioUrl,
+                                    imageUrl = episodeImageUrl,
+                                    duration = episodeDuration,
+                                    podcastId = podcastId.takeIf(String::isNotBlank),
+                                )
+                            cx.aswin.boxlore.core.designsystem.components.ShareBottomSheet(
+                                id = shareEpisode.id,
+                                type = "episode",
+                                title = shareEpisode.title,
+                                subtitle = shownPodcastTitle,
+                                imageUrl = shareEpisode.imageUrl ?: shareEpisode.podcastImageUrl,
+                                onDismissRequest = { showShareSheet = false },
+                                durationMs = shareEpisode.duration * 1000L,
+                                currentPositionMs = currentSuccessState?.resumePositionMs ?: 0L,
+                                showTimestampOption = false,
+                                episode = shareEpisode,
+                                onShare = { _, _, timestamp, target ->
+                                    cx.aswin.boxlore.core.designsystem.share.ShareManager.shareEpisode(
+                                        context = context,
+                                        episode = shareEpisode,
+                                        podcastTitle = shownPodcastTitle,
+                                        timestampMs = timestamp,
+                                        target = target,
+                                    )
+                                },
                             )
                         }
                     }
-                }
 
-                // HEADER OVERLAY (Back button + animated background)
-                Box(
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(collapsedHeaderHeight)
-                        .background(headerColor)
-                        .boxlorePaneStatusBarsPadding()
-                        .boxloreHorizontalSafePadding(),
-                ) {
-                    // Back Button
-                    cx.aswin.boxlore.feature.info.components.EpisodeInfoHeaderButton(
-                        icon = Icons.AutoMirrored.Rounded.ArrowBack,
-                        label = androidx.compose.ui.res.stringResource(R.string.episode_info_back),
-                        onClick = onBack,
-                        modifier = Modifier.align(Alignment.CenterStart).padding(start = EpisodeHeaderButtonInset),
-                    )
-
-                    // Watch button: only while a watch is in reach; it sits beside Share.
-                    watchActions?.let { actions ->
-                        cx.aswin.boxlore.feature.info.components.EpisodeWatchButton(
-                            episode = state.episode,
-                            actions = actions,
-                            onMessage = { watchMessage = it },
-                            modifier = Modifier.align(Alignment.CenterEnd).padding(end = EpisodeHeaderButtonInset + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.ButtonSlot),
-                        )
-                    }
-
-                    // Share Button
-                    var showShareSheet by remember { mutableStateOf(false) }
-                    cx.aswin.boxlore.feature.info.components.EpisodeInfoHeaderButton(
-                        icon = Icons.Rounded.Share,
-                        label = androidx.compose.ui.res.stringResource(R.string.episode_info_share),
-                        onClick = { showShareSheet = true },
-                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = EpisodeHeaderButtonInset),
-                    )
-
-                    if (showShareSheet) {
-                        val currentSuccessState = uiState as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
-                        val shareEpisode =
-                            currentSuccessState?.let(EpisodeLoadRequests::shareEpisode) ?: cx.aswin.boxlore.core.model.Episode(
-                                id = episodeId,
-                                title = episodeTitle,
-                                description = episodeDescription,
-                                audioUrl = episodeAudioUrl,
-                                imageUrl = episodeImageUrl,
-                                duration = episodeDuration,
-                                podcastId = podcastId.takeIf(String::isNotBlank),
+                    // FLOATING TITLE - physically moves from body to header
+                    Text(
+                        text = state.episode.title,
+                        fontSize = titleFontSize,
+                        fontWeight = GoogleSansWeight.bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = titleMaxLines,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            // With the watch button in the bar the name stops before it, not under it.
+                            .padding(
+                                start = titleHorizontalPadding + safeStart,
+                                end = titleHorizontalPadding + safeEnd + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.titleEndExtra(watchActions != null),
                             )
-                        cx.aswin.boxlore.core.designsystem.components.ShareBottomSheet(
-                            id = shareEpisode.id,
-                            type = "episode",
-                            title = shareEpisode.title,
-                            subtitle = shownPodcastTitle,
-                            imageUrl = shareEpisode.imageUrl ?: shareEpisode.podcastImageUrl,
-                            onDismissRequest = { showShareSheet = false },
-                            durationMs = shareEpisode.duration * 1000L,
-                            currentPositionMs = currentSuccessState?.resumePositionMs ?: 0L,
-                            showTimestampOption = false,
-                            episode = shareEpisode,
-                            onShare = { _, _, timestamp, target ->
-                                cx.aswin.boxlore.core.designsystem.share.ShareManager.shareEpisode(
-                                    context = context,
-                                    episode = shareEpisode,
-                                    podcastTitle = shownPodcastTitle,
-                                    timestampMs = timestamp,
-                                    target = target,
-                                )
+                            .graphicsLayer {
+                                translationY = titleTranslationY
+                                alpha = titleAlpha
                             },
+                    )
+                    // What just happened on the watch, right under the bar whose button was tapped, where
+                    // the mini player and the navigation bar never cover it. It takes no touches.
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                        cx.aswin.boxlore.feature.info.components.EpisodeWatchMessage(
+                            message = watchMessage,
+                            onShown = { watchMessage = null },
+                            modifier = Modifier.padding(top = collapsedHeaderHeight + 8.dp),
                         )
                     }
-                }
-
-                // FLOATING TITLE - physically moves from body to header
-                Text(
-                    text = state.episode.title,
-                    fontSize = titleFontSize,
-                    fontWeight = GoogleSansWeight.bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = titleMaxLines,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        // With the watch button in the bar the name stops before it, not under it.
-                        .padding(
-                            start = titleHorizontalPadding + safeStart,
-                            end = titleHorizontalPadding + safeEnd + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.titleEndExtra(watchActions != null),
-                        )
-                        .graphicsLayer {
-                            translationY = titleTranslationY
-                            alpha = titleAlpha
-                        },
-                )
-                // What just happened on the watch, right under the bar whose button was tapped, where
-                // the mini player and the navigation bar never cover it. It takes no touches.
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                    cx.aswin.boxlore.feature.info.components.EpisodeWatchMessage(
-                        message = watchMessage,
-                        onShown = { watchMessage = null },
-                        modifier = Modifier.padding(top = collapsedHeaderHeight + 8.dp),
-                    )
                 }
             }
         }
@@ -456,24 +483,43 @@ fun EpisodeInfoScreen(
 private fun LazyListScope.episodeShowNotes(
     state: EpisodeInfoUiState.Success,
     onSeekTo: (Long) -> Unit,
+    blockCap: Modifier,
 ) {
     state.showNotes?.let { notes ->
         if (notes.plainText.isNotBlank()) {
-            item {
-                EpisodeDescriptionCard(
-                    notes = notes,
-                    location = state.location,
-                    license = state.license,
-                    persons = state.episode.persons,
-                    onSeekTo = onSeekTo,
-                )
+            item(key = "about") {
+                Box(blockCap) {
+                    EpisodeDescriptionCard(
+                        notes = notes,
+                        location = state.location,
+                        license = state.license,
+                        persons = state.episode.persons,
+                        onSeekTo = onSeekTo,
+                    )
+                }
             }
         }
         if (notes.links.isNotEmpty()) {
-            item { EpisodeLinksSection(notes.links, EpisodeShowTitle.displayName(state.podcastTitle, stringResource(R.string.episode_info_show_placeholder))) }
+            item(key = "links") {
+                Box(blockCap) {
+                    EpisodeLinksSection(notes.links, EpisodeShowTitle.displayName(state.podcastTitle, stringResource(R.string.episode_info_show_placeholder)))
+                }
+            }
         }
     }
 }
 
 /** Back and Share sit this far from the page edges, matching the show page's top bar. */
 private val EpisodeHeaderButtonInset = 4.dp
+
+/** Off the phone layout the Play row stops here instead of stretching across the page. */
+private val EpisodeRailMaxWidth = 480.dp
+
+/** Off the phone layout cards and rows stop here, keeping lines a readable length. */
+private val EpisodeBlockMaxWidth = 672.dp
+
+/** Test tags for the episode page's list and Play row. */
+internal object EpisodeInfoTags {
+    const val LIST = "episode_info_list"
+    const val RAIL = "episode_info_rail"
+}

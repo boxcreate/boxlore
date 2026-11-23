@@ -14,7 +14,12 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -220,14 +225,87 @@ class EpisodeInfoAdaptiveTransitionTest {
         }
     }
 
+    @Test
+    fun `the hero changes form at the 600 and 480 gates and keeps the open title, and Play works after every step`() {
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        showEpisode(LONG_TITLE)
+        val walk = arrayOf(
+            BoxloreTestWindows.PHONE_LAND,
+            BoxloreTestWindows.PHONE,
+            BoxloreTestWindows.W599_H900,
+            BoxloreTestWindows.W600_H900,
+            BoxloreTestWindows.W599_H900,
+            BoxloreTestWindows.W900_H479,
+            BoxloreTestWindows.W900_H480,
+            BoxloreTestWindows.W900_H479,
+            BoxloreTestWindows.PHONE,
+        )
+        fixture.compose.walkWindows(window, *walk) { size ->
+            val short = size.heightDp < 480f
+            if (short) assertTrue("Play is on the first screen at $size", playBounds().bottom.value <= size.heightDp)
+            val rail = fixture.compose.onNodeWithTag(EpisodeInfoTags.RAIL).getBoundsInRoot()
+            if (short || size.widthDp >= 600f) {
+                assertTrue("the Play row stops at a comfortable width at $size", rail.right.value - rail.left.value <= 480.5f)
+            } else {
+                assertTrue("the phone Play row spans the page at $size", rail.right.value - rail.left.value > 480.5f || size.widthDp < 530f)
+            }
+        }
+
+        fixture.compose.onNodeWithContentDescription(FULL_TITLE).performClick()
+        fixture.compose.waitForIdle()
+        var plays = 0
+        fixture.compose.walkWindows(window, *walk) { size ->
+            assertTrue("the open title stays open at $size", labelled(SHOW_LESS))
+            // The Play row is its own list item, or inside the hero's end column on a wide page.
+            val twoColumn = size.widthDp >= 600f && size.heightDp >= 480f
+            fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey(if (twoColumn) "hero" else "rail")
+            fixture.compose.onNode(hasText(PLAY) and hasClickAction()).performScrollTo().performClick()
+            plays++
+            val calls = mockingDetails(model).invocations.count { it.method.name == "onMainActionClick" }
+            assertEquals("one play per tap at $size", plays, calls)
+            fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToIndex(0)
+        }
+    }
+
+    @Test
+    fun `in a tabletop half Play is on the first screen, and the page keeps its scroll through the fold`() {
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        showEpisode()
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToIndex(1)
+        fixture.compose.waitForIdle()
+        val lowerHalf = BoxloreLayoutBounds(0f, 336f, BoxloreTestWindows.FOLD_FLAT.widthDp, BoxloreTestWindows.FOLD_FLAT.heightDp)
+        listOf(BoxloreTestWindows.FOLD_TABLETOP to lowerHalf, BoxloreTestWindows.FOLD_FLAT to null).forEach { (size, bounds) ->
+            fixture.compose.runOnIdle {
+                pane.value = bounds
+                window.value = size
+            }
+            fixture.compose.waitForIdle()
+            assertTrue("the list stays scrolled at $size", listScroll() > 0f)
+        }
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToIndex(0)
+        fixture.compose.runOnIdle {
+            pane.value = lowerHalf
+            window.value = BoxloreTestWindows.FOLD_TABLETOP
+        }
+        fixture.compose.waitForIdle()
+        assertTrue("Play is on the first screen of the lower half", playBounds().bottom.value <= lowerHalf.height)
+    }
+
+    private fun playBounds() = fixture.compose.onNode(hasText(PLAY) and hasClickAction()).getBoundsInRoot()
+
+    private fun listScroll(): Float =
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+
     private fun shareSheetShown() = fixture.compose.onAllNodesWithText(SHARE_SHEET_TITLE).fetchSemanticsNodes().isNotEmpty()
 
     private fun centreX(label: String) = bounds(label).let { (it.left.value + it.right.value) / 2 }
 
     private fun bounds(label: String) = fixture.compose.onNodeWithContentDescription(label).getBoundsInRoot()
 
-    private fun showEpisode() {
-        val episode = TestFixtures.episode(id = LINK_ID, title = "How we find our way home", podcastId = "920666", podcastTitle = "Curious world")
+    private fun showEpisode(title: String = "How we find our way home") {
+        val episode = TestFixtures.episode(id = LINK_ID, title = title, podcastId = "920666", podcastTitle = "Curious world")
         uiState.value = EpisodeInfoUiState.Success(episode, "920666", "Curious world", relatedEpisodesLoading = false, similarEpisodesLoading = false)
         fixture.compose.waitForIdle()
     }
@@ -321,6 +399,12 @@ class EpisodeInfoAdaptiveTransitionTest {
         const val BACK = "Back"
         const val SHARE = "Share episode"
         const val SHARE_SHEET_TITLE = "Share this episode"
+        const val FULL_TITLE = "Show full title"
+        const val SHOW_LESS = "Show less"
+        const val PLAY = "Play"
+        val LONG_TITLE = "How we find our way home again after a long winter away: memory, maps and the places that keep us, " +
+            "with stories from listeners in Lagos, Leipzig and Lisbon about the streets they still walk in their sleep, " +
+            "the kitchens they can still smell and the maps they drew from memory when they could not go back"
         val COMPACT = BoxloreWindowLayout(599f, 800f)
         val TABLET = BoxloreWindowLayout(1_280f, 800f)
         val FOLD_FLAT = BoxloreWindowLayout(673f, 841f)

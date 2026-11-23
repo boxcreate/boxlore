@@ -14,6 +14,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -40,15 +41,33 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.info.R
 import kotlin.math.roundToInt
 
+/**
+ * The episode's title, three lines until opened. [expanded] lets the hero keep it open while it moves
+ * between layouts; [compact] uses the smaller headline of a short page.
+ */
 @Composable
-internal fun EpisodeExpandableTitle(episodeId: String, title: String) {
-    ExpandableInfoTitle(itemId = episodeId, title = title, collapsedLines = 3)
+internal fun EpisodeExpandableTitle(
+    episodeId: String,
+    title: String,
+    expanded: MutableState<Boolean> = rememberSaveable(episodeId, title) { mutableStateOf(false) },
+    compact: Boolean = false,
+) {
+    val style = if (compact) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium
+    ExpandableInfoTitle(itemId = episodeId, title = title, collapsedLines = 3, expandedState = expanded, baseStyle = style)
 }
 
 @Composable
-internal fun ExpandableInfoTitle(itemId: String, title: String, collapsedLines: Int, modifier: Modifier = Modifier, textAlign: TextAlign = TextAlign.Start) {
-    var expanded by rememberSaveable(itemId, title) { mutableStateOf(false) }
-    val style = MaterialTheme.typography.headlineMedium.copy(fontWeight = GoogleSansWeight.bold, textAlign = textAlign)
+internal fun ExpandableInfoTitle(
+    itemId: String,
+    title: String,
+    collapsedLines: Int,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Start,
+    expandedState: MutableState<Boolean> = rememberSaveable(itemId, title) { mutableStateOf(false) },
+    baseStyle: TextStyle = MaterialTheme.typography.headlineMedium,
+) {
+    var expanded by expandedState
+    val style = baseStyle.copy(fontWeight = GoogleSansWeight.bold, textAlign = textAlign)
     val measurer = rememberTextMeasurer()
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val textConstraints = Constraints(maxWidth = constraints.maxWidth)
