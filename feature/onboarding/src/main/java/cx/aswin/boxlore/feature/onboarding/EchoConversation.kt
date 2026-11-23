@@ -50,6 +50,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
@@ -322,7 +323,7 @@ private fun EchoBubble(line: String, detail: String?, maxLines: Int, emphasis: B
             Text(
                 line,
                 Modifier.then(if (emphasis) Modifier.semantics { heading() }.testTag("echo_deck_question") else Modifier),
-                style = base.let { if (emphasis) it.copy(fontWeight = GoogleSansWeight.bold) else it },
+                style = base.copy(lineBreak = LineBreak.Heading).let { if (emphasis) it.copy(fontWeight = GoogleSansWeight.bold) else it },
                 textAlign = if (beside) TextAlign.Start else TextAlign.Center,
                 maxLines = maxLines,
                 overflow = TextOverflow.Ellipsis,
@@ -376,7 +377,7 @@ private fun EchoQuestion(state: OnboardingUiState, kind: EchoScreenKind, questio
         Text(
             question ?: stringResource(R.string.echo_initial_question),
             Modifier.fillMaxWidth().weight(1f, fill = false).testTag("echo_question").semantics { heading() },
-            style = MaterialTheme.typography.headlineMedium.copy(lineHeight = 1.15.em),
+            style = MaterialTheme.typography.headlineMedium.copy(lineHeight = 1.15.em, lineBreak = LineBreak.Heading),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             autoSize = TextAutoSize.StepBased(minFontSize = metrics.questionMin, maxFontSize = metrics.questionMax, stepSize = 1.sp),
@@ -400,7 +401,7 @@ private fun EchoDeckQuestion(question: String, metrics: EchoLayoutMetrics) {
     Text(
         question,
         Modifier.fillMaxWidth().testTag("echo_deck_question").semantics { heading() },
-        style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold, lineBreak = LineBreak.Heading),
         color = MaterialTheme.colorScheme.onSurface,
         textAlign = TextAlign.Center,
         autoSize = TextAutoSize.StepBased(minFontSize = metrics.questionMin, maxFontSize = MaterialTheme.typography.titleLarge.fontSize, stepSize = 1.sp),

@@ -7,6 +7,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,8 +77,8 @@ internal fun rememberEchoFitMeasure(text: EchoFitText): EchoFitMeasure {
             measurer,
             density,
             text,
-            questionStyle = typography.headlineMedium.copy(lineHeight = 1.15.em),
-            bubbleStyle = typography.bodyLarge,
+            questionStyle = typography.headlineMedium.copy(lineHeight = 1.15.em, lineBreak = LineBreak.Heading),
+            bubbleStyle = typography.bodyLarge.copy(lineBreak = LineBreak.Heading),
             labelStyle = typography.bodyLarge.copy(fontSize = 12.sp),
         )
     }
