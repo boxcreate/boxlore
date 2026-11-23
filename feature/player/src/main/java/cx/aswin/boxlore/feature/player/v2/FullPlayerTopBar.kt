@@ -56,12 +56,14 @@ internal fun PlayerTopBar(
     isCasting: Boolean,
     canCast: Boolean,
     actions: PlayerTopBarActions,
+    /** Short sideways phones: no space above and below the 48dp buttons. */
+    tight: Boolean = false,
 ) {
     Row(
         modifier =
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp, vertical = if (tight) 0.dp else 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PlayerHeaderCastButton(enabled = canCast || isCasting, isCasting = isCasting, colorScheme = colorScheme)

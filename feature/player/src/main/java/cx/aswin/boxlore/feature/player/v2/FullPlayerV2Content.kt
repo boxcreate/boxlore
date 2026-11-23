@@ -174,6 +174,7 @@ internal fun MarqueeMetadataText(
 }
 
 @Composable
+@Suppress("LongParameterList")
 internal fun FullPlayerControls(
     model: FullPlayerControlModel,
     dependencies: FullPlayerDependencies,
@@ -182,6 +183,8 @@ internal fun FullPlayerControls(
     scope: CoroutineScope,
     inlineSupportingContent: Boolean = false,
     primaryControlHeight: Dp = 104.dp,
+    /** Space above and below the play controls; by default 14dp on compact layouts and 18dp otherwise. */
+    controlGap: Dp = if (model.isCompact) 14.dp else 18.dp,
 ) {
     if (model.state.duration > 0) {
         PlayerSeekbar(
@@ -193,12 +196,13 @@ internal fun FullPlayerControls(
                 cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("seek")
                 dependencies.playbackRepository.seekTo(it)
             },
-            chapters = model.state.currentChapters
+            chapters = model.state.currentChapters,
+            showTotalDuration = ui.showTotalDurationState,
         )
     }
-    Spacer(modifier = Modifier.height(if (model.isCompact) 14.dp else 18.dp))
+    Spacer(modifier = Modifier.height(controlGap))
     FullPlayerPrimaryControls(model, dependencies.playbackRepository, primaryControlHeight)
-    Spacer(modifier = Modifier.height(if (model.isCompact) 14.dp else 18.dp))
+    Spacer(modifier = Modifier.height(controlGap))
     FullPlayerSecondaryControls(model, dependencies, ui, scope, inlineSupportingContent)
 }
 

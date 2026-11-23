@@ -39,17 +39,23 @@ internal fun calculateResponsiveHeroLayout(
 }
 
 /**
- * Phones held sideways (shorter than 480dp, wider than tall, not a tablet layout) put the cover and
- * title beside the seekbar, play controls and quick actions, so all of them show without scrolling.
+ * Phones held sideways ([shortPane], wider than tall, not a tablet layout) put the cover and title
+ * beside the seekbar, play controls and quick actions, so all of them show without scrolling. Windows
+ * under [SIDEWAYS_MIN_WIDTH_DP] (sideways split-screen halves) keep the single scrolling column,
+ * since two columns there would be too narrow for the play controls and the quick actions.
  */
-internal fun usesSidewaysPhoneColumns(widthDp: Float, heightDp: Float, tabletLayout: Boolean): Boolean =
-    !tabletLayout && heightDp < SIDEWAYS_MAX_HEIGHT_DP && widthDp > heightDp
+internal fun usesSidewaysPhoneColumns(widthDp: Float, heightDp: Float, tabletLayout: Boolean, shortPane: Boolean): Boolean =
+    !tabletLayout && shortPane && widthDp > heightDp && widthDp >= SIDEWAYS_MIN_WIDTH_DP
+
+/** Sideways phones with less than [SIDEWAYS_TIGHT_HEIGHT_DP] under the system bars use smaller controls and gaps. */
+internal fun usesTightSidewaysControls(visibleHeight: Dp): Boolean = visibleHeight < SIDEWAYS_TIGHT_HEIGHT_DP.dp
 
 /** The cover beside the controls: as tall as the column allows after the title, within its width. */
 internal fun sidewaysHeroSize(columnWidth: Dp, columnHeight: Dp): Dp =
     min(columnWidth * 0.68f, columnHeight - SIDEWAYS_TITLE_ROOM).coerceIn(96.dp, 280.dp)
 
-private const val SIDEWAYS_MAX_HEIGHT_DP = 480f
+private const val SIDEWAYS_MIN_WIDTH_DP = 600f
+private const val SIDEWAYS_TIGHT_HEIGHT_DP = 400f
 private val SIDEWAYS_TITLE_ROOM = 104.dp
 private val HERO_GROWTH_START = 560.dp
 private val HERO_GROWTH_END = 680.dp

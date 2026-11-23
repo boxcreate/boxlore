@@ -67,15 +67,24 @@ class PlayerLayoutLogicTest {
     }
 
     @Test
-    fun `sideways phones use two columns and upright phones and tablets keep one`() {
-        assertTrue(usesSidewaysPhoneColumns(915f, 412f, tabletLayout = false))
-        assertTrue(usesSidewaysPhoneColumns(695f, 475f, tabletLayout = false))
-        assertTrue(usesSidewaysPhoneColumns(800f, 360f, tabletLayout = false))
-        assertFalse(usesSidewaysPhoneColumns(412f, 915f, tabletLayout = false))
-        assertFalse(usesSidewaysPhoneColumns(443f, 649f, tabletLayout = false))
-        assertFalse(usesSidewaysPhoneColumns(412f, 450f, tabletLayout = false))
-        assertFalse(usesSidewaysPhoneColumns(932f, 650f, tabletLayout = true))
+    fun `sideways phones use two columns and upright phones, narrow halves and tablets keep one`() {
+        fun columns(width: Float, height: Float, tablet: Boolean = false) = usesSidewaysPhoneColumns(width, height, tablet, shortPane = height < 480f)
+        assertTrue(columns(915f, 412f))
+        assertTrue(columns(695f, 475f))
+        assertTrue(columns(800f, 360f))
+        assertFalse(columns(412f, 915f))
+        assertFalse(columns(443f, 649f))
+        assertFalse(columns(412f, 450f))
+        assertFalse(columns(932f, 650f, tablet = true))
+        // Sideways split-screen halves: two columns would leave each under the play controls' width.
+        assertFalse(columns(599f, 412f))
+        assertTrue(columns(600f, 412f))
+        assertFalse(columns(457f, 412f))
         assertTrue(sidewaysHeroSize(433.dp, 388.dp).value in 96f..280f)
+        // Short sideways phones tighten the controls; taller ones keep them.
+        assertTrue(usesTightSidewaysControls(336.dp))
+        assertTrue(usesTightSidewaysControls(399.dp))
+        assertFalse(usesTightSidewaysControls(412.dp))
     }
 
     @Test
