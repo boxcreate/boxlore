@@ -22,8 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Share
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -213,12 +211,10 @@ private fun TabletPlayerHeader(model: FullPlayerBodyModel, display: FullPlayerDi
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        BoxLoreCastRouteButton(
+        PlayerHeaderCastButton(
             enabled = CastMediaEligibility.isCastable(model.episode.audioUrl) || model.state.playbackRoute.isRemote,
             isCasting = model.state.playbackRoute.isRemote,
-            tint = display.colorScheme.onSurface,
-            activeTint = display.colorScheme.primary,
-            modifier = Modifier.size(48.dp),
+            colorScheme = display.colorScheme,
         )
         val watchOffer = LocalWatchPlayOffer.current
         if (watchOffer != null) {
@@ -226,22 +222,30 @@ private fun TabletPlayerHeader(model: FullPlayerBodyModel, display: FullPlayerDi
             PlayingOnPill(offer = watchOffer, colorScheme = display.colorScheme)
             Spacer(Modifier.weight(1f))
         } else {
-            Text(stringResource(R.string.player_now_playing), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+            Text(
+                stringResource(R.string.player_now_playing),
+                Modifier.weight(1f).padding(start = 8.dp),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = GoogleSansWeight.semiBold,
+                color = display.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         if (display.isContextPane) {
             actions.onDockPlayer?.let { dock ->
-                IconButton(onClick = dock) { Icon(Icons.Rounded.KeyboardArrowDown, stringResource(R.string.minimal_collapse)) }
+                PlayerHeaderButton(Icons.Rounded.KeyboardArrowDown, stringResource(R.string.minimal_collapse), display.colorScheme, dock)
             }
             actions.onOpenImmersivePlayer?.let { open ->
-                IconButton(onClick = open) { Icon(Icons.Rounded.Fullscreen, stringResource(R.string.player_open_fullscreen)) }
+                PlayerHeaderButton(Icons.Rounded.Fullscreen, stringResource(R.string.player_open_fullscreen), display.colorScheme, open)
             }
         } else {
-            IconButton(onClick = {
+            PlayerHeaderButton(Icons.Rounded.KeyboardArrowDown, stringResource(R.string.minimal_collapse), display.colorScheme) {
                 cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("collapsed")
                 actions.onCollapse()
-            }) { Icon(Icons.Rounded.KeyboardArrowDown, stringResource(R.string.minimal_collapse)) }
+            }
         }
-        IconButton(onClick = { ui.showShareSheet = true }) { Icon(Icons.Rounded.Share, stringResource(R.string.player_share_episode)) }
+        PlayerHeaderButton(Icons.Rounded.Share, stringResource(R.string.player_share_episode), display.colorScheme) { ui.showShareSheet = true }
     }
     }
 }

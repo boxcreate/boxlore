@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,7 +17,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,9 +31,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
 import cx.aswin.boxlore.core.designsystem.components.LocalWatchPlayOffer
 import cx.aswin.boxlore.core.designsystem.components.PlayingOnPill
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -61,19 +64,7 @@ internal fun PlayerTopBar(
             .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MaterialTheme(colorScheme = colorScheme) {
-            BoxLoreCastRouteButton(
-                enabled = canCast || isCasting,
-                isCasting = isCasting,
-                tint = colorScheme.onSurface,
-                activeTint = colorScheme.primary,
-                modifier =
-                Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(colorScheme.onSurface.copy(alpha = 0.1f)),
-            )
-        }
+        PlayerHeaderCastButton(enabled = canCast || isCasting, isCasting = isCasting, colorScheme = colorScheme)
 
         val watchOffer = LocalWatchPlayOffer.current
         var tipVisible by remember { mutableStateOf(showSwipeMinimizeTip) }
@@ -108,7 +99,7 @@ internal fun PlayerTopBar(
                         text = stringResource(if (isShowingTip) R.string.player_swipe_down_tip else R.string.player_now_playing),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = GoogleSansWeight.semiBold,
-                        color = if (isShowingTip) colorScheme.primary.copy(alpha = 0.8f) else colorScheme.onSurface.copy(alpha = 0.7f),
+                        color = if (isShowingTip) colorScheme.primary else colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -118,27 +109,52 @@ internal fun PlayerTopBar(
                 Icon(
                     imageVector = Icons.Rounded.KeyboardArrowDown,
                     contentDescription = stringResource(R.string.player_collapse),
-                    tint = colorScheme.onSurface.copy(alpha = 0.7f),
+                    tint = colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp),
                 )
             }
         }
 
-        Box(
-            modifier =
-            Modifier
-                .size(42.dp)
-                .clip(CircleShape)
-                .background(colorScheme.onSurface.copy(alpha = 0.1f))
-                .clickable(onClick = actions.onShare),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Share,
-                contentDescription = stringResource(R.string.player_share),
+        PlayerHeaderButton(Icons.Rounded.Share, stringResource(R.string.player_share), colorScheme, actions.onShare)
+    }
+}
+
+/** A player header icon button: a solid 48dp circle that names itself on hover or long-press. */
+@Composable
+internal fun PlayerHeaderButton(icon: ImageVector, label: String, colorScheme: ColorScheme, onClick: () -> Unit) {
+    MaterialTheme(colorScheme = colorScheme) {
+        BoxloreTooltip(label) {
+            FilledTonalIconButton(
+                onClick = onClick,
+                modifier = Modifier.size(PLAYER_HEADER_BUTTON_SIZE),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = colorScheme.surfaceContainerHigh,
+                    contentColor = colorScheme.onSurface,
+                ),
+            ) {
+                Icon(icon, contentDescription = label, modifier = Modifier.size(20.dp))
+            }
+        }
+    }
+}
+
+/** The Cast button in the same 48dp circle as the other header buttons, keeping its own tint for state. */
+@Composable
+internal fun PlayerHeaderCastButton(enabled: Boolean, isCasting: Boolean, colorScheme: ColorScheme) {
+    MaterialTheme(colorScheme = colorScheme) {
+        BoxloreTooltip(stringResource(if (isCasting) R.string.player_change_cast_device else R.string.player_cast)) {
+            BoxLoreCastRouteButton(
+                enabled = enabled,
+                isCasting = isCasting,
                 tint = colorScheme.onSurface,
-                modifier = Modifier.size(20.dp),
+                activeTint = colorScheme.primary,
+                modifier = Modifier
+                    .size(PLAYER_HEADER_BUTTON_SIZE)
+                    .clip(CircleShape)
+                    .background(colorScheme.surfaceContainerHigh),
             )
         }
     }
 }
+
+internal val PLAYER_HEADER_BUTTON_SIZE = 48.dp

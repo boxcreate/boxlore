@@ -70,6 +70,7 @@ class TabletPlayerContentTest {
     private val playback = mock(PlaybackRepository::class.java)
     private lateinit var view: View
     private var foreground = 0
+    private var labelForeground = 0
 
     @Test
     fun `posture changes keep artwork controls and tabs inside their physical regions`() {
@@ -168,7 +169,7 @@ class TabletPlayerContentTest {
                 val width = bounds.width.toInt()
                 val pixels = IntArray(width * bounds.height.toInt())
                 bitmap.getPixels(pixels, 0, width, bounds.left.toInt(), bounds.top.toInt(), width, bounds.height.toInt())
-                assertTrue("Header must paint its own foreground", pixels.any { it == foreground })
+                assertTrue("Header must paint its own foreground", pixels.any { it == foreground || it == labelForeground })
                 bitmap.recycle()
             }
         }
@@ -332,6 +333,7 @@ class TabletPlayerContentTest {
             ) {
                 BoxLoreTheme(darkTheme = dark, dynamicColor = false) {
                     foreground = MaterialTheme.colorScheme.onSurface.toArgb()
+                    labelForeground = MaterialTheme.colorScheme.onSurfaceVariant.toArgb()
                     CompositionLocalProvider(LocalContentColor provides Color.Black) {
                     val player: @androidx.compose.runtime.Composable () -> Unit = {
                     Box(if (contextPane) Modifier.width(473.dp).height(800.dp) else Modifier) {
