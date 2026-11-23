@@ -71,8 +71,10 @@ import cx.aswin.boxlore.feature.player.QueueSheetContent
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerMetadataStylingLogic
 import cx.aswin.boxlore.feature.player.v2.logic.resolveQueuePodcast
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 internal fun PlayerMetadata(
@@ -523,15 +525,35 @@ internal suspend fun handleQueueRemoval(
     text: PlayerQueueText,
 ) {
     val removed = playbackRepository.removeFromQueue(episodeId, deferSkipSignal = true) ?: return
-    val result = snackbarHostState.showSnackbar(
-        message = text.removed,
-        actionLabel = text.undo,
-        duration = SnackbarDuration.Short
+    settleQueueRemoval(
+        removed = removed,
+        awaitUndo = {
+            snackbarHostState.showSnackbar(
+                message = text.removed,
+                actionLabel = text.undo,
+                duration = SnackbarDuration.Short
+            ) == SnackbarResult.ActionPerformed
+        },
+        undo = { playbackRepository.undoQueueRemoval(it) },
+        confirm = { playbackRepository.confirmQueueRemoval(it) },
     )
-    if (result == SnackbarResult.ActionPerformed) {
-        playbackRepository.undoQueueRemoval(removed)
-    } else {
-        playbackRepository.confirmQueueRemoval(removed)
+}
+
+/**
+ * Settles a removal exactly once: Undo restores it, anything else confirms it, including the message
+ * being cancelled because the player moved to another layout, so the skip is never lost.
+ */
+internal suspend fun <T> settleQueueRemoval(
+    removed: T,
+    awaitUndo: suspend () -> Boolean,
+    undo: suspend (T) -> Unit,
+    confirm: (T) -> Unit,
+) {
+    var undone = false
+    try {
+        undone = awaitUndo()
+    } finally {
+        withContext(NonCancellable) { if (undone) undo(removed) else confirm(removed) }
     }
 }
 
