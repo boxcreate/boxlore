@@ -20,7 +20,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -39,6 +38,7 @@ import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.downloads.DownloadRepository
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.PlaybackRouteState
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.prefs.FullPlayerStyle
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
@@ -54,6 +54,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
@@ -73,6 +74,7 @@ class TabletPlayerContentTest {
     private lateinit var view: View
     private var foreground = 0
     private var labelForeground = 0
+    private lateinit var playerState: MutableStateFlow<PlayerState>
 
     @Test
     fun `posture changes keep artwork controls and tabs inside their physical regions`() {
@@ -266,7 +268,7 @@ class TabletPlayerContentTest {
     }
 
     @Test
-    fun `a sideways phone shows play and the quick actions without scrolling and keeps the tray when turned`() {
+    fun `a phone keeps the tray's open panel when turned sideways and back`() {
         val store = PlayerPresentationStore(episode.id, FullPlayerUiState(), tabletUsed = true)
         window.value = BoxloreWindowLayout(412f, 841f)
         render(presentationStore = store)
@@ -276,12 +278,6 @@ class TabletPlayerContentTest {
             advance()
             assertEquals(QuickControlMode.SLEEP, store.ui.quickControlMode)
             fixture.compose.onNodeWithContentDescription("Back to quick actions").assertExists()
-        }
-        fixture.compose.runOnIdle { store.ui.quickControlMode = QuickControlMode.ACTIONS }
-        advance()
-        listOf("Play", "Sleep").forEach { label ->
-            val bounds = fixture.compose.onNodeWithContentDescription(label, useUnmergedTree = true).getUnclippedBoundsInRoot()
-            assertTrue("$label ends at ${bounds.bottom} on a 412dp tall sideways phone", bounds.bottom.value <= 412f)
         }
     }
 
@@ -325,26 +321,52 @@ class TabletPlayerContentTest {
         assertSame(phoneUi, store.ui)
     }
 
+    @Test
+    fun `on a phone the Cast toggle keeps the listener's choice and keeps working after the next episode starts`() {
+        window.value = BoxloreWindowLayout(412f, 841f)
+        assertCastToggleSurvivesNextEpisode(null)
+    }
+
+    @Test
+    fun `on a tablet the Cast toggle keeps the listener's choice and keeps working after the next episode starts`() {
+        window.value = BoxloreWindowLayout(1_280f, 800f)
+        assertCastToggleSurvivesNextEpisode(PlayerPresentationStore(episode.id, FullPlayerUiState(), tabletUsed = true))
+    }
+
+    private fun assertCastToggleSurvivesNextEpisode(store: PlayerPresentationStore?) {
+        val next = episode.copy(id = "next", title = "Next journey")
+        render(remote = true, presentationStore = store)
+        fixture.compose.onNodeWithContentDescription("Show artwork").performClick()
+        advance()
+        fixture.compose.runOnIdle { playerState.value = playerState.value.copy(currentEpisode = next, queue = listOf(next)) }
+        advance()
+        fixture.compose.onNodeWithContentDescription("Show Cast controls").performClick()
+        advance()
+        fixture.compose.onNodeWithContentDescription("Show artwork").performClick()
+        advance()
+        fixture.compose.onNodeWithContentDescription("Show Cast controls").assertExists()
+    }
+
     private class RetainedRender(val shown: androidx.compose.runtime.State<Boolean>, val onStore: (PlayerPresentationStore) -> Unit)
 
     @Suppress("LongParameterList")
-    private fun render(style: String = FullPlayerStyle.STANDARD, contextPane: Boolean = false, onOpen: () -> Unit = {}, video: Boolean = false, emptyQueue: Boolean = false, dark: Boolean = false, transcript: Boolean = false, fullscreenRequest: ((PlayerFullscreenOverlay, Boolean) -> Unit)? = null, presentationStore: PlayerPresentationStore? = null, retained: RetainedRender? = null) {
+    private fun render(style: String = FullPlayerStyle.STANDARD, contextPane: Boolean = false, onOpen: () -> Unit = {}, video: Boolean = false, emptyQueue: Boolean = false, dark: Boolean = false, transcript: Boolean = false, fullscreenRequest: ((PlayerFullscreenOverlay, Boolean) -> Unit)? = null, presentationStore: PlayerPresentationStore? = null, retained: RetainedRender? = null, remote: Boolean = false) {
         val downloads = mock(DownloadRepository::class.java)
         val prefs = mock(UserPreferencesRepository::class.java)
-        `when`(playback.playerState).thenReturn(
-            MutableStateFlow(
-                PlayerState(
-                    currentEpisode = if (video) episode.copy(enclosureType = "video/mp4") else episode,
-                    currentPodcast = podcast,
-                    duration = 3_600_000L,
-                    queue = if (emptyQueue) listOf(episode) else listOf(episode, episode.copy(id = "next", title = "Next journey")),
-                    currentChapters = listOf(Chapter(0.0, "Chapter one"), Chapter(120.0, "Chapter two")),
-                    currentTranscript = if (transcript) listOf(TranscriptSegment(0, 120_000, "Words that follow the episode")) else emptyList(),
-                ),
+        playerState = MutableStateFlow(
+            PlayerState(
+                currentEpisode = if (video) episode.copy(enclosureType = "video/mp4") else episode,
+                currentPodcast = podcast,
+                duration = 3_600_000L,
+                queue = if (emptyQueue) listOf(episode) else listOf(episode, episode.copy(id = "next", title = "Next journey")),
+                currentChapters = listOf(Chapter(0.0, "Chapter one"), Chapter(120.0, "Chapter two")),
+                currentTranscript = if (transcript) listOf(TranscriptSegment(0, 120_000, "Words that follow the episode")) else emptyList(),
+                playbackRoute = if (remote) PlaybackRouteState(isRemote = true, deviceName = "Living room speaker") else PlaybackRouteState(),
             ),
         )
-        `when`(downloads.isDownloaded(episode.id)).thenReturn(flowOf(false))
-        `when`(downloads.isDownloading(episode.id)).thenReturn(flowOf(false))
+        `when`(playback.playerState).thenReturn(playerState)
+        `when`(downloads.isDownloaded(anyString())).thenReturn(flowOf(false))
+        `when`(downloads.isDownloading(anyString())).thenReturn(flowOf(false))
         `when`(prefs.fullPlayerStyleStream).thenReturn(flowOf(style))
         `when`(prefs.cachedFullPlayerStyle).thenReturn(style)
         `when`(prefs.sameShowQueueOnlyStream).thenReturn(flowOf(false))

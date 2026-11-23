@@ -140,6 +140,12 @@ internal class FullPlayerUiState {
     val notesExpandedState = mutableStateOf(false)
     var notesExpanded by notesExpandedState
 
+    /** Carries the Cast toggle into the next episode's state, so the listener's choice and route stay as they were. */
+    fun inheritCastToggle(previous: FullPlayerUiState) {
+        showCastControls = previous.showCastControls
+        castRouteRemote = previous.castRouteRemote
+    }
+
     /** Follows a Cast connect or disconnect once; a layout change with the same route keeps the listener's toggle. */
     fun followCastRoute(isRemote: Boolean): Boolean {
         if (isRemote == castRouteRemote) return false
@@ -172,6 +178,19 @@ internal class FullPlayerUiState {
             restoreSupportingContentOnCompact = false
         }
         supportingContentUsesTablet = tablet
+    }
+}
+
+/** Hands the Cast toggle from one episode's state to the next while this player stays on screen. */
+private class CastToggleHandOff {
+    private var episodeId: String? = null
+    private var ui: FullPlayerUiState? = null
+
+    fun carry(id: String, next: FullPlayerUiState) {
+        val previous = ui
+        if (previous != null && previous !== next && episodeId != id) next.inheritCastToggle(previous)
+        episodeId = id
+        ui = next
     }
 }
 
@@ -274,7 +293,8 @@ fun FullPlayerV2(
     val navBarPadding = boxlorePaneBottomInset()
 
     val localUi = rememberSaveable(episode.id, saver = FullPlayerUiStateSaver) { FullPlayerUiState() }
-    val ui = LocalPlayerPresentationStore.current?.uiFor(episode.id, localUi) ?: localUi
+    val castToggleHandOff = remember { CastToggleHandOff() }
+    val ui = (LocalPlayerPresentationStore.current?.uiFor(episode.id, localUi) ?: localUi).also { castToggleHandOff.carry(episode.id, it) }
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     val fullscreenRequest = LocalPlayerFullscreenRequest.current.takeIf { tablet }
     val playerActions = fullscreenRequest?.let { request -> actions.copy(onFullscreenVideoChange = { request(PlayerFullscreenOverlay.Video, it) }) } ?: actions
@@ -749,7 +769,7 @@ internal fun FullPlayerHeroSection(
             isCompact = isCompact,
         )
     val castPicker = LocalCastPicker.current
-    LaunchedEffect(isRemote) {
+    LaunchedEffect(ui, isRemote) {
         if (ui.followCastRoute(isRemote) && isRemote) actions.onFullscreenVideoChange(false)
     }
     val showCastControls = ui.showCastControls || (isRemote && !ui.castRouteRemote)
