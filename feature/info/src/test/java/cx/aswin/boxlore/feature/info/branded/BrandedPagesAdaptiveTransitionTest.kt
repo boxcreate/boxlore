@@ -15,7 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -44,9 +46,11 @@ import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.core.testing.SystemInsets
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
+import cx.aswin.boxlore.core.testing.walkWindows
 import cx.aswin.boxlore.feature.info.PodcastInfoScreen
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
+import cx.aswin.boxlore.feature.info.branded.rottenmango.RottenMangoPage
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformPage
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
 import cx.aswin.boxlore.feature.info.stubArchive
@@ -54,6 +58,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -185,6 +190,30 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         }
         assertEquals("No status-bar band in the lower half", SystemInsets.TABLETOP_STATUS.statusTop.toFloat(), tops[0] - tops[1], 0.5f)
         assertEquals("Flat again matches flat before", tops[0], tops[2], 0.5f)
+    }
+
+    @Test
+    fun `Rotten Mango keeps a phone-sized photo on the Fold 8 cover and keeps the open description`() {
+        assumeTrue("Only Rotten Mango's photo grows with the width", page == RottenMangoPage)
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        fixture.compose.onNodeWithText(DESCRIPTION).performClick()
+        fixture.compose.waitForIdle()
+        val heights = mutableMapOf<BoxloreWindowLayout, Float>()
+        fixture.compose.walkWindows(
+            window,
+            BoxloreTestWindows.COVER_475,
+            BoxloreWindowLayout(600f, 960f),
+            BoxloreTestWindows.COVER_475,
+            BoxloreTestWindows.PHONE,
+        ) { size ->
+            val heading = fixture.compose.onNode(hasContentDescription(podcast.title) and isHeading()).getBoundsInRoot()
+            heights[size] = heading.bottom.value - heading.top.value
+            assertTrue("The description stays open at $size", descriptionOpen())
+        }
+        val phone = requireNotNull(heights[BoxloreTestWindows.PHONE])
+        assertEquals("The cover's photo is a phone's", phone, requireNotNull(heights[BoxloreTestWindows.COVER_475]), 1f)
+        assertTrue("A tablet still gets the larger photo", requireNotNull(heights[BoxloreWindowLayout(600f, 960f)]) > phone + 1f)
     }
 
     private fun descriptionOpen(): Boolean {
