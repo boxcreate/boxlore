@@ -185,6 +185,7 @@ class MainActivity : ComponentActivity() {
         outState.putString(KEY_CONSUMED_AUTH_LINK, consumedAuthLink)
         outState.putString(KEY_PENDING_CROSS_DEVICE_AUTH_LINK, pendingCrossDeviceAuthLink)
         outState.putBoolean(KEY_TABLET_ALPHA_NOTICE_PENDING, tabletAlphaNoticePending)
+        outState.putPlayerOpenRequest(expandPlayerTrigger)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -194,6 +195,7 @@ class MainActivity : ComponentActivity() {
         restoreTabletAlphaNotice(savedInstanceState)
         consumedAuthLink = savedInstanceState?.getString(KEY_CONSUMED_AUTH_LINK) ?: consumedAuthLink
         pendingCrossDeviceAuthLink = savedInstanceState?.getString(KEY_PENDING_CROSS_DEVICE_AUTH_LINK)
+        expandPlayerTrigger = savedInstanceState.savedPlayerOpenRequest()
         handlePlayerIntent(intent, restored = savedInstanceState != null)
         handleAuthIntent(intent)
         intentState.value = intent
@@ -319,10 +321,22 @@ private fun androidx.core.splashscreen.SplashScreen.holdBriefly(coldStart: Boole
 
 /**
  * Takes a notification's open-player flag off [intent] and returns the open request it makes, or null.
- * A restored activity's launch intent still carries the tap that already opened the player, so it makes none.
+ * A restored activity's launch intent still carries that tap, so it makes none: the restored activity
+ * keeps the request it saved instead ([savedPlayerOpenRequest]).
  */
 internal fun takePlayerOpenRequest(intent: android.content.Intent, restored: Boolean, now: Long): Long? {
     if (!intent.getBooleanExtra("EXTRA_OPEN_PLAYER", false)) return null
     intent.removeExtra("EXTRA_OPEN_PLAYER")
     return now.takeUnless { restored }
 }
+
+/**
+ * Saves the open-player request so a recreated activity keeps it. One the player had not acted on yet
+ * still opens it; the app root remembers which it already handled and ignores those.
+ */
+internal fun Bundle.putPlayerOpenRequest(request: Long) = putLong(KEY_PLAYER_OPEN_REQUEST, request)
+
+/** The open-player request [putPlayerOpenRequest] saved, or 0 for none. */
+internal fun Bundle?.savedPlayerOpenRequest(): Long = this?.getLong(KEY_PLAYER_OPEN_REQUEST, 0L) ?: 0L
+
+private const val KEY_PLAYER_OPEN_REQUEST = "cx.aswin.boxlore.player_open_request"
