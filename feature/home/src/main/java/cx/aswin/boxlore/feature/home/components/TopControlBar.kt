@@ -132,7 +132,8 @@ fun TopControlBar(
                     placeable.place(0, paddingPx)
                 }
             }.boxloreHorizontalSafePadding()
-            .padding(horizontal = 12.dp)
+            // The same gutter as Home's cards, so the wordmark and Settings line up with their edges.
+            .padding(horizontal = 16.dp)
             .testTag("home_top_bar"),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -140,10 +141,10 @@ fun TopControlBar(
         // 1. Left Section (Logo)
         if (overHero) {
             cx.aswin.boxlore.core.designsystem.components
-                .BoxLoreLogo(textColor = onArtwork)
+                .BoxLoreLogo(Modifier.testTag("home_wordmark"), textColor = onArtwork)
         } else {
             cx.aswin.boxlore.core.designsystem.components
-                .BoxLoreLogo()
+                .BoxLoreLogo(Modifier.testTag("home_wordmark"))
         }
 
         if (showUtilityIcons) {

@@ -98,6 +98,9 @@ class HomeHorizontalInsetsTest {
         show(BoxloreTestWindows.PHONE)
         assertEquals("hero start", 16f, rect("home_hero_row").left, 0.5f)
         assertEquals("hero end", BoxloreTestWindows.PHONE.widthDp - 16f, rect("home_hero_row").right, 0.5f)
+        // The top bar lines up with the cards: the wordmark at their start, Settings at their end.
+        assertEquals("wordmark start", rect("home_hero_row").left, rect("home_wordmark").left, 1f)
+        assertEquals("Settings end", rect("home_hero_row").right, rect("home_settings_button").right, 1f)
     }
 
     /** A turn changes Explore's poster columns (2 to 5), which used to send Home back to the hero. */
