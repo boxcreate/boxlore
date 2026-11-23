@@ -35,6 +35,16 @@ internal object HomeFeedSpacing {
     const val ForYouTotalCap = 9
     const val ForYouBodyCount = 8
     const val ExploreGridCap = 6
+
+    /**
+     * How many Explore shows Home lists: 6 on phones; on tablets enough to fill whole rows of
+     * [columns] (at most two), so the last row is never sparse. The ranked order is kept.
+     */
+    fun exploreItemCount(columns: Int, tablet: Boolean): Int {
+        if (!tablet || columns <= 0) return ExploreGridCap
+        val rows = ((ExploreGridCap + columns - 1) / columns).coerceAtMost(2)
+        return columns * rows
+    }
 }
 
 

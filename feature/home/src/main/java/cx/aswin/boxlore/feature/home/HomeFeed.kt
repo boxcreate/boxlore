@@ -119,7 +119,7 @@ internal fun PodcastFeed(
     )
     KeepGridPlaceAcrossColumnChanges(layout.gridState, posterColumns)
     val revealStage = rememberHomeRevealStage(viewportReady = !loadingState.isLoading)
-    val derivedState = rememberPodcastFeedDerivedState(content, feedState, recommendationState, loadingState, revealStage)
+    val derivedState = rememberPodcastFeedDerivedState(content, feedState, recommendationState, loadingState, revealStage, HomeFeedSpacing.exploreItemCount(posterColumns, tablet))
     // Scrolling changes the visible keys often; only a change in the answer recomposes the feed.
     val hasVisibleLoading by remember(
         layout.gridState,
@@ -182,7 +182,7 @@ internal fun PodcastFeed(
             curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState, HomeRecommendationLayout(posterColumns, tablet))
             discoveryGreetingItem(feedState, callbacks, loadingState.isEditorialRowsLoading, content.editorialRows.list.size)
             editorialFeedItems(content, feedState, loadingState, callbacks)
-            discoverFeedItems(feedState, derivedState, callbacks, posterColumns)
+            discoverFeedItems(feedState, derivedState, callbacks, posterColumns, tablet)
         }
     }
 }
@@ -234,11 +234,12 @@ private fun rememberPodcastFeedDerivedState(
     recommendationState: PodcastFeedRecommendationState,
     loadingState: PodcastFeedLoadingState,
     revealStage: Int,
+    exploreCount: Int = HomeFeedSpacing.ExploreGridCap,
 ): PodcastFeedDerivedState {
     val viewportReady = !loadingState.isLoading
     val discoverItems =
-        remember(content.gridItems.list, feedState.selectedCategory) {
-            content.gridItems.list.distinctBy { it.id }.take(HomeFeedSpacing.ExploreGridCap)
+        remember(content.gridItems.list, feedState.selectedCategory, exploreCount) {
+            content.gridItems.list.distinctBy { it.id }.take(exploreCount)
         }
     val discoveryRevealed = revealStage >= HomeRevealStage.DISCOVERY
     return PodcastFeedDerivedState(

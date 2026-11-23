@@ -139,16 +139,18 @@ internal fun LazyStaggeredGridScope.discoverFeedItems(
     derivedState: PodcastFeedDerivedState,
     callbacks: HomeFeedCallbacks,
     columns: Int = 2,
+    tablet: Boolean = false,
 ) {
     discoverHeaderItem(feedState, callbacks)
     if (derivedState.showDiscoverContent) {
         discoverPodcastItems(derivedState, feedState, callbacks, columns)
         discoverViewMoreItem(feedState, callbacks)
     } else if (derivedState.showDiscoverSkeleton) {
-        repeat((HomeFeedSpacing.ExploreGridCap + columns - 1) / columns) { row ->
+        val placeholders = HomeFeedSpacing.exploreItemCount(columns, tablet)
+        repeat((placeholders + columns - 1) / columns) { row ->
             item(span = StaggeredGridItemSpan.FullLine, key = "discover_grid_$row", contentType = "discover_grid") {
                 EqualHeightPosterGrid(columns = columns) {
-                    repeat((HomeFeedSpacing.ExploreGridCap - row * columns).coerceAtMost(columns)) {
+                    repeat((placeholders - row * columns).coerceAtMost(columns)) {
                         HomeMediaCardSkeleton()
                     }
                 }
