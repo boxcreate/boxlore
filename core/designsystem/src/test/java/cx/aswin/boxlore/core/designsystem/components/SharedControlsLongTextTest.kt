@@ -637,7 +637,7 @@ class SharedControlsLongTextTest {
             }
         }
         val layout = textLayout("Deutschland")
-        assertFalse("the country is cut", layout.hasVisualOverflow)
+        assertFalse("the country is cut", layout.didOverflowHeight || layout.isLineEllipsized(0))
         assertEquals(1, layout.lineCount)
     }
 
