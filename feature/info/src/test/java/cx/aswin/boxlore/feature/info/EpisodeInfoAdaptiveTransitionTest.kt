@@ -80,6 +80,7 @@ class EpisodeInfoAdaptiveTransitionTest {
     private lateinit var restoration: StateRestorationTester
     private val openedShows = mutableListOf<String>()
     private var backs = 0
+    private var routeTitle = ""
 
     @Test
     fun `finding the episode survives window changes and recreation without a second load`() {
@@ -302,6 +303,41 @@ class EpisodeInfoAdaptiveTransitionTest {
     }
 
     @Test
+    fun `a page scrolled to the Play row keeps Play on screen when the cover moves beside the title and back`() {
+        window.value = BoxloreTestWindows.W599_H900
+        render()
+        showEpisode()
+        val chapters = List(8) { cx.aswin.boxlore.core.model.Chapter(it * 300.0, "Chapter ${it + 1}") }
+        uiState.value = (uiState.value as EpisodeInfoUiState.Success).copy(chapters = chapters)
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("rail")
+        fixture.compose.walkWindows(window, BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900) { size ->
+            val play = playBounds()
+            // Below the 64dp top bar, not hidden under it.
+            assertTrue("Play is inside the page at $size ($play)", play.top.value >= 64f && play.bottom.value <= size.heightDp)
+        }
+    }
+
+    @Test
+    fun `on a half-open fold filling the window the Play row stays off the hinge, and Play works after each step`() {
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        showEpisode(LONG_TITLE)
+        val hinge = BoxloreTestWindows.FOLD_TABLETOP.tabletopFold!!.bounds
+        var plays = 0
+        fixture.compose.walkWindows(window, BoxloreTestWindows.FOLD_TABLETOP, BoxloreTestWindows.FOLD_FLAT) { size ->
+            fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToIndex(0)
+            if (size.tabletopFold != null) {
+                val rail = fixture.compose.onNodeWithTag(EpisodeInfoTags.RAIL).getBoundsInRoot()
+                assertTrue("the Play row is clear of the hinge ($rail)", rail.bottom.value <= hinge.top || rail.top.value >= hinge.bottom)
+            }
+            fixture.compose.onNode(hasText(PLAY) and hasClickAction()).performScrollTo().performClick()
+            plays++
+            assertEquals("one play per tap at $size", plays, mockingDetails(model).invocations.count { it.method.name == "onMainActionClick" })
+        }
+    }
+
+    @Test
     fun `an open Share sheet stays open through window changes, a reload and recreation`() {
         window.value = BoxloreTestWindows.W599_H900
         render()
@@ -336,18 +372,21 @@ class EpisodeInfoAdaptiveTransitionTest {
 
     @Test
     fun `the loading outline sits where the loaded page will, with Back working and no second load`() {
+        // The route already knows the title, so the outline draws it and the Play row starts where it stays.
+        routeTitle = LONG_TITLE
         listOf(BoxloreTestWindows.PHONE, BoxloreTestWindows.SPLIT_HALF, BoxloreTestWindows.UPRIGHT_BOOK).forEach { size ->
             window.value = size
             uiState.value = EpisodeInfoUiState.Loading
             if (size == BoxloreTestWindows.PHONE) render() else fixture.compose.waitForIdle()
             val skeletonArt = fixture.compose.onNodeWithTag(EPISODE_SKELETON_ART_TAG, useUnmergedTree = true).getBoundsInRoot()
             val skeletonRail = fixture.compose.onNodeWithTag(EPISODE_SKELETON_RAIL_TAG, useUnmergedTree = true).getBoundsInRoot()
-            showEpisode("How we find our way home again after a long winter away")
+            showEpisode(LONG_TITLE)
             val art = fixture.compose.onNodeWithTag(EPISODE_HERO_ART_TAG).getBoundsInRoot()
             val rail = fixture.compose.onNodeWithTag(EpisodeInfoTags.RAIL).getBoundsInRoot()
             assertEquals("art at $size", art, skeletonArt)
             assertEquals("rail start at $size", rail.left.value, skeletonRail.left.value, 0.5f)
             assertEquals("rail width at $size", rail.right.value - rail.left.value, skeletonRail.right.value - skeletonRail.left.value, 0.5f)
+            assertEquals("rail top at $size", rail.top.value, skeletonRail.top.value, 2f)
         }
 
         uiState.value = EpisodeInfoUiState.Loading
@@ -466,7 +505,7 @@ class EpisodeInfoAdaptiveTransitionTest {
                         Surface {
                             EpisodeInfoScreen(
                                 episodeId = LINK_ID,
-                                episodeTitle = "",
+                                episodeTitle = routeTitle,
                                 episodeDescription = "",
                                 episodeImageUrl = "",
                                 episodeAudioUrl = "",

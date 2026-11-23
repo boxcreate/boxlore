@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -39,6 +40,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -53,6 +55,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeContentPadding
 import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeInsetsDp
 import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
@@ -64,6 +70,7 @@ import cx.aswin.boxlore.feature.info.logic.EpisodeHeroForm
 import cx.aswin.boxlore.feature.info.logic.EpisodeShowTitle
 import cx.aswin.boxlore.feature.info.logic.episodeHeroArtSizeDp
 import cx.aswin.boxlore.feature.info.logic.episodeHeroForm
+import cx.aswin.boxlore.feature.info.logic.hingeCrossesPage
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -210,20 +217,41 @@ fun EpisodeInfoScreen(
     val titleHorizontalPadding = EpisodeHeaderButtonInset + 48.dp + 8.dp
 
     val isShortPane = boxloreIsShortPane()
+    val windowLayout = LocalBoxloreWindowLayout.current
+    val paneBounds = LocalBoxlorePaneBounds.current
+    val hingeAcross = windowLayout.tabletopFold?.bounds?.let { hinge ->
+        hingeCrossesPage(hinge.top, hinge.bottom, paneBounds?.top ?: 0f, paneBounds?.bottom ?: windowLayout.heightDp)
+    } == true
     cx.aswin.boxlore.core.designsystem.components.DiscoveryExpressiveTheme {
-        BoxWithConstraints(Modifier.fillMaxSize()) {
+        // The page reads at most the reading column's width itself, so its layout never depends on
+        // where the artwork theme applies that cap.
+        BoxWithConstraints(Modifier.boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxSize()) {
             // The page's own width, not the window's: a detail pane beside a list keeps the phone layout.
             val pageWidthDp = maxWidth.value
-            val heroForm = episodeHeroForm(pageWidthDp, isShortPane)
+            val heroForm = episodeHeroForm(pageWidthDp, isShortPane, hingeAcross)
             val heroArtSize = episodeHeroArtSizeDp(heroForm, pageWidthDp).dp
-            // Off the phone layout, cards and rows stop at a readable width, lined up with the cover.
+            // Off the phone layout every block (the hero included) stops at one readable width, on the cards' edges.
             val blockCap = if (heroForm == EpisodeHeroForm.Stacked) Modifier else Modifier.fillMaxWidth().wrapContentWidth(Alignment.Start).widthIn(max = EpisodeBlockMaxWidth)
+            val heroEdges = if (heroForm == EpisodeHeroForm.Stacked) Modifier.padding(horizontal = EpisodePageTextGutter) else blockCap.padding(horizontal = EpisodePageBlockGutter)
+            // The Play row moves into the hero in two columns. A page scrolled to it would otherwise lose
+            // its place (the row's item is gone) and leave Play above the screen, so it goes to the hero.
+            val formMemory = remember { EpisodeHeroFormMemory(heroForm) }
+            if (formMemory.form != heroForm && heroForm == EpisodeHeroForm.TwoColumn) {
+                // The layout measured before this change, read without subscribing to every scroll.
+                // The first item under the top bar, not one peeking into the list's top padding.
+                val top = Snapshot.withoutReadObservation {
+                    listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == listState.firstVisibleItemIndex }?.key
+                }
+                if (top == RAIL_KEY) listState.requestScrollToItem(0)
+            }
+            SideEffect { formMemory.form = heroForm }
             when (val state = uiState) {
                 is EpisodeInfoUiState.Loading -> {
                     // The page's outline while it loads, with Back already where it will be.
                     Box(modifier = modifier.fillMaxSize()) {
                         cx.aswin.boxlore.feature.info.components.EpisodePageSkeleton(
                             form = heroForm,
+                            title = episodeTitle,
                             artSize = heroArtSize,
                             topPadding = collapsedHeaderHeight + 16.dp,
                             railMaxWidth = EpisodeRailMaxWidth,
@@ -317,7 +345,7 @@ fun EpisodeInfoScreen(
                                         isArchived = state.episode.id in archivedEpisodeIds,
                                     ),
                                     onToggleCompletion = viewModel::onToggleCompletion,
-                                    modifier = Modifier.padding(horizontal = EpisodePageTextGutter),
+                                    modifier = heroEdges,
                                     onMarkPlayedTipDismissed = onMarkPlayedTipDismissed,
                                     form = heroForm,
                                     artSize = heroArtSize,
@@ -326,7 +354,7 @@ fun EpisodeInfoScreen(
                             }
                             // Beside the cover in the two-column layout, its own row otherwise.
                             if (heroForm != EpisodeHeroForm.TwoColumn) {
-                                item(key = "rail") {
+                                item(key = RAIL_KEY) {
                                     val railCap = if (heroForm == EpisodeHeroForm.Stacked) Modifier else Modifier.widthIn(max = EpisodeRailMaxWidth)
                                     actionRail(Modifier.padding(horizontal = EpisodePageBlockGutter).then(railCap))
                                 }
@@ -363,6 +391,7 @@ fun EpisodeInfoScreen(
                             // Contextual "MORE LIKE THIS" RECOMMENDATIONS SECTION -> Card
                             if (moreLikeThisOn == true && (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty())) {
                                 item(key = "more_like_this") {
+                                    // A carousel: it keeps the page's full width.
                                     cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreLikeThisCard(
                                         state = state,
                                         onEpisodeClick = onEpisodeClick,
@@ -372,6 +401,7 @@ fun EpisodeInfoScreen(
 
                             // Latest episodes from this show, sharing the page's vertical scroll.
                             item(key = "more_from_podcast") {
+                                Box(blockCap.testTag(EpisodeInfoTags.MORE_FROM)) {
                                 cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreFromPodcastCard(
                                     state = state,
                                     onPodcastClick = onPodcastClick,
@@ -381,6 +411,7 @@ fun EpisodeInfoScreen(
                                     isSectionScrollEngaged = isMoreFromScrolling,
                                     onRelatedEpisodeClicked = viewModel::onRelatedEpisodeClicked,
                                 )
+                                }
                             }
                         }
                     }
@@ -512,7 +543,7 @@ private fun LazyListScope.episodeAbout(
     val notes = state.showNotes ?: return
     if (notes.plainText.isBlank()) return
     item(key = "about") {
-        Box(blockCap) {
+        Box(blockCap.testTag(EpisodeInfoTags.ABOUT)) {
             EpisodeDescriptionCard(
                 notes = notes,
                 location = state.location,
@@ -541,6 +572,12 @@ internal val EpisodePageTextGutter = 20.dp
 /** Back and Share sit this far from the page edges, matching the show page's top bar. */
 private val EpisodeHeaderButtonInset = 4.dp
 
+/** The Play row's list item, right after the hero (absent in the two-column layout). */
+private const val RAIL_KEY = "rail"
+
+/** The hero form the page last committed, to notice a change while composing the next one. */
+private class EpisodeHeroFormMemory(var form: EpisodeHeroForm)
+
 /** Off the phone layout the Play row stops here instead of stretching across the page. */
 private val EpisodeRailMaxWidth = 480.dp
 
@@ -551,6 +588,8 @@ private val EpisodeBlockMaxWidth = 672.dp
 internal object EpisodeInfoTags {
     const val LIST = "episode_info_list"
     const val RAIL = "episode_info_rail"
+    const val ABOUT = "episode_info_about"
+    const val MORE_FROM = "episode_info_more_from"
 }
 
 /**

@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,8 +28,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.designsystem.theme.SkeletonBlock
 import cx.aswin.boxlore.core.designsystem.theme.SkeletonTextLines
@@ -44,11 +47,14 @@ internal const val EPISODE_SKELETON_RAIL_TAG = "episode_info_skeleton_rail"
 /**
  * Opening an episode: the page's outline in the loaded page's places (the cover, show link, title
  * lines, details, the Play row and the About card) for [form], so nothing jumps when the episode
- * arrives. [topPadding] is the loaded list's top padding; the top bar with Back is drawn by the page.
+ * arrives. A known [title] is drawn as the loaded page will draw it, so the Play row starts where it
+ * will stay. [topPadding] is the loaded list's top padding; the top bar with Back is drawn by the page.
  */
+@Suppress("LongParameterList")
 @Composable
 internal fun EpisodePageSkeleton(
     form: EpisodeHeroForm,
+    title: String,
     artSize: Dp,
     topPadding: Dp,
     railMaxWidth: Dp,
@@ -70,22 +76,22 @@ internal fun EpisodePageSkeleton(
                 SkeletonPiece(artModifier.size(artSize).testTag(EPISODE_SKELETON_ART_TAG), RoundedCornerShape(if (form == EpisodeHeroForm.Row) 24.dp else 30.dp))
             }
             val rail: @Composable (Modifier) -> Unit = { railModifier -> SkeletonRail(railModifier) }
-            val hero = Modifier.padding(horizontal = EpisodePageTextGutter)
+            val hero = if (form == EpisodeHeroForm.Stacked) Modifier.padding(horizontal = EpisodePageTextGutter) else blockModifier.padding(horizontal = EpisodePageBlockGutter)
             val railEdge = Modifier.padding(horizontal = EpisodePageBlockGutter)
             when (form) {
                 EpisodeHeroForm.Stacked -> Column(hero.fillMaxWidth()) {
                     art(Modifier.align(Alignment.CenterHorizontally))
                     Spacer(Modifier.height(20.dp))
-                    SkeletonDetails(MaterialTheme.typography.headlineMedium)
+                    SkeletonDetails(title, MaterialTheme.typography.headlineMedium)
                 }
                 EpisodeHeroForm.Row -> Row(hero.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     art(Modifier.padding(top = 4.dp))
-                    Column(Modifier.weight(1f)) { SkeletonDetails(MaterialTheme.typography.headlineSmall) }
+                    Column(Modifier.weight(1f)) { SkeletonDetails(title, MaterialTheme.typography.headlineSmall) }
                 }
                 EpisodeHeroForm.TwoColumn -> Row(hero.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     art(Modifier)
                     Column(Modifier.weight(1f)) {
-                        SkeletonDetails(MaterialTheme.typography.headlineMedium)
+                        SkeletonDetails(title, MaterialTheme.typography.headlineMedium)
                         Spacer(Modifier.height(16.dp))
                         rail(Modifier.widthIn(max = railMaxWidth))
                     }
@@ -103,18 +109,35 @@ internal fun EpisodePageSkeleton(
     }
 }
 
-/** The show link, two title lines and the details row, at the loaded hero's heights. */
+/**
+ * The show link, the title and the details row, at the loaded hero's heights: the [title] itself
+ * when the page already knows it (up to the loaded title's three lines), two shimmer lines when not.
+ */
 @Composable
-private fun ColumnScope.SkeletonDetails(titleStyle: TextStyle) {
+private fun ColumnScope.SkeletonDetails(title: String, titleStyle: TextStyle) {
     Box(Modifier.fillMaxWidth().heightIn(min = 48.dp), contentAlignment = Alignment.CenterStart) {
         SkeletonTextLines(MaterialTheme.typography.titleSmall, lines = 1, widths = listOf(0.4f), modifier = Modifier.width(160.dp))
     }
-    SkeletonTextLines(titleStyle, lines = 2, widths = listOf(0.95f, 0.6f))
+    if (title.isBlank()) {
+        SkeletonTextLines(titleStyle, lines = 2, widths = listOf(0.95f, 0.6f))
+    } else {
+        Text(
+            title,
+            style = titleStyle.copy(fontWeight = GoogleSansWeight.bold),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = TITLE_LINES,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
     Spacer(Modifier.height(8.dp))
     Box(Modifier.fillMaxWidth().heightIn(min = 48.dp), contentAlignment = Alignment.CenterStart) {
-        SkeletonTextLines(MaterialTheme.typography.bodySmall, lines = 1, widths = listOf(0.5f))
+        SkeletonTextLines(MaterialTheme.typography.bodyMedium, lines = 1, widths = listOf(0.5f))
     }
 }
+
+/** The loaded title's collapsed lines ([EpisodeExpandableTitle]). */
+private const val TITLE_LINES = 3
 
 /** The Play row: three connected toggles and the wide Play button, shaped like [EpisodeActionRail]. */
 @Composable

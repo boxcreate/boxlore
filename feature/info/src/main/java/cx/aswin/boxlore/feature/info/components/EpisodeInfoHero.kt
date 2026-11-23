@@ -80,7 +80,7 @@ internal fun EpisodeInfoHero(
     // Held here, above the layouts, so an opened title stays open when the window changes form.
     val titleExpanded = rememberSaveable(episode.id, episode.title) { mutableStateOf(false) }
     val art: @Composable (Modifier) -> Unit = { artModifier ->
-        EpisodeHeroArt(episode, if (form == EpisodeHeroForm.Row) 24.dp else 30.dp, artModifier.size(artSize))
+        EpisodeHeroArt(episode, compact = form == EpisodeHeroForm.Row, artModifier.size(artSize))
     }
     val details: @Composable () -> Unit = {
         EpisodeShowLink(podcastTitle, onPodcastClick)
@@ -113,7 +113,8 @@ internal fun EpisodeInfoHero(
 }
 
 @Composable
-private fun EpisodeHeroArt(episode: Episode, corner: Dp, modifier: Modifier) {
+private fun EpisodeHeroArt(episode: Episode, compact: Boolean, modifier: Modifier) {
+    val corner = if (compact) 24.dp else 30.dp
     Surface(modifier = modifier.testTag(EPISODE_HERO_ART_TAG), shape = RoundedCornerShape(corner), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Box(Modifier.fillMaxSize()) {
             OptimizedImage(
@@ -124,7 +125,12 @@ private fun EpisodeHeroArt(episode: Episode, corner: Dp, modifier: Modifier) {
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
             )
-            EpisodeArtworkTags(episode, Modifier.align(Alignment.TopStart).fillMaxWidth().padding(12.dp))
+            // The small cover takes the list's smaller tags, so Bonus and Video stay on one line above the art.
+            EpisodeArtworkTags(
+                episode,
+                if (compact) EpisodeTypeChipSize.Small else EpisodeTypeChipSize.Medium,
+                Modifier.align(Alignment.TopStart).fillMaxWidth().padding(if (compact) 8.dp else 12.dp),
+            )
         }
     }
 }
@@ -221,15 +227,19 @@ private const val MARK_PLAYED_TIP_MS = 4_000L
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun EpisodeArtworkTags(episode: Episode, modifier: Modifier = Modifier) {
-    FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+private fun EpisodeArtworkTags(episode: Episode, size: EpisodeTypeChipSize, modifier: Modifier = Modifier) {
+    FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(if (size == EpisodeTypeChipSize.Small) 4.dp else 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         val type = when (episode.effectiveEpisodeType?.lowercase()) {
             "bonus" -> R.string.episode_info_bonus
             "trailer" -> R.string.episode_info_trailer
             else -> null
         }
-        type?.let { EpisodeTypeChip(stringResource(it), size = EpisodeTypeChipSize.Medium) }
-        if (episode.enclosureType?.startsWith("video/") == true) EpisodeTypeChip(stringResource(R.string.episode_info_video), video = true, size = EpisodeTypeChipSize.Medium)
+        type?.let { EpisodeTypeChip(stringResource(it), size = size) }
+        if (episode.enclosureType?.startsWith("video/") == true) {
+            // Beside a type tag on the small cover the camera alone keeps both tags on one line.
+            val iconOnly = size == EpisodeTypeChipSize.Small && type != null
+            EpisodeTypeChip(stringResource(R.string.episode_info_video), video = true, size = size, iconOnly = iconOnly)
+        }
     }
 }
 

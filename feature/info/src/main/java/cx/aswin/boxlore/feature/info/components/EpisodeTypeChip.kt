@@ -26,12 +26,25 @@ internal enum class EpisodeTypeChipSize { Small, Medium }
  * solid `surfaceContainerHigh` pill with `onSurfaceVariant` text, and a camera for video.
  */
 @Composable
-internal fun EpisodeTypeChip(label: String, video: Boolean = false, size: EpisodeTypeChipSize = EpisodeTypeChipSize.Small, modifier: Modifier = Modifier) {
+internal fun EpisodeTypeChip(
+    label: String,
+    video: Boolean = false,
+    size: EpisodeTypeChipSize = EpisodeTypeChipSize.Small,
+    modifier: Modifier = Modifier,
+    iconOnly: Boolean = false,
+) {
     Surface(modifier, shape = ExpressiveShapes.Pill, color = MaterialTheme.colorScheme.surfaceContainerHigh, contentColor = MaterialTheme.colorScheme.onSurfaceVariant) {
-        val padding = if (size == EpisodeTypeChipSize.Small) Modifier.padding(horizontal = 8.dp, vertical = 3.dp) else Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+        val padding = when {
+            iconOnly -> Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+            size == EpisodeTypeChipSize.Small -> Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+            else -> Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+        }
         Row(padding, horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (video) Icon(Icons.Rounded.Videocam, null, Modifier.size(14.dp))
-            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = GoogleSansWeight.medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // Icon only (a video tag beside another tag on a small cover): the camera carries the name.
+            if (video) Icon(Icons.Rounded.Videocam, if (iconOnly) label else null, Modifier.size(14.dp))
+            if (!iconOnly || !video) {
+                Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = GoogleSansWeight.medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
     }
 }

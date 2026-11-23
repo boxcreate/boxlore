@@ -32,4 +32,12 @@ class EpisodeHeroFormTest {
         assertEquals(240f, episodeHeroArtSizeDp(EpisodeHeroForm.TwoColumn, 600f))
         assertEquals(280f, episodeHeroArtSizeDp(EpisodeHeroForm.TwoColumn, 1_000f))
     }
+
+    @Test
+    fun `a hinge across the page keeps the phone layout, a page in one half does not`() {
+        assertEquals(EpisodeHeroForm.Stacked, episodeHeroForm(932f, isShortPane = false, hingeCrossesPage = true))
+        assertEquals(EpisodeHeroForm.Row, episodeHeroForm(932f, isShortPane = true, hingeCrossesPage = true))
+        assertEquals(true, hingeCrossesPage(hingeTop = 315f, hingeBottom = 336f, pageTop = 0f, pageBottom = 650f))
+        assertEquals(false, hingeCrossesPage(hingeTop = 315f, hingeBottom = 336f, pageTop = 336f, pageBottom = 650f))
+    }
 }

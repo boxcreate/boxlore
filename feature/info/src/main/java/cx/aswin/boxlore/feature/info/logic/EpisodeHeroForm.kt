@@ -16,10 +16,13 @@ private const val TWO_COLUMN_MIN_WIDTH_DP = 600f
 
 /**
  * The hero form for a page [paneWidthDp] wide (the page's own width, not the window's, so a detail
- * pane beside a list keeps the phone layout). A short page always gets [EpisodeHeroForm.Row].
+ * pane beside a list keeps the phone layout). A short page always gets [EpisodeHeroForm.Row]. When a
+ * half-open hinge runs across the page ([hingeCrossesPage]) the page keeps the phone layout, whose
+ * tall cover carries the Play row below the hinge instead of onto it.
  */
-internal fun episodeHeroForm(paneWidthDp: Float, isShortPane: Boolean): EpisodeHeroForm = when {
+internal fun episodeHeroForm(paneWidthDp: Float, isShortPane: Boolean, hingeCrossesPage: Boolean = false): EpisodeHeroForm = when {
     isShortPane -> EpisodeHeroForm.Row
+    hingeCrossesPage -> EpisodeHeroForm.Stacked
     paneWidthDp >= TWO_COLUMN_MIN_WIDTH_DP -> EpisodeHeroForm.TwoColumn
     else -> EpisodeHeroForm.Stacked
 }
@@ -30,3 +33,10 @@ internal fun episodeHeroArtSizeDp(form: EpisodeHeroForm, paneWidthDp: Float): Fl
     EpisodeHeroForm.Row -> 120f
     EpisodeHeroForm.TwoColumn -> (paneWidthDp * 0.36f).coerceIn(240f, 280f)
 }
+
+/**
+ * True when the horizontal hinge from [hingeTop] to [hingeBottom] (window dp) runs across a page
+ * spanning [pageTop] to [pageBottom]: a half-open fold whose page fills the whole window.
+ */
+internal fun hingeCrossesPage(hingeTop: Float, hingeBottom: Float, pageTop: Float, pageBottom: Float): Boolean =
+    hingeTop > pageTop && hingeBottom < pageBottom

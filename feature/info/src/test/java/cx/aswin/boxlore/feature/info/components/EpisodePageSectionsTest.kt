@@ -113,9 +113,11 @@ class EpisodePageSectionsTest {
         }
         fixture.compose.runOnIdle { window.value = BoxloreTestWindows.UPRIGHT_BOOK }
         list.performScrollToKey("links")
-        val first = fixture.compose.onNodeWithText("Further reading 1").getBoundsInRoot()
-        val second = fixture.compose.onNodeWithText("Further reading 2").getBoundsInRoot()
+        // The episode's own page leads; a two-line name beside a one-line one keeps the row even.
+        val first = fixture.compose.onNodeWithText(WEBSITE_TITLE).getBoundsInRoot()
+        val second = fixture.compose.onNodeWithText("Further reading 1").getBoundsInRoot()
         assertEquals("two columns side by side", first.top.value, second.top.value, 1f)
+        assertEquals("cells in a row share one height", first.bottom.value - first.top.value, second.bottom.value - second.top.value, 1f)
         fixture.compose.onNodeWithText("Further reading 1").performClick()
         fixture.compose.waitForIdle()
         val opened = org.robolectric.Shadows.shadowOf(fixture.compose.activity.application).nextStartedActivity
@@ -124,11 +126,36 @@ class EpisodePageSectionsTest {
     }
 
     @Test
-    fun `More from opens the show from its header only`() {
+    fun `off the phone layout the cover, Play row, cards and More from share one column's edges`() {
         render()
+        fixture.compose.walkWindows(window, BoxloreTestWindows.UPRIGHT_BOOK, BoxloreTestWindows.TABLET) { size ->
+            val list = fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST)
+            list.performScrollToKey("hero")
+            val art = fixture.compose.onNodeWithTag(EPISODE_HERO_ART_TAG).getBoundsInRoot()
+            val rail = fixture.compose.onNodeWithTag(EpisodeInfoTags.RAIL).getBoundsInRoot()
+            list.performScrollToKey("about")
+            val about = fixture.compose.onNodeWithTag(EpisodeInfoTags.ABOUT).getBoundsInRoot()
+            list.performScrollToKey("more_from_podcast")
+            val moreFrom = fixture.compose.onNodeWithTag(EpisodeInfoTags.MORE_FROM).getBoundsInRoot()
+            assertEquals("cover and About start together at $size", about.left.value + 16f, art.left.value, 1f)
+            assertEquals("Play row and About end together at $size", about.right.value - 16f, rail.right.value, 1f)
+            assertEquals("More from and About end together at $size", about.right.value, moreFrom.right.value, 1f)
+            assertTrue("one reading column at $size", about.right.value - art.left.value <= 720f)
+        }
+    }
+
+    @Test
+    fun `More from opens the show from its header only, and says See all only above listed episodes`() {
+        val related = List(3) { TestFixtures.episode(id = "related-$it", title = "Episode ${10 + it}", podcastId = "1", podcastTitle = "Curious world") }
+        val state = MutableStateFlow(richState().copy(relatedEpisodes = related))
+        render(state)
         fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("more_from_podcast")
-        assertTrue(fixture.compose.onAllNodesWithText("See all").fetchSemanticsNodes().isNotEmpty())
+        assertTrue(fixture.compose.onAllNodesWithText("See all", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
         assertEquals("no second Explore button", 0, fixture.compose.onAllNodesWithText("Explore podcast").fetchSemanticsNodes().size)
+        fixture.compose.runOnIdle { state.value = richState() }
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("more_from_podcast")
+        assertTrue(fixture.compose.onAllNodesWithText("No other episodes available").fetchSemanticsNodes().isNotEmpty())
+        assertEquals("no See all above an empty list", 0, fixture.compose.onAllNodesWithText("See all", useUnmergedTree = true).fetchSemanticsNodes().size)
     }
 
     @Test
@@ -195,9 +222,11 @@ class EpisodePageSectionsTest {
         return layouts.first()
     }
 
-    private fun render(state: EpisodeInfoUiState.Success = richState(), archived: Set<String> = emptySet()) {
+    private fun render(state: EpisodeInfoUiState.Success = richState(), archived: Set<String> = emptySet()) = render(MutableStateFlow(state), archived)
+
+    private fun render(state: MutableStateFlow<EpisodeInfoUiState.Success>, archived: Set<String> = emptySet()) {
         val model = mock(EpisodeInfoViewModel::class.java)
-        stubEpisodeInfoViewModel(model, MutableStateFlow(state), archived = MutableStateFlow(archived))
+        stubEpisodeInfoViewModel(model, state, archived = MutableStateFlow(archived))
         fixture.prepare()
         fixture.compose.mainClock.autoAdvance = true
         fixture.compose.setContent {
@@ -223,7 +252,7 @@ class EpisodePageSectionsTest {
         val episode = TestFixtures.episode(id = EPISODE_ID, title = "How we find our way home", podcastId = "1", podcastTitle = "Curious world", publishedDate = 1_731_000_000L)
         val chapters = List(6) { Chapter(it * 300.0, "Chapter ${it + 1}") }
         val links = listOf(
-            EpisodeLink("https://curiousworld.example/14", "curiousworld.example", EpisodeLinkKind.WEBSITE),
+            EpisodeLink("https://curiousworld.example/14", "curiousworld.example", EpisodeLinkKind.WEBSITE, title = WEBSITE_TITLE),
             EpisodeLink("https://www.youtube.com/watch?v=abc", "youtube.com", EpisodeLinkKind.VIDEO, platform = "YouTube"),
         ) + (1..4).map { EpisodeLink("https://site$it.example.org", "site$it.example.org", EpisodeLinkKind.ARTICLE, title = "Further reading $it") }
         val notes = ShowNotes("Amara talks with a cartographer about the places we grew up in. ".repeat(6), links, chapters, "")
@@ -245,6 +274,7 @@ class EpisodePageSectionsTest {
     private companion object {
         const val EPISODE_ID = "episode-sections"
         const val TIP = "Mark played to move this episode out of your unplayed list."
+        const val WEBSITE_TITLE = "Episode 14 notes: the maps, the places and the full transcript"
     }
 }
 
