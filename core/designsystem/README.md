@@ -36,7 +36,7 @@ Owns boxlore's shared Compose visuals: theme, type, shapes, motion, press feedba
 ### Layout and window classes
 
 - `BoxloreWindowLayout`, `LocalBoxloreWindowLayout`: the app-supplied window and fold model; previews default to phones.
-- `boxlorePaneSpec`, `LocalBoxlorePaneBounds`, `dockedPlayerCoversPane`: shell-supplied panes, never inferred from the window; half-open folds use the whole window until a pane opens.
+- `boxlorePaneSpec`, `LocalBoxlorePaneBounds`, `dockedPlayerCoversPane`, `boxlorePaneOwnsStatusBar`: shell-supplied panes, never inferred from the window; half-open folds use the whole window until a pane opens. Only a pane that fills the top of the screen sets the status bar's icon colour.
 - `rememberBoxloreFoldSafePopupPositionProvider`, `BoxloreTabletopSplit`, `boxloreIsShortPane`, `boxloreContentHeightDp`, `BoxloreSafeInsets.kt`: fold-safe popups, tabletop split, short-pane check and pane height, pane-relative insets.
 - `BoxloreCardSpec`, `boxlorePosterColumns`, `Modifier.boxloreReadingColumn`: card families, poster packing by pane width, a reading column for any window.
 - Gates and state retention: see [adaptive UI and state](../../ARCHITECTURE.md#adaptive-ui-and-state).
@@ -49,7 +49,7 @@ Owns boxlore's shared Compose visuals: theme, type, shapes, motion, press feedba
 - `TabletFeaturedRow`, `AdaptiveOverflowRow`, `rememberAdaptiveOverflowState`: a feature card beside equal-height posters; a width-packed chip row whose More list follows resizes.
 - `DiscoveryTabSwitcher`: Explore and Subscriptions tab capsule; pages keep selection, long names grow the floating pill, and icons drop before names shorten.
 - `TopBarUtilityActions`: connected Update, Feedback and Settings segments, named in tooltips. Update shows only with `LocalUpdateAvailableAction`, and its sweep runs three times, never with animations off; `LocalFeedbackReplyWaiting` dots Feedback.
-- `BoxloreTooltip`: names an icon-only button on hover or long-press.
+- `BoxloreTooltip`: names an icon-only button on hover or long-press, below it or above it (`BoxloreTooltipPosition`).
 - `BoxloreTopBar`, `boxloreLargeTitlePresentation`: page header, slim in short panes.
 - `ConnectedOptionSelector`, `RegionSegmentedSelector`, `ContentRegionPickerSheet`: option buttons (long names shrink, wrap, then stack) and the region picker.
 - `BoxloreFilterChip`, `BoxloreMoreChip`, `BoxloreFilterChipDefaults`: the one filter chip, with a sheet container; `PillFilterChip` is it for genre pills.

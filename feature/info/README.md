@@ -38,12 +38,12 @@ Used by `:app` navigation:
 ## Episode page
 
 - **Opening by link.** A page opened with only an episode ID resolves it through `PodcastRepository.resolveEpisodeLink`. While the show's feed is read once it shows `ReadingFeed`; when nothing lists the episode it shows `NotFound`, with View show when the link named one (`EpisodeLinkStatus`). See [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
-- **Page episode.** `EpisodeLoadRequests` skips a repeat load of the same ID unless it adds the show, picks the page's episode for download state (`pageEpisode`), and fills in the show for shares (`shareEpisode`).
+- **Page episode.** `EpisodeLoadRequests` skips a repeat load of the same ID unless it adds the show, picks the page's episode for download state (`pageEpisode`), and fills in the show for shares (`shareEpisode`). A finished load error is never a repeat, so `EpisodeInfoViewModel.retry` (Try again) loads the same request again.
 - **Notes.** `logic/EpisodeInfoNotesLoader` parses publisher HTML off the main thread, loads chapters and cross-promotion independently, and drops late results for an earlier request. Valid remote chapters win; otherwise chapters come from the description.
 - **Shared lookup.** More from and Try these episodes share one show-details request through `logic/SharedLookup.kt` (`sharedLookup`): it runs once on first await, and failures resolve to `null` for every caller.
 - **Try these episodes.** `logic/SimilarEpisodesLoader.kt` (`collectSimilarEpisodes`) loads only while More like this is on (`EpisodeInfoViewModel.moreLikeThisOn`), in the listener's languages and region. Turning it off cancels the request; replies for another episode are dropped.
 - **More from.** `logic/MoreFromEpisodeSelection.kt` picks the latest distinct episodes of the show, excluding the current one.
-- **Links.** `EpisodeLinkRows`, `EpisodeLinkBrandIcon` and `EpisodeLinkPalette` place and tint resource links; brand recognition matches domains, so lookalike hosts get none.
+- **Links.** `EpisodeLinkRows` (`episodeLinkListRows`) packs links into list rows, branded first, four until opened and two columns on wide pages; `EpisodeLinkBrandIcon` and `EpisodeLinkPalette` tint them. Brand recognition matches domains, so lookalike hosts get none.
 - **Seeking.** `EpisodeInfoSeekLogic` saves progress when seeking an episode the player isn't on.
 
 ## Showcase pages
@@ -51,7 +51,7 @@ Used by `:app` navigation:
 A few shows get a show page drawn in their own style. Each is a `BrandedShowPage` object listed in `BrandedShowPages.all`.
 
 - **Matching.** `brandedShowPageFor` matches a show through `BrandedShowIds`: its Podcast Index ID (including a linked `rss:` copy, via `listenerShowIds`), its GUID, or its normalised feed URL.
-- **What a page provides.** IDs, a `style` (`BrandedPageStyle`), a `Header` and a `Spotlight`; optionally a `subscribeMoment`, `darkOnly` or `headerKeepsTrailers`.
+- **What a page provides.** IDs, a `style` (`BrandedPageStyle`), a `Header` and a `Spotlight`; optionally a `subscribeMoment`, `darkOnly` (dark in light mode too, with white status bar icons while the page fills the top of the screen) or `headerKeepsTrailers`.
 - **Shared behaviour.** Chips, action buttons and the episode list keep their regular order and callbacks; only colours and chip shapes change. Every page carries `BrandedSeal` in the top bar and the shared © button (`BrandedCopyrightButton`).
 - **Spotlight.** `brandedSpotlightEpisode` shows the newest non-trailer episode only while sorting newest first with search closed. The list then leaves that episode out. With completed episodes hidden, a finished latest episode hides the card.
 - **Subscribe moments.** A `BrandedSubscribeMoment` replaces the regular subscribe animation. It holds alerts and auto-download back until `revealDelayMillis` on its own clock, ends on the regular Subscribed state, and never plays with system animations off.
