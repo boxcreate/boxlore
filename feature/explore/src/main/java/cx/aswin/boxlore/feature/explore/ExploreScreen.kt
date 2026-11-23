@@ -10,11 +10,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -29,19 +27,10 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Headphones
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.DockedSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,7 +42,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -86,23 +74,15 @@ import cx.aswin.boxlore.feature.explore.components.ExploreBrowseCardSkeleton
 import cx.aswin.boxlore.feature.explore.components.ExploreBrowseChromeState
 import cx.aswin.boxlore.feature.explore.components.ExploreBrowsePodcastCard
 import cx.aswin.boxlore.feature.explore.components.ExploreEmptyState
-import cx.aswin.boxlore.feature.explore.components.ExploreEpisodesSearchEmptyState
-import cx.aswin.boxlore.feature.explore.components.ExploreEpisodesSearchIdleState
 import cx.aswin.boxlore.feature.explore.components.ExploreFloatingHeader
-import cx.aswin.boxlore.feature.explore.components.ExploreGenreSelector
+import cx.aswin.boxlore.feature.explore.components.ExploreHeaderRow
+import cx.aswin.boxlore.feature.explore.components.ExploreHeaderSearchField
+import cx.aswin.boxlore.feature.explore.components.ExploreHeaderSelectors
 import cx.aswin.boxlore.feature.explore.components.ExploreRecommendationsEmptyState
-import cx.aswin.boxlore.feature.explore.components.ExploreRelatedShowsRail
-import cx.aswin.boxlore.feature.explore.components.ExploreSearchEpisodeCard
-import cx.aswin.boxlore.feature.explore.components.ExploreSearchLoadingState
-import cx.aswin.boxlore.feature.explore.components.ExploreSearchSectionHeader
 import cx.aswin.boxlore.feature.explore.components.ExploreSectionHeader
-import cx.aswin.boxlore.feature.explore.components.ExploreSuggestedMoodsHeader
 import cx.aswin.boxlore.feature.explore.components.ExploreTabSelectorFab
 import cx.aswin.boxlore.feature.explore.components.ExploreTopicToolbar
 import cx.aswin.boxlore.feature.explore.components.ExploreTopicTransition
-import cx.aswin.boxlore.feature.explore.components.ExploreVibeCard
-import cx.aswin.boxlore.feature.explore.components.ExploreVibeChipRow
-import cx.aswin.boxlore.feature.explore.components.SearchTabSelector
 import cx.aswin.boxlore.feature.explore.components.exploreNextPageFooter
 import cx.aswin.boxlore.feature.explore.components.exploreTopHeaderTitle
 import cx.aswin.boxlore.feature.explore.components.exploreTopicResults
@@ -428,257 +408,40 @@ fun ExploreContent(
                             )
                         } else if (isSearchModeActive) {
                             if (state.searchTab == SearchTab.EPISODES) {
-                                if (state.searchQuery.isEmpty()) {
-                                    item(span = StaggeredGridItemSpan.FullLine) {
-                                        ExploreEpisodesSearchIdleState(
-                                            onExampleClick = onSearchQueryChanged,
-                                        )
-                                    }
-                                } else {
-                                    val eps = distinctSemanticEpisodes
-                                    val pods = semanticPodcastsDistinct
-                                    val showContent = eps.isNotEmpty() || pods.isNotEmpty()
-                                    val showLoader = state.isSemanticLoading
-                                    val showEmptyState =
-                                        !state.isSemanticLoading && state.hasPerformedSemanticSearch && !showContent
-
-                                    when {
-                                        showLoader && !showContent -> {
-                                            item(span = StaggeredGridItemSpan.FullLine) {
-                                                ExploreSearchLoadingState(SearchTab.EPISODES)
-                                            }
-                                        }
-                                        showEmptyState -> {
-                                            item(span = StaggeredGridItemSpan.FullLine) {
-                                                ExploreEpisodesSearchEmptyState(
-                                                    onExampleClick = onSearchQueryChanged,
-                                                )
-                                            }
-                                        }
-                                        showContent -> {
-                                            if (pods.isNotEmpty()) {
-                                                item(
-                                                    key = "semantic_related_shows_rail",
-                                                    span = StaggeredGridItemSpan.FullLine,
-                                                ) {
-                                                    ExploreRelatedShowsRail(
-                                                        podcasts = pods,
-                                                        onPodcastClick = { podcast, index ->
-                                                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSearchResultTapped(
-                                                                surface = "explore",
-                                                                resultType = "podcast",
-                                                                podcastId = podcast.id,
-                                                                episodeId = null,
-                                                                positionIndex = index,
-                                                                searchQuery = state.searchQuery,
-                                                                searchMode = "concept_semantic",
-                                                            )
-                                                            onPodcastClick(
-                                                                podcast.id,
-                                                                "explore_search_concept",
-                                                                state.currentCategory,
-                                                                index,
-                                                            )
-                                                        },
-                                                        modifier = Modifier.padding(bottom = 8.dp),
-                                                    )
-                                                }
-                                            }
-
-                                            if (eps.isNotEmpty()) {
-                                                item(
-                                                    key = "semantic_episodes_header",
-                                                    span = StaggeredGridItemSpan.FullLine,
-                                                ) {
-                                                    ExploreSearchSectionHeader(
-                                                        title = stringResource(R.string.explore_search_episode_results),
-                                                        icon = Icons.Rounded.Headphones,
-                                                        modifier = Modifier.padding(top = if (pods.isNotEmpty()) 8.dp else 0.dp),
-                                                    )
-                                                }
-                                                if (tabletColumns >= 3) {
-                                                    tabletSemanticEpisodeItems(eps, tabletColumns, state.searchQuery, onEpisodeClick)
-                                                } else {
-                                                item(
-                                                     key = LazyListKeyPolicy.safeKey(eps.firstOrNull()?.id, prefix = "semantic_episodes_hero"),
-                                                     span = StaggeredGridItemSpan.FullLine,
-                                                 ) {
-                                                    val heroEp = eps[0]
-                                                    val parentPodcast = Podcast(
-                                                        id = heroEp.podcastId ?: "",
-                                                        title = heroEp.podcastTitle ?: "Podcast",
-                                                        artist = "",
-                                                        imageUrl = heroEp.podcastImageUrl?.takeIf { it.isNotBlank() } ?: heroEp.imageUrl?.takeIf { it.isNotBlank() } ?: "",
-                                                        description = "",
-                                                        genre = heroEp.podcastGenre ?: "Podcast"
-                                                    )
-                                                    ExploreSearchEpisodeCard(
-                                                        episode = heroEp,
-                                                        featured = true,
-                                                        onClick = {
-                                                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSearchResultTapped(
-                                                                surface = "explore",
-                                                                resultType = "episode",
-                                                                podcastId = parentPodcast.id,
-                                                                episodeId = heroEp.id,
-                                                                positionIndex = 0,
-                                                                searchQuery = state.searchQuery,
-                                                                searchMode = "concept_semantic",
-                                                            )
-                                                            onEpisodeClick(heroEp, parentPodcast)
-                                                        }
-                                                    )
-                                                }
-
-                                                itemsIndexed(
-                                                    eps.drop(1),
-                                                    key = { index, episode -> LazyListKeyPolicy.safeKey(episode.id, index, prefix = "search_semantic") }
-                                                ) { index, episode ->
-                                                    val parentPodcast = Podcast(
-                                                        id = episode.podcastId ?: "",
-                                                        title = episode.podcastTitle ?: "Podcast",
-                                                        artist = "",
-                                                        imageUrl = episode.podcastImageUrl?.takeIf { it.isNotBlank() } ?: episode.imageUrl?.takeIf { it.isNotBlank() } ?: "",
-                                                        description = "",
-                                                        genre = episode.podcastGenre ?: "Podcast"
-                                                    )
-                                                    ExploreSearchEpisodeCard(
-                                                        episode = episode,
-                                                        featured = false,
-                                                        onClick = {
-                                                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSearchResultTapped(
-                                                                surface = "explore",
-                                                                resultType = "episode",
-                                                                podcastId = parentPodcast.id,
-                                                                episodeId = episode.id,
-                                                                positionIndex = index + 1,
-                                                                searchQuery = state.searchQuery,
-                                                                searchMode = "concept_semantic",
-                                                            )
-                                                            onEpisodeClick(episode, parentPodcast)
-                                                        }
-                                                    )
-                                                }
-                                                }
-                                            }
-
-                                            if (state.isSemanticLoading) {
-                                                item(span = StaggeredGridItemSpan.FullLine) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .padding(24.dp),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        BoxLoreLoader.Expressive(size = 48.dp)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                exploreEpisodeSearchItems(
+                                    content = ExploreEpisodeSearchContent(
+                                        query = state.searchQuery,
+                                        episodes = distinctSemanticEpisodes,
+                                        podcasts = semanticPodcastsDistinct,
+                                        loading = state.isSemanticLoading,
+                                        searched = state.hasPerformedSemanticSearch,
+                                        category = state.currentCategory,
+                                    ),
+                                    columns = tabletColumns,
+                                    onExampleClick = onSearchQueryChanged,
+                                    onPodcastClick = onPodcastClick,
+                                    onEpisodeClick = onEpisodeClick,
+                                )
                             } else {
-                                // SearchTab.SHOWS
-                                if (state.searchQuery.isEmpty()) {
-                                    item(
-                                        key = "suggested_moods_header",
-                                        span = StaggeredGridItemSpan.FullLine,
-                                    ) {
-                                        ExploreSuggestedMoodsHeader(hasSuggestions = distinctVibes.isNotEmpty())
-                                    }
-                                    if (state.suggestedVibes.isNotEmpty()) {
-                                        items(
-                                            distinctVibes,
-                                            key = { LazyListKeyPolicy.safeKey(it.first, prefix = "vibe") }
-                                        ) { vibe ->
-                                            ExploreVibeCard(vibe = vibe, onClick = {
-                                                searchActive = false
-                                                focusManager.clearFocus()
-                                                onVibeSelected(vibe.first, vibe.second)
-                                            })
-                                        }
-                                    }
-                                } else {
-                                    val alsoFound = alsoFoundDistinct
-                                    val hasCatalog = displayList.isNotEmpty()
-                                    val hasAlsoFound = alsoFound.isNotEmpty()
-                                    val showContent = hasCatalog || hasAlsoFound
-                                    val showSkeletons = state.isLoading && !showContent
-                                    val showEmptyState = !state.isLoading && !showContent
-
-                                    if (showSkeletons) {
-                                        item(span = StaggeredGridItemSpan.FullLine) {
-                                            ExploreSearchLoadingState(SearchTab.SHOWS)
-                                        }
-                                    } else if (showEmptyState) {
-                                        item(span = StaggeredGridItemSpan.FullLine) {
-                                            ExploreEmptyState(failed = state.showSearchFailed) { onRetry(ExploreRetry.SHOW_SEARCH) }
-                                        }
-                                    } else if (showContent) {
-                                        val showGenreChip = state.currentCategory == "All"
-                                        if (hasCatalog && hasAlsoFound) {
-                                            item(
-                                                key = "matches_header",
-                                                span = StaggeredGridItemSpan.FullLine,
-                                            ) {
-                                                ExploreSearchSectionHeader(
-                                                    title = stringResource(R.string.explore_search_matches),
-                                                    icon = Icons.Rounded.Search,
-                                                )
-                                            }
-                                        }
-                                        orderedExploreItems(gridItems, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }) { podcast, index ->
-                                            val entryPointStr = "explore_search"
-                                            ExploreBrowsePodcastCard(
-                                                podcast = podcast,
-                                                featured = false,
-                                                showGenre = showGenreChip && !podcast.genre.trim().equals("Podcast", ignoreCase = true),
-                                                onClick = { onPodcastClick(podcast.id, entryPointStr, state.currentCategory, index) }
-                                            )
-                                        }
-
-                                        if (hasAlsoFound) {
-                                            item(
-                                                key = "also_found_header",
-                                                span = StaggeredGridItemSpan.FullLine,
-                                            ) {
-                                                ExploreSearchSectionHeader(
-                                                    title = stringResource(R.string.explore_search_also_found),
-                                                    icon = Icons.Rounded.AutoAwesome,
-                                                    modifier = Modifier.padding(top = 8.dp),
-                                                )
-                                            }
-                                            orderedExploreItems(alsoFound, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "also") }) { podcast, index ->
-                                                ExploreBrowsePodcastCard(
-                                                    podcast = podcast,
-                                                    featured = false,
-                                                    showGenre = showGenreChip && !podcast.genre.trim().equals("Podcast", ignoreCase = true),
-                                                    onClick = {
-                                                        onPodcastClick(
-                                                            podcast.id,
-                                                            "explore_search_also_found",
-                                                            state.currentCategory,
-                                                            gridItems.size + index,
-                                                        )
-                                                    },
-                                                )
-                                            }
-                                        }
-
-                                        if (state.isLoading) {
-                                            item(span = StaggeredGridItemSpan.FullLine) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(24.dp),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    BoxLoreLoader.Expressive(size = 48.dp)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                exploreShowSearchItems(
+                                    content = ExploreShowSearchContent(
+                                        query = state.searchQuery,
+                                        moods = distinctVibes,
+                                        matches = gridItems,
+                                        alsoFound = alsoFoundDistinct,
+                                        loading = state.isLoading,
+                                        failed = state.showSearchFailed,
+                                        category = state.currentCategory,
+                                    ),
+                                    hasCatalog = displayList.isNotEmpty(),
+                                    onMoodClick = { vibe ->
+                                        searchActive = false
+                                        focusManager.clearFocus()
+                                        onVibeSelected(vibe.first, vibe.second)
+                                    },
+                                    onPodcastClick = onPodcastClick,
+                                    onRetry = { onRetry(ExploreRetry.SHOW_SEARCH) },
+                                )
                             }
                         } else {
                             // Not searching: standard tab content
@@ -876,94 +639,45 @@ fun ExploreContent(
                     onExpandedHeightChanged = { expandedHeaderHeight = it },
                     modifier = Modifier.align(Alignment.TopCenter),
                     search = {
-                        DockedSearchBar(
-                            expanded = false,
-                            onExpandedChange = { searchActive = it },
-                            inputField = {
-                                SearchBarDefaults.InputField(
-                                    modifier = Modifier.focusRequester(searchFocusRequester).then(if (LocalBoxloreWindowLayout.current.usesTabletLayout) Modifier.fillMaxWidth() else Modifier),
-                                    query = state.searchQuery,
-                                    onQueryChange = onSearchQueryChanged,
-                                    onSearch = {
-                                        onSearchTriggered(state.searchQuery)
-                                        searchActive = false
-                                        focusManager.clearFocus()
-                                    },
-                                    expanded = false,
-                                    onExpandedChange = { searchActive = it },
-                                    placeholder = {
-                                        Text(
-                                            if (state.searchTab == SearchTab.EPISODES) {
-                                                stringResource(R.string.explore_search_episodes)
-                                            } else {
-                                                stringResource(R.string.explore_search_podcasts)
-                                            }
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        if (searchActive || state.searchQuery.isNotEmpty()) {
-                                            IconButton(onClick = {
-                                                searchActive = false
-                                                onSearchQueryChanged("")
-                                                onClearVibe()
-                                                focusManager.clearFocus()
-                                            }) {
-                                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.explore_back))
-                                            }
-                                        } else {
-                                            Icon(Icons.Rounded.Search, contentDescription = null)
-                                        }
-                                    },
-                                    trailingIcon = {
-                                        if (state.searchQuery.isNotEmpty()) {
-                                            IconButton(onClick = { onSearchQueryChanged("") }) {
-                                                Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.explore_clear_search))
-                                            }
-                                        }
-                                    }
-                                )
+                        ExploreHeaderSearchField(
+                            query = state.searchQuery,
+                            searchTab = state.searchTab,
+                            active = searchActive,
+                            focusRequester = searchFocusRequester,
+                            onActiveChange = { searchActive = it },
+                            onQueryChange = onSearchQueryChanged,
+                            onSearch = {
+                                onSearchTriggered(state.searchQuery)
+                                searchActive = false
+                                focusManager.clearFocus()
                             },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = CircleShape,
-                            colors = SearchBarDefaults.colors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            )
-                        ) { }
+                            onBack = {
+                                searchActive = false
+                                onSearchQueryChanged("")
+                                onClearVibe()
+                                focusManager.clearFocus()
+                            },
+                        )
                     },
                     selectors = {
-                        // Search Tab Selector (Whenever search mode is active, but not browsing a vibe)
-                        if (isSearchModeActive) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            SearchTabSelector(
-                                selectedTab = state.searchTab,
-                                onTabSelected = onSearchTabSelected,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-
-                        // Genre filters (Top only).
-                        if (!isSearchModeActive && visibleTab == 0) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            ExploreGenreSelector(
-                                selectedCategory = state.currentCategory,
-                                onCategorySelected = onCategorySelected
-                            )
-                        }
-
-                        // Mood shortcuts navigate; genre pills filter the Top feed.
-                        if (!isSearchModeActive && visibleTab == 1 && state.suggestedVibes.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            ExploreVibeChipRow(
-                                vibes = state.suggestedVibes,
-                                onVibeSelected = { id, name ->
-                                    searchActive = false
-                                    focusManager.clearFocus()
-                                    onVibeSelected(id, name)
-                                },
-                            )
-                        }
-
-                        Spacer(Modifier.height(8.dp))
+                        ExploreHeaderSelectors(
+                            row = when {
+                                isSearchModeActive -> ExploreHeaderRow.SearchModes
+                                visibleTab == 0 -> ExploreHeaderRow.Genres
+                                visibleTab == 1 && state.suggestedVibes.isNotEmpty() -> ExploreHeaderRow.Moods
+                                else -> ExploreHeaderRow.None
+                            },
+                            searchTab = state.searchTab,
+                            onSearchTabSelected = onSearchTabSelected,
+                            category = state.currentCategory,
+                            onCategorySelected = onCategorySelected,
+                            moods = state.suggestedVibes,
+                            onMoodSelected = { id, name ->
+                                searchActive = false
+                                focusManager.clearFocus()
+                                onVibeSelected(id, name)
+                            },
+                        )
                     },
                 )
             }

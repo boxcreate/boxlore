@@ -91,7 +91,7 @@ internal fun LazyStaggeredGridScope.tabletExploreSkeletonItems(columns: Int) {
 }
 
 /** Matches the existing browse/search projection, including its fallback order. */
-private fun exploreEpisodeParent(episode: Episode) = Podcast(
+internal fun exploreEpisodeParent(episode: Episode) = Podcast(
     id = episode.podcastId ?: "",
     title = episode.podcastTitle ?: "Podcast",
     artist = "",
