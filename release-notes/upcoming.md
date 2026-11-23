@@ -38,5 +38,5 @@ Announcement title:
 - When you use boxlore on more than one device, one that was offline or signed out no longer sets your progress or likes back to an older point, and devices that showed different progress now agree.
 - Shows you unfollow on another device or on your watch are now cleared from this phone's saved shows, just as when you unfollow them here.
 - Casting to a TV or speaker no longer leaves your phone on "Connecting…" once the episode is playing there. The device list now shows which one you're casting to.
-- Reopening boxlore while it's casting no longer pauses the episode on your TV or resets its speed.
+- Reopening boxlore while it's casting no longer pauses the episode on your TV, jumps it back or resets its speed.
 - Episodes you cast to a TV now show their cover there. Some showed only a placeholder before.

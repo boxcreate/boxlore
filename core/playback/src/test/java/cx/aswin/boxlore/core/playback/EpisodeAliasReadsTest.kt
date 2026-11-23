@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.playback
 
 import android.content.Context
+import androidx.media3.common.DeviceInfo
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.test.core.app.ApplicationProvider
@@ -199,6 +200,7 @@ class EpisodeAliasReadsTest {
         `when`(player.currentPosition).thenReturn(positionMs)
         `when`(player.duration).thenReturn(1_800_000L)
         `when`(player.playbackState).thenReturn(Player.STATE_READY)
+        `when`(player.deviceInfo).thenReturn(DeviceInfo.UNKNOWN)
         return player
     }
 

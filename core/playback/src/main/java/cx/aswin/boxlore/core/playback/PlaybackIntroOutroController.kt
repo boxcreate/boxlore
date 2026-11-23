@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.playback
 
 import androidx.media3.common.C
+import androidx.media3.common.DeviceInfo
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
@@ -106,11 +107,21 @@ internal class PlaybackIntroOutroController(
     fun onMediaActivated(player: Player, mediaItem: MediaItem?, preservePosition: Boolean = false,) {
         val requestedPosition = PlaybackActivationRequest.consume(lifecycleEpisodeId(mediaItem))
         if (isActiveMediaItemOrNull(mediaItem) && requestedPosition == null) return
-        val explicitPosition = requestedPosition?.positionMs ?: player.currentPosition.takeIf { preservePosition }
+        val keepPosition = preservePosition || joinsCastPlayback(player)
+        val explicitPosition = requestedPosition?.positionMs ?: player.currentPosition.takeIf { keepPosition }
         reset(mediaItem, player.currentPosition, explicitPosition)
         activationRestartWithIntroTrim = requestedPosition?.let { it.positionMs == 0L && it.applyIntroTrim } == true
         refreshActiveSkipConfiguration(player, preferenceChanged = false)
     }
+
+    /**
+     * The first episode this service sees is one a Cast receiver is already part way through, as
+     * when boxlore reopens while casting: the receiver's position is the listener's, so it is kept
+     * instead of resuming saved progress, which lags it.
+     */
+    private fun joinsCastPlayback(player: Player): Boolean = activeLifecycleEpisodeId == null &&
+        player.deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE &&
+        player.currentPosition > 0L
 
     private fun isActiveMediaItemOrNull(mediaItem: MediaItem?): Boolean = mediaItem != null && isActiveMediaItem(mediaItem)
 
