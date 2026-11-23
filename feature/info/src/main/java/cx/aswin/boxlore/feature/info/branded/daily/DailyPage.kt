@@ -29,6 +29,7 @@ internal object DailyPage : BrandedShowPage {
 
     // The sky starts under the status bar; the header draws it up behind the status bar and top bar.
     override val headerTop = 56.dp
+    override val spotlightIsCard = false
     override val subscribeMoment: BrandedSubscribeMoment = DailyDaybreak
 
     override fun headerToButtons(description: BrandedDescription) = 16.dp

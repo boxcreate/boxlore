@@ -26,6 +26,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
@@ -51,7 +52,9 @@ import cx.aswin.boxlore.feature.info.PODCAST_INFO_BRANDED_SPOTLIGHT_TAG
 import cx.aswin.boxlore.feature.info.PodcastInfoScreen
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
+import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyPage
 import cx.aswin.boxlore.feature.info.branded.rottenmango.RottenMangoPage
+import cx.aswin.boxlore.feature.info.branded.sherlock.SherlockPage
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformPage
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
 import cx.aswin.boxlore.feature.info.stubArchive
@@ -189,8 +192,34 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
             assertTrue("The description stays open at $size", descriptionOpen())
             fixture.compose.onNodeWithContentDescription("Copyright information").getBoundsInRoot().top.value
         }
-        assertEquals("No status-bar band in the lower half", SystemInsets.TABLETOP_STATUS.statusTop.toFloat(), tops[0] - tops[1], 0.5f)
+        if (page == ConspiracyPage || page == SherlockPage) {
+            // These headers also shrink to half of the short lower half, so their foot rises further.
+            assertTrue("No status-bar band in the lower half", tops[0] - tops[1] >= SystemInsets.TABLETOP_STATUS.statusTop - 0.5f)
+        } else {
+            assertEquals("No status-bar band in the lower half", SystemInsets.TABLETOP_STATUS.statusTop.toFloat(), tops[0] - tops[1], 0.5f)
+        }
         assertEquals("Flat again matches flat before", tops[0], tops[2], 0.5f)
+    }
+
+    @Test
+    fun `the board and the Strand take half of a short pane and their phone size again on a phone`() {
+        assumeTrue("Only these two headers have a short-pane height", page == ConspiracyPage || page == SherlockPage)
+        assertEquals(1f, brandedHeaderHeightFit(299f, 915f, shortPane = false))
+        assertEquals(0.5f, brandedHeaderHeightFit(300f, 300f, shortPane = true))
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        fixture.compose.onNodeWithText(DESCRIPTION).performClick()
+        fixture.compose.waitForIdle()
+        val bottoms = mutableListOf<Float>()
+        fixture.compose.walkWindows(window, BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_SMALL, BoxloreTestWindows.PHONE) { size ->
+            fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(0)
+            val copyright = fixture.compose.onNodeWithContentDescription("Copyright information").getBoundsInRoot()
+            bottoms += copyright.bottom.value
+            if (size.heightDp < 480f) assertTrue("The header takes about half the pane at $size, ends at ${copyright.bottom}", copyright.bottom.value <= size.heightDp * 0.5f + 24f)
+            assertTrue("The description stays open at $size", descriptionOpen())
+        }
+        assertEquals("A phone's header is its design size again", bottoms[1], bottoms[3], 0.5f)
+        assertTrue("The short pane's header is smaller", bottoms[0] < bottoms[1] - 40f)
     }
 
     @Test
@@ -235,6 +264,15 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
                 assertTrue("A phone's spotlight spans the page, was $width", width >= size.widthDp - 32.5f)
             } else {
                 assertTrue("At most 512dp at $size, was $width", width <= 512.5f)
+                val list = fixture.compose.onNodeWithTag(LIST_TAG).getBoundsInRoot()
+                val leftGap = spotlight.left.value - list.left.value
+                val rightGap = list.right.value - spotlight.right.value
+                if (page.spotlightIsCard) {
+                    assertEquals("A card sits in the middle at $size", leftGap, rightGap, 1f)
+                } else {
+                    // An open spotlight keeps the page's start edge, lined up with the list above and below.
+                    assertTrue("An open spotlight starts at the page edge at $size, was $leftGap in", leftGap <= 16.5f)
+                }
             }
             spotlightOnce()
         }

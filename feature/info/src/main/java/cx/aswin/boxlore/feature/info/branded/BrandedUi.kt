@@ -31,6 +31,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentHeightDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
 import cx.aswin.boxlore.feature.info.R
 import kotlin.math.roundToInt
@@ -161,3 +163,18 @@ internal fun rememberVariableFont(@FontRes res: Int, weight: Int, vararg axes: P
         }
     }
 }
+
+/**
+ * How far a header drawn [designHeightDp] tall shrinks in a short pane (a sideways phone, a split or
+ * tabletop half): to half of the pane's [paneHeightDp], so the chips and Subscribe share its first
+ * screen. 1 (the design size) whenever the pane isn't short, so phones keep the approved art.
+ */
+internal fun brandedHeaderHeightFit(designHeightDp: Float, paneHeightDp: Float, shortPane: Boolean): Float =
+    if (!shortPane || designHeightDp <= 0f) 1f else (paneHeightDp * SHORT_PANE_HEADER_SHARE / designHeightDp).coerceIn(0f, 1f)
+
+/** [brandedHeaderHeightFit] for this pane. */
+@Composable
+internal fun brandedHeaderHeightFit(designHeightDp: Float): Float =
+    brandedHeaderHeightFit(designHeightDp, boxloreContentHeightDp(), boxloreIsShortPane())
+
+private const val SHORT_PANE_HEADER_SHARE = 0.5f

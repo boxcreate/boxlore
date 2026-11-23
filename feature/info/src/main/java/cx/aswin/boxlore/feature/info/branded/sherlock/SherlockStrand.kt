@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedIntroClock
+import cx.aswin.boxlore.feature.info.branded.brandedHeaderHeightFit
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.branded.introProgress
 import cx.aswin.boxlore.feature.info.branded.rememberBrandedArt
@@ -70,12 +72,15 @@ internal fun StrandDesk(contents: List<StrandContentsLine>, modifier: Modifier =
     val intro = rememberBrandedIntro(ready = art != null, endMillis = StrandArt.END)
     val statusBar = boxlorePaneTopInset()
     val title = stringResource(R.string.sherlock_wordmark_description)
-    BoxWithConstraints(modifier.fillMaxWidth().height(StrandArt.HEIGHT.dp)) {
-        val fit = (maxWidth.value / StrandArt.WIDTH).coerceAtMost(1f)
+    // In a short pane the desk and issue take half its height, so Subscribe shares the first screen.
+    val heightFit = brandedHeaderHeightFit(StrandArt.HEIGHT)
+    BoxWithConstraints(modifier.fillMaxWidth().height((StrandArt.HEIGHT * heightFit).dp)) {
+        val fit = minOf((maxWidth.value / StrandArt.WIDTH).coerceAtMost(1f), heightFit)
         Spacer(Modifier.fillMaxSize().drawBehind { drawDesk(art?.get(0), statusBar.toPx()) })
         Box(
             Modifier
                 .align(Alignment.TopCenter)
+                .wrapContentHeight(Alignment.Top, unbounded = true)
                 .requiredWidth(StrandArt.WIDTH.dp)
                 .height(StrandArt.HEIGHT.dp)
                 .graphicsLayer {

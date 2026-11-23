@@ -396,8 +396,10 @@ private fun LazyListScope.brandedSpotlightItem(
                 },
                 onLongPress = { callbacks.onLongPressSelection(episode) },
             )
-            // Every spotlight stops at a comfortable width on wide pages: a 480dp card and its 16dp sides.
-            Box(Modifier.animateItem().fillMaxWidth().wrapContentWidth().widthIn(max = BrandedSpotlightMaxWidth)) {
+            // Every spotlight stops at a comfortable width on wide pages: a 480dp card and its 16dp sides,
+            // centred as a card, or on the page's start edge when it is drawn open on the page.
+            val alignment = if (brandedPage.spotlightIsCard) Alignment.CenterHorizontally else Alignment.Start
+            Box(Modifier.animateItem().fillMaxWidth().wrapContentWidth(alignment).widthIn(max = BrandedSpotlightMaxWidth)) {
                 brandedPage.Spotlight(spotlight, Modifier.testTag(PODCAST_INFO_BRANDED_SPOTLIGHT_TAG))
             }
         }

@@ -30,6 +30,7 @@ internal object VergecastPage : BrandedShowPage {
         feedUrl = "https://feeds.megaphone.fm/vergecast",
     )
     override val headerTop = 71.dp
+    override val spotlightIsCard = false
     override val subscribeMoment: BrandedSubscribeMoment = VergecastStickerSlap
 
     override fun style(base: ColorScheme, dark: Boolean): BrandedPageStyle {
