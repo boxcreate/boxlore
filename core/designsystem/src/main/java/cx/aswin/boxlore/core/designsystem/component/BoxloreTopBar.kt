@@ -19,6 +19,7 @@ import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -108,6 +109,7 @@ fun BoxloreTopBar(
     val short = boxloreIsShortPane()
     val forcedSmall = short && size == BoxloreTopBarSize.Large
     ReexpandWhenTall(short, size, scrollBehavior)
+    HoldOpenWhileSlim(forcedSmall, scrollBehavior)
     val typography = MaterialTheme.typography
     val colors = TopAppBarDefaults.topAppBarColors(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -185,6 +187,23 @@ private fun topBarInsets(): WindowInsets {
     val (start, end) = boxloreHorizontalSafeInsetsDp()
     val (left, right) = if (direction == LayoutDirection.Ltr) start to end else end to start
     return WindowInsets(left = left, top = boxlorePaneTopInset(), right = right, bottom = 0.dp)
+}
+
+/**
+ * The forced slim row has nothing to collapse, and the caller's exit-until-collapsed behavior
+ * would otherwise take every upward scroll for an invisible collapse. Holds its state open, so
+ * scrolling moves the list; the large bar sets its own limit again when it comes back.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HoldOpenWhileSlim(forcedSmall: Boolean, scrollBehavior: TopAppBarScrollBehavior?) {
+    if (!forcedSmall) return
+    SideEffect {
+        scrollBehavior?.state?.let { state ->
+            state.heightOffsetLimit = 0f
+            state.heightOffset = 0f
+        }
+    }
 }
 
 /**

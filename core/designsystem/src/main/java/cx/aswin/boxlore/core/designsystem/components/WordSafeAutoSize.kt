@@ -14,10 +14,14 @@ import androidx.compose.ui.unit.sp
  * broken word. At [min] the label keeps that size and its overflow (an ellipsis) is the last resort.
  */
 internal data class WordSafeAutoSize(val min: TextUnit, val max: TextUnit, val step: TextUnit = 0.5.sp) : TextAutoSize {
-    override fun TextAutoSizeLayoutScope.getFontSize(constraints: Constraints, text: AnnotatedString): TextUnit {
+    override fun TextAutoSizeLayoutScope.getFontSize(constraints: Constraints, text: AnnotatedString): TextUnit =
+        fontSizeFor(text.text) { size -> performLayout(constraints, text, size) }
+
+    /** The size this picks for [text], laying it out with [layout]: for measuring a label ahead of drawing it. */
+    fun fontSizeFor(text: String, layout: (TextUnit) -> TextLayoutResult): TextUnit {
         var size = max.value
         while (size > min.value) {
-            if (performLayout(constraints, text, size.sp).fitsWholeWords(text.text)) return size.sp
+            if (layout(size.sp).fitsWholeWords(text)) return size.sp
             size -= step.value
         }
         return min

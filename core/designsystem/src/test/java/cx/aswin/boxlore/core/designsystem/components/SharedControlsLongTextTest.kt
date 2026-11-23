@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.designsystem.components
 import android.app.Application
 import android.provider.Settings
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +44,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
@@ -54,6 +61,7 @@ import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performMouseInput
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
@@ -70,6 +78,7 @@ import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.designsystem.theme.SkeletonTextLines
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.walkWindows
+import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -153,6 +162,33 @@ class SharedControlsLongTextTest {
             val bar = compose.onNodeWithTag("bar").fetchSemanticsNode().boundsInRoot
             assertEquals("$step", heights.getValue(step), bar.height, 0.5f)
             states.forEach { assertSame("one bar state for the page", states.first(), it) }
+        }
+    }
+
+    @Test
+    fun `a page that opens in a short pane scrolls under the slim bar, and keeps scrolling as it turns`() {
+        val window = mutableStateOf(BoxloreTestWindows.PHONE_LAND)
+        val list = LazyListState()
+        compose.setContent {
+            Page(window.value) {
+                val behavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+                Column(Modifier.fillMaxSize().nestedScroll(behavior.nestedScrollConnection)) {
+                    BoxloreTopBar("Downloads", onBack = {}, scrollBehavior = behavior)
+                    LazyColumn(Modifier.fillMaxSize().testTag("list"), state = list) { items(200) { Text("Row $it", Modifier.padding(16.dp)) } }
+                }
+            }
+        }
+        fun scrolled(): Int {
+            compose.onNodeWithTag("list").performTouchInput { swipeUp() }
+            compose.waitForIdle()
+            return list.firstVisibleItemIndex
+        }
+        var last = scrolled()
+        assertTrue("the first swipe moved the list", last > 0)
+        compose.walkWindows(window, BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND) { step ->
+            val next = scrolled()
+            assertTrue("$step: $last then $next", next > last)
+            last = next
         }
     }
 
@@ -273,6 +309,28 @@ class SharedControlsLongTextTest {
     }
 
     @Test
+    fun `chips in scrolling rows keep their whole names`() {
+        compose.setContent {
+            Page(BoxloreTestWindows.PHONE) {
+                Column {
+                    LazyRow { item { PillFilterChip(label = "True Crime", selected = false, onClick = {}) } }
+                    Row(Modifier.horizontalScroll(rememberScrollState())) {
+                        BoxloreFilterChip(selected = true, onClick = {}, label = "Science")
+                        PillFilterChip(label = "Comedy", selected = false, onClick = {}, icon = Icons.Rounded.ExpandMore)
+                    }
+                }
+            }
+        }
+        listOf("True Crime", "Science", "Comedy").forEach { label ->
+            compose.onNodeWithText(label, useUnmergedTree = true).assertIsDisplayed()
+            val layout = textLayout(label)
+            assertTrue("$label has no width", layout.size.width > 0)
+            assertFalse("$label is shortened", layout.isLineEllipsized(0))
+            assertFalse("$label is cut", layout.hasVisualOverflow)
+        }
+    }
+
+    @Test
     fun `chips on sheets stay visible against the sheet`() {
         val pairs = mutableListOf<Pair<Color, Color>>()
         compose.setContent {
@@ -307,6 +365,20 @@ class SharedControlsLongTextTest {
                 assertTrue("$label breaks inside a word", layout.fitsWholeWords(label))
             }
         }
+    }
+
+    @Test
+    fun `when one option name wraps, every option in the row is as tall`() {
+        compose.setContent {
+            Page(BoxloreTestWindows.PHONE) {
+                Box(Modifier.width(360.dp)) {
+                    ConnectedOptionSelector(options = listOf(0 to "Home", 1 to "Explore more shows", 2 to "Library"), selected = 0, onSelect = {})
+                }
+            }
+        }
+        assertEquals(2, textLayout("Explore more shows").lineCount)
+        val heights = listOf("Home", "Explore more shows", "Library").map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.height }
+        assertTrue("one row, even heights: $heights", heights.all { abs(it - heights.first()) < 0.5f })
     }
 
     @Test

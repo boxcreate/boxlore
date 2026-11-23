@@ -2,10 +2,12 @@ package cx.aswin.boxlore.core.designsystem.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
@@ -107,6 +109,9 @@ private fun ChipBody(
     CompositionLocalProvider(LocalContentColor provides contentColor) {
         Row(
             modifier = modifier
+                // As wide as the whole label, within what the parent allows: a scrolling row gives
+                // no width limit, and the weighted label would otherwise get none.
+                .width(IntrinsicSize.Max)
                 .heightIn(min = BoxloreFilterChipMinHeight)
                 .alpha(if (enabled) 1f else DISABLED_ALPHA)
                 .expressiveClickable(enabled = enabled, shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick)

@@ -30,6 +30,9 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.sp
@@ -64,13 +67,23 @@ fun <T> ConnectedOptionSelector(
 
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val stacked = remember(labels, textStyle, constraints.maxWidth, density, direction, contentPadding) {
-            val spacing = with(density) { ButtonGroupDefaults.ConnectedSpaceBetween.roundToPx() }
-            val padding = with(density) { (contentPadding.calculateLeftPadding(direction) + contentPadding.calculateRightPadding(direction)).roundToPx() }
-            val share = (constraints.maxWidth - spacing * (labels.size - 1)) / labels.size - padding
+            val share = rowLabelWidthPx(constraints.maxWidth, labels.size, contentPadding, density, direction)
             constraints.hasBoundedWidth &&
                 labels.any { label ->
                 share <= 0 || !measurer.measure(label, textStyle.copy(fontSize = autoSize.min), maxLines = 2, constraints = Constraints(maxWidth = share)).fitsWholeWords(label)
             }
+        }
+        // In a row, every option is as tall as the tallest label needs, so one name on two lines
+        // keeps the connected group even.
+        val rowHeight = remember(labels, textStyle, constraints.maxWidth, density, direction, contentPadding, stacked) {
+            if (stacked || !constraints.hasBoundedWidth) return@remember SelectorMinHeight
+            val share = rowLabelWidthPx(constraints.maxWidth, labels.size, contentPadding, density, direction)
+            val tallest = labels.maxOf { label ->
+                fun layout(size: TextUnit) = measurer.measure(label, textStyle.copy(fontSize = size), maxLines = 2, constraints = Constraints(maxWidth = share.coerceAtLeast(1)))
+                layout(autoSize.fontSizeFor(label, ::layout)).size.height
+            }
+            val padding = contentPadding.calculateTopPadding() + contentPadding.calculateBottomPadding()
+            maxOf(SelectorMinHeight, with(density) { tallest.toDp() } + padding)
         }
         val button: @Composable (Int, Modifier, ToggleButtonShapes) -> Unit = { index, buttonModifier, shapes ->
             val (key, label) = options[index]
@@ -100,10 +113,18 @@ fun <T> ConnectedOptionSelector(
             }
         } else {
             Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
-                options.indices.forEach { index -> button(index, Modifier.weight(1f), rowShapes(index, options.size)) }
+                options.indices.forEach { index -> button(index, Modifier.weight(1f).heightIn(min = rowHeight), rowShapes(index, options.size)) }
             }
         }
     }
+}
+
+/** The width in px each label gets when the options share one row of [maxWidth] px. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+private fun rowLabelWidthPx(maxWidth: Int, count: Int, contentPadding: PaddingValues, density: Density, direction: LayoutDirection): Int {
+    val spacing = with(density) { ButtonGroupDefaults.ConnectedSpaceBetween.roundToPx() }
+    val padding = with(density) { (contentPadding.calculateLeftPadding(direction) + contentPadding.calculateRightPadding(direction)).roundToPx() }
+    return (maxWidth - spacing * (count - 1)) / count - padding
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
