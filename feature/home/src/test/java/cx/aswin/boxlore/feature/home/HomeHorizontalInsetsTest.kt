@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.unit.dp
@@ -88,6 +89,13 @@ class HomeHorizontalInsetsTest {
         assertEquals("cover end", layout.widthDp, cover.right, 0.5f)
         assertInsideSafeArea("Marquee Play", rect("home_hero_play"), layout)
         assertInsideSafeArea("Marquee chip", rect("home_hero_marquee_chip"), layout)
+        // The top bar over the cover keeps clear too, and stays tappable.
+        assertInsideSafeArea("Marquee wordmark", rect("home_wordmark"), layout)
+        assertInsideSafeArea("Marquee Settings", rect("home_settings_button"), layout)
+        val feedback = fixture.compose.onNodeWithContentDescription("Send Feedback", useUnmergedTree = true)
+        assertInsideSafeArea("Marquee Feedback", feedback.fetchSemanticsNode().boundsInRoot, layout)
+        fixture.compose.onNodeWithTag("home_settings_button").assertHasClickAction()
+        fixture.compose.onNodeWithContentDescription("Send Feedback").assertHasClickAction()
     }
 
     @Test

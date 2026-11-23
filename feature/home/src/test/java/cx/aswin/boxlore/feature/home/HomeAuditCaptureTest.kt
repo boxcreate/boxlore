@@ -69,7 +69,7 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(sdk = [33], application = Application::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
+class HomeAuditCaptureTest(private val configuration: PhoneGoldenConfiguration) {
     @get:Rule val fixture = PhoneGoldenRule(configuration)
 
     private val episode = TestFixtures.episode(
@@ -111,6 +111,12 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
 
     @Test fun heroManyMarquee() = hero(HeroCardStyle.MARQUEE)
 
+    /** A whole hour left on Block's stacked time: it reads "1h" on one line, not "1h" over "0m". */
+    @Test fun heroHourBlock() = capture("home-hero-hour-block", HeroCardStyle.BLOCK) {
+        val hour = podcasts[0].copy(latestEpisode = episode.copy(id = "hour", duration = 3_600), resumeProgress = null)
+        Home(state().copy(heroItems = listOf(SmartHeroItem(HeroType.JUMP_BACK_IN, hour, "Jump back in")) + heroItems.drop(1)))
+    }
+
     @Test fun loadingBlock() = loading(HeroCardStyle.BLOCK)
 
     @Test fun loadingCover() = loading(HeroCardStyle.COVER)
@@ -139,7 +145,7 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
 
     @Test fun sheetChangeShow() = capture("home-sheet-change-show", allWindows = true) {
         Home(state().copy(seemsToLikePodcast = podcasts[2]))
-        ChangeRecommendationPodcastSheet(candidatePodcasts = podcasts, onDismissRequest = {}, onPodcastSelect = {})
+        ChangeRecommendationPodcastSheet(candidatePodcasts = podcasts, onDismissRequest = {}, onPodcastSelect = {}, selectedPodcastId = podcasts[2].id)
     }
 
     @Test fun selectedShowLoading() = capture("home-selected-show-loading", scrollTo = "your_shows" to "home_selected_show_loading") {
@@ -293,7 +299,19 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
             fixture.compose.waitForIdle()
         }
         if (waitFor != null) awaitTag(waitFor)
+        settleBeforeInsets()
         fixture.capture(name, allWindows)
+    }
+
+    /**
+     * Lets Home finish what it does once it has settled, such as setting the status bar's icon colour
+     * over Marquee's cover, before the capture sends the fake side insets again; the window drops them
+     * when the status bar's appearance changes after they were sent.
+     */
+    private fun settleBeforeInsets() {
+        if (configuration.systemInsets == null) return
+        fixture.compose.mainClock.advanceTimeBy(SCENE_SETTLE_MS)
+        fixture.compose.waitForIdle()
     }
 
     /** Scrolls Home's grid to the first of [keys] it has (tablets group some sections) and waits for [tag] there. */
