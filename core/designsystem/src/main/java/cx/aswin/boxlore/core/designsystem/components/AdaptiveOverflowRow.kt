@@ -7,7 +7,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.Constraints
@@ -31,11 +37,50 @@ internal fun packOverflowItems(widths: List<Int>, available: Int, gap: Int, more
     return OverflowPacking(visible, all - visible.toSet())
 }
 
-private class OverflowRowState {
-    var remaining: List<Int> = emptyList()
+/**
+ * What an [AdaptiveOverflowRow] could not fit. [remaining] holds the item indices behind More, in
+ * their original order, and updates on every measure, so a More sheet that reads it stays open and
+ * follows the row when the window changes size.
+ */
+@Stable
+class AdaptiveOverflowState internal constructor() {
+    var remaining: List<Int> by mutableStateOf(emptyList())
+        internal set
 }
 
-/** A bounded root with a scroll fallback only when the required chips cannot fit. */
+/** Keeps one [AdaptiveOverflowState] for the row across window changes. */
+@Composable
+fun rememberAdaptiveOverflowState(): AdaptiveOverflowState = remember { AdaptiveOverflowState() }
+
+/**
+ * A chip row packed to its width, with More for the items that don't fit and a scroll fallback only
+ * when the required chips (the first and the selected one) can't fit.
+ *
+ * A More sheet should show [AdaptiveOverflowState.remaining] while the row overflows and the full
+ * list on compact windows or once nothing overflows, and stay open while the window changes size.
+ * [onOverflow] gets the items behind More when it is tapped; [onOverflowChanged] gets them whenever
+ * the row repacks.
+ */
+@Composable
+@Suppress("LongParameterList") // Optional state and repack callback sit beside the existing parameters.
+fun AdaptiveOverflowRow(
+    itemCount: Int,
+    selectedIndex: Int?,
+    onOverflow: (List<Int>) -> Unit,
+    modifier: Modifier = Modifier,
+    state: AdaptiveOverflowState = rememberAdaptiveOverflowState(),
+    onOverflowChanged: (List<Int>) -> Unit = {},
+    item: @Composable (Int) -> Unit,
+    more: @Composable (() -> Unit) -> Unit,
+) {
+    OverflowRow(itemCount, selectedIndex, onOverflow, modifier, state, onOverflowChanged, item, more, onWidthChanged = {})
+}
+
+/** The previous signature, which closed the More sheet on every width change. */
+@Deprecated(
+    "Read rememberAdaptiveOverflowState().remaining and keep the More sheet open across resizes.",
+    ReplaceWith("AdaptiveOverflowRow(itemCount, selectedIndex, onOverflow, modifier, item = item, more = more)"),
+)
 @Composable
 fun AdaptiveOverflowRow(
     itemCount: Int,
@@ -44,9 +89,28 @@ fun AdaptiveOverflowRow(
     modifier: Modifier = Modifier,
     item: @Composable (Int) -> Unit,
     more: @Composable (() -> Unit) -> Unit,
-    onWidthChanged: () -> Unit = {},
+    onWidthChanged: () -> Unit,
 ) {
-    val state = remember { OverflowRowState() }
+    OverflowRow(itemCount, selectedIndex, onOverflow, modifier, rememberAdaptiveOverflowState(), {}, item, more, onWidthChanged)
+}
+
+@Composable
+@Suppress("LongParameterList") // Shared body of the current and the deprecated signature.
+private fun OverflowRow(
+    itemCount: Int,
+    selectedIndex: Int?,
+    onOverflow: (List<Int>) -> Unit,
+    modifier: Modifier,
+    state: AdaptiveOverflowState,
+    onOverflowChanged: (List<Int>) -> Unit,
+    item: @Composable (Int) -> Unit,
+    more: @Composable (() -> Unit) -> Unit,
+    onWidthChanged: () -> Unit,
+) {
+    val currentOnOverflowChanged by rememberUpdatedState(onOverflowChanged)
+    LaunchedEffect(state) {
+        snapshotFlow { state.remaining }.collect { currentOnOverflowChanged(it) }
+    }
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val availableWidth = maxWidth
         LaunchedEffect(availableWidth) { onWidthChanged() }
