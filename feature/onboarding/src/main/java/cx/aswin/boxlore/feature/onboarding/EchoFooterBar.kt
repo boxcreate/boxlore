@@ -259,7 +259,8 @@ private fun EchoOptionalPill(questionsLeft: Int, action: EchoAction, enabled: Bo
     val actionColor = if (enabled) colors.primary else colors.onSurfaceVariant.copy(alpha = 0.6f)
     Surface(
         shape = shape,
-        color = colors.surfaceContainerHigh,
+        // A plain line, not a fifth answer: only the answers are filled shapes.
+        color = Color.Transparent,
         contentColor = colors.onSurfaceVariant,
         modifier = Modifier
             .fillMaxWidth()
