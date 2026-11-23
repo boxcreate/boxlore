@@ -120,6 +120,7 @@
     <!-- Cast -->
     <string name="player_cast">Transmitir</string>
     <string name="player_change_cast_device">Trocar dispositivo de transmissão</string>
+    <string name="player_cast_volume">Volume do dispositivo de transmissão</string>
     <string name="player_show_cast_controls">Mostrar controles de transmissão</string>
     <!-- Section header; shown in capitals -->
     <string name="player_cast_available_devices">Dispositivos disponíveis</string>

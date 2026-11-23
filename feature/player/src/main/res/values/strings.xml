@@ -120,6 +120,7 @@
     <!-- Cast -->
     <string name="player_cast">Cast</string>
     <string name="player_change_cast_device">Change Cast device</string>
+    <string name="player_cast_volume">Cast volume</string>
     <string name="player_show_cast_controls">Show Cast controls</string>
     <!-- Section header; shown in capitals -->
     <string name="player_cast_available_devices">Available devices</string>

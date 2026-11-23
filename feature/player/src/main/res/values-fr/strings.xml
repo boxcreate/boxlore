@@ -84,6 +84,7 @@
     <string name="player_same_show_hide_preview">Masquer l’aperçu</string>
     <string name="player_cast">Caster</string>
     <string name="player_change_cast_device">Changer d’appareil Cast</string>
+    <string name="player_cast_volume">Volume de l’appareil Cast</string>
     <string name="player_show_cast_controls">Afficher les commandes Cast</string>
     <string name="player_cast_available_devices">Appareils disponibles</string>
     <string name="player_cast_this_phone">Ce téléphone</string>
