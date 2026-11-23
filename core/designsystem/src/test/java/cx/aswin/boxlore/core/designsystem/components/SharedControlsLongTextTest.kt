@@ -527,7 +527,7 @@ class SharedControlsLongTextTest {
         val steps = listOf(
             Triple(BoxloreTestWindows.PHONE, 380.dp, 16.sp),
             Triple(BoxloreWindowLayout(600f, 960f), 560.dp, titleLarge),
-            Triple(BoxloreWindowLayout(600f, 960f), 400.dp, 16.sp),
+            Triple(BoxloreWindowLayout(600f, 960f), 340.dp, 16.sp),
             Triple(BoxloreWindowLayout(600f, 960f), 560.dp, titleLarge),
             Triple(BoxloreTestWindows.W599_H900, 560.dp, 16.sp),
         )

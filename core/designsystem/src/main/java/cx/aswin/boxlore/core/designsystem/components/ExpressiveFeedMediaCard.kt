@@ -255,8 +255,8 @@ private fun ExpressiveMediaLayout(
         val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
         BoxWithConstraints(Modifier.fillMaxWidth().then(if (tablet) Modifier.fillMaxHeight() else Modifier), propagateMinConstraints = tablet) {
             val artworkWidth = (maxWidth * 0.44f).coerceAtMost(176.dp)
-            // Phones keep today's card; only tablets with room give the title the lead.
-            val leading = tablet && maxWidth - artworkWidth - FeaturedTextPadding * 2 >= FeaturedLeadingTitleMinWidth
+            // Phones keep today's card; only a tablet text column (beside the artwork) with room gives the title the lead.
+            val leading = tablet && maxWidth - artworkWidth >= FeaturedLeadingTitleMinWidth
             Row(
                 modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).heightIn(min = 152.dp),
                 verticalAlignment = if (leading) Alignment.Top else Alignment.CenterVertically,
