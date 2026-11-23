@@ -45,10 +45,14 @@ internal object HomeHeroStyle {
 
     fun progress(podcast: Podcast): Float = podcast.resumeProgress?.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f
 
-    /** Minutes left, or the whole length for a new episode, rounded as the mini player rounds them ([ListeningTime]). */
+    /**
+     * Minutes left, rounded as the mini player rounds them ([ListeningTime]), or a new episode's length,
+     * as episode rows and show pages print it ([episodeLengthMinutes]).
+     */
     fun minutes(podcast: Podcast, resume: Boolean): Int? {
         val duration = podcast.latestEpisode?.duration?.takeIf { it > 0 } ?: return null
-        return ListeningTime.minutesLeft(duration.toLong(), if (resume) progress(podcast) else 0f)?.toInt()
+        if (!resume) return episodeLengthMinutes(duration.toLong())
+        return ListeningTime.minutesLeft(duration.toLong(), progress(podcast))?.toInt()
     }
 }
 
