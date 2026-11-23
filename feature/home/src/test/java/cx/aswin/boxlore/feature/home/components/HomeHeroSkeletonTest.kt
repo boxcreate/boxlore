@@ -24,7 +24,9 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,6 +42,9 @@ class HomeHeroSkeletonTest {
     private val width = mutableStateOf(328)
     private val windowHeight = mutableStateOf(900f)
     private val direction = mutableStateOf(LayoutDirection.Ltr)
+
+    /** A tablet window whose pane is narrower than the window, or null for a window 32dp wider than the row. */
+    private val paneWindow = mutableStateOf<BoxloreWindowLayout?>(null)
     private var carouselCard = 0f
     private var carouselPeek = 0f
     private var carouselCardLeft = 0f
@@ -82,11 +87,28 @@ class HomeHeroSkeletonTest {
         }
     }
 
+    @Test
+    fun `in narrow tablet panes the skeleton card fills the pane as the loaded card does`() {
+        renderBoth()
+        // A half-open book pane, a split pane beside the player, then a full tablet row and back.
+        val panes = listOf(BoxloreTestWindows.UPRIGHT_BOOK to 343, BoxloreTestWindows.TABLET to 385, BoxloreTestWindows.TABLET to 1216, BoxloreTestWindows.UPRIGHT_BOOK to 280, BoxloreTestWindows.UPRIGHT_BOOK to 343)
+        for ((window, row) in panes) {
+            paneWindow.value = window
+            width.value = row
+            composeRule.waitForIdle()
+            val cards = composeRule.onAllNodesWithTag(skeletonTag(HeroCardStyle.COVER), useUnmergedTree = true).fetchSemanticsNodes()
+            val first = cards.minBy { it.boundsInRoot.left }.boundsInRoot
+            assertEquals("card width in a ${row}dp pane", carouselCard, first.width, 1f)
+            assertTrue("card in a ${row}dp pane ends past the pane", first.right <= row + 0.5f)
+        }
+    }
+
     @OptIn(ExperimentalMaterial3Api::class)
     private fun renderBoth() {
         composeRule.setContent {
             // Home's grid keeps 16dp each side of the hero row, so the window is 32dp wider than the row.
-            CompositionLocalProvider(LocalLayoutDirection provides direction.value, LocalBoxloreWindowLayout provides BoxloreWindowLayout(width.value + 32f, windowHeight.value)) {
+            val window = paneWindow.value ?: BoxloreWindowLayout(width.value + 32f, windowHeight.value)
+            CompositionLocalProvider(LocalLayoutDirection provides direction.value, LocalBoxloreWindowLayout provides window) {
                 BoxLoreTheme(dynamicColor = false) {
                     CompositionLocalProvider(LocalHeroCardStyle provides HeroCardStyle.COVER) {
                         Column {

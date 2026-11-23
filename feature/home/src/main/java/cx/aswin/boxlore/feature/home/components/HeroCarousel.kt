@@ -422,10 +422,14 @@ internal val UncontainedEndPadding = 1.dp
  * The tablet card width for a row [available] wide. When one whole card fits with almost a second
  * one after it, two narrower cards fill the row instead: material3's uncontained carousel otherwise
  * leaves the last card past the end edge at the end of the row (a known material3 bug, see
- * [ResponsiveHeroCarousel]). Every other width keeps [preferred].
+ * [ResponsiveHeroCarousel]). A narrow pane (a half-open book foldable, a split view beside the
+ * player) that can't show a card and at least [HeroMinPeek] of the next gets one card filling it, so
+ * the card is never cut at the pane's edge and no sliver of the next one shows; material3 draws it at
+ * most the row's width. Every other width keeps [preferred].
  */
 internal fun heroTabletItemWidth(available: Dp, preferred: Dp, spacing: Dp): Dp {
     val slot = preferred + spacing
+    if (available < slot + HeroMinPeek) return available
     val whole = floor(available / slot).toInt().coerceAtLeast(1)
     val rest = available - slot * whole
     return if (whole == 1 && rest >= slot * NearlyAnotherCard) available / 2 - spacing else preferred

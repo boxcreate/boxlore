@@ -10,16 +10,19 @@ import androidx.compose.material3.carousel.CarouselState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
@@ -49,6 +52,9 @@ class HeroCarouselEndTest {
 
     private val window = mutableStateOf(BoxloreWindowLayout(1300f, 800f))
     private val direction = mutableStateOf(LayoutDirection.Ltr)
+
+    /** The hero row's own width when it sits in a pane narrower than the window, or null for the window's. */
+    private val pane = mutableStateOf<Float?>(null)
     private lateinit var state: CarouselState
 
     @Test fun `tablet carousel reaches the end at crashing widths`() {
@@ -135,6 +141,46 @@ class HeroCarouselEndTest {
         assertEquals(CARD_WIDTH, width(679f), 0.01f) // two whole cards already fit
         assertEquals(CARD_WIDTH, width(1015f), 0.01f) // three or more keep the preferred width
         assertEquals(CARD_WIDTH, width(1315f), 0.01f)
+        // Panes narrower than a card and its gap: one card fills the pane.
+        listOf(280f, 297f, 307f, 335f, 360f, 375f).forEach { available -> assertEquals("$available", available, width(available), 0.01f) }
+        assertEquals(CARD_WIDTH, width(376f), 0.01f) // a card and a 40dp peek of the next
+    }
+
+    /**
+     * A half-open book foldable or a split view beside the player gives the hero a pane narrower than a
+     * card and a gap. The card used to stay 320dp and run past the pane's edge, or leave a hairline
+     * sliver of the next card. Now the first card fits whole and the next one shows 0 or at least 40dp.
+     */
+    @Test fun `narrow tablet panes fit a whole card and never a sliver of the next`() {
+        window.value = BoxloreTestWindows.TABLET
+        render()
+        for (width in listOf(280f, 297f, 307f, 340f, 352f, 360f, 375f, 385f, 400f)) {
+            pane.value = width
+            composeRule.waitForIdle()
+            composeRule.runOnIdle { runBlocking { state.scrollToItem(0) } }
+            composeRule.waitForIdle()
+            val hero = composeRule.onNodeWithTag("hero").fetchSemanticsNode().boundsInRoot
+            val first = composeRule.onNodeWithTag("card_0").fetchSemanticsNode().let { Rect(it.positionInRoot, it.size.toSize()) }
+            assertTrue("Card at ${width}dp: $first in $hero", first.left >= hero.left - 0.5f && first.right <= hero.right + 0.5f)
+            val next = composeRule.onAllNodesWithTag("card_1").fetchSemanticsNodes().firstOrNull()
+            val nextVisible = next?.let { (minOf(it.positionInRoot.x + it.size.width, hero.right) - maxOf(it.positionInRoot.x, hero.left)).coerceAtLeast(0f) } ?: 0f
+            assertTrue("Next card at ${width}dp shows ${nextVisible}dp", nextVisible < 0.5f || nextVisible >= 40f - 0.5f)
+            scrollToEndAndBack(width)
+        }
+    }
+
+    @Test fun `the current card survives book-pane, flat and split-pane resizes in both directions`() {
+        window.value = BoxloreTestWindows.PIXEL_FOLD
+        pane.value = 340f
+        render()
+        composeRule.runOnIdle { runBlocking { state.scrollToItem(3) } }
+        composeRule.waitForIdle()
+        for (width in listOf(null, 385f, null, 340f)) {
+            pane.value = width
+            composeRule.waitForIdle()
+            assertEquals("Item in a ${width ?: "full"} pane", 3, state.currentItem)
+            composeRule.onNodeWithTag("card_3").assertIsDisplayed()
+        }
     }
 
     @Test fun `right-to-left tablet carousel reaches the end`() {
@@ -151,13 +197,14 @@ class HeroCarouselEndTest {
             val layout = window.value
             CompositionLocalProvider(LocalBoxloreWindowLayout provides layout, LocalLayoutDirection provides direction.value) {
                 state = androidx.compose.material3.carousel.rememberCarouselState { CARDS }
-                Box(Modifier.width(layout.widthDp.dp).height(400.dp)) {
+                val rowWidth = (pane.value ?: layout.widthDp).dp
+                Box(Modifier.width(rowWidth).height(400.dp)) {
                     ResponsiveHeroCarousel(
                         state = state,
                         preferredItemWidth = CARD_WIDTH.dp,
                         itemSpacing = SPACING.dp,
                         contentPadding = PaddingValues(0.dp),
-                        modifier = Modifier.testTag("hero").width(layout.widthDp.dp).height(400.dp),
+                        modifier = Modifier.testTag("hero").width(rowWidth).height(400.dp),
                     ) { i -> Box(Modifier.fillMaxSize().testTag("card_$i")) }
                 }
             }

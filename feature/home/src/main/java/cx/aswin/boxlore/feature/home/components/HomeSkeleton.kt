@@ -99,7 +99,8 @@ fun HeroSkeleton(modifier: Modifier = Modifier) {
             modifier = modifier.fillMaxWidth().height(homeHeroHeight()).clipToBounds().testTag("home_hero_skeleton"),
         ) { measurables, constraints ->
             val available = (constraints.maxWidth / density).dp - UncontainedEndPadding
-            val card = (heroTabletItemWidth(available, HeroPreferredCard, HeroGap) + HeroGap).roundToPx()
+            // A narrow pane's single card fills the row, which is as wide as material3 draws it.
+            val card = minOf((heroTabletItemWidth(available, HeroPreferredCard, HeroGap) + HeroGap).roundToPx(), constraints.maxWidth)
             val step = card + HeroGap.roundToPx()
             val height = constraints.maxHeight
             val cards = measurables.map { it.measure(Constraints.fixed(card, height)) }
