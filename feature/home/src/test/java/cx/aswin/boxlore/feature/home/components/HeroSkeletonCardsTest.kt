@@ -128,5 +128,29 @@ class HeroSkeletonCardsTest {
         }
     }
 
+    @Test fun `Halo's skeleton shows as Cover's where the loaded Halo does, in both directions`() {
+        val window = mutableStateOf(BoxloreTestWindows.PHONE)
+        composeRule.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                    Column {
+                        Box(Modifier.size(320.dp, homeHeroHeight())) { HaloHeroCard(item, {}, {}, null, null, isPlaying = false) }
+                        Box(Modifier.size(320.dp, homeHeroHeight())) { HeroSkeletonCard(HeroCardStyle.HALO) }
+                    }
+                }
+            }
+        }
+        for (layout in listOf(BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.SPLIT_HALF, BoxloreTestWindows.PHONE)) {
+            window.value = layout
+            composeRule.waitForIdle()
+            val label = "${layout.widthDp}x${layout.heightDp}"
+            val loadedHalo = composeRule.onAllNodesWithTag("home_hero_halo", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+            val skeletonHalo = composeRule.onAllNodesWithTag("home_hero_skeleton_halo_cover", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+            assertEquals("$label: the loading card's ring follows the loaded card", loadedHalo, skeletonHalo)
+            assertEquals("$label: Halo shows its ring only on full-height heroes", layout.heightDp >= 480f, loadedHalo)
+            composeRule.onNodeWithTag(skeletonTag(HeroCardStyle.HALO)).assertExists()
+        }
+    }
+
     private fun bounds(tag: String): Rect = composeRule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
 }

@@ -131,8 +131,8 @@ private val BlockActionsReserve = 72.dp
  * two-line title, the show name and the Play / details pair at the loaded card's 20dp insets.
  */
 @Composable
-private fun CoverHeroSkeletonCard(tones: HeroSkeletonTones) {
-    Column(Modifier.fillMaxSize().clip(HomeHeroStyle.CardShape).background(tones.surface).testTag(skeletonTag(HeroCardStyle.COVER))) {
+private fun CoverHeroSkeletonCard(tones: HeroSkeletonTones, tag: String = skeletonTag(HeroCardStyle.COVER)) {
+    Column(Modifier.fillMaxSize().clip(HomeHeroStyle.CardShape).background(tones.surface).testTag(tag)) {
         Box(Modifier.weight(1f).fillMaxWidth().m3Shimmer(tones.base, tones.highlight))
         Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp)) {
             SkeletonLine(0.5f, 12.dp, tones.base, tones.highlight)
@@ -169,13 +169,19 @@ private fun DuotoneHeroSkeletonCard(tones: HeroSkeletonTones) {
 /**
  * Halo: the ring's track and a cookie where the cover goes, both placed by [haloGeometry], the context
  * lines in the room beside them, and the copy and Play / details pair at the bottom. A plain layout,
- * so nothing subcomposes on a cold start.
+ * so nothing subcomposes on a cold start. On a short hero it is Cover's loading card, as the loaded
+ * Halo is Cover there.
  */
 @Composable
 private fun HaloHeroSkeletonCard(tones: HeroSkeletonTones) {
+    // A hero below [ShortHeroHeight] shows Halo as Cover, so its loading card is Cover's too.
+    if (homeHeroHeight() < ShortHeroHeight) {
+        CoverHeroSkeletonCard(tones, tag = skeletonTag(HeroCardStyle.HALO))
+        return
+    }
     Layout(
         content = {
-            Box(Modifier.m3Shimmer(tones.base, tones.highlight, HaloCookie))
+            Box(Modifier.m3Shimmer(tones.base, tones.highlight, HaloCookie).testTag("home_hero_skeleton_halo_cover"))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SkeletonLine(0.7f, 12.dp, tones.base, tones.highlight)
                 SkeletonLine(0.5f, 24.dp, tones.base, tones.highlight)
