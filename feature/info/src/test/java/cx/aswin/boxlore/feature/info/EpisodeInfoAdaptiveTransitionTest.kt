@@ -14,6 +14,8 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -23,11 +25,16 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldState
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import cx.aswin.boxlore.core.testing.SystemInsets
+import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
+import cx.aswin.boxlore.core.testing.walkWindows
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.components.EpisodeLinkStatusTags
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,6 +64,7 @@ class EpisodeInfoAdaptiveTransitionTest {
     @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1_280, 800, false))
 
     private val window = mutableStateOf(COMPACT)
+    private val pane = mutableStateOf<BoxloreLayoutBounds?>(null)
     private val uiState = MutableStateFlow<EpisodeInfoUiState>(EpisodeInfoUiState.Loading)
     private val model = mock(EpisodeInfoViewModel::class.java)
     private val archived = MutableStateFlow(emptySet<String>())
@@ -167,6 +175,63 @@ class EpisodeInfoAdaptiveTransitionTest {
         assertTrue(labelled("Archived"))
     }
 
+    @Test
+    fun `the top bar clears side system buttons and sits where the show page puts Back and Share`() {
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        showEpisode()
+        // The show page's top bar: 48dp buttons 4dp from each edge, so their centres are 28dp in.
+        assertEquals(28f, centreX(BACK), 0.5f)
+        assertEquals(BoxloreTestWindows.PHONE.widthDp - 28f, centreX(SHARE), 0.5f)
+
+        fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets.SIDEWAYS_3_BUTTON) }
+        fixture.compose.walkWindows(window, BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND) { size ->
+            if (size == BoxloreTestWindows.PHONE_LAND) {
+                val insets = SystemInsets.SIDEWAYS_3_BUTTON
+                assertTrue("Back clears the camera cutout", bounds(BACK).left.value >= insets.cutoutStart)
+                assertTrue("Share clears the side buttons", bounds(SHARE).right.value <= size.widthDp - insets.navEnd)
+            }
+        }
+        fixture.compose.onNodeWithContentDescription(SHARE).performClick()
+        fixture.compose.waitForIdle()
+        assertTrue("Share is tappable sideways and opens the sheet", shareSheetShown())
+    }
+
+    @Test
+    fun `in tabletop the lower half starts right at the top bar, and flat keeps the status bar`() {
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        showEpisode()
+        fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets.TABLETOP_STATUS) }
+        fixture.compose.waitForIdle()
+        val buttonTop = (64f - 48f) / 2
+        val lowerHalf = BoxloreLayoutBounds(0f, 336f, BoxloreTestWindows.FOLD_FLAT.widthDp, BoxloreTestWindows.FOLD_FLAT.heightDp)
+        listOf(
+            Triple(BoxloreTestWindows.FOLD_FLAT, null, SystemInsets.TABLETOP_STATUS.statusTop + buttonTop),
+            Triple(BoxloreTestWindows.FOLD_TABLETOP, lowerHalf, buttonTop),
+            Triple(BoxloreTestWindows.FOLD_FLAT, null, SystemInsets.TABLETOP_STATUS.statusTop + buttonTop),
+        ).forEach { (size, bounds, expectedTop) ->
+            fixture.compose.runOnIdle {
+                pane.value = bounds
+                window.value = size
+            }
+            fixture.compose.waitForIdle()
+            assertEquals("Back's top at $size", expectedTop, bounds(BACK).top.value, 0.5f)
+        }
+    }
+
+    private fun shareSheetShown() = fixture.compose.onAllNodesWithText(SHARE_SHEET_TITLE).fetchSemanticsNodes().isNotEmpty()
+
+    private fun centreX(label: String) = bounds(label).let { (it.left.value + it.right.value) / 2 }
+
+    private fun bounds(label: String) = fixture.compose.onNodeWithContentDescription(label).getBoundsInRoot()
+
+    private fun showEpisode() {
+        val episode = TestFixtures.episode(id = LINK_ID, title = "How we find our way home", podcastId = "920666", podcastTitle = "Curious world")
+        uiState.value = EpisodeInfoUiState.Success(episode, "920666", "Curious world", relatedEpisodesLoading = false, similarEpisodesLoading = false)
+        fixture.compose.waitForIdle()
+    }
+
     private fun labelled(label: String): Boolean =
         fixture.compose.onAllNodes(hasContentDescription(label) or hasText(label), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
 
@@ -219,11 +284,13 @@ class EpisodeInfoAdaptiveTransitionTest {
         restoration = StateRestorationTester(fixture.compose)
         restoration.setContent {
             val size = window.value
+            val bounds = pane.value
             CompositionLocalProvider(
                 LocalBoxloreWindowLayout provides size,
-                LocalBoxlorePaneWidth provides size.widthDp,
+                LocalBoxlorePaneWidth provides (bounds?.width ?: size.widthDp),
+                LocalBoxlorePaneBounds provides bounds,
             ) {
-                Box(Modifier.width(size.widthDp.dp).height(size.heightDp.dp)) {
+                Box(Modifier.width((bounds?.width ?: size.widthDp).dp).height((bounds?.height ?: size.heightDp).dp)) {
                     BoxLoreTheme(dynamicColor = false) {
                         Surface {
                             EpisodeInfoScreen(
@@ -251,6 +318,9 @@ class EpisodeInfoAdaptiveTransitionTest {
 
     private companion object {
         const val LINK_ID = "4503599627370500"
+        const val BACK = "Back"
+        const val SHARE = "Share episode"
+        const val SHARE_SHEET_TITLE = "Share this episode"
         val COMPACT = BoxloreWindowLayout(599f, 800f)
         val TABLET = BoxloreWindowLayout(1_280f, 800f)
         val FOLD_FLAT = BoxloreWindowLayout(673f, 841f)

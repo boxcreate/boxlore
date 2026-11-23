@@ -2,7 +2,6 @@ package cx.aswin.boxlore.feature.info
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -16,8 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -51,6 +48,11 @@ import androidx.compose.ui.unit.lerp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeContentPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeInsetsDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneStatusBarsPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.info.logic.EpisodeShowTitle
 
@@ -159,7 +161,9 @@ fun EpisodeInfoScreen(
     val scrollFraction = (scrollOffset / morphThreshold).coerceIn(0f, 1f)
 
     // Header dimensions
-    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    // The status bar over this pane only: none for the lower half in tabletop or a pane below the top.
+    val statusBarHeight = boxlorePaneTopInset()
+    val (safeStart, safeEnd) = boxloreHorizontalSafeInsetsDp()
     val collapsedHeaderHeight = 64.dp + statusBarHeight
 
     // Header background: transparent → surfaceContainer
@@ -191,12 +195,9 @@ fun EpisodeInfoScreen(
     // Fade in only when header collapses
     val titleAlpha = if (scrollFraction > 0.8f) (scrollFraction - 0.8f) / 0.2f else 0f
 
-    // Horizontal padding in header
-    val titleHorizontalPadding by animateDpAsState(
-        targetValue = 76.dp,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "titlePadding",
-    )
+    // Horizontal padding in header: clear of Back and Share (48dp buttons 4dp from the edges, as on
+    // the show page) and of the side system buttons or camera cutout on a sideways phone.
+    val titleHorizontalPadding = EpisodeHeaderButtonInset + 48.dp + 8.dp
 
     cx.aswin.boxlore.core.designsystem.components.DiscoveryExpressiveTheme {
         when (val state = uiState) {
@@ -234,9 +235,11 @@ fun EpisodeInfoScreen(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding =
-                        PaddingValues(
-                            top = collapsedHeaderHeight + 16.dp,
-                            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + bottomContentPadding + 160.dp, // Extra for miniplayer
+                        boxloreHorizontalSafeContentPadding(
+                            PaddingValues(
+                                top = collapsedHeaderHeight + 16.dp,
+                                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + bottomContentPadding + 160.dp, // Extra for miniplayer
+                            ),
                         ),
                         verticalArrangement = Arrangement.spacedBy(24.dp),
                     ) {
@@ -339,14 +342,15 @@ fun EpisodeInfoScreen(
                         .fillMaxWidth()
                         .height(collapsedHeaderHeight)
                         .background(headerColor)
-                        .statusBarsPadding(),
+                        .boxlorePaneStatusBarsPadding()
+                        .boxloreHorizontalSafePadding(),
                 ) {
                     // Back Button
                     cx.aswin.boxlore.feature.info.components.EpisodeInfoHeaderButton(
                         icon = Icons.AutoMirrored.Rounded.ArrowBack,
                         label = androidx.compose.ui.res.stringResource(R.string.episode_info_back),
                         onClick = onBack,
-                        modifier = Modifier.align(Alignment.CenterStart).padding(start = 16.dp),
+                        modifier = Modifier.align(Alignment.CenterStart).padding(start = EpisodeHeaderButtonInset),
                     )
 
                     // Watch button: only while a watch is in reach; it sits beside Share.
@@ -355,7 +359,7 @@ fun EpisodeInfoScreen(
                             episode = state.episode,
                             actions = actions,
                             onMessage = { watchMessage = it },
-                            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.ButtonSlot),
+                            modifier = Modifier.align(Alignment.CenterEnd).padding(end = EpisodeHeaderButtonInset + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.ButtonSlot),
                         )
                     }
 
@@ -365,7 +369,7 @@ fun EpisodeInfoScreen(
                         icon = Icons.Rounded.Share,
                         label = androidx.compose.ui.res.stringResource(R.string.episode_info_share),
                         onClick = { showShareSheet = true },
-                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp),
+                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = EpisodeHeaderButtonInset),
                     )
 
                     if (showShareSheet) {
@@ -418,8 +422,8 @@ fun EpisodeInfoScreen(
                         .fillMaxWidth()
                         // With the watch button in the bar the name stops before it, not under it.
                         .padding(
-                            start = titleHorizontalPadding,
-                            end = titleHorizontalPadding + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.titleEndExtra(watchActions != null),
+                            start = titleHorizontalPadding + safeStart,
+                            end = titleHorizontalPadding + safeEnd + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.titleEndExtra(watchActions != null),
                         )
                         .graphicsLayer {
                             translationY = titleTranslationY
@@ -470,3 +474,6 @@ private fun LazyListScope.episodeShowNotes(
         }
     }
 }
+
+/** Back and Share sit this far from the page edges, matching the show page's top bar. */
+private val EpisodeHeaderButtonInset = 4.dp
