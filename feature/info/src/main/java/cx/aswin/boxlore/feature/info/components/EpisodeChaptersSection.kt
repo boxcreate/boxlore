@@ -41,10 +41,11 @@ internal fun EpisodeChaptersSection(episodeId: String, chapters: List<Chapter>, 
     val visible = if (expanded) chapters else chapters.take(4)
     val active = if (positionMs > 0) chapters.indexOfLast { it.startTime * 1_000 <= positionMs } else -1
     Column(modifier.fillMaxWidth().animateContentSize(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.episode_info_chapters), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-            Text(pluralStringResource(R.plurals.episode_info_chapter_count, chapters.size, chapters.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        EpisodeSectionHeader(
+            stringResource(R.string.episode_info_chapters),
+            Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+            trailing = pluralStringResource(R.plurals.episode_info_chapter_count, chapters.size, chapters.size),
+        )
         visible.forEachIndexed { index, chapter ->
             val time = chapterTime(chapter.startTime)
             val action = stringResource(R.string.episode_info_jump_chapter, chapter.title, time)

@@ -32,6 +32,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.HtmlText
@@ -54,7 +56,12 @@ internal fun EpisodeDescriptionCard(notes: ShowNotes, modifier: Modifier = Modif
     var overflows by remember(notes.plainText) { mutableStateOf(false) }
     Surface(modifier.fillMaxWidth().padding(horizontal = 16.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(Modifier.padding(20.dp).animateContentSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.episode_info_about), style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.episode_info_about),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = GoogleSansWeight.bold,
+                modifier = Modifier.semantics { heading() },
+            )
             if (expanded) {
                 HtmlText(
                     notes.html,

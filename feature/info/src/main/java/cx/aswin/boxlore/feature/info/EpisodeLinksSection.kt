@@ -47,13 +47,14 @@ import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.EpisodeLink
 import cx.aswin.boxlore.core.model.EpisodeLinkKind
+import cx.aswin.boxlore.feature.info.components.EpisodeSectionHeader
 
 @Composable
 internal fun EpisodeLinksSection(links: List<EpisodeLink>, showName: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val rows = remember(links) { episodeLinkRows(links) }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(stringResource(R.string.episode_info_links), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 20.dp))
+        EpisodeSectionHeader(stringResource(R.string.episode_info_links), Modifier.padding(horizontal = 20.dp))
         // Rows scroll together, but pack independently so shorter bubbles leave no column gaps.
         Column(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             rows.forEach { row ->

@@ -85,15 +85,7 @@ internal fun EpisodeRecommendationSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            RecommendationBadge(state.icon)
-            Text(
-                state.title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = GoogleSansWeight.bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f).semantics { heading() },
-            )
+            EpisodeSectionHeader(state.title, Modifier.weight(1f), icon = { RecommendationBadge(state.icon) })
             if (onHeaderClick != null) Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.primary)
         }
         LazyRow(state = listState, contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -143,10 +135,10 @@ internal fun EpisodeRecommendationSection(
 @Composable
 private fun RecommendationBadge(icon: ImageVector) {
     Box(
-        Modifier.size(40.dp).clip(MaterialShapes.Cookie9Sided.toShape()).background(MaterialTheme.colorScheme.primaryContainer),
+        Modifier.size(32.dp).clip(MaterialShapes.Cookie9Sided.toShape()).background(MaterialTheme.colorScheme.primaryContainer),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(22.dp))
+        Icon(icon, null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(18.dp))
     }
 }
 
