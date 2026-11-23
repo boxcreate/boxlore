@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -54,7 +55,7 @@ internal fun EpisodeDescriptionCard(notes: ShowNotes, modifier: Modifier = Modif
     var expanded by rememberSaveable(notes.plainText) { mutableStateOf(false) }
     var overflows by remember(notes.plainText) { mutableStateOf(false) }
     Surface(modifier.fillMaxWidth().padding(horizontal = 16.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
-        Column(Modifier.padding(AboutCardPadding).animateContentSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.animateContentSize().padding(AboutCardPadding), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 stringResource(R.string.episode_info_about),
                 style = MaterialTheme.typography.titleLarge,
@@ -98,10 +99,10 @@ internal fun EpisodeDescriptionCard(notes: ShowNotes, modifier: Modifier = Modif
             }
             if (!persons.isNullOrEmpty()) {
                 Text(stringResource(R.string.episode_info_people), style = MaterialTheme.typography.titleSmall)
-                // The row runs to the card's edges, so a chip past the end slides under the edge
-                // instead of stopping cut off at the text margin.
+                // The row runs to the card's edges (the size animation clips at the card, not the padding),
+                // so a chip past the end slides under the edge instead of stopping cut off at the text margin.
                 LazyRow(
-                    modifier = Modifier.bleedHorizontally(AboutCardPadding),
+                    modifier = Modifier.bleedHorizontally(AboutCardPadding).testTag(EPISODE_PEOPLE_ROW_TAG),
                     contentPadding = PaddingValues(horizontal = AboutCardPadding),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -115,6 +116,8 @@ internal fun EpisodeDescriptionCard(notes: ShowNotes, modifier: Modifier = Modif
 }
 
 private val AboutCardPadding = 20.dp
+
+internal const val EPISODE_PEOPLE_ROW_TAG = "episode_info_people"
 
 /** Widens this content by [amount] on each side, past its parent's padding, keeping its parent's width. */
 private fun Modifier.bleedHorizontally(amount: Dp): Modifier = layout { measurable, constraints ->

@@ -145,6 +145,18 @@ class EpisodePageSectionsTest {
     }
 
     @Test
+    fun `the people in an episode run to the About card's edges instead of stopping at its text margin`() {
+        val people = listOf("Amara Okafor" to "host", "Lukas Brandt" to "guest", "Mei Chen" to "editor").map { (name, role) -> cx.aswin.boxlore.core.model.Person(name, role) }
+        render(richState().let { it.copy(episode = it.episode.copy(persons = people)) })
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("about")
+        val about = fixture.compose.onNodeWithTag(EpisodeInfoTags.ABOUT).getBoundsInRoot()
+        val row = fixture.compose.onNodeWithTag(cx.aswin.boxlore.feature.info.EPISODE_PEOPLE_ROW_TAG).getBoundsInRoot()
+        // The card sits 16dp inside its block on each side.
+        assertEquals(about.left.value + 16f, row.left.value, 1f)
+        assertEquals(about.right.value - 16f, row.right.value, 1f)
+    }
+
+    @Test
     fun `More from opens the show from its header only, and says See all only above listed episodes`() {
         val related = List(3) { TestFixtures.episode(id = "related-$it", title = "Episode ${10 + it}", podcastId = "1", podcastTitle = "Curious world") }
         val state = MutableStateFlow(richState().copy(relatedEpisodes = related))
