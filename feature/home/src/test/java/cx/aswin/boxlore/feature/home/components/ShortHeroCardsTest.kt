@@ -39,6 +39,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /**
  * Above a tabletop fold, on sideways phones and in split-screen halves the hero can be as short as
@@ -48,6 +49,7 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], qualifiers = "w900dp-h1500dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ShortHeroCardsTest {
     @get:Rule val composeRule = createComposeRule()
     private val style = mutableStateOf(HeroCardStyle.COVER)
@@ -143,6 +145,11 @@ class ShortHeroCardsTest {
                 !hero.contains(target) -> failures += "$label: Play $target leaves the card $hero"
                 target.width < 48f - 0.5f || target.height < 48f - 0.5f -> failures += "$label: Play target is ${target.width}x${target.height}dp"
                 panel != null && target.overlaps(panel) -> failures += "$label: Play ${index + 1} $target is under the panel $panel"
+            }
+            // Cover's tiles draw their words over the cover: they keep clear of the Play button's 32dp disc.
+            val title = rectOrNull("home_hero_collection_${index}_title")
+            if (target != null && title != null && style.value == HeroCardStyle.COVER && title.overlaps(target.deflate(8f))) {
+                failures += "$label: episode ${index + 1}'s title $title runs under its Play button $target"
             }
         }
         val count = composeRule.onAllNodesWithTag("home_hero_collection_count", useUnmergedTree = true).fetchSemanticsNodes().firstOrNull()

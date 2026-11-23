@@ -363,10 +363,13 @@ private fun CoverGridTile(
     val resume = mode == HeroGridMode.Resume
     val duration = HomeHeroStyle.minutes(podcast, resume)?.let { heroDurationText(it) }
     val peek = heroPeekContent()
-    Box(
+    BoxWithConstraints(
         modifier.clip(CoverTileShape).background(shade.deep).testTag(tag)
             .expressiveClickable(enabled = peek.shown, shape = CoverTileShape) { currentOnClick(currentPodcast) },
     ) {
+        // On a short card (sideways phones, split-screen halves) the words reach the tile's top: they keep
+        // clear of the Play button and drop to two lines, and Play draws above them.
+        val short = maxHeight < CoverTileShortHeight
         OptimizedImage(
             url = podcast.imageUrl,
             fallbackUrls = podcast.artworkUrls(),
@@ -379,11 +382,6 @@ private fun CoverGridTile(
         if (!resume && duration != null) {
             CoverTileLength(duration, shade, Modifier.align(Alignment.TopStart).heroPeekFade(peek).padding(10.dp).testTag("${tag}_time"))
         }
-        if (podcast.latestEpisode != null) {
-            CoverTilePlayback(nowPlaying, shade, peek.shown, Modifier.align(Alignment.TopEnd).heroPeekFade(peek).testTag("${tag}_play")) {
-                currentOnPlayback(currentPodcast)
-            }
-        }
         CoverTileCopy(
             title = podcast.latestEpisode?.title?.ifEmpty { podcast.title } ?: podcast.title,
             wide = wide,
@@ -393,9 +391,22 @@ private fun CoverGridTile(
             nowPlaying = nowPlaying,
             tag = tag,
             modifier = Modifier.align(Alignment.BottomStart).heroPeekFade(peek),
+            endInset = if (short) CoverTilePlayReserve else 0.dp,
+            maxTitleLines = if (short) 2 else null,
         )
+        if (podcast.latestEpisode != null) {
+            CoverTilePlayback(nowPlaying, shade, peek.shown, Modifier.align(Alignment.TopEnd).heroPeekFade(peek).testTag("${tag}_play")) {
+                currentOnPlayback(currentPodcast)
+            }
+        }
     }
 }
+
+/** Tiles lower than this (a short card) keep their words clear of the Play button. */
+private val CoverTileShortHeight = 120.dp
+
+/** The Play button's 32dp and its 8dp inset from the tile's end, which short tiles' words keep clear of. */
+private val CoverTilePlayReserve = 40.dp
 
 /** The tile's title over its shade, then Resume progress and time left on one row. */
 @Composable
@@ -409,10 +420,12 @@ private fun CoverTileCopy(
     nowPlaying: Boolean,
     tag: String,
     modifier: Modifier,
+    endInset: Dp = 0.dp,
+    maxTitleLines: Int? = null,
 ) {
     Column(
         modifier.fillMaxWidth().coverScrim(shade.deep, fade = 64.dp, solid = 8.dp)
-            .padding(start = 10.dp, end = 10.dp, top = 2.dp, bottom = 10.dp),
+            .padding(start = 10.dp, end = 10.dp + endInset, top = 2.dp, bottom = 10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
@@ -423,7 +436,7 @@ private fun CoverTileCopy(
                 fontWeight = GoogleSansWeight.bold,
             ),
             color = shade.content,
-            maxLines = if (wide) 2 else 3,
+            maxLines = maxTitleLines ?: if (wide) 2 else 3,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.testTag("${tag}_title"),
         )
