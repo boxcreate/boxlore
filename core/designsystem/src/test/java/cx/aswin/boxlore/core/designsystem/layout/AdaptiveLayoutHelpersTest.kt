@@ -108,6 +108,28 @@ class AdaptiveLayoutHelpersTest {
     }
 
     @Test
+    fun `a long menu opens beside its anchor and scrolls, using a tabletop half up to the hinge`() {
+        // A sideways phone: the anchor in the top bar, an 11-row menu taller than the window.
+        val phone = BoxloreFoldSafePopupPositionProvider(BoxloreTestWindows.PHONE_LAND, mdpi, DpOffset(0.dp, 4.dp), true)
+        val topBarAnchor = IntRect(851, 32, 899, 80)
+        val window = IntSize(915, 412)
+        phone.calculatePosition(topBarAnchor, window, LayoutDirection.Ltr, IntSize(280, 560))
+        val capped = IntSize(280, phone.heightBesideAnchorPx)
+        val menu = phone.calculatePosition(topBarAnchor, window, LayoutDirection.Ltr, capped)
+        assertTrue("$menu covers the anchor", menu.y >= topBarAnchor.bottom)
+        assertTrue("$menu runs past the window", menu.y + capped.height <= 412 - 48)
+
+        // In tabletop, a menu from the upper half's top bar runs down to 8dp above the hinge.
+        val tabletop = BoxloreFoldSafePopupPositionProvider(BoxloreTestWindows.FOLD_TABLETOP, mdpi, DpOffset(0.dp, 4.dp), true)
+        val upperAnchor = IntRect(868, 24, 916, 72)
+        tabletop.calculatePosition(upperAnchor, inner, LayoutDirection.Ltr, IntSize(280, 560))
+        val upper = IntSize(280, tabletop.heightBesideAnchorPx)
+        val placed = tabletop.calculatePosition(upperAnchor, inner, LayoutDirection.Ltr, upper)
+        assertTrue("$placed covers the anchor", placed.y >= upperAnchor.bottom)
+        assertTrue("$placed ends at ${placed.y + upper.height}", placed.y + upper.height in 307..315)
+    }
+
+    @Test
     fun `with one region menus land where Material puts them`() {
         val phone = BoxloreFoldSafePopupPositionProvider(BoxloreTestWindows.PHONE, mdpi, DpOffset.Zero, false)
         val window = IntSize(412, 915)

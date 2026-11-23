@@ -40,18 +40,30 @@ class BoxloreFoldSafePopupPositionProvider internal constructor(
     var regionHeightPx by mutableIntStateOf(Int.MAX_VALUE)
         private set
 
+    /**
+     * The tallest the popup can be in px and still open beside its anchor without covering it: the
+     * larger of the space below and above the anchor, inside the region and its margins.
+     * [Int.MAX_VALUE] until it has opened.
+     */
+    var heightBesideAnchorPx by mutableIntStateOf(Int.MAX_VALUE)
+        private set
+
     override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
         val region = boxloreFoldSafeRegionPx(window, anchorBounds, windowSize, density)
         if (regionHeightPx != region.height) regionHeightPx = region.height
         return with(density) {
+            val margins = popupMargins(region, windowSize, FoldSafePopupVerticalMargin.roundToPx(), FoldSafePopupHingeMargin.roundToPx())
+            val offsetY = offset.y.roundToPx()
+            val beside = popupHeightBesideAnchor(anchorBounds, region, offsetY, margins)
+            if (heightBesideAnchorPx != beside) heightBesideAnchorPx = beside
             placePopupInRegion(
                 anchor = anchorBounds,
                 region = region,
                 layoutDirection = layoutDirection,
                 popup = popupContentSize,
                 offsetX = offset.x.roundToPx(),
-                offsetY = offset.y.roundToPx(),
-                verticalMargin = FoldSafePopupVerticalMargin.roundToPx(),
+                offsetY = offsetY,
+                margins = margins,
                 preferEndAligned = preferEndAligned,
             )
         }
@@ -106,11 +118,30 @@ fun Modifier.boxloreMaxHeightInRegion(provider: BoxloreFoldSafePopupPositionProv
     heightIn(max = (regionDp - FoldSafePopupVerticalMargin * 2).coerceAtLeast(FoldSafePopupMinHeight))
 }
 
+/** How far a popup keeps from its region's top and bottom, in px. */
+internal data class PopupMargins(val top: Int, val bottom: Int)
+
+/**
+ * Material's margin on region edges that are window edges, and the smaller [hingeMargin] on an edge
+ * that faces a hinge, so a menu in a tabletop half uses the half's height.
+ */
+internal fun popupMargins(region: IntRect, windowSize: IntSize, windowMargin: Int, hingeMargin: Int): PopupMargins = PopupMargins(
+    top = if (region.top <= 0) windowMargin else hingeMargin,
+    bottom = if (region.bottom >= windowSize.height) windowMargin else hingeMargin,
+)
+
+/** The larger of the space below and above [anchor] inside [region] and its [margins], at least 0. */
+internal fun popupHeightBesideAnchor(anchor: IntRect, region: IntRect, offsetY: Int, margins: PopupMargins): Int {
+    val below = region.bottom - margins.bottom - (anchor.bottom + offsetY)
+    val above = anchor.top + offsetY - (region.top + margins.top)
+    return maxOf(below, above, 0)
+}
+
 /**
  * Material's dropdown placement, inside [region] instead of the window: beside the anchor's start
  * (or end), else its end (or start), else against the region's nearer side; below the anchor, else
- * above it, else centred on its top, else against the region's nearer edge. The result stays inside
- * the region when the popup fits in it.
+ * above it, else on the side with more room, so it never covers the anchor while it fits beside it.
+ * The result stays inside the region when the popup fits in it.
  */
 @Suppress("LongParameterList") // Material's inputs plus the region and the end-first choice.
 internal fun placePopupInRegion(
@@ -120,7 +151,7 @@ internal fun placePopupInRegion(
     popup: IntSize,
     offsetX: Int,
     offsetY: Int,
-    verticalMargin: Int,
+    margins: PopupMargins,
     preferEndAligned: Boolean,
 ): IntOffset {
     val ltr = layoutDirection == LayoutDirection.Ltr
@@ -134,19 +165,12 @@ internal fun placePopupInRegion(
     }
     val x = xCandidates.firstOrNull { it >= region.left && it + popup.width <= region.right } ?: xCandidates.last()
 
-    val toRegionEdge = if (anchor.center.y < region.center.y) {
-        region.top + verticalMargin
-    } else {
-        region.bottom - popup.height - verticalMargin
-    }
-    val yCandidates = listOf(
-        anchor.bottom + offsetY,
-        anchor.top - popup.height + offsetY,
-        anchor.top - popup.height / 2 + offsetY,
-        toRegionEdge,
-    )
-    val y = yCandidates.firstOrNull { it >= region.top + verticalMargin && it + popup.height <= region.bottom - verticalMargin }
-        ?: yCandidates.last()
+    val below = anchor.bottom + offsetY
+    val above = anchor.top - popup.height + offsetY
+    val roomBelow = region.bottom - margins.bottom - below
+    val roomAbove = anchor.top + offsetY - (region.top + margins.top)
+    val y = listOf(below, above).firstOrNull { it >= region.top + margins.top && it + popup.height <= region.bottom - margins.bottom }
+        ?: if (roomBelow >= roomAbove) below else above
     return IntOffset(
         x.coerceIn(region.left, maxOf(region.left, region.right - popup.width)),
         y.coerceIn(region.top, maxOf(region.top, region.bottom - popup.height)),
@@ -155,6 +179,9 @@ internal fun placePopupInRegion(
 
 /** Material's dropdown menu keeps this far from the window's top and bottom edges. */
 private val FoldSafePopupVerticalMargin = 48.dp
+
+/** A popup keeps this far from a hinge. */
+private val FoldSafePopupHingeMargin = 8.dp
 
 /** A capped popup still shows at least one row. */
 private val FoldSafePopupMinHeight = 48.dp

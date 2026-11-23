@@ -16,12 +16,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -123,14 +126,26 @@ class BoxloreDropdownMenuTest {
     fun `the current choice is selected and choosing closes the menu`() {
         val chosen = mutableListOf<String>()
         val state = BoxloreMenuState(expanded = true)
+        var scheme: androidx.compose.material3.ColorScheme? = null
         compose.setContent {
+            Theme(BoxloreTestWindows.PHONE) { scheme = MaterialTheme.colorScheme }
             Menu(BoxloreTestWindows.PHONE, anchorX = 300, anchorY = 80, state = state) {
                 group {
                     groupLabel("Sort by")
                     listOf("Newest", "Oldest").forEach { label -> selectableItem(label, selected = label == "Newest", onClick = { chosen += label }) }
+                    item("Share", onClick = {})
+                    checkableItem("Hide played", checked = false, onCheckedChange = {})
                 }
             }
         }
+        // The current choice is filled; other choices and the off row sit flush on the group, like a plain row.
+        val colors = requireNotNull(scheme)
+        fun rowEnd(text: String): Int {
+            val image = compose.onNodeWithText(text).captureToImage().asAndroidBitmap()
+            return image.getPixel(image.width - 6, image.height / 2)
+        }
+        assertEquals(colors.secondaryContainer.toArgb(), rowEnd("Newest"))
+        listOf("Oldest", "Hide played", "Share").forEach { assertEquals(it, colors.surfaceContainerHigh.toArgb(), rowEnd(it)) }
         compose.onNodeWithText("Newest").assertIsSelected()
         compose.onNodeWithText("Oldest").assertIsNotSelected().performClick()
         compose.waitForIdle()

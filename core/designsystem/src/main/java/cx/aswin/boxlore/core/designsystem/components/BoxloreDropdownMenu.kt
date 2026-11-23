@@ -255,12 +255,7 @@ private fun MenuGroupRows(entries: List<BoxloreMenuEntry>, state: BoxloreMenuSta
                 shapes = shapes,
                 leadingIcon = entry.leadingIcon?.let { icon -> { Icon(icon, contentDescription = null) } },
                 selectedLeadingIcon = { Icon(Icons.Rounded.Check, contentDescription = null) },
-                colors = MenuDefaults.selectableItemColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    selectedTrailingContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                ),
+                colors = menuChoiceColors(),
             )
             is BoxloreMenuEntry.Toggle -> CheckableDropdownMenuItem(
                 checked = entry.checked,
@@ -268,11 +263,27 @@ private fun MenuGroupRows(entries: List<BoxloreMenuEntry>, state: BoxloreMenuSta
                 text = { MenuText(entry.text) },
                 shapes = shapes,
                 checkedLeadingIcon = { Icon(Icons.Rounded.Check, contentDescription = null) },
+                colors = menuChoiceColors(),
             )
             is BoxloreMenuEntry.Label -> Unit
         }
     }
 }
+
+/**
+ * Choice and on/off rows: the current one filled in `secondaryContainer`, the others flush on the
+ * group like plain rows, not a lighter row of their own.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun menuChoiceColors() = MenuDefaults.selectableItemColors(
+    containerColor = Color.Transparent,
+    disabledContainerColor = Color.Transparent,
+    selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+    selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    selectedTrailingContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+)
 
 /** Long labels wrap to a second line instead of being cut; only a third line is shortened. */
 @Composable
@@ -296,38 +307,43 @@ private fun menuGroupShapes(index: Int, count: Int): MenuGroupShapes {
 }
 
 /**
- * Caps the menu to the fold-safe region it opened in, less Material's menu margins, so a long menu
- * scrolls instead of running past the hinge or the window. Read in layout, so placing it re-measures
- * without recomposing.
+ * Caps the menu to the space beside its anchor in the fold-safe region it opened in (below or
+ * above, whichever is larger), so a long menu scrolls instead of covering its anchor or running
+ * past the hinge or the window. Read in layout, so placing it re-measures without recomposing.
  */
 private fun Modifier.menuHeightInRegion(provider: BoxloreFoldSafePopupPositionProvider): Modifier = layout { measurable, constraints ->
-    val region = provider.regionHeightPx
-    val capped = if (region == Int.MAX_VALUE) {
+    val beside = provider.heightBesideAnchorPx
+    val capped = if (beside == Int.MAX_VALUE) {
         constraints
     } else {
-        val max = (region - MenuVerticalMargin.roundToPx() * 2).coerceAtLeast(MenuMinHeight.roundToPx())
+        val max = beside.coerceAtLeast(MenuMinHeight.roundToPx())
         constraints.copy(maxHeight = minOf(constraints.maxHeight, max), minHeight = minOf(constraints.minHeight, max))
     }
     val placeable = measurable.measure(capped)
     layout(placeable.width, placeable.height) { placeable.place(0, 0) }
 }
 
-/** A 1dp line and a 16dp fade at an edge with more rows beyond it, drawn only while the menu scrolls. */
+/**
+ * A 1dp line and a 16dp fade at an edge with more rows beyond it, drawn only while the menu
+ * scrolls. The line spans the groups, not the shadow room around them.
+ */
 private fun Modifier.menuScrollCue(scroll: ScrollState, line: Color): Modifier = graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
     .drawWithContent {
         drawContent()
         val fade = MenuScrollFade.toPx()
         val stroke = 1.dp.toPx()
+        val start = MenuShadowRoom.toPx()
+        val end = size.width - start
         if (scroll.canScrollBackward) {
             drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black), startY = 0f, endY = fade), blendMode = BlendMode.DstIn)
-            drawLine(line, Offset(0f, stroke / 2), Offset(size.width, stroke / 2), stroke)
+            drawLine(line, Offset(start, stroke / 2), Offset(end, stroke / 2), stroke)
         }
         if (scroll.canScrollForward) {
             drawRect(
                 Brush.verticalGradient(listOf(Color.Black, Color.Transparent), startY = size.height - fade, endY = size.height),
                 blendMode = BlendMode.DstIn,
             )
-            drawLine(line, Offset(0f, size.height - stroke / 2), Offset(size.width, size.height - stroke / 2), stroke)
+            drawLine(line, Offset(start, size.height - stroke / 2), Offset(end, size.height - stroke / 2), stroke)
         }
     }
 
@@ -372,5 +388,4 @@ private val MenuInnerCorner = 4.dp
 private val MenuShadowElevation = 8.dp
 private val MenuShadowRoom = 4.dp
 private val MenuScrollFade = 16.dp
-private val MenuVerticalMargin = 48.dp
 private val MenuMinHeight = 48.dp
