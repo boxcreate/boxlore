@@ -231,8 +231,11 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     @Test fun genresSheet() = capture(
         "home-genres-sheet",
         allWindows = true,
-        scrollTo = "discover_header" to GENRES_MORE_TAG,
-        act = { click(GENRES_MORE_TAG) },
+        scrollTo = "discover_header" to "home_genre_chip",
+        act = {
+            awaitTag(GENRES_MORE_TAG)
+            click(GENRES_MORE_TAG)
+        },
         waitFor = "home_genres_sheet",
     ) { Home(state()) }
 

@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
@@ -199,7 +200,10 @@ private fun KeepGridPlaceAcrossColumnChanges(state: LazyStaggeredGridState, colu
             place.columns = columns
             val index = place.index
             val offset = place.offset
-            if (state.firstVisibleItemIndex != index || state.firstVisibleItemScrollOffset != offset) state.scrollToItem(index, offset)
+            // Only undo the grid's jump back to the top; a scroll made since stands.
+            withFrameNanos { }
+            val atTop = state.firstVisibleItemIndex == 0 && state.firstVisibleItemScrollOffset == 0
+            if (atTop && (index > 0 || offset > 0)) state.scrollToItem(index, offset)
         }
         snapshotFlow { state.firstVisibleItemIndex to state.firstVisibleItemScrollOffset }.collect { (index, offset) ->
             place.index = index
