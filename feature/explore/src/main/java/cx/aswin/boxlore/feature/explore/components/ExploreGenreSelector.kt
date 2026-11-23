@@ -7,13 +7,10 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.Apps
@@ -23,7 +20,6 @@ import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Gavel
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Newspaper
@@ -36,12 +32,7 @@ import androidx.compose.material.icons.rounded.SportsBaseball
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Weekend
 import androidx.compose.material.icons.rounded.Work
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -50,14 +41,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.AdaptiveOverflowRow
+import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChip
+import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChipDefaults
+import cx.aswin.boxlore.core.designsystem.components.BoxloreMoreChip
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryExpressiveTheme
+import cx.aswin.boxlore.core.designsystem.components.rememberAdaptiveOverflowState
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.feature.explore.R
@@ -110,8 +107,9 @@ private fun ExploreGenreSelectorContent(
     selectedCategory: String,
     onCategorySelected: (String) -> Unit,
 ) {
-    var showSheet by remember { mutableStateOf(false) }
-    var overflowGenres by remember { mutableStateOf<List<ExploreGenreItem>>(emptyList()) }
+    // Saved above the compact/tablet switch, so More stays open through unfolding, rotation and resizing.
+    var showSheet by rememberSaveable { mutableStateOf(false) }
+    val overflow = rememberAdaptiveOverflowState()
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
 
     val displayGenres = remember(selectedCategory) {
@@ -138,11 +136,9 @@ private fun ExploreGenreSelectorContent(
         AdaptiveOverflowRow(
             itemCount = EXPLORE_GENRES.size + 1,
             selectedIndex = EXPLORE_GENRES.indexOfFirst { it.value == selectedCategory }.takeIf { it >= 0 }?.plus(1),
-            onOverflow = { indices ->
-                overflowGenres = indices.map { EXPLORE_GENRES[it - 1] }
-                showSheet = true
-            },
+            onOverflow = { showSheet = true },
             modifier = Modifier.padding(horizontal = 6.dp),
+            state = overflow,
             item = { index ->
                 if (index == 0) {
                     ExploreGenreFilterChip(stringResource(R.string.explore_genre_all), selectedCategory == "All", { onCategorySelected("All") }, Icons.Rounded.Apps)
@@ -151,8 +147,7 @@ private fun ExploreGenreSelectorContent(
                     ExploreGenreFilterChip(stringResource(genre.labelRes), selectedCategory == genre.value, { onCategorySelected(genre.value) }, genre.icon)
                 }
             },
-            onWidthChanged = { showSheet = false },
-            more = { onClick -> ExploreMoreGenresChip(onClick) },
+            more = { onClick -> BoxloreMoreChip(onClick = onClick, label = stringResource(R.string.explore_genre_more)) },
         )
     } else {
         LazyRow(
@@ -180,26 +175,21 @@ private fun ExploreGenreSelectorContent(
             }
 
             item {
-                AssistChip(
-                    label = { Text(stringResource(R.string.explore_genre_more)) },
-                    onClick = { showSheet = true },
-                    trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
-                    modifier = Modifier.heightIn(min = 48.dp),
-                    shape = CircleShape,
-                    border = null,
-                    colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                )
+                BoxloreMoreChip(onClick = { showSheet = true }, label = stringResource(R.string.explore_genre_more))
             }
         }
     }
 
     if (showSheet) {
+        // Tablets list what the row couldn't fit (all of it once everything fits); phones list every genre.
+        val behindMore = overflow.remaining.mapNotNull { index -> EXPLORE_GENRES.getOrNull(index - 1) }
+        val sheetGenres = if (tablet && behindMore.isNotEmpty()) behindMore else EXPLORE_GENRES
         ModalBottomSheet(
             onDismissRequest = { showSheet = false },
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         ) {
-            ExploreGenreSheetContent(selectedCategory, if (tablet) overflowGenres else EXPLORE_GENRES, !tablet) { category ->
+            ExploreGenreSheetContent(selectedCategory, sheetGenres, includeAll = sheetGenres === EXPLORE_GENRES) { category ->
                 onCategorySelected(category)
                 showSheet = false
             }
@@ -208,38 +198,14 @@ private fun ExploreGenreSelectorContent(
 }
 
 @Composable
-private fun ExploreMoreGenresChip(onClick: () -> Unit) {
-    AssistChip(
-        label = { Text(stringResource(R.string.explore_genre_more)) },
-        onClick = onClick,
-        trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
-        modifier = Modifier.heightIn(min = 48.dp),
-        shape = CircleShape,
-        border = null,
-        colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-    )
-}
-
-/** Mirrors HomeGenreFilterChip tokens; no feature-to-feature dependency. */
-@Composable
-private fun ExploreGenreFilterChip(label: String, selected: Boolean, onClick: () -> Unit, icon: ImageVector) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(label) },
-        leadingIcon = { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
-        modifier = Modifier.heightIn(min = 48.dp),
-        shape = CircleShape,
-        border = null,
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
-    )
+private fun ExploreGenreFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: ImageVector,
+    container: Color = BoxloreFilterChipDefaults.PageContainer,
+) {
+    BoxloreFilterChip(selected = selected, onClick = onClick, label = label, leadingIcon = icon, container = container)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -263,14 +229,14 @@ private fun ExploreGenreSheetContent(selectedCategory: String, genres: List<Expl
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
+            val sheet = BoxloreFilterChipDefaults.SheetContainer
             if (includeAll) {
                 ExploreGenreFilterChip(
-                label = stringResource(R.string.explore_genre_all),
-                selected = selectedCategory == "All",
-                onClick = {
-                    onCategorySelected("All")
-                },
-                icon = Icons.Rounded.Apps,
+                    label = stringResource(R.string.explore_genre_all),
+                    selected = selectedCategory == "All",
+                    onClick = { onCategorySelected("All") },
+                    icon = Icons.Rounded.Apps,
+                    container = sheet,
                 )
             }
 
@@ -278,10 +244,9 @@ private fun ExploreGenreSheetContent(selectedCategory: String, genres: List<Expl
                 ExploreGenreFilterChip(
                     label = stringResource(genre.labelRes),
                     selected = selectedCategory == genre.value,
-                    onClick = {
-                        onCategorySelected(genre.value)
-                    },
+                    onClick = { onCategorySelected(genre.value) },
                     icon = genre.icon,
+                    container = sheet,
                 )
             }
         }
