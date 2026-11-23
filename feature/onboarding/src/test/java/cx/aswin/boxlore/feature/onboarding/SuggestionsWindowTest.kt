@@ -90,6 +90,10 @@ class SuggestionsWindowTest {
         // No card runs past the lane's edge.
         val lane = compose.onNodeWithTag("suggestions_grid_curriculum_0").fetchSemanticsNode().boundsInRoot
         cardsInGrid().forEach { assertTrue("a card is cut at the column edge", it.boundsInRoot.right <= lane.right + 0.5f) }
+        // The cards share the leftover width, so a full row ends within a gap of the lane's edge, or at the widest cards.
+        val lastInRow = cardsInGrid().take(columns).maxOf { it.boundsInRoot.right }
+        val widest = cardsInGrid().first().boundsInRoot.width >= 168f - 0.5f
+        assertTrue("a ragged gap of ${lane.right - lastInRow}dp after the row", widest || lane.right - lastInRow <= 1f)
         compose.onNodeWithTag("suggestions_show_all_curriculum_0").performSemanticsAction(SemanticsActions.OnClick)
         settle()
         compose.walkWindows(window, BoxloreTestWindows.TABLET_PORTRAIT, BoxloreTestWindows.TABLET) { settle() }

@@ -47,6 +47,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.genreLabelRes
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -87,12 +88,13 @@ internal fun SuggestionShowCard(
     onToggle: (String) -> Unit,
     onOpenDetails: (Podcast) -> Unit,
     modifier: Modifier = Modifier,
+    width: Dp = SuggestionCardWidth,
 ) {
     val colors = MaterialTheme.colorScheme
     val ring by animateDpAsState(if (selected) 3.dp else 0.dp, label = "suggestionRing")
     Column(
         modifier
-            .width(SuggestionCardWidth)
+            .width(width)
             .testTag(SuggestedPodcastTestTags.GRID_CARD)
             .semantics(mergeDescendants = true) {
                 role = Role.Checkbox
@@ -104,7 +106,7 @@ internal fun SuggestionShowCard(
                 onLongClick = { onOpenDetails(podcast) },
             ) { onToggle(podcast.id) },
     ) {
-        Box(Modifier.size(SuggestionCardWidth)) {
+        Box(Modifier.size(width)) {
             OptimizedImage(
                 url = podcast.imageUrl,
                 fallbackUrls = podcast.artworkUrls(),

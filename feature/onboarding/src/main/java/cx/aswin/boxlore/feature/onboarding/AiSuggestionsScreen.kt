@@ -359,13 +359,22 @@ private fun SuggestionLaneGrid(
 ) {
     var open by rememberSaveable(lane.id) { mutableStateOf(false) }
     val columns = suggestionGridColumns(width.value)
+    // Short windows keep the smallest cards, so the first row stays above the footer.
+    val cardWidth = if (boxloreIsShortPane()) SuggestionCardWidth else suggestionGridCardWidth(width.value, columns).dp
     val shown = if (open) shows else shows.take(columns * SuggestionGridRows)
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).testTag("suggestions_grid_${lane.id}"), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         shown.chunked(columns).forEachIndexed { row, cards ->
             Row(horizontalArrangement = Arrangement.spacedBy(SuggestionGridGap)) {
                 cards.forEachIndexed { column, show ->
                     key(show.id) {
-                        SuggestionShowCard(show, show.id in selectedIds, shapeIndex = index * 3 + row * columns + column, onToggle = onToggle, onOpenDetails = onDetails)
+                        SuggestionShowCard(
+                            show,
+                            show.id in selectedIds,
+                            shapeIndex = index * 3 + row * columns + column,
+                            onToggle = onToggle,
+                            onOpenDetails = onDetails,
+                            width = cardWidth,
+                        )
                     }
                 }
             }
@@ -381,6 +390,12 @@ private fun SuggestionLaneGrid(
 /** How many 140dp cards fit across a [widthDp] lane, 12dp apart inside its 20dp sides. */
 internal fun suggestionGridColumns(widthDp: Float): Int =
     ((widthDp - SuggestionGridSides + SuggestionGridGap.value) / (SuggestionCardWidth.value + SuggestionGridGap.value)).toInt().coerceAtLeast(1)
+
+/** The cards share the lane's leftover width, from 140dp up to [SuggestionGridMaxCard], so rows end level with the lane. */
+internal fun suggestionGridCardWidth(widthDp: Float, columns: Int): Float =
+    ((widthDp - SuggestionGridSides - SuggestionGridGap.value * (columns - 1)) / columns).coerceIn(SuggestionCardWidth.value, SuggestionGridMaxCard)
+
+private const val SuggestionGridMaxCard = 168f
 
 /** Lanes this wide (dp) set their shows in rows; narrower ones scroll sideways. */
 private val SuggestionGridMinWidth = 600.dp
