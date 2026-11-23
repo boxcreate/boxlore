@@ -334,20 +334,22 @@ private fun DailyBriefingStories(
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         visible.forEachIndexed { index, chapter ->
             val canExpand = chapters.size > 3 && index == visible.lastIndex
-            val rowModifier = if (canExpand) {
-                Modifier.semantics {
-                    contentDescription = expandLabel
-                    role = Role.Button
-                }
-                    .expressiveClickable(shape = BoxLoreShapes.medium) {
-                        onExpandedChange(!expanded)
-                        AnalyticsHelper.trackDailyBriefingInteraction("card_chapters_toggled", briefing.region, briefing.date, mapOf("expanded" to !expanded))
+            // Every row sits 4dp in from the card, so the numbers line up and the toggle row's rounded
+            // press stays clear of the card's edge.
+            val rowModifier = Modifier.padding(horizontal = 4.dp).then(
+                if (canExpand) {
+                    Modifier.semantics {
+                        contentDescription = expandLabel
+                        role = Role.Button
                     }
-                    // Room inside the card so the rounded press doesn't touch its edge.
-                    .padding(horizontal = 4.dp)
-            } else {
-                Modifier
-            }
+                        .expressiveClickable(shape = BoxLoreShapes.medium) {
+                            onExpandedChange(!expanded)
+                            AnalyticsHelper.trackDailyBriefingInteraction("card_chapters_toggled", briefing.region, briefing.date, mapOf("expanded" to !expanded))
+                        }
+                } else {
+                    Modifier
+                },
+            )
             Row(
                 rowModifier.fillMaxWidth().heightIn(min = if (canExpand) 48.dp else 32.dp).padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
