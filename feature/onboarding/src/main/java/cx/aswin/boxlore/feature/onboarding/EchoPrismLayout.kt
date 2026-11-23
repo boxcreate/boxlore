@@ -146,7 +146,6 @@ internal object EchoPrismLayout {
         val inner = width - px.dp((Border + Padding) * 2)
         val tag = max(px.dp(TagMinHeight), px.sp(TagLineSp) + px.dp(8f))
         val arts = generateSequence(CompactMaxArt) { (it - CompactArtStep).takeIf { next -> next >= CompactMinArt } }.toList() + 0f
-        var plan: PrismPlan? = null
         for (hookSp in CompactHookSizes) {
             val hookHeight = px.dp(HookGap) + hookBox(hook, hookSp, inner, px, measure)
             for (art in arts) {
@@ -154,21 +153,23 @@ internal object EchoPrismLayout {
                 val gap = if (artPx > 0) px.dp(CompactGap) else 0
                 val fit = fitTitle(title, inner - artPx - gap, compact = true, measure)
                 val row = max(artPx, tag + px.dp(TagGap) + fit.box.height)
-                plan = PrismPlan(true, width, artPx, fit.sizeSp, fit.box.lines, false, px.dp((Border + Padding) * 2) + row + hookHeight, hookSp)
+                val plan = PrismPlan(true, width, artPx, fit.sizeSp, fit.box.lines, false, px.dp((Border + Padding) * 2) + row + hookHeight, hookSp)
                 if (plan.height <= maxHeight) return plan
                 // Dropping the art is the last resort, only once the pitch is at its smallest.
                 if (art == CompactMinArt && hookSp != CompactHookSizes.last()) break
             }
         }
+        var bare: PrismPlan? = null
         for (art in listOf(CompactMinArt, 0f)) {
             val artPx = px.dp(art)
             val gap = if (artPx > 0) px.dp(CompactGap) else 0
             val fit = fitTightTitle(title, inner - artPx - gap, measure)
             val row = max(artPx, tag + px.dp(TagGap) + fit.box.height)
-            val bare = PrismPlan(true, width, artPx, fit.sizeSp, fit.box.lines, false, px.dp((Border + Padding) * 2) + row, CompactHookSizes.last(), showHook = false)
+            bare = PrismPlan(true, width, artPx, fit.sizeSp, fit.box.lines, false, px.dp((Border + Padding) * 2) + row, CompactHookSizes.last(), showHook = false)
             if (bare.height <= maxHeight) return bare
         }
-        return plan!!
+        // Smaller than any card: the name alone, so a pitch is never drawn cut short.
+        return bare!!
     }
 
     /** The name in at most three lines, down to 12sp, for the shortest slots. */

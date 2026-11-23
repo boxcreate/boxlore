@@ -102,7 +102,7 @@ internal fun EchoAnswerArea(
     AnimatedContent(targetState = key, modifier = modifier.fillMaxWidth(), transitionSpec = EchoMotion.handoff(), label = "echoAnswers") { target ->
         when {
             target == "waiting" -> EchoChoiceSkeleton(fit)
-            target == "deck" -> EchoDeckCard(state.aiDeck, fit.metrics, preview)
+            target == "deck" -> EchoDeckCard(state.aiDeck, fit.metrics, preview, withClip = !fit.sideBySide)
             target.startsWith("choices") && EchoScreenModel.isOpeningTurn(state) -> EchoTopicGrid(target, state.aiSelectedOptions, fit, callbacks)
             target.startsWith("choices") -> EchoChoiceList(target, state.aiCurrentTurn, EchoScreenModel.choices(state), state.aiSelectedOptions, fit, callbacks)
             target.startsWith("writing") -> EchoWrittenAnswer(state, hasChoices = EchoScreenModel.choices(state).isNotEmpty(), fit.metrics, callbacks)

@@ -59,7 +59,6 @@ class EchoConversationFitTest(
     private val fontScale: Float,
     private val mustShow: Boolean,
     private val bars: String,
-    private val deckSize: Boolean,
 ) {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val choices = listOf("Optimistic wonder", "Calm contemplation", "Humorous lightness", "Serious analysis")
@@ -170,7 +169,6 @@ class EchoConversationFitTest(
 
     private fun check(state: OnboardingUiState, expectEcho: Boolean, longText: Boolean = false) {
         val isDeck = state.aiDeck.current != null
-        assumeTrue("Show cards are checked where a card is shown", !isDeck || deckSize)
         assumeTrue("Long text is checked on phones, the cover, sideways phones and short halves", !longText || "${widthDp}x$heightDp$bars" in LONG_TEXT_SIZES)
         show(mutableStateOf(state))
         val label = "${widthDp}x$heightDp$bars dp at ${fontScale}x text"
@@ -229,6 +227,10 @@ class EchoConversationFitTest(
             assertTrue("the card runs into the reactions on $label", bounds("echo_deck_card")!!.bottom <= reactions.top + 1f)
             val card = bounds("echo_deck_card")!!
             assertTrue("the card runs off the side on $label", card.left >= root.left - 1f && card.right <= root.right + 1f)
+            // The show's name always shows, inside the card.
+            val title = bounds("echo_deck_title")
+            assertTrue("the card has no name on $label", title != null)
+            assertTrue("the card's name runs past the card on $label ($title vs $card)", title!!.top >= card.top - 1f && title.bottom <= card.bottom + 1f)
             // The pitch is never cut short; the art gives way instead.
             compose.onAllNodesWithTag("echo_deck_hook").fetchSemanticsNodes().forEach { node ->
                 val layouts = mutableListOf<TextLayoutResult>()
@@ -301,42 +303,40 @@ class EchoConversationFitTest(
         private val WAITING_SIZES = setOf("412x915-bars", "932x314")
         private val KEYBOARD_SIZES = setOf("412x915-bars")
 
-        /** Windows where the show card still can't keep its pitch whole (reported; not part of this change). */
-        private val SHORTEST = setOf("740x360", "475x330", "932x314", "841x340")
         private const val ImeHeight = 300f
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}x{1}{4} font {2}")
         fun sizes(): List<Array<Any>> = listOf(
             // Common phones at default text must show Echo.
-            arrayOf<Any>(360, 740, 1.0f, true, "", true),
-            arrayOf<Any>(393, 852, 1.0f, true, "", true),
-            arrayOf<Any>(412, 915, 1.0f, true, "", true),
-            arrayOf<Any>(427, 952, 1.0f, true, "", true),
+            arrayOf<Any>(360, 740, 1.0f, true, ""),
+            arrayOf<Any>(393, 852, 1.0f, true, ""),
+            arrayOf<Any>(412, 915, 1.0f, true, ""),
+            arrayOf<Any>(427, 952, 1.0f, true, ""),
             // Small phones and larger text: Echo may fold away, but never overlaps anything.
-            arrayOf<Any>(320, 568, 1.0f, false, "", true),
-            arrayOf<Any>(360, 640, 1.0f, false, "", true),
-            arrayOf<Any>(360, 740, 1.3f, false, "", true),
-            arrayOf<Any>(393, 852, 2.0f, false, "", true),
+            arrayOf<Any>(320, 568, 1.0f, false, ""),
+            arrayOf<Any>(360, 640, 1.0f, false, ""),
+            arrayOf<Any>(360, 740, 1.3f, false, ""),
+            arrayOf<Any>(393, 852, 2.0f, false, ""),
             // Foldables and tablets, both orientations, and a split-screen half.
-            arrayOf<Any>(673, 841, 1.0f, false, "", true),
-            arrayOf<Any>(841, 673, 1.0f, false, "", true),
-            arrayOf<Any>(800, 1280, 1.0f, false, "", true),
-            arrayOf<Any>(1280, 800, 1.0f, false, "", true),
-            arrayOf<Any>(640, 800, 1.3f, false, "", true),
+            arrayOf<Any>(673, 841, 1.0f, false, ""),
+            arrayOf<Any>(841, 673, 1.0f, false, ""),
+            arrayOf<Any>(800, 1280, 1.0f, false, ""),
+            arrayOf<Any>(1280, 800, 1.0f, false, ""),
+            arrayOf<Any>(640, 800, 1.3f, false, ""),
             // A phone with its status and gesture bars keeps Echo and shows the whole question.
-            arrayOf<Any>(412, 915, 1.0f, true, BARS, true),
-            arrayOf<Any>(412, 915, 2.0f, false, BARS, true),
-            arrayOf<Any>(360, 800, 2.0f, false, BARS, true),
+            arrayOf<Any>(412, 915, 1.0f, true, BARS),
+            arrayOf<Any>(412, 915, 2.0f, false, BARS),
+            arrayOf<Any>(360, 800, 2.0f, false, BARS),
         ) + listOf(1.0f, 1.3f).flatMap { scale ->
             // Phones and the Fold 8 cover with their bars.
-            listOf(412 to 915, 360 to 800, 430 to 932, 384 to 854, 443 to 649, 475 to 695).map { (w, h) -> arrayOf<Any>(w, h, scale, false, BARS, true) } +
+            listOf(412 to 915, 360 to 800, 430 to 932, 384 to 854, 443 to 649, 475 to 695).map { (w, h) -> arrayOf<Any>(w, h, scale, false, BARS) } +
                 // A phone on its side with 3-button navigation and a cutout.
-                listOf(arrayOf<Any>(915, 412, scale, false, SIDEWAYS, false)) +
+                listOf(arrayOf<Any>(915, 412, scale, false, SIDEWAYS)) +
                 // A small sideways phone, the cover sideways and in split-screen, a phone split-screen half,
                 // the lower halves of foldables in tabletop, and open foldables and tablets.
                 listOf(740 to 360, 695 to 475, 412 to 450, 475 to 330, 932 to 314, 841 to 340, 673 to 410, 750 to 832, 932 to 650, 841 to 701, 1600 to 1000)
-                    .map { (w, h) -> arrayOf<Any>(w, h, scale, false, "", scale == 1f && "${w}x$h" !in SHORTEST) }
+                    .map { (w, h) -> arrayOf<Any>(w, h, scale, false, "") }
         }.distinctBy { it.toList() }
     }
 }

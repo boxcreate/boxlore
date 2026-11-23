@@ -92,6 +92,10 @@ class EchoPrismLayoutTest {
         assertTrue("height ${short.height}", short.height <= 180)
         assertFalse(short.showHook)
         assertTrue("the pitch shows wherever it fits", plan("Bloomberg Intelligence: Tech Disruptors", 272, 300, pitch = hook).showHook)
+        // A slot smaller than any card still never gets a pitch it can't show whole.
+        val tiny = plan("Bloomberg Intelligence: Tech Disruptors", 272, 60, pitch = long)
+        assertFalse(tiny.showHook)
+        assertEquals(0, tiny.art)
     }
 
     @Test fun `the card hugs its art and never grows past its widest`() {

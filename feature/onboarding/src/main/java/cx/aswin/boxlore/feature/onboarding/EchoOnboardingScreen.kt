@@ -132,6 +132,7 @@ internal fun EchoOnboardingScreen(uiState: OnboardingUiState, callbacks: EchoCal
         // never change between turns; the open keyboard only folds Echo away.
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding).boxloreCardWidth(BoxloreCardFamily.Utility)) {
             val tierHeight = maxHeight - EchoFooterAllowance
+            val reactionsInOneRow = echoDeckReactionsInOneRow(maxWidth, maxHeight)
             val metrics = EchoLayout.metrics(tierHeight, LocalDensity.current.fontScale, keyboardOpen = imeVisible)
             // Set by the body's fit (planned while the body is measured): on the tightest windows Something
             // else waits beside the main button. The footer, measured first, takes it on the next frame.
@@ -153,7 +154,7 @@ internal fun EchoOnboardingScreen(uiState: OnboardingUiState, callbacks: EchoCal
                     label = "echoFooter",
                 ) { deck ->
                     if (deck) {
-                        EchoDeckReactions(uiState.aiDeck.reactions.size, metrics, callbacks.onDeckReaction)
+                        EchoDeckReactions(uiState.aiDeck.reactions.size, metrics, callbacks.onDeckReaction, oneRow = reactionsInOneRow)
                     } else {
                         val leading = if (somethingElseInFooter && kind == EchoScreenKind.Asking) actions::startWriting else null
                         EchoFooterBar(footer, actions::act, somethingElse = leading)
@@ -288,7 +289,11 @@ private fun ColumnScope.EchoConversationBody(
         val planned = remember(body, input.tierHeight, density.fontScale, shape, measure) {
             echoFitPlan(body, input.tierHeight, density.fontScale, keyboardOpen = false, shape, measure)
         }
-        val fit = if (input.keyboardOpen) planned.copy(metrics = planned.metrics.copy(showEcho = false)) else planned
+        // A show card on a short, wide window stands beside its question (and its clip button), so it gets
+        // the body's whole height: under it the card's pitch, then its art, would have to give way.
+        val deckBeside = kind == EchoScreenKind.Deck && echoDeckBeside(body)
+        val typing = if (input.keyboardOpen) planned.copy(metrics = planned.metrics.copy(showEcho = false)) else planned
+        val fit = if (deckBeside) typing.copy(sideBySide = true, startShare = EchoDeckStartShare) else typing
         SideEffect { onSomethingElseInFooter(fit.somethingElseInFooter) }
         EchoBodyLayout(
             fit = fit,
@@ -304,7 +309,12 @@ private fun ColumnScope.EchoConversationBody(
                     EchoHeader(uiState, kind, fit.metrics, paused = paused)
                 }
             },
-            question = { EchoQuestionArea(uiState, kind, fit.metrics) { suggestion -> callbacks.onSearch(suggestion) } },
+            question = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    EchoQuestionArea(uiState, kind, fit.metrics, Modifier.weight(1f, fill = false)) { suggestion -> callbacks.onSearch(suggestion) }
+                    if (deckBeside) EchoDeckClip(uiState.aiDeck, fit.metrics, preview)
+                }
+            },
             answers = {
                 EchoAnswerArea(
                     uiState,
@@ -399,6 +409,26 @@ private fun EchoBodyLayout(
         }
     }
 }
+
+/**
+ * A show card stands beside its question on wide bodies too short to stack the question, a card and
+ * its clip button ([EchoDeckBesideBelow]); taller or narrower bodies keep the card under the question.
+ */
+internal fun echoDeckBeside(body: DpSize): Boolean =
+    body.width >= EchoDeckBesideMinWidth && body.width > body.height && body.height < EchoDeckBesideBelow
+
+/** The deck's four answers go in one row on windows under 480dp tall where each still gets [EchoDeckOneRowMinWidth]. */
+internal fun echoDeckReactionsInOneRow(width: Dp, height: Dp): Boolean =
+    height < EchoDeckOneRowBelow && (width - EchoDeckReactionsSides - EchoLayout.GroupGap * 3) / 4 >= EchoDeckOneRowMinWidth
+
+private val EchoDeckOneRowBelow = 480.dp
+private val EchoDeckOneRowMinWidth = 150.dp
+private val EchoDeckReactionsSides = 48.dp
+private val EchoDeckBesideMinWidth = 400.dp
+private val EchoDeckBesideBelow = 400.dp
+
+/** Beside a show card the question and its clip button take a little more of the width than answers leave them. */
+private const val EchoDeckStartShare = 0.45f
 
 /** Test tags of the body's three slots, in reading order. */
 internal val EchoBodySlotTags = listOf("echo_slot_header", "echo_slot_question", "echo_slot_answers")

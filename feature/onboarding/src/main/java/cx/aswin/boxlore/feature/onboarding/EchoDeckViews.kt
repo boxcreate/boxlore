@@ -87,14 +87,12 @@ import kotlinx.coroutines.delay
  * up for I already listen, down for Not sure; the next one rises from the deck.
  */
 @Composable
-internal fun EchoDeckCard(deck: EchoDeck, metrics: EchoLayoutMetrics, preview: EchoShowPreview?, modifier: Modifier = Modifier) {
+internal fun EchoDeckCard(deck: EchoDeck, metrics: EchoLayoutMetrics, preview: EchoShowPreview?, modifier: Modifier = Modifier, withClip: Boolean = true) {
     // After the last answer the deck hands off to the wait; the last card stays put while it fades.
     val position = deck.reactions.size.coerceAtMost(deck.cards.lastIndex)
     val behind = (deck.cards.size - position - 1).coerceIn(0, EchoDeckMaxBehind)
     // Each card is revealed the first time it comes up; Back brings earlier ones back face up.
     var revealedUpTo by remember { mutableIntStateOf(-1) }
-    val clip = deck.cards.getOrNull(position)?.let(EchoDeckLogic::clip)
-    val status = preview?.status?.value?.takeIf { clip != null && it.showId == clip.showId }
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.weight(1f, fill = false).padding(bottom = EchoDeckPeek * EchoDeckMaxBehind), contentAlignment = Alignment.TopCenter) {
             for (layer in behind downTo 1) EchoDeckBackCard(layer, Modifier.matchParentSize())
@@ -130,16 +128,27 @@ internal fun EchoDeckCard(deck: EchoDeck, metrics: EchoLayoutMetrics, preview: E
                 )
             }
         }
-        // Space stays reserved on cards without a clip, so the card keeps its size from one to the next.
-        val showClip = clip != null && preview != null && status?.failed != true
-        EchoClipButton(
-            status,
-            enabled = showClip,
-            episode = deck.cards.getOrNull(position)?.previewEpisodeTitle?.takeIf { it.isNotBlank() && metrics.tier != EchoLayoutTier.Compact },
-            twoLines = metrics.tier != EchoLayoutTier.Compact,
-            modifier = Modifier.padding(top = 12.dp, bottom = 6.dp).alpha(if (showClip) 1f else 0f),
-        ) { preview?.toggle() }
+        if (withClip) EchoDeckClip(deck, metrics, preview)
     }
+}
+
+/**
+ * The current card's clip button, under the card or, beside a short card, under its question. Space
+ * stays reserved on cards without a clip, so the card keeps its size from one to the next.
+ */
+@Composable
+internal fun EchoDeckClip(deck: EchoDeck, metrics: EchoLayoutMetrics, preview: EchoShowPreview?) {
+    val card = deck.cards.getOrNull(deck.reactions.size.coerceAtMost(deck.cards.lastIndex))
+    val clip = card?.let(EchoDeckLogic::clip)
+    val status = preview?.status?.value?.takeIf { clip != null && it.showId == clip.showId }
+    val showClip = clip != null && preview != null && status?.failed != true
+    EchoClipButton(
+        status,
+        enabled = showClip,
+        episode = card?.previewEpisodeTitle?.takeIf { it.isNotBlank() && metrics.tier != EchoLayoutTier.Compact },
+        twoLines = metrics.tier != EchoLayoutTier.Compact,
+        modifier = Modifier.padding(top = 12.dp, bottom = 6.dp).alpha(if (showClip) 1f else 0f),
+    ) { preview?.toggle() }
 }
 
 /** Where a card goes when answered, as shares of its size, and how far it turns. */
@@ -252,7 +261,7 @@ private fun echoDeckTapLock(position: Int): Long = if (position == 0) 460L else 
  * group's outer corners are round; a pressed button widens a little and its corners soften.
  */
 @Composable
-internal fun EchoDeckReactions(position: Int, metrics: EchoLayoutMetrics, onReact: (EchoDeckReaction) -> Unit) {
+internal fun EchoDeckReactions(position: Int, metrics: EchoLayoutMetrics, onReact: (EchoDeckReaction) -> Unit, oneRow: Boolean = false) {
     var ready by remember(position) { mutableStateOf(false) }
     LaunchedEffect(position) {
         delay(echoDeckTapLock(position))
@@ -268,10 +277,12 @@ internal fun EchoDeckReactions(position: Int, metrics: EchoLayoutMetrics, onReac
     ) {
         // At normal text sizes the buttons stop at 60dp so the card keeps the room; large text keeps the full height.
         val rowHeight = if (LocalDensity.current.fontScale < EchoDeckLargeText) minOf(metrics.rowHeight, EchoDeckRowMaxHeight) else metrics.rowHeight
-        EchoDeckRows.forEachIndexed { row, reactions ->
+        // Short, wide windows set the four answers in one row, so the card keeps the room.
+        val rows = if (oneRow) listOf(EchoDeckRows.flatten()) else EchoDeckRows
+        rows.forEachIndexed { row, reactions ->
             Row(Modifier.fillMaxWidth().height(rowHeight), horizontalArrangement = Arrangement.spacedBy(EchoLayout.GroupGap)) {
                 reactions.forEachIndexed { column, reaction ->
-                    EchoReactionButton(reaction, echoTileCorners(row, column, EchoDeckRows.size, reactions.size, selected = false)) {
+                    EchoReactionButton(reaction, echoTileCorners(row, column, rows.size, reactions.size, selected = false)) {
                         if (ready) {
                             ready = false
                             onReact(reaction)
