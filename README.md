@@ -69,6 +69,8 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.</li>
 <li>In Android Auto, a show's page now lists its episodes from newest to oldest. Episodes you've started stay in their place and show the time left.</li>
 <li>Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.</li>
+<li>On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.</li>
+<li>On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.</li>
 </ul>
 <b>🐛 Fixed:</b>
 <ul align="left">
@@ -77,6 +79,9 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>When you use boxlore on more than one device, one that was offline or signed out no longer sets your progress or likes back to an older point, and devices that showed different progress now agree.</li>
 <li>Shows you unfollow on another device or on your watch are now cleared from this phone's saved shows, just as when you unfollow them here.</li>
 <li>Turning your phone sideways and back, unfolding it or resizing boxlore's window no longer opens the full player by itself.</li>
+<li>Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.</li>
+<li>Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.</li>
+<li>Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.</li>
 </ul>
 <!-- release-upcoming:end -->
 
