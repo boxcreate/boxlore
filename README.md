@@ -76,6 +76,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Importing an OPML file that lists a show twice now adds every show in the file in one go.</li>
 <li>When you use boxlore on more than one device, one that was offline or signed out no longer sets your progress or likes back to an older point, and devices that showed different progress now agree.</li>
 <li>Shows you unfollow on another device or on your watch are now cleared from this phone's saved shows, just as when you unfollow them here.</li>
+<li>Turning your phone sideways and back, unfolding it or resizing boxlore's window no longer opens the full player by itself.</li>
 </ul>
 <!-- release-upcoming:end -->
 
