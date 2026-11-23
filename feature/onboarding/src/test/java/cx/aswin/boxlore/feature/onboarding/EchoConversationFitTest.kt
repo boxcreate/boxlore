@@ -120,6 +120,15 @@ class EchoConversationFitTest(
 
     @Test fun `show card`() = check(deck, expectEcho = mustShow)
 
+    // The card's answers in German and the en-XA pseudo-locale keep their labels whole, in one row or two.
+    @Test
+    @Config(qualifiers = "+de")
+    fun `show card in German`() = check(deck, expectEcho = false, longText = true)
+
+    @Test
+    @Config(qualifiers = "+en-rXA")
+    fun `show card in long pseudo text`() = check(deck, expectEcho = false, longText = true)
+
     // Echo thinking: the answers' skeleton keeps the loaded rows' shape and Echo keeps its size.
     @Test fun `waiting keeps the next turn's shape`() {
         assumeTrue("Checked on a phone with bars and a tabletop half", "${widthDp}x$heightDp$bars" in WAITING_SIZES && fontScale == 1f)
@@ -218,7 +227,14 @@ class EchoConversationFitTest(
                     LocalEchoShowPreviewFactory provides { _ -> SilentPreview },
                     LocalBoxloreWindowLayout provides BoxloreWindowLayout(widthDp.toFloat(), heightDp.toFloat()),
                 ) {
-                    Box(Modifier.requiredSize(widthDp.dp, heightDp.dp)) { EchoOnboardingScreen(state.value, callbacks) }
+                    // Sideways, the step transition keeps Echo clear of the side buttons and cutout, as in the app.
+                    Box(Modifier.requiredSize(widthDp.dp, heightDp.dp)) {
+                        if (bars == SIDEWAYS) {
+                            OnboardingStepTransition(OnboardingStep.AI_ONBOARDING) { EchoOnboardingScreen(state.value, callbacks) }
+                        } else {
+                            EchoOnboardingScreen(state.value, callbacks)
+                        }
+                    }
                 }
             }
         }
@@ -257,6 +273,20 @@ class EchoConversationFitTest(
             val title = bounds("echo_deck_title")
             assertTrue("the card has no name on $label", title != null)
             assertTrue("the card's name runs past the card on $label ($title vs $card)", title!!.top >= card.top - 1f && title.bottom <= card.bottom + 1f)
+            // ... and whole: the art and the pitch give way before the name ends in "…".
+            compose.onAllNodesWithTag("echo_deck_title").fetchSemanticsNodes().flatMap(::textLayouts).forEach { layout ->
+                val cut = layout.didOverflowHeight || (0 until layout.lineCount).any(layout::isLineEllipsized)
+                assertTrue("the card's name is cut short on $label: ${layout.layoutInput.text}", !cut)
+            }
+            // Each answer's label shows whole, in one row or two.
+            EchoDeckReaction.entries.forEach { reaction ->
+                compose.onAllNodes(hasAnyAncestor(hasTestTag("echo_deck_${reaction.wire}")) and SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
+                    .fetchSemanticsNodes().flatMap(::textLayouts)
+                    .forEach {
+                        val detail = "${it.layoutInput.text} (${it.size}, ${it.lineCount} lines at ${it.layoutInput.style.fontSize}, ${it.layoutInput.constraints})"
+                        assertTrue("the ${reaction.wire} answer is cut short on $label: $detail", !it.hasVisualOverflow)
+                    }
+            }
             // The pitch is never cut short; the art gives way instead.
             compose.onAllNodesWithTag("echo_deck_hook").fetchSemanticsNodes().forEach { node ->
                 val layouts = mutableListOf<TextLayoutResult>()
@@ -325,7 +355,7 @@ class EchoConversationFitTest(
     companion object {
         private const val BARS = "-bars"
         private const val SIDEWAYS = "-sideways"
-        private val LONG_TEXT_SIZES = setOf("412x915-bars", "475x695-bars", "915x412-sideways", "360x800-bars", "475x330", "673x410", "740x360")
+        private val LONG_TEXT_SIZES = setOf("412x915-bars", "475x695-bars", "915x412-sideways", "360x800-bars", "475x330", "673x410", "740x360", "695x475")
         private val WAITING_SIZES = setOf("412x915-bars", "932x314")
         private val KEYBOARD_SIZES = setOf("412x915-bars")
 

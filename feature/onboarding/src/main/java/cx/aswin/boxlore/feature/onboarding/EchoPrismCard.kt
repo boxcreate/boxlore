@@ -330,7 +330,7 @@ private fun PrismTitle(upper: String, title: String, plan: PrismPlan, align: Tex
             }
             .testTag("echo_deck_title"),
         style = prismTitleStyle(plan.titleSp).copy(textAlign = align),
-        maxLines = plan.titleLines.coerceAtMost(EchoPrismLayout.MaxTitleLines),
+        maxLines = plan.titleLines,
         overflow = TextOverflow.Ellipsis,
     )
 }

@@ -132,7 +132,7 @@ internal fun EchoOnboardingScreen(uiState: OnboardingUiState, callbacks: EchoCal
         // never change between turns; the open keyboard only folds Echo away.
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding).boxloreCardWidth(BoxloreCardFamily.Utility)) {
             val tierHeight = maxHeight - EchoFooterAllowance
-            val reactionsInOneRow = echoDeckReactionsInOneRow(maxWidth, maxHeight)
+            val reactionsInOneRow = echoDeckReactionsInOneRow(maxWidth, maxHeight, rememberEchoDeckLabelWidth())
             val metrics = EchoLayout.metrics(tierHeight, LocalDensity.current.fontScale, keyboardOpen = imeVisible)
             // Set by the body's fit (planned while the body is measured): on the tightest windows Something
             // else waits beside the main button. The footer, measured first, takes it on the next frame.
@@ -417,9 +417,15 @@ private fun EchoBodyLayout(
 internal fun echoDeckBeside(body: DpSize): Boolean =
     body.width >= EchoDeckBesideMinWidth && body.width > body.height && body.height < EchoDeckBesideBelow
 
-/** The deck's four answers go in one row on windows under 480dp tall where each still gets [EchoDeckOneRowMinWidth]. */
-internal fun echoDeckReactionsInOneRow(width: Dp, height: Dp): Boolean =
-    height < EchoDeckOneRowBelow && (width - EchoDeckReactionsSides - EchoLayout.GroupGap * 3) / 4 >= EchoDeckOneRowMinWidth
+/**
+ * The deck's four answers go in one row on windows under 480dp tall where each still gets
+ * [EchoDeckOneRowMinWidth] and room for its icon and its longest label ([labelWidth], at the
+ * smallest size the label steps down to); otherwise they keep two rows.
+ */
+internal fun echoDeckReactionsInOneRow(width: Dp, height: Dp, labelWidth: Dp = 0.dp): Boolean {
+    val each = (width - EchoDeckReactionsSides - EchoLayout.GroupGap * 3) / 4
+    return height < EchoDeckOneRowBelow && each >= maxOf(EchoDeckOneRowMinWidth, labelWidth + EchoDeckReactionChrome)
+}
 
 private val EchoDeckOneRowBelow = 480.dp
 private val EchoDeckOneRowMinWidth = 150.dp

@@ -19,6 +19,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -35,7 +36,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Headphones
@@ -77,7 +77,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
 /**
@@ -267,25 +266,36 @@ internal fun EchoDeckReactions(position: Int, metrics: EchoLayoutMetrics, onReac
         delay(echoDeckTapLock(position))
         ready = true
     }
-    Column(
+    val density = LocalDensity.current
+    val smallest = rememberEchoDeckLabelWidth()
+    val full = rememberEchoDeckLabelWidth(MaterialTheme.typography.titleMedium.fontSize)
+    BoxWithConstraints(
         Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 12.dp)
             .testTag("echo_deck_reactions"),
-        verticalArrangement = Arrangement.spacedBy(EchoLayout.GroupGap),
     ) {
         // At normal text sizes the buttons stop at 60dp so the card keeps the room; large text keeps the full height.
-        val rowHeight = if (LocalDensity.current.fontScale < EchoDeckLargeText) minOf(metrics.rowHeight, EchoDeckRowMaxHeight) else metrics.rowHeight
+        val baseHeight = if (density.fontScale < EchoDeckLargeText) minOf(metrics.rowHeight, EchoDeckRowMaxHeight) else metrics.rowHeight
         // Short, wide windows set the four answers in one row, so the card keeps the room.
         val rows = if (oneRow) listOf(EchoDeckRows.flatten()) else EchoDeckRows
-        rows.forEachIndexed { row, reactions ->
-            Row(Modifier.fillMaxWidth().height(rowHeight), horizontalArrangement = Arrangement.spacedBy(EchoLayout.GroupGap)) {
-                reactions.forEachIndexed { column, reaction ->
-                    EchoReactionButton(reaction, echoTileCorners(row, column, rows.size, reactions.size, selected = false)) {
-                        if (ready) {
-                            ready = false
-                            onReact(reaction)
+        val perRow = rows.first().size
+        val buttonWidth = (maxWidth - EchoLayout.GroupGap * (perRow - 1)) / perRow
+        // Room for the lines the longest label wraps to, at its full size, so it never has to be cut.
+        val room = (buttonWidth - EchoReactionSidePadding * 2).value
+        val lines = if (smallest.value <= room) 1 else echoReactionLines(full.value, room)
+        val wrapped = with(density) { MaterialTheme.typography.titleMedium.fontSize.toDp() } * (EchoReactionLineHeight * lines) + EchoReactionWrapRoom
+        val rowHeight = if (lines > 1) maxOf(baseHeight, wrapped) else baseHeight
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(EchoLayout.GroupGap)) {
+            rows.forEachIndexed { row, reactions ->
+                Row(Modifier.fillMaxWidth().height(rowHeight), horizontalArrangement = Arrangement.spacedBy(EchoLayout.GroupGap)) {
+                    reactions.forEachIndexed { column, reaction ->
+                        EchoReactionButton(reaction, echoTileCorners(row, column, rows.size, reactions.size, selected = false)) {
+                            if (ready) {
+                                ready = false
+                                onReact(reaction)
+                            }
                         }
                     }
                 }
@@ -293,6 +303,8 @@ internal fun EchoDeckReactions(position: Int, metrics: EchoLayoutMetrics, onReac
         }
     }
 }
+
+internal val EchoReactionSidePadding = 12.dp
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -315,23 +327,19 @@ private fun RowScope.EchoReactionButton(reaction: EchoDeckReaction, corners: Ech
             pressedShape = RoundedCornerShape(EchoReactionPressedCorner),
         ),
         colors = ButtonDefaults.buttonColors(containerColor = container, contentColor = content),
-        contentPadding = PaddingValues(horizontal = 12.dp),
+        contentPadding = PaddingValues(horizontal = EchoReactionSidePadding),
         interactionSource = press,
     ) {
-        Icon(echoReactionIcon(reaction), null, Modifier.size(22.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(
-            stringResource(echoReactionLabel(reaction)),
-            style = style,
-            maxLines = 1,
-            autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = style.fontSize, stepSize = 0.5.sp),
-        )
+        EchoReactionContent(reaction, style)
     }
 }
 
 private val EchoReactionPressedCorner: Dp = 14.dp
 
-private fun echoReactionIcon(reaction: EchoDeckReaction): ImageVector = when (reaction) {
+/** A reaction button's room around its label: side padding, the icon and the gap after it. */
+internal val EchoDeckReactionChrome: Dp = EchoReactionSidePadding * 2 + EchoReactionIconRoom
+
+internal fun echoReactionIcon(reaction: EchoDeckReaction): ImageVector = when (reaction) {
     EchoDeckReaction.Like -> Icons.Rounded.ThumbUp
     EchoDeckReaction.Dislike -> Icons.Rounded.ThumbDown
     EchoDeckReaction.Listen -> Icons.Rounded.Headphones
