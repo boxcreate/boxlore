@@ -116,6 +116,9 @@ class OnboardingSearchLayoutTest {
         genre.value = "Comedy"
         render()
         assertFalse("the chips scroll away on a phone", chipsInGrid)
+        // The topic chips are the app's shared chips, a full touch target tall.
+        val chip = compose.onNode(hasText("Comedy") and SemanticsMatcher.expectValue(SemanticsProperties.Selected, true)).fetchSemanticsNode().boundsInRoot
+        assertTrue("the topic chip is ${chip.height}dp tall", chip.height >= 48f - 0.5f)
         listOf(BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE, BoxloreTestWindows.COVER_443, BoxloreTestWindows.PHONE).forEach { next ->
             resize(next)
             val short = next.heightDp < 480f || next == BoxloreTestWindows.COVER_443
