@@ -36,6 +36,9 @@ Announcement title:
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.
 - On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.
+- Explore's Top charts now number each show, and genre tags appear in your app's language. Ask anything results name the show each episode comes from.
+- Lore now opens on a card-shaped placeholder, says how long each episode is, and sits centred on tall tablet screens.
+- Lore history is now grouped by day, with filters for queued and skipped cards.
 
 ## Fixed
 
@@ -50,3 +53,5 @@ Announcement title:
 - Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.
+- Lore cards no longer cut off their question on folded or sideways screens; long text scrolls instead.
+- Explore's More genres sheet stays open when you rotate, unfold or resize the window, and a mood collection that couldn't load now offers Try again.
