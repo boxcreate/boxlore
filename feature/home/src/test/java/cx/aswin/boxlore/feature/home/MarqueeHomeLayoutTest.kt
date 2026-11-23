@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -41,7 +43,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /** Home over Marquee scrolls as one piece: the hero, its cover and the page's rounded edge move together, with no stop. */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], qualifiers = "w400dp-h800dp-mdpi")
+@Config(sdk = [33], qualifiers = "w1000dp-h1000dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class MarqueeHomeLayoutTest {
     @get:Rule val compose = createComposeRule()
@@ -63,29 +65,32 @@ class MarqueeHomeLayoutTest {
                     LocalDensity provides Density(base.density, fontScale.floatValue),
                 ) {
                     grid = rememberLazyStaggeredGridState()
-                    MarqueeHomeLayout(
-                        gridState = grid,
-                        barExpanded = { true },
-                        feed = {
-                            LazyVerticalStaggeredGrid(StaggeredGridCells.Fixed(1), state = grid, modifier = Modifier.fillMaxSize().testTag("feed")) {
-                                item(key = "hero") {
-                                    HeroCarousel(
-                                        heroItems = hero,
-                                        onPlayClick = { _, _ -> },
-                                        onDetailsClick = {},
-                                        onArrowClick = { _, _ -> },
-                                        onToggleSubscription = {},
-                                        onTogglePlayback = {},
-                                        currentPlayingPodcastId = null,
-                                        currentPlayingEpisodeId = null,
-                                        isPlaying = false,
-                                    )
+                    // Home fills the test window, so sideways windows are measured sideways.
+                    Box(Modifier.size(window.value.widthDp.dp, window.value.heightDp.dp)) {
+                        MarqueeHomeLayout(
+                            gridState = grid,
+                            barExpanded = { true },
+                            feed = {
+                                LazyVerticalStaggeredGrid(StaggeredGridCells.Fixed(1), state = grid, modifier = Modifier.fillMaxSize().testTag("feed")) {
+                                    item(key = "hero") {
+                                        HeroCarousel(
+                                            heroItems = hero,
+                                            onPlayClick = { _, _ -> },
+                                            onDetailsClick = {},
+                                            onArrowClick = { _, _ -> },
+                                            onToggleSubscription = {},
+                                            onTogglePlayback = {},
+                                            currentPlayingPodcastId = null,
+                                            currentPlayingEpisodeId = null,
+                                            isPlaying = false,
+                                        )
+                                    }
+                                    items(40, key = { "row$it" }) { Box(Modifier.fillMaxWidth().height(120.dp)) }
                                 }
-                                items(40, key = { "row$it" }) { Box(Modifier.fillMaxWidth().height(120.dp)) }
-                            }
-                        },
-                        topBar = { _, _, modifier -> Box(modifier.fillMaxWidth().height(BarHeight.dp)) },
-                    )
+                            },
+                            topBar = { _, _, modifier -> Box(modifier.fillMaxWidth().height(BarHeight.dp)) },
+                        )
+                    }
                 }
             }
         }
@@ -150,6 +155,8 @@ class MarqueeHomeLayoutTest {
             collection.value = grid
             window.value = layout
             compose.waitForIdle()
+            val viewport = compose.onNodeWithTag("feed").fetchSemanticsNode().size
+            assertEquals("the feed at ${layout.widthDp}x${layout.heightDp}", IntSize(layout.widthDp.toInt(), layout.heightDp.toInt()), viewport)
             failures += wordsUnderBar("${if (grid) "collection" else "episode"} at ${layout.widthDp}x${layout.heightDp}, text ${scale}x", grid)
         }
         assertTrue(failures.joinToString("\n"), failures.isEmpty())

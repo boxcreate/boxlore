@@ -8,8 +8,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -24,6 +26,7 @@ import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import java.util.Locale
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -79,8 +82,15 @@ class HeroContextLabelTest {
             resumeProgress = 0.34f,
         )
         composeRule.setContent {
+            // stringResource reads LocalContext, so German needs a German context as well as the configuration.
+            val base = LocalContext.current
             val configuration = Configuration(LocalConfiguration.current).apply { setLocale(locale.value) }
-            CompositionLocalProvider(LocalDensity provides Density(1f, scale.floatValue), LocalConfiguration provides configuration) {
+            val localized = remember(locale.value) { base.createConfigurationContext(configuration) }
+            CompositionLocalProvider(
+                LocalDensity provides Density(1f, scale.floatValue),
+                LocalConfiguration provides configuration,
+                LocalContext provides localized,
+            ) {
                 BoxLoreTheme(dynamicColor = false) {
                     Box(Modifier.width(width.intValue.dp).height(homeHeroHeight())) {
                         TideHeroCard(SmartHeroItem(HeroType.RESUME, show, "Resume"), {}, {}, null, null, false)
@@ -88,6 +98,7 @@ class HeroContextLabelTest {
                 }
             }
         }
+        val texts = mutableMapOf<Locale, String>()
         for (language in listOf(Locale.ENGLISH, Locale.GERMAN)) {
             for ((cardWidth, textScale) in listOf(272 to 1.3f, 304 to 1.3f, 320 to 1f)) {
                 locale.value = language
@@ -99,7 +110,9 @@ class HeroContextLabelTest {
                 val label = results.single()
                 val cut = (0 until label.lineCount).any { label.isLineEllipsized(it) }
                 assertTrue("$language ${cardWidth}dp at ${textScale}x: '${label.layoutInput.text}' is cut", !cut)
+                texts[language] = label.layoutInput.text.text
             }
         }
+        assertNotEquals("the German pass showed the English label", texts[Locale.ENGLISH], texts[Locale.GERMAN])
     }
 }

@@ -34,12 +34,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
@@ -177,7 +179,7 @@ fun YourShowsSection(
                     val activeId = activeShowId
                     // Home keeps each show's list scroll above its grid, so it survives window changes.
                     val sections = LocalHomeSectionsUiState.current
-                    val filteredScrollState = activeId?.let { sections?.showListScroll(it) } ?: rememberScrollState()
+                    val filteredScrollState = sections?.showListScroll(activeId) ?: rememberScrollState()
                     val filteredScrollConnection = remember(filteredScrollState) {
                         HomeEpisodeListScrollConnection(
                             canScrollForward = { filteredScrollState.canScrollForward },
@@ -274,8 +276,8 @@ private fun SelectedShowEpisodes(
     if ((frame.loading || frame.refreshing) &&
         frame.episodes.list.isEmpty()
     ) {
-        // Rows in the loaded rows' shape load in place, so the module keeps its height.
-        DenseEpisodeRowSkeleton(rows = SelectedShowSkeletonRows)
+        // Rows in the loaded rows' shape load in place under the same cap, so the module keeps its height.
+        DenseEpisodeRowSkeleton(rows = SelectedShowSkeletonRows, modifier = Modifier.heightIn(max = selectedShowListMaxHeight()).clipToBounds())
     } else if (frame.episodes.list.isEmpty()) {
         SelectedShowMessage(
             failed = frame.status.loadFailed,
@@ -295,8 +297,7 @@ private fun SelectedShowEpisodes(
             modifier =
             Modifier
                 .fillMaxWidth()
-                // A sideways phone caps the list well inside the window, so Home's own scroll stays easy to reach.
-                .heightIn(max = minOf(356.dp, (boxloreContentHeightDp() * 0.6f).dp))
+                .heightIn(max = selectedShowListMaxHeight())
                 .testTag("home_filtered_episodes")
                 .observeEpisodeListGestures(scrollConnection)
                 .nestedScroll(scrollConnection)
@@ -473,3 +474,7 @@ private fun Modifier.centredWithoutHeight(): Modifier = layout { measurable, con
 
 /** Placeholder rows a selected show shows while its episodes load. */
 private const val SelectedShowSkeletonRows = 4
+
+/** A sideways phone caps the selected show's list well inside the window, so Home's own scroll stays easy to reach. */
+@Composable
+private fun selectedShowListMaxHeight(): Dp = minOf(356.dp, (boxloreContentHeightDp() * 0.6f).dp)

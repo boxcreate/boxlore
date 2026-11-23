@@ -162,6 +162,12 @@ class HomeFeedTabletGateStateTest {
         val list = composeRule.onNodeWithTag("home_filtered_episodes").fetchSemanticsNode().boundsInRoot
         assertTrue("The list is ${list.height}dp tall in a 412dp window", list.height <= 412f * 0.6f + 0.5f)
         assertEquals("the list's scroll after turning", scrolled, sections.showListScroll(podcasts[1].id).value)
+        // While the show's episodes load, the rows in their place keep to the same cap.
+        uiState.value = state(selected = podcasts[1].id).copy(selectedPodcastEpisodes = emptyList(), isSelectedPodcastLoading = true)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(GRID).performScrollToKey("your_shows")
+        val loading = composeRule.onNodeWithTag("home_selected_show_loading", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertTrue("The loading rows are ${loading.height}dp tall in a 412dp window", loading.height <= 412f * 0.6f + 0.5f)
     }
 
     /**

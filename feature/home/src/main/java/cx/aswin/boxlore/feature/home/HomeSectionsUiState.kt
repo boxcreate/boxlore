@@ -102,8 +102,8 @@ internal class HomeSectionsUiState(
             restore = { saved ->
                 @Suppress("UNCHECKED_CAST")
                 val list = saved as List<Any?>
-                val ids = list[4] as List<String>
-                val offsets = list[5] as List<Int>
+                val ids = (list[4] as List<*>).filterIsInstance<String>()
+                val offsets = (list[5] as List<*>).filterIsInstance<Int>()
                 HomeSectionsUiState(
                     dailyRail = LazyListState(list[0] as Int, list[1] as Int),
                     offlineRail = LazyListState(list[2] as Int, list[3] as Int),

@@ -469,13 +469,13 @@ private fun rememberBriefCardState(briefing: Briefing): BriefCardState {
     val setExpanded: (Boolean) -> Unit = if (sections != null) { value -> sections.setBriefExpanded(edition, value) } else { value -> localExpanded = value }
     // A confirmed hide resets the saved step once the card leaves, so the Brief comes back (turned on
     // again in Settings) as its normal card, not on the question it was hidden from.
-    var hideConfirmed by remember(briefing.region, briefing.date) { mutableStateOf(false) }
-    val resetOnLeave by rememberUpdatedState(hideConfirmed)
+    // Read straight from the state in onDispose: the card can leave before it recomposes after a hide.
+    val hideConfirmed = remember(briefing.region, briefing.date) { mutableStateOf(false) }
     val currentSetStep by rememberUpdatedState(setStep)
     val currentSetExpanded by rememberUpdatedState(setExpanded)
     DisposableEffect(briefing.region, briefing.date) {
         onDispose {
-            if (resetOnLeave) {
+            if (hideConfirmed.value) {
                 currentSetStep(DailyBriefingCardState.NORMAL)
                 currentSetExpanded(false)
             }
@@ -486,6 +486,6 @@ private fun rememberBriefCardState(briefing: Briefing): BriefCardState {
         expanded = sections?.briefExpanded(edition) ?: localExpanded,
         setStep = setStep,
         setExpanded = setExpanded,
-        confirmHide = { hideConfirmed = true },
+        confirmHide = { hideConfirmed.value = true },
     )
 }

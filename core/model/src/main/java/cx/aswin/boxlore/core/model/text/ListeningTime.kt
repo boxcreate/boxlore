@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.core.model.text
 
+import kotlin.math.roundToLong
+
 /**
  * Whole minutes of listening left, one rule for every screen that says "time left", so Home's hero
  * and the mini player under it agree: a partial minute counts as a whole one, and there is always at
@@ -20,6 +22,7 @@ object ListeningTime {
         if (durationSec <= 0L) return null
         val played = if (progress.isFinite()) progress.coerceIn(0f, 1f) else 0f
         val durationMs = durationSec * 1_000L
-        return minutesLeft((durationMs * played.toDouble()).toLong(), durationMs)
+        // Rounded, not cut down: 14 of 20 minutes stored as 0.7f is 839,999.98ms, and must still leave 6.
+        return minutesLeft((durationMs * played.toDouble()).roundToLong(), durationMs)
     }
 }

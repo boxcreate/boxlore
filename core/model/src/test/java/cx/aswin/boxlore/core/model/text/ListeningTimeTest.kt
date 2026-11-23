@@ -21,6 +21,9 @@ class ListeningTimeTest {
             val positionMs = (durationSec * 1_000L * progress.toDouble()).toLong()
             assertEquals(ListeningTime.minutesLeft(positionMs, durationSec * 1_000L), ListeningTime.minutesLeft(durationSec, progress))
         }
+        // 14 of 20 minutes stored as a share (0.7f) sits a hair under 14 minutes; it still leaves 6, as the mini player says.
+        assertEquals(6L, ListeningTime.minutesLeft(positionMs = 840_000L, durationMs = 1_200_000L))
+        assertEquals(6L, ListeningTime.minutesLeft(durationSec = 1_200L, progress = 14f / 20f))
     }
 
     @Test fun `unknown lengths give nothing and the end still leaves a minute`() {

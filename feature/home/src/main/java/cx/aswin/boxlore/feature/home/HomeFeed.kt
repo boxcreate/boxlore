@@ -190,33 +190,38 @@ internal fun PodcastFeed(
 /**
  * A staggered grid starts again from the top when its column count changes, as it does when a phone
  * turns sideways (2 poster columns to 5) or a window is resized. Home puts the listener back on the
- * item and offset they were at, in both directions.
+ * same content, in both directions: the item they were on (its index can change, as tablets put Your
+ * shows and the Brief in one item), or in Explore the row that now holds the show they had reached.
  */
 @Composable
 private fun KeepGridPlaceAcrossColumnChanges(state: LazyStaggeredGridState, columns: Int) {
     val place = remember(state) { GridPlace(columns) }
     LaunchedEffect(state, columns) {
         if (place.columns != columns) {
+            val target = place.targetFor(columns)
             place.columns = columns
-            val index = place.index
-            val offset = place.offset
             // Only undo the grid's jump back to the top; a scroll made since stands.
             withFrameNanos { }
             val atTop = state.firstVisibleItemIndex == 0 && state.firstVisibleItemScrollOffset == 0
-            if (atTop && (index > 0 || offset > 0)) state.scrollToItem(index, offset)
+            if (atTop && target != null) state.scrollTo(target)
         }
         snapshotFlow { state.firstVisibleItemIndex to state.firstVisibleItemScrollOffset }.collect { (index, offset) ->
-            place.index = index
-            place.offset = offset
+            val key = state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }?.key
+            place.record(index, offset, key, columns)
         }
     }
 }
 
-/** The grid's last settled place and the column count it was measured with. Not state: it never redraws anything. */
-private class GridPlace(var columns: Int) {
-    var index = 0
-    var offset = 0
+/** Only items on screen report their keys, so this looks around the old index, then settles on the target. */
+private suspend fun LazyStaggeredGridState.scrollTo(target: GridTarget) {
+    val last = (layoutInfo.totalItemsCount - 1).coerceAtLeast(0)
+    scrollToItem((target.index - GRID_LOOK_BEHIND).coerceIn(0, last))
+    val visible = layoutInfo.visibleItemsInfo.map { it.index to it.key }
+    val found = gridTargetIndex(target, visible)
+    scrollToItem((found ?: target.index).coerceIn(0, last), target.offset)
 }
+
+private const val GRID_LOOK_BEHIND = 2
 
 internal data class PodcastFeedDerivedState(
     val viewportReady: Boolean,

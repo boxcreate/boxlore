@@ -138,24 +138,29 @@ class ShortHeroCardsTest {
         val target = if (style.value == HeroCardStyle.BLOCK || style.value == HeroCardStyle.DUOTONE) "artwork" else "play"
         val targets = (0 until 4).map { index -> index to rectOrNull("home_hero_collection_${index}_$target") }
         val panel = rectOrNull("home_hero_tide_panel")
-        val failures = mutableListOf<String>()
-        targets.forEach { (index, target) ->
-            when {
-                target == null -> failures += "$label: episode ${index + 1} has no Play target"
-                !hero.contains(target) -> failures += "$label: Play $target leaves the card $hero"
-                target.width < 48f - 0.5f || target.height < 48f - 0.5f -> failures += "$label: Play target is ${target.width}x${target.height}dp"
-                panel != null && target.overlaps(panel) -> failures += "$label: Play ${index + 1} $target is under the panel $panel"
-            }
-            // Cover's tiles draw their words over the cover: they keep clear of the Play button's 32dp disc.
-            val title = rectOrNull("home_hero_collection_${index}_title")
-            if (target != null && title != null && style.value == HeroCardStyle.COVER && title.overlaps(target.deflate(8f))) {
-                failures += "$label: episode ${index + 1}'s title $title runs under its Play button $target"
-            }
+        val failures = targets.flatMapTo(mutableListOf()) { (index, target) ->
+            listOfNotNull(playTargetFailure(label, index, target, hero, panel), target?.let { coverTitleFailure(label, index, it) })
         }
         val count = composeRule.onAllNodesWithTag("home_hero_collection_count", useUnmergedTree = true).fetchSemanticsNodes().firstOrNull()
         val shown = count?.config?.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }
         if (count != null && shown != targets.count { it.second != null }.toString()) failures += "$label: the count says $shown"
         return failures
+    }
+
+    /** Why episode [index]'s Play [target] fails: missing, outside the card, under 48dp or under Tide's [panel]. */
+    private fun playTargetFailure(label: String, index: Int, target: Rect?, hero: Rect, panel: Rect?): String? = when {
+        target == null -> "$label: episode ${index + 1} has no Play target"
+        !hero.contains(target) -> "$label: Play $target leaves the card $hero"
+        target.width < 48f - 0.5f || target.height < 48f - 0.5f -> "$label: Play target is ${target.width}x${target.height}dp"
+        panel != null && target.overlaps(panel) -> "$label: Play ${index + 1} $target is under the panel $panel"
+        else -> null
+    }
+
+    /** Cover's tiles draw their words over the cover: they keep clear of the Play button's 32dp disc. */
+    private fun coverTitleFailure(label: String, index: Int, target: Rect): String? {
+        if (style.value != HeroCardStyle.COVER) return null
+        val title = rectOrNull("home_hero_collection_${index}_title") ?: return null
+        return "$label: episode ${index + 1}'s title $title runs under its Play button $target".takeIf { title.overlaps(target.deflate(8f)) }
     }
 
     @Test

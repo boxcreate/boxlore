@@ -37,7 +37,7 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * The show picker under Because you like: a sheet on phones and a centred panel on tablets, with the
  * current pick marked, every show reachable at large text, and the list's place kept when the window
- * crosses the 840dp panel width in both directions without closing the picker.
+ * crosses the 840dp panel width and the 480dp height in both directions without closing the picker.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], qualifiers = "w1300dp-h1300dp-mdpi", application = Application::class)
@@ -98,19 +98,25 @@ class HomeSheetsAdaptiveTest {
     }
 
     @Test
-    fun `tablets show a centred panel and the list keeps its place across 840dp both ways`() {
+    fun `tablets show a centred panel and the list keeps its place across 840dp and 480dp both ways`() {
         window.value = BoxloreTestWindows.TABLET
         render()
         val panel = compose.onNodeWithTag("expanded_sheet_panel", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         assertTrue("The panel is ${panel.width}dp wide", panel.width <= 640f + 0.5f)
         compose.onNodeWithTag("home_change_show_list").performScrollToNode(hasTestTag("home_change_show_${shows[10].id}"))
         compose.waitForIdle()
-        for (layout in listOf(BoxloreTestWindows.W841, BoxloreTestWindows.W839, BoxloreTestWindows.W841, BoxloreTestWindows.W839)) {
+        // 840dp wide and 480dp tall each switch between the panel and the sheet.
+        val widths = with(BoxloreTestWindows) { listOf(W841, W839, W841, W839) }
+        val heights = with(BoxloreTestWindows) { listOf(W900_H480, W900_H479, W900_H480, W900_H479) }
+        val windows = widths + heights
+        for (layout in windows) {
             window.value = layout
             compose.waitForIdle()
             val label = "${layout.widthDp}x${layout.heightDp}"
             compose.onNodeWithTag("home_change_show_${shows[10].id}").assertIsDisplayed()
             assertEquals("$label: the picker closed", 0, dismissals)
         }
+        compose.onNodeWithTag("home_change_show_${shows[10].id}").performClick()
+        assertEquals("the pick after the changes", listOf<Podcast?>(shows[10]), picks)
     }
 }
