@@ -33,6 +33,7 @@ import cx.aswin.boxlore.feature.home.components.LocalHeroCardStyle
 import cx.aswin.boxlore.feature.home.components.homeHeroStyle
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -104,6 +105,37 @@ class HomeFeedTabletGateStateTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithTag(GRID).performScrollToKey("your_shows")
         assertTrue("the hide question is gone after the Brief came back", exists("home_brief_hide_today"))
+    }
+
+    @Test
+    fun `a Brief hidden and turned back on comes back as its normal card`() {
+        uiState.value = state(briefing = brief)
+        render()
+        for ((confirm, layout) in listOf(
+            "home_brief_hide_today" to BoxloreTestWindows.W599_H900,
+            "home_brief_confirm_always_hide" to BoxloreTestWindows.W599_H900,
+            "home_brief_hide_today" to BoxloreTestWindows.TABLET,
+            "home_brief_confirm_always_hide" to BoxloreTestWindows.TABLET,
+        )) {
+            window.value = layout
+            uiState.value = state(briefing = brief)
+            composeRule.waitForIdle()
+            val key = if (layout.usesTabletLayout) "your_shows" else "briefing"
+            composeRule.onNodeWithTag(GRID).performScrollToKey(key)
+            click("home_brief_hide")
+            if (confirm == "home_brief_confirm_always_hide") click("home_brief_always_hide")
+            click(confirm)
+            // Home hides the Brief; Settings turns it back on and the same edition returns.
+            uiState.value = state(briefing = null)
+            composeRule.waitForIdle()
+            uiState.value = state(briefing = brief)
+            composeRule.waitForIdle()
+            composeRule.onNodeWithTag(GRID).performScrollToKey(key)
+            val label = "$confirm at ${layout.widthDp}x${layout.heightDp}"
+            assertFalse("$label: the Brief came back on its hide question", exists("home_brief_hide_today"))
+            assertFalse("$label: the Brief came back on its always-hide question", exists("home_brief_confirm_always_hide"))
+            assertTrue("$label: the Brief came back without its hide button", exists("home_brief_hide"))
+        }
     }
 
     @Test

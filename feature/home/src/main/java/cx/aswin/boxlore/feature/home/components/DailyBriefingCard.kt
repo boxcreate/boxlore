@@ -36,9 +36,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
@@ -111,6 +113,20 @@ fun DailyBriefingCard(
     val cardState = briefState.step
     val setExpanded = briefState.setExpanded
     val setCardState = briefState.setStep
+    // A confirmed hide resets the saved step once the card leaves, so the Brief comes back (turned on
+    // again in Settings) as its normal card, not on the question it was hidden from.
+    var hideConfirmed by remember(briefing.region, briefing.date) { mutableStateOf(false) }
+    val resetOnLeave by rememberUpdatedState(hideConfirmed)
+    val currentSetCardState by rememberUpdatedState(setCardState)
+    val currentSetExpanded by rememberUpdatedState(setExpanded)
+    DisposableEffect(briefing.region, briefing.date) {
+        onDispose {
+            if (resetOnLeave) {
+                currentSetCardState(DailyBriefingCardState.NORMAL)
+                currentSetExpanded(false)
+            }
+        }
+    }
     val locale = currentLocale()
     val displayDate = remember(briefing.date, locale) { briefingCardDate(briefing.date, locale) }
     val durationMinutes = if (chapters.isNotEmpty()) ((chapters.last().startTime + 30) / 60).toInt().coerceAtLeast(1) else null
@@ -168,6 +184,7 @@ fun DailyBriefingCard(
                                             primary = stringResource(R.string.briefing_hide_today),
                                             onPrimary = {
                                                 track("dismissed_today")
+                                                hideConfirmed = true
                                                 onDismiss()
                                             },
                                             primaryModifier = Modifier.testTag("home_brief_hide_today"),
@@ -186,6 +203,7 @@ fun DailyBriefingCard(
                                             primary = stringResource(R.string.briefing_confirm_always_hide),
                                             onPrimary = {
                                                 track("dismissed_forever")
+                                                hideConfirmed = true
                                                 onDismissForever()
                                             },
                                             primaryModifier = Modifier.testTag("home_brief_confirm_always_hide"),
