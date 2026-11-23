@@ -107,9 +107,9 @@
     <string name="lore_unknown_artist">Desconhecido</string>
     <string name="lore_deck_empty">Acabaram as curiosidades de hoje!</string>
     <string name="lore_history_title">Seu histórico do Lore</string>
-    <string name="lore_history_subtitle">Perguntas que você dispensou ou pôs na fila, prontas para redescobrir.</string>
+    <string name="lore_history_subtitle">Perguntas que você pulou ou pôs na fila, prontas para redescobrir.</string>
     <string name="lore_history_empty_title">Nada do Lore para rever ainda</string>
-    <string name="lore_history_empty_body">Perguntas que você dispensar ou puser na fila ficam aqui, prontas para outra olhada.</string>
+    <string name="lore_history_empty_body">Perguntas que você pular ou puser na fila ficam aqui, prontas para outra olhada.</string>
     <string name="lore_history_clear">Limpar histórico</string>
     <string name="lore_history_clear_title">Limpar o histórico de cards?</string>
     <string name="lore_history_clear_body">Isso remove do histórico os cards que você deslizou ou pôs na fila. Não afeta o histórico de reprodução.</string>
@@ -117,7 +117,12 @@
     <string name="lore_history_cancel">Cancelar</string>
     <string name="lore_history_restore">Restaurar card</string>
     <!-- History row status: the card was swiped away. -->
-    <string name="lore_history_dismissed">Dispensado</string>
+    <string name="lore_history_dismissed">Pulada</string>
     <!-- History row status: the card's episode was added to the queue. -->
     <string name="lore_history_queued">Na fila</string>
+    <string name="lore_history_filter_all">Todas</string>
+    <string name="lore_history_today">Hoje</string>
+    <string name="lore_history_yesterday">Ontem</string>
+    <string name="lore_history_this_week">Esta semana</string>
+    <string name="lore_history_earlier">Antes</string>
 </resources>

@@ -108,9 +108,9 @@
     <string name="lore_unknown_artist">Unknown</string>
     <string name="lore_deck_empty">No more curiosities for today!</string>
     <string name="lore_history_title">Your Lore history</string>
-    <string name="lore_history_subtitle">Questions you dismissed or queued, ready to rediscover.</string>
+    <string name="lore_history_subtitle">Questions you skipped or queued, ready to rediscover.</string>
     <string name="lore_history_empty_title">No Lore to revisit yet</string>
-    <string name="lore_history_empty_body">Questions you dismiss or queue will wait here, ready for another look.</string>
+    <string name="lore_history_empty_body">Questions you skip or queue will wait here, ready for another look.</string>
     <string name="lore_history_clear">Clear history</string>
     <string name="lore_history_clear_title">Clear card history?</string>
     <string name="lore_history_clear_body">This removes your swiped and queued cards from history. It does not affect listening history.</string>
@@ -118,7 +118,17 @@
     <string name="lore_history_cancel">Cancel</string>
     <string name="lore_history_restore">Restore card</string>
     <!-- History row status: the card was swiped away. -->
-    <string name="lore_history_dismissed">Dismissed</string>
+    <string name="lore_history_dismissed">Skipped</string>
     <!-- History row status: the card's episode was added to the queue. -->
     <string name="lore_history_queued">Queued</string>
+    <!-- Lore history filter: show every card, queued and skipped. -->
+    <string name="lore_history_filter_all">All</string>
+    <!-- Lore history group heading: cards seen today. -->
+    <string name="lore_history_today">Today</string>
+    <!-- Lore history group heading: cards seen yesterday. -->
+    <string name="lore_history_yesterday">Yesterday</string>
+    <!-- Lore history group heading: cards seen earlier this week. -->
+    <string name="lore_history_this_week">This week</string>
+    <!-- Lore history group heading: older cards saved without a date. -->
+    <string name="lore_history_earlier">Earlier</string>
 </resources>

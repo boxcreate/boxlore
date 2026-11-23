@@ -3,7 +3,7 @@ package cx.aswin.boxlore.feature.explore
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,46 +12,47 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.rounded.ClearAll
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
-import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
-import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogConfirmButton
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogDismissButton
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogIcon
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogIconTone
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeContentPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.text.LocaleFormats
+import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,6 +65,9 @@ fun LearnHistoryScreen(
     TrackScreenView("learn_history")
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showClearDialog by remember { mutableStateOf(false) }
+    // The filter and scroll belong to the screen, so they survive resizing and recreation.
+    var filter by rememberSaveable { mutableStateOf(LearnHistoryFilter.All) }
+    val listState = rememberLazyListState()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
@@ -84,20 +88,19 @@ fun LearnHistoryScreen(
             onDismissRequest = { showClearDialog = false },
             title = { Text(stringResource(R.string.lore_history_clear_title)) },
             text = { Text(stringResource(R.string.lore_history_clear_body)) },
+            icon = { BoxloreDialogIcon(Icons.Rounded.ClearAll, tone = BoxloreDialogIconTone.Destructive) },
             confirmButton = {
-                TextButton(
+                BoxloreDialogConfirmButton(
+                    text = stringResource(R.string.lore_history_clear_confirm),
+                    destructive = true,
                     onClick = {
                         viewModel.clearAll()
                         showClearDialog = false
-                    }
-                ) {
-                    Text(stringResource(R.string.lore_history_clear_confirm))
-                }
+                    },
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) {
-                    Text(stringResource(R.string.lore_history_cancel))
-                }
+                BoxloreDialogDismissButton(text = stringResource(R.string.lore_history_cancel), onClick = { showClearDialog = false })
             }
         )
     }
@@ -109,18 +112,15 @@ fun LearnHistoryScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .windowInsetsPadding(WindowInsets.statusBars)
+                        .boxloreHorizontalSafePadding()
                         .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
-                    Surface(
-                        shape = androidx.compose.foundation.shape.CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        tonalElevation = 2.dp,
-                        modifier = Modifier.align(Alignment.CenterStart)
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.explore_back))
-                        }
-                    }
+                    LoreRoundIconButton(
+                        icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                        label = stringResource(R.string.explore_back),
+                        onClick = onBack,
+                        modifier = Modifier.align(Alignment.CenterStart),
+                    )
                     androidx.compose.foundation.Image(
                         painter = androidx.compose.ui.res.painterResource(
                             id = cx.aswin.boxlore.core.designsystem.R.drawable.logo_lore
@@ -136,16 +136,12 @@ fun LearnHistoryScreen(
                     if (uiState is LearnHistoryUiState.Success &&
                         (uiState as LearnHistoryUiState.Success).entries.isNotEmpty()
                     ) {
-                        Surface(
-                            shape = androidx.compose.foundation.shape.CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            tonalElevation = 2.dp,
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                        ) {
-                            IconButton(onClick = { showClearDialog = true }) {
-                                Icon(Icons.Rounded.ClearAll, contentDescription = stringResource(R.string.lore_history_clear))
-                            }
-                        }
+                        LoreRoundIconButton(
+                            icon = Icons.Rounded.ClearAll,
+                            label = stringResource(R.string.lore_history_clear),
+                            onClick = { showClearDialog = true },
+                            modifier = Modifier.align(Alignment.CenterEnd),
+                        )
                     }
                 }
             },
@@ -170,58 +166,95 @@ fun LearnHistoryScreen(
                                 .fillMaxSize()
                                 .padding(innerPadding)
                                 .padding(bottom = bottomContentPadding)
+                                .boxloreHorizontalSafePadding()
                         )
                     } else {
-                        LazyColumn(
-                            modifier = Modifier
-                                .boxloreCardWidth(BoxloreCardFamily.Reading)
-                                .fillMaxSize()
-                                .padding(innerPadding),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                                start = 16.dp,
-                                end = 16.dp,
-                                top = 8.dp,
-                                bottom = bottomContentPadding + 16.dp
+                        LearnHistoryList(
+                            entries = state.entries,
+                            filter = filter,
+                            onFilter = { filter = it },
+                            listState = listState,
+                            contentPadding = boxloreHorizontalSafeContentPadding(
+                                PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = bottomContentPadding + 16.dp),
                             ),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            item {
-                                Column(
-                                    modifier = Modifier.padding(
-                                        start = 4.dp,
-                                        end = 4.dp,
-                                        bottom = 8.dp
-                                    )
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.lore_history_title),
-                                        style = MaterialTheme.typography.headlineMedium,
-                                        fontWeight = GoogleSansWeight.bold
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = stringResource(R.string.lore_history_subtitle),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            items(state.entries, key = { it.episodeId }) { entry ->
-                                LearnHistoryRow(
-                                    entry = entry,
-                                    onClick = {
-                                        onEpisodeClick(entry.toLearnCuriosityCard().toEpisode())
-                                    },
-                                    onRestore = { viewModel.restoreEntry(entry.episodeId) }
-                                )
-                            }
-                        }
+                            onEpisodeClick = { entry -> onEpisodeClick(entry.toLearnCuriosityCard().toEpisode()) },
+                            onRestore = { entry -> viewModel.restoreEntry(entry.episodeId) },
+                            modifier = Modifier.fillMaxSize().padding(innerPadding),
+                        )
                     }
                 }
             }
         }
     }
 }
+
+/** The title, the filters and the cards grouped by when they were seen, in one readable column. */
+@Composable
+@Suppress("LongParameterList") // The list's content, its screen-owned state and its two actions.
+private fun LearnHistoryList(
+    entries: List<LearnHistoryEntry>,
+    filter: LearnHistoryFilter,
+    onFilter: (LearnHistoryFilter) -> Unit,
+    listState: LazyListState,
+    contentPadding: PaddingValues,
+    onEpisodeClick: (LearnHistoryEntry) -> Unit,
+    onRestore: (LearnHistoryEntry) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val locale = currentLocale()
+    val groups = remember(entries, filter, locale) {
+        groupLearnHistory(entries.filter(filter::keeps), System.currentTimeMillis(), ZoneId.systemDefault(), locale)
+    }
+    LazyColumn(
+        state = listState,
+        modifier = modifier,
+        contentPadding = contentPadding,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        item(key = "history_title") {
+            Column(Modifier.boxloreReadingColumn(LearnHistoryMaxWidthDp).padding(start = 4.dp, end = 4.dp, bottom = 12.dp)) {
+                Text(
+                    text = stringResource(R.string.lore_history_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = GoogleSansWeight.bold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.lore_history_subtitle),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        item(key = "history_filters") {
+            LearnHistoryFilterRow(selected = filter, onSelect = onFilter, modifier = Modifier.boxloreReadingColumn(LearnHistoryMaxWidthDp))
+        }
+        groups.forEach { group ->
+            item(key = "history_group_${group.period.key()}") {
+                LearnHistoryGroupHeader(group.period, Modifier.boxloreReadingColumn(LearnHistoryMaxWidthDp))
+            }
+            itemsIndexed(group.entries, key = { _, entry -> entry.episodeId }) { index, entry ->
+                LearnHistoryRow(
+                    entry = entry,
+                    shape = learnHistoryRowShape(index, group.entries.size),
+                    onClick = { onEpisodeClick(entry) },
+                    onRestore = { onRestore(entry) },
+                    modifier = Modifier.boxloreReadingColumn(LearnHistoryMaxWidthDp).testTag(LEARN_HISTORY_ROW_TAG),
+                )
+            }
+        }
+    }
+}
+
+private fun LearnHistoryPeriod.key(): String = when (this) {
+    is LearnHistoryPeriod.Month -> "$year-$month"
+    else -> toString()
+}
+
+/** Lore history's list, title and empty card stay this wide at most on every window. */
+private const val LearnHistoryMaxWidthDp = 720f
+
+internal const val LEARN_HISTORY_ROW_TAG = "learn_history_row"
 
 @Composable
 private fun LearnHistoryEmptyState(modifier: Modifier = Modifier) {
@@ -233,7 +266,7 @@ private fun LearnHistoryEmptyState(modifier: Modifier = Modifier) {
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             tonalElevation = 4.dp,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.boxloreReadingColumn(LearnHistoryMaxWidthDp)
         ) {
             Column(
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 36.dp),
@@ -268,102 +301,6 @@ private fun LearnHistoryEmptyState(modifier: Modifier = Modifier) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LearnHistoryRow(
-    entry: LearnHistoryEntry,
-    onClick: () -> Unit,
-    onRestore: () -> Unit
-) {
-    val imageUrl = loreArtworkSources(entry.imageUrl, entry.feedImage).firstOrNull()
-    val actionLabel = when (entry.action) {
-        LearnHistoryAction.DISMISS -> stringResource(R.string.lore_history_dismissed)
-        LearnHistoryAction.QUEUE -> stringResource(R.string.lore_history_queued)
-    }
-    val locale = currentLocale()
-    val dateLabel = remember(entry.dismissedAtMs, locale) {
-        if (entry.dismissedAtMs <= 0L) {
-            ""
-        } else {
-            LocaleFormats.date(entry.dismissedAtMs, LocaleFormats.DateStyle.DAY_MONTH, locale)
-        }
-    }
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .boxloreCardWidth(BoxloreCardFamily.Episode)
-            .expressiveClickable(shape = MaterialTheme.shapes.extraLarge, onClick = onClick),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 2.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            OptimizedImage(
-                url = imageUrl.orEmpty(),
-                fallbackUrls = loreArtworkSources(entry.imageUrl, entry.feedImage),
-                proxyWidth = 160,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
-            )
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = entry.question.ifBlank { entry.episodeTitle },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = GoogleSansWeight.bold
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                if (entry.question.isNotBlank()) {
-                    Text(
-                        text = entry.episodeTitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                if (!entry.podcastTitle.isNullOrBlank()) {
-                    Text(
-                        text = entry.podcastTitle,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                Surface(
-                    shape = androidx.compose.foundation.shape.CircleShape,
-                    color = when (entry.action) {
-                        LearnHistoryAction.DISMISS -> MaterialTheme.colorScheme.errorContainer
-                        LearnHistoryAction.QUEUE -> MaterialTheme.colorScheme.tertiaryContainer
-                    }
-                ) {
-                    Text(
-                        text = listOf(actionLabel, dateLabel)
-                            .filter { it.isNotBlank() }
-                            .joinToString(" · "),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = GoogleSansWeight.bold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            androidx.compose.material3.FilledTonalIconButton(onClick = onRestore) {
-                Icon(Icons.AutoMirrored.Rounded.Undo, contentDescription = stringResource(R.string.lore_history_restore))
             }
         }
     }

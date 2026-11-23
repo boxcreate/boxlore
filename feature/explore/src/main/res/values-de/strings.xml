@@ -96,15 +96,20 @@
     <string name="lore_unknown_artist">Unbekannt</string>
     <string name="lore_deck_empty">Für heute keine Kuriositäten mehr!</string>
     <string name="lore_history_title">Dein Lore-Verlauf</string>
-    <string name="lore_history_subtitle">Fragen, die du weggewischt oder eingereiht hast, bereit zum Wiederentdecken.</string>
+    <string name="lore_history_subtitle">Fragen, die du übersprungen oder eingereiht hast, bereit zum Wiederentdecken.</string>
     <string name="lore_history_empty_title">Noch nichts aus Lore zum Wiederansehen</string>
-    <string name="lore_history_empty_body">Fragen, die du wegwischst oder einreihst, warten hier auf einen zweiten Blick.</string>
+    <string name="lore_history_empty_body">Fragen, die du überspringst oder einreihst, warten hier auf einen zweiten Blick.</string>
     <string name="lore_history_clear">Verlauf löschen</string>
     <string name="lore_history_clear_title">Kartenverlauf löschen?</string>
     <string name="lore_history_clear_body">Damit werden deine weggewischten und eingereihten Karten aus dem Verlauf entfernt. Dein Hörverlauf bleibt unverändert.</string>
     <string name="lore_history_clear_confirm">Löschen</string>
     <string name="lore_history_cancel">Abbrechen</string>
     <string name="lore_history_restore">Karte wiederherstellen</string>
-    <string name="lore_history_dismissed">Weggewischt</string>
+    <string name="lore_history_dismissed">Übersprungen</string>
     <string name="lore_history_queued">Eingereiht</string>
+    <string name="lore_history_filter_all">Alle</string>
+    <string name="lore_history_today">Heute</string>
+    <string name="lore_history_yesterday">Gestern</string>
+    <string name="lore_history_this_week">Diese Woche</string>
+    <string name="lore_history_earlier">Früher</string>
 </resources>
