@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
@@ -274,20 +273,6 @@ fun EpisodeListItem(
                     PodcastEpisodeProgress(it, timeLeft, accentColor)
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun EpisodeTypeChip(label: String, video: Boolean = false) {
-    Surface(shape = ExpressiveShapes.Pill, color = MaterialTheme.colorScheme.surfaceContainerHigh, contentColor = MaterialTheme.colorScheme.onSurfaceVariant) {
-        Row(
-            Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (video) Icon(Icons.Rounded.Videocam, null, Modifier.size(14.dp))
-            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = GoogleSansWeight.medium)
         }
     }
 }

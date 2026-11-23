@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -188,8 +187,8 @@ private fun EpisodeArtworkTags(episode: Episode, modifier: Modifier = Modifier) 
             "trailer" -> R.string.episode_info_trailer
             else -> null
         }
-        type?.let { QuietMetadataChip(stringResource(it)) }
-        if (episode.enclosureType?.startsWith("video/") == true) QuietMetadataChip(stringResource(R.string.episode_info_video))
+        type?.let { EpisodeTypeChip(stringResource(it), size = EpisodeTypeChipSize.Medium) }
+        if (episode.enclosureType?.startsWith("video/") == true) EpisodeTypeChip(stringResource(R.string.episode_info_video), video = true, size = EpisodeTypeChipSize.Medium)
     }
 }
 
@@ -202,13 +201,6 @@ private fun episodeNumberLabel(episode: Episode): String? {
         number > 0 -> stringResource(R.string.episode_info_number, number)
         season > 0 -> stringResource(R.string.episode_info_season, season)
         else -> null
-    }
-}
-
-@Composable
-private fun QuietMetadataChip(label: String) {
-    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, contentColor = MaterialTheme.colorScheme.onSurface, shadowElevation = 1.dp) {
-        Text(label, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
     }
 }
 
