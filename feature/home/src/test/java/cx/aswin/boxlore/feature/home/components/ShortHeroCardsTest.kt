@@ -81,7 +81,7 @@ class ShortHeroCardsTest {
                     show(current, collection = false, scale, height)
                     failures += singleCardFailures("$current at ${height.value}dp, text ${scale}x", tide = current == HeroCardStyle.TIDE)
                 }
-                listOf(HeroCardStyle.COVER, HeroCardStyle.BLOCK).forEach { current ->
+                SINGLE_STYLES.forEach { current ->
                     show(current, collection = true, scale, height)
                     failures += collectionFailures("$current collection at ${height.value}dp, text ${scale}x")
                 }
@@ -106,15 +106,36 @@ class ShortHeroCardsTest {
         val items = List(4) { show(it) }
         when (style.value) {
             HeroCardStyle.COVER -> CoverHeroGridCard(items, "Jump back in", HeroGridMode.Resume, {}, {}, null, null, false)
+            HeroCardStyle.DUOTONE -> DuotoneHeroGridCard(items, "Jump back in", HeroGridMode.Resume, {}, {}, null, null, false)
+            HeroCardStyle.HALO -> HaloHeroGridCard(items, "Jump back in", HeroGridMode.Resume, {}, {}, null, null, false)
+            HeroCardStyle.TIDE -> TideHeroGridCard(items, "Jump back in", HeroGridMode.Resume, {}, {}, null, null, false)
             else -> HeroGridCard(items, "Jump back in", HeroGridMode.Resume, {})
         }
     }
 
+    /** Every collection row that shows keeps its Play target whole inside the card and at least 48dp each way. */
     private fun collectionFailures(label: String): List<String> {
         val hero = rect("short_hero")
-        return (0 until 4).mapNotNull { index -> rectOrNull("home_hero_collection_${index}_play") }
-            .filterNot { hero.contains(it) }
-            .map { "$label: Play $it leaves the card $hero" }
+        val targets = (0 until 4).mapNotNull { index -> rectOrNull("home_hero_collection_${index}_target") ?: rectOrNull("home_hero_collection_${index}_play") }
+        val failures = mutableListOf<String>()
+        if (targets.isEmpty()) failures += "$label: no Play target shows"
+        targets.forEach { target ->
+            if (!hero.contains(target)) failures += "$label: Play $target leaves the card $hero"
+            if (target.width < 48f - 0.5f || target.height < 48f - 0.5f) failures += "$label: Play target is ${target.width}x${target.height}dp"
+        }
+        return failures
+    }
+
+    @Test
+    fun `collection cards keep every row on tall heroes`() {
+        composeRule.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreTestWindows.PHONE) {
+                BoxLoreTheme(dynamicColor = false) {
+                    Box(Modifier.size(320.dp, 416.dp)) { HeroGridCard(List(4) { show(it) }, "Jump back in", HeroGridMode.Resume, {}) }
+                }
+            }
+        }
+        (0 until 4).forEach { index -> composeRule.onNodeWithTag("home_hero_collection_$index", useUnmergedTree = true).assertExists() }
     }
 
     @Test

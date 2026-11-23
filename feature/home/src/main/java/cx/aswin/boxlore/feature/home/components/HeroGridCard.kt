@@ -7,11 +7,13 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.TextAutoSize
@@ -51,6 +53,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -115,8 +118,11 @@ fun HeroGridCard(
                     )
                 }
                 Spacer(Modifier.height(12.dp))
-                Column(Modifier.weight(1f)) {
-                    displayItems.forEachIndexed { index, podcast ->
+                BoxWithConstraints(Modifier.weight(1f)) {
+                    // A short hero shows only the rows that keep their Play cover a full 48dp target.
+                    val rows = displayItems.take(collectionRowsThatFit(maxHeight, displayItems.size))
+                    Column(Modifier.fillMaxSize()) {
+                    rows.forEachIndexed { index, podcast ->
                         if (index > 0) HorizontalDivider(color = foreground.copy(alpha = 0.15f))
                         val nowPlaying = HomePlaybackStateLogic.isHeroItemPlaying(
                             itemEpisodeId = podcast.latestEpisode?.id,
@@ -138,6 +144,7 @@ fun HeroGridCard(
                             foreground = foreground,
                             artworkColorFilter = artworkColorFilter?.invoke(podcast),
                         )
+                    }
                     }
                 }
             }
@@ -237,7 +244,8 @@ private fun HeroCollectionRow(
         Row(
             Modifier.fillMaxSize().testTag(tag)
                 .expressiveClickable(enabled = enabled, shape = HomeHeroStyle.CollectionArtworkShape) { currentOnClick(currentPodcast) }
-                .padding(vertical = padding),
+                // Compact rows let the cover's Play target take the row's full height (at least 48dp).
+                .padding(vertical = if (compact) 0.dp else padding),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -250,7 +258,14 @@ private fun HeroCollectionRow(
             } else {
                 Modifier
             }
-            Box(Modifier.size(artworkSize).testTag("${tag}_artwork").then(artworkAction)) {
+            // On compact rows the cover keeps its drawn size; the target around it is at least 48dp each way.
+            val target = if (compact) {
+                Modifier.width(maxOf(artworkSize, CollectionPlayTarget)).fillMaxHeight()
+            } else {
+                Modifier.size(artworkSize)
+            }
+            Box(target.testTag("${tag}_target").then(artworkAction), contentAlignment = Alignment.CenterStart) {
+            Box(Modifier.size(artworkSize).testTag("${tag}_artwork")) {
                 OptimizedImage(
                     url = podcast.imageUrl,
                     fallbackUrls = podcast.artworkUrls(),
@@ -266,6 +281,7 @@ private fun HeroCollectionRow(
                         Modifier.align(Alignment.BottomEnd).testTag("${tag}_play"),
                     )
                 }
+            }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 HeroCollectionTitle(podcast, count, foreground, "${tag}_title", maxLines = if (compact) 1 else null)
@@ -358,3 +374,20 @@ private fun HeroCollectionMetadata(podcast: Podcast, mode: HeroGridMode, foregro
 
 /** Collection rows lower than this (a short hero) show a square cover and one title line. */
 private val CollectionRowCompactHeight = 64.dp
+
+/** The smallest Play target a collection row's cover may have, and so the lowest row a short hero shows. */
+internal val CollectionPlayTarget = 48.dp
+
+/** Rows between collection rows. */
+private val CollectionDivider = 1.dp
+
+/**
+ * How many of [count] collection rows fit [height] while each stays at least [CollectionPlayTarget]
+ * tall. Portrait phones and tablets fit all of them; a short hero (sideways phones, split-screen
+ * halves) drops the rows that would squeeze Play under 48dp. Always at least one.
+ */
+internal fun collectionRowsThatFit(height: Dp, count: Int): Int {
+    if (count <= 1) return count
+    val fit = ((height + CollectionDivider) / (CollectionPlayTarget + CollectionDivider)).toInt()
+    return fit.coerceIn(1, count)
+}
