@@ -9,8 +9,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.BoxloreSearchField
@@ -500,6 +501,7 @@ private val PicksCoverStep = 24.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchPicksSheet(picks: List<Podcast>, onRemove: (Podcast) -> Unit, onDismiss: () -> Unit) {
+    TrackScreenView("onboarding_search_picks")
     BoxloreModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().tabletSheetScroll().padding(start = 16.dp, end = 16.dp, bottom = 24.dp).testTag(SEARCH_PICKS_SHEET_TAG)) {
             Text(
