@@ -39,6 +39,7 @@ Announcement title:
 - Importing an OPML file that lists a show twice now adds every show in the file in one go.
 - When you use boxlore on more than one device, one that was offline or signed out no longer sets your progress or likes back to an older point, and devices that showed different progress now agree.
 - Shows you unfollow on another device or on your watch are now cleared from this phone's saved shows, just as when you unfollow them here.
+- Turning your phone sideways and back, unfolding it or resizing boxlore's window no longer opens the full player by itself.
 - Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.

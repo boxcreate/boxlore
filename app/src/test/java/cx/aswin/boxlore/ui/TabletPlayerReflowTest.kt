@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
@@ -46,6 +47,11 @@ class TabletPlayerReflowTest {
         ),
     )
     private val episode = TestFixtures.episode(title = "A curious journey", imageUrl = PhoneGoldenRule.ARTWORK_URL)
+
+    // Mirrors the app shell: a notification's request reaches the players until one reports it handled.
+    private val openRequest = mutableLongStateOf(0L)
+    private val handledRequest = mutableLongStateOf(0L)
+    private val handled = mutableListOf<Long>()
 
     @Test
     fun `tabletop plays in the upper half, docks below and goes full screen across the hinge`() {
@@ -119,6 +125,35 @@ class TabletPlayerReflowTest {
     }
 
     @Test
+    fun `an open request from outside opens the player once across window changes`() {
+        window.value = BoxloreWindowLayout(1_280f, 800f)
+        render()
+        val pane = fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot
+        fixture.compose.runOnIdle { openRequest.longValue = 1_000L }
+        advance()
+        assertEquals(1_280f, fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot.width, 1f)
+        fixture.compose.onNodeWithContentDescription(fixture.compose.activity.getString(cx.aswin.boxlore.feature.player.R.string.minimal_collapse)).performClick()
+        advance()
+
+        // The phone layout drops the tablet player and the docked portrait sheet composes its own; neither reopens it.
+        listOf(BoxloreWindowLayout(599f, 841f), BoxloreWindowLayout(1_280f, 800f), BoxloreWindowLayout(840f, 1_280f), BoxloreWindowLayout(1_280f, 800f)).forEach { layout ->
+            fixture.compose.runOnIdle { window.value = layout }
+            advance()
+            if (layout.usesSplitLayout) {
+                assertEquals(pane, fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot)
+            } else if (layout.usesTabletLayout) {
+                fixture.compose.onNodeWithTag("tablet_player_artwork_region", useUnmergedTree = true).assertDoesNotExist()
+            }
+        }
+        assertEquals(listOf(1_000L), handled)
+
+        fixture.compose.runOnIdle { openRequest.longValue = 2_000L }
+        advance()
+        assertEquals(1_280f, fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot.width, 1f)
+        assertEquals(listOf(1_000L, 2_000L), handled)
+    }
+
+    @Test
     fun `the first player frame already shows the current episode`() {
         window.value = BoxloreWindowLayout(1_280f, 800f)
         fixture.compose.mainClock.autoAdvance = false
@@ -132,7 +167,11 @@ class TabletPlayerReflowTest {
             CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
                 BoxLoreTheme(dynamicColor = false) {
                     Box(Modifier.width(window.value.widthDp.dp).height(window.value.heightDp.dp)) {
-                        TabletShellCapture("home", episode, TestFixtures.podcast(imageUrl = PhoneGoldenRule.ARTWORK_URL), true) { Text("Browsing") }
+                        val request = OpenPlayerRequest(openRequest.longValue.takeIf { it != handledRequest.longValue } ?: 0L) { handledId ->
+                            handled += handledId
+                            handledRequest.longValue = handledId
+                        }
+                        TabletShellCapture("home", episode, TestFixtures.podcast(imageUrl = PhoneGoldenRule.ARTWORK_URL), true, { Text("Browsing") }, request)
                     }
                 }
             }
