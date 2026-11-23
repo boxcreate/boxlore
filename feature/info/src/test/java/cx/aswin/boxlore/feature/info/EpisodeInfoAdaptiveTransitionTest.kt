@@ -277,6 +277,10 @@ class EpisodeInfoAdaptiveTransitionTest {
         window.value = BoxloreTestWindows.FOLD_FLAT
         render()
         showEpisode()
+        // Enough below the hero that the page can scroll in every layout.
+        val chapters = List(8) { cx.aswin.boxlore.core.model.Chapter(it * 300.0, "Chapter ${it + 1}") }
+        uiState.value = (uiState.value as EpisodeInfoUiState.Success).copy(chapters = chapters)
+        fixture.compose.waitForIdle()
         fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToIndex(1)
         fixture.compose.waitForIdle()
         val lowerHalf = BoxloreLayoutBounds(0f, 336f, BoxloreTestWindows.FOLD_FLAT.widthDp, BoxloreTestWindows.FOLD_FLAT.heightDp)
