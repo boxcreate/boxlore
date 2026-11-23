@@ -23,6 +23,7 @@ object TvSmartQueue {
             releasedAt?.let { ended ->
                 sameShow.filter { playable(it) && (it.releasedAtMillis ?: 0L) > ended }.minByOrNull { it.releasedAtMillis ?: 0L }
             }
-        return carriesOn ?: followed.firstOrNull(::playable)
+        // Another show: the ended show's other episodes were the first choice, and an older one is no next step.
+        return carriesOn ?: followed.firstOrNull { playable(it) && it.showId != finished.showId }
     }
 }

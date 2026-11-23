@@ -26,7 +26,8 @@ class TvSmartQueueTest {
     @Test
     fun `with nothing newer in the show another followed show plays`() {
         val ended = episode("9", day = 9)
-        val followed = listOf(episode("9", day = 9), episode("x", show = "b", day = 8, trailer = true), episode("y", show = "c", day = 7))
+        // An older episode of the same show is not the next step, even first in line.
+        val followed = listOf(episode("9", day = 9), episode("older", day = 3), episode("x", show = "b", day = 8, trailer = true), episode("y", show = "c", day = 7))
         assertEquals("y", TvSmartQueue.next(ended, listOf(episode("1", day = 1), ended), followed, played = emptySet())?.id)
     }
 

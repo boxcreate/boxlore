@@ -59,12 +59,16 @@ class LiveTvPlayback(
     private var sleepJob: Job? = null
     private var ticker: Job? = null
 
+    // The Smart Queue pick on its way, if any.
+    private var continuation: Job? = null
+
     override val nowPlaying: StateFlow<NowPlaying?> = state.asStateFlow()
 
     init {
         // While nothing is loaded, Resume follows the newest episode listened to, here or (after a sync) elsewhere.
         scope.launch {
-            store.state.map { it.jumpBackIn.firstOrNull()?.id }.distinctUntilChanged().collect {
+            // The episode and its saved place together: a sync that moves the place updates Resume too.
+            store.state.map { saved -> saved.jumpBackIn.firstOrNull()?.let { it.id to (saved.positions[it.id] ?: 0L) } }.distinctUntilChanged().collect {
                 if (loadedEpisodeId == null) {
                     state.value = restingState(store)
                     current = state.value?.episode
@@ -101,6 +105,11 @@ class LiveTvPlayback(
         withController { player ->
             when {
                 player.mediaItemCount == 0 -> play(episode.id)
+                // After a failed stream the player stands idle: it needs preparing again to retry.
+                player.playbackState == Player.STATE_IDLE -> {
+                    player.prepare()
+                    player.play()
+                }
                 player.isPlaying || player.playWhenReady -> player.pause()
                 else -> player.play()
             }
@@ -121,6 +130,8 @@ class LiveTvPlayback(
                 scope.launch {
                     delay(delayMs)
                     sleepTimer = SleepTimerChoice.Off
+                    // A Smart Queue pick still on its way must not start once the listener has gone to sleep.
+                    continuation?.cancel()
                     controller?.pause()
                 }
             }
@@ -200,7 +211,8 @@ class LiveTvPlayback(
         val finished = current ?: return
         store.update { it.markPlayed(finished, System.currentTimeMillis()) }
         val continues = PlaybackRules.continuesAfterEnd(sleepTimer)
-        sleepTimer = SleepTimerChoice.Off
+        // End of episode is used up now; a timed choice runs on into the next episode until it expires.
+        if (sleepTimer == SleepTimerChoice.EndOfEpisode) sleepTimer = SleepTimerChoice.Off
         // Read and taken in one step, so an Up next changed meanwhile cannot hand over the wrong episode.
         var next: TvEpisode? = null
         if (continues) {
@@ -226,7 +238,9 @@ class LiveTvPlayback(
      * to read, so nothing starts if the listener has played something else or left meanwhile.
      */
     private fun smartQueue(finished: TvEpisode, player: MediaController) {
-        scope.launch {
+        continuation?.cancel()
+        continuation =
+            scope.launch {
             // The show's page list, read from its feed if it has not been opened yet.
             val listing = withTimeoutOrNull(SHOW_READ_TIMEOUT_MS) { library.episodes(finished.showId).first { it != ShowEpisodes.Loading } }
             val sameShow = (listing as? ShowEpisodes.Loaded)?.episodes.orEmpty()

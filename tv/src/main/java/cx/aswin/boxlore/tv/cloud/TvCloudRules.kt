@@ -127,7 +127,8 @@ internal object TvCloudRules {
                 id == playingId || row.lastPlayedAt <= (state.playedAt[id] ?: 0L) -> state
                 row.isCompleted -> finished(state, id, row)
                 row.progressMs > 0L -> started(state, id, row)
-                else -> state
+                // Marked unplayed elsewhere: the TV forgets its finish and its place too.
+                else -> reset(state, id, row)
             }
         return withLike(listened, id, row)
     }
@@ -147,6 +148,17 @@ internal object TvCloudRules {
             history = listOf(id) + state.history.filterNot { it == id },
             playedAt = state.playedAt + (id to row.lastPlayedAt),
         )
+
+    private fun reset(state: TvLibraryState, id: String, row: ListeningHistorySyncDto): TvLibraryState {
+        val known = state.episodes[id] ?: return state.copy(playedAt = state.playedAt + (id to row.lastPlayedAt))
+        return state.copy(
+            episodes = state.episodes + (id to known.copy(minutesLeft = null)),
+            recent = state.recent - id,
+            positions = state.positions - id,
+            played = state.played - id,
+            playedAt = state.playedAt + (id to row.lastPlayedAt),
+        )
+    }
 
     private fun started(state: TvLibraryState, id: String, row: ListeningHistorySyncDto): TvLibraryState {
         val episode = episodeOf(state, id, row)

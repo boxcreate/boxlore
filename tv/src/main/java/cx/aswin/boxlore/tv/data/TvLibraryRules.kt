@@ -69,8 +69,12 @@ internal object TvLibraryRules {
     // The sort is stable: episodes without a date keep their order, after the dated ones.
     private fun newestFirst(episodes: List<TvEpisode>): List<TvEpisode> = episodes.sortedByDescending { it.releasedAtMillis ?: Long.MIN_VALUE }
 
+    // The feed's own key decides when both have one; a shared audio address counts only without it,
+    // since a feed can reuse one file for two releases.
     private fun TvEpisode.sameEpisode(other: TvEpisode): Boolean =
-        id == other.id ||
-            (catalogKey != null && catalogKey == other.catalogKey) ||
-            (audioUrl != null && audioUrl == other.audioUrl)
+        when {
+            id == other.id -> true
+            catalogKey != null && other.catalogKey != null -> catalogKey == other.catalogKey
+            else -> audioUrl != null && audioUrl == other.audioUrl
+        }
 }

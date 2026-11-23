@@ -11,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -68,9 +69,10 @@ interface TvTokenStore {
 
 /** The TV's account token, kept in its own preferences file. */
 class TvAccountStore(private val prefs: SharedPreferences) : TvTokenStore {
+    // The setter takes the same lock as replace: a sign-out can never land between its check and its write.
     override var token: String?
         get() = prefs.getString(KEY_TOKEN, null)
-        set(value) = prefs.edit { if (value == null) remove(KEY_TOKEN) else putString(KEY_TOKEN, value) }
+        set(value) = synchronized(this) { prefs.edit { if (value == null) remove(KEY_TOKEN) else putString(KEY_TOKEN, value) } }
 
     override var account: String?
         get() = prefs.getString(KEY_ACCOUNT, null)
@@ -148,7 +150,8 @@ internal class LiveTvAccount(
     override fun cancelSignIn() {
         waiting?.cancel()
         waiting = null
-        if (state.value !is TvSignIn.SignedIn) state.value = TvSignIn.SignedOut
+        // One step, so an approval landing meanwhile is never overwritten.
+        state.update { if (it is TvSignIn.SignedIn) it else TvSignIn.SignedOut }
     }
 
     override fun signOut() {

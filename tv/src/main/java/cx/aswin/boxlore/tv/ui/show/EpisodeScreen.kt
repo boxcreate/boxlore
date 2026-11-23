@@ -109,9 +109,10 @@ fun EpisodeScreen(episodeId: String, container: TvContainer, go: TvNavigator) {
         }
         if (current.links.isNotEmpty()) {
             item(key = "links") {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                // One under another with short names, so every link fits on screen and the remote reaches each.
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(stringResource(R.string.tv_episode_links), style = MaterialTheme.typography.titleMedium)
-                    current.links.forEach { link -> PillButton(link, onClick = { openLink = link }, icon = Icons.Rounded.Link) }
+                    current.links.forEach { link -> PillButton(LinkLabel.of(link), onClick = { openLink = link }, icon = Icons.Rounded.Link) }
                 }
             }
         }

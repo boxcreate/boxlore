@@ -2,7 +2,9 @@ package cx.aswin.boxlore.tv.ui
 
 import cx.aswin.boxlore.tv.model.TvEpisode
 import cx.aswin.boxlore.tv.ui.show.EpisodeSearch
+import cx.aswin.boxlore.tv.ui.show.LinkLabel
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class EpisodeSearchTest {
@@ -25,5 +27,13 @@ class EpisodeSearchTest {
     @Test
     fun `an empty search keeps every episode in order`() {
         assertEquals(episodes, EpisodeSearch.filter(episodes, "   "))
+    }
+
+    @Test
+    fun `a notes link is named short enough to fit, without its scheme`() {
+        assertEquals("example.com/show/notes", LinkLabel.of("https://www.example.com/show/notes/"))
+        val long = LinkLabel.of("https://example.com/" + "a".repeat(200))
+        assertEquals(LinkLabel.MAX_LENGTH, long.length)
+        assertTrue(long.endsWith("…"))
     }
 }

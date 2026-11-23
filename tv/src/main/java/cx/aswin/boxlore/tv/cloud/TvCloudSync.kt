@@ -79,6 +79,7 @@ internal class TvCloudSync(
         return when (val answer = api.push(token, push.request)) {
             is CloudAnswer.Ok -> {
                 keep(answer.renewedToken, used = token)
+                if (!sameSession(token, answer.renewedToken)) return CloudSyncResult.NotSignedIn
                 store.update { TvCloudRules.pushed(it, push.covered) }
                 CloudSyncResult.Done
             }
@@ -96,6 +97,8 @@ internal class TvCloudSync(
                 val shows = tried.mapNotNull { id -> showOf(id)?.let { id to it } }.toMap()
                 failed += tried - shows.keys
                 failed -= shows.keys
+                // Signed out, or into another account, while this answer was on its way: it belongs to nobody here now.
+                if (!sameSession(token, answer.renewedToken)) return CloudSyncResult.NotSignedIn
                 store.update { TvCloudRules.withCloud(it, answer.value, shows, playingId(), clock()) }
                 // More shows than one sync looks up: the next one carries on straight away, as long as this one got somewhere.
                 if (unknown.size > tried.size && shows.isNotEmpty()) request()
@@ -104,6 +107,9 @@ internal class TvCloudSync(
             CloudAnswer.Refused -> CloudSyncResult.SignedOut
             CloudAnswer.Unreachable -> CloudSyncResult.Unreachable
         }
+
+    /** Whether the TV is still signed in with [used], or the token the API renewed it to in the same answer. */
+    private fun sameSession(used: String, renewed: String?): Boolean = tokens.token.let { it != null && (it == used || it == renewed) }
 
     /** Keeps a fresh token the API sent, unless the TV signed out or in again meanwhile. */
     private fun keep(renewed: String?, used: String) {

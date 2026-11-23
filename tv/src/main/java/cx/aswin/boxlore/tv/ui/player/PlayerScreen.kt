@@ -120,8 +120,17 @@ fun PlayerScreen(container: TvContainer, go: TvNavigator) {
 
 /** The remote's media keys, which work whatever has focus (TV-PP). */
 fun handleMediaKey(key: Key, playback: TvPlayback): Boolean = when (key) {
-    Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> {
+    Key.MediaPlayPause -> {
         playback.togglePlayPause()
+        true
+    }
+    // Play and Pause keys only ever do what they say.
+    Key.MediaPlay -> {
+        if (playback.nowPlaying.value?.isPlaying != true) playback.togglePlayPause()
+        true
+    }
+    Key.MediaPause -> {
+        if (playback.nowPlaying.value?.isPlaying == true) playback.togglePlayPause()
         true
     }
     Key.MediaRewind -> {

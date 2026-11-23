@@ -272,18 +272,24 @@ class WorkflowShapeTest(unittest.TestCase):
     def test_the_tv_app_is_built_checked_and_published_with_the_phone_app(self):
         workflow = (self.root / ".github/workflows/changelog-on-merge.yml").read_text()
         publish = workflow.split("  publish-release:\n", 1)[1].split("\n  refresh-update-feed:\n", 1)[0]
-        # The same Gradle run as the phone app, so they share a commit and a signing key.
-        self.assertEqual(1, publish.count(":app:assembleRelease :app:bundlePlayRelease :wear:assembleRelease :wear:bundleRelease :tv:assembleRelease :tv:bundleRelease"))
+        # The same Gradle run as the phone app, so they share a commit and a signing key; a release made
+        # before the TV app existed builds without it instead of failing.
+        build = publish.split("- name: Build signed release APK and AAB", 1)[1].split("      - name: ", 1)[0]
+        self.assertIn("if [[ -f tv/build.gradle.kts ]]; then\n            tasks+=(:tv:assembleRelease :tv:bundleRelease)", build)
+        self.assertIn('./gradlew --no-daemon "${tasks[@]}"', build)
         verify = publish.split("- name: Verify artifact versions and signatures", 1)[1].split("      - name: ", 1)[0]
         self.assertIn("expected_tv_code=$((EXPECTED_VERSION_CODE + 2000000))", verify)
         self.assertIn('"$tv_apk_cert" != "$expected_cert"', verify)
         stage = publish.split("- name: Stage release assets", 1)[1].split("      - name: ", 1)[0]
-        self.assertIn('"$TV_APK_ASSET" "$TV_AAB_ASSET"', stage.split("sha256sum", 1)[1].split("> SHA256SUMS", 1)[0])
+        self.assertIn('tv_assets=("$TV_APK_ASSET" "$TV_AAB_ASSET")', stage)
+        self.assertIn('"${tv_assets[@]}"', stage.split("sha256sum", 1)[1].split("> SHA256SUMS", 1)[0])
         reuse = publish.split("- name: Reuse the release's published files", 1)[1].split("      - name: ", 1)[0]
         self.assertIn('--pattern "$TV_APK_ASSET" --pattern "$TV_AAB_ASSET"', reuse)
         upload = publish.split("- name: Publish the files to the GitHub release", 1)[1].split("      - name: ", 1)[0]
         for name in ("$TV_APK_ASSET", "$TV_AAB_ASSET"):
             self.assertIn(f'"$RUNNER_TEMP/release-assets/{name}"', upload)
+        # A refreshed release drops the phone bundle's old name, so no stale bundle sorts above the phone APK.
+        self.assertIn('gh release delete-asset "$TAG" "$legacy_aab"', upload)
         dry_run = (self.root / ".github/workflows/release-contracts.yml").read_text()
         self.assertIn(":tv:assembleRelease :tv:bundleRelease :tv:lintRelease", dry_run)
 

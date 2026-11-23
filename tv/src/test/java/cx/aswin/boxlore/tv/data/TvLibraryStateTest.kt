@@ -6,6 +6,7 @@ import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -36,6 +37,14 @@ class TvLibraryStateTest {
         assertEquals(1, finished.listens["1"])
         // Marking it played again does not count a second listen.
         assertEquals(1, finished.markPlayed(a).listens["1"])
+    }
+
+    @Test
+    fun `a refresh that does not know an episode's length keeps the one already known`() {
+        val a = episode("a", minutes = 10)
+        val started = TvLibraryState().progress(a, positionMs = 5 * minute, durationMs = 10 * minute)
+        val refreshed = started.newest(a.copy(durationMinutes = 0), readAtMillis = 1)
+        assertEquals(10, refreshed.jumpBackIn.single().durationMinutes)
     }
 
     @Test
@@ -89,5 +98,21 @@ class TvLibraryStateTest {
         val reopened = TvLibraryStore(file, scope, dispatcher)
         assertEquals(store.state.value, reopened.state.value)
         assertEquals(listOf("1"), reopened.state.value.shows.map { it.id })
+    }
+
+    @Test
+    fun `a save that fails is tried again until it lands, with no further change`(@TempDir folder: File) {
+        val scope = TestScope(StandardTestDispatcher())
+        val dir = File(folder, "library").apply { mkdirs() }
+        val file = File(dir, "library.json")
+        val store = TvLibraryStore(file, scope, StandardTestDispatcher(scope.testScheduler))
+        dir.setWritable(false)
+        store.update { it.subscribe(TvShow("1", "Show", "", null)) }
+        scope.advanceTimeBy(5_000)
+        assertFalse(file.exists())
+
+        dir.setWritable(true)
+        scope.advanceTimeBy(60_000)
+        assertTrue(file.exists())
     }
 }

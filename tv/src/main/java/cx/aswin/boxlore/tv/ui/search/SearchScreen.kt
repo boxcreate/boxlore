@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -49,6 +50,7 @@ import cx.aswin.boxlore.tv.ui.components.Artwork
 import cx.aswin.boxlore.tv.ui.components.ContentSurface
 import cx.aswin.boxlore.tv.ui.components.EpisodeRow
 import cx.aswin.boxlore.tv.ui.components.ListTop
+import cx.aswin.boxlore.tv.ui.components.PillButton
 import cx.aswin.boxlore.tv.ui.components.RoundButton
 import cx.aswin.boxlore.tv.ui.components.RowPadding
 import cx.aswin.boxlore.tv.ui.components.SectionTitle
@@ -70,6 +72,8 @@ fun SearchScreen(container: TvContainer, go: TvNavigator) {
     val trending by library.trending.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
     var result by remember { mutableStateOf<TvSearchResult?>(null) }
+    // Bumped by Try again, so the same words are searched again.
+    var attempt by remember { mutableIntStateOf(0) }
     val micFocus = remember { FocusRequester() }
     val voice =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { answer ->
@@ -77,7 +81,7 @@ fun SearchScreen(container: TvContainer, go: TvNavigator) {
                 answer.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.let { query = it }
             }
         }
-    LaunchedEffect(query) {
+    LaunchedEffect(query, attempt) {
         if (query.isBlank()) {
             result = null
             return@LaunchedEffect
@@ -104,12 +108,18 @@ fun SearchScreen(container: TvContainer, go: TvNavigator) {
             }
         }
         val found = result as? TvSearchResult.Found
-        when {
-            found == null -> item(key = "trending") { ShowRow(stringResource(R.string.tv_trending), trending, onShow = { go.show(it.id) }) }
-            found.shows.isEmpty() && found.episodes.isEmpty() -> item(key = "none") {
-                Text(stringResource(R.string.tv_no_results, found.query), style = MaterialTheme.typography.bodyLarge, color = TvColors.onSurfaceVariant)
+        when (SearchView.of(result)) {
+            SearchView.Trending -> item(key = "trending") { ShowRow(stringResource(R.string.tv_trending), trending, onShow = { go.show(it.id) }) }
+            SearchView.Failed -> item(key = "failed") {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.tv_search_failed), style = MaterialTheme.typography.bodyLarge, color = TvColors.onSurfaceVariant)
+                    PillButton(stringResource(R.string.tv_try_again), onClick = { attempt++ })
+                }
             }
-            else -> {
+            SearchView.Empty -> item(key = "none") {
+                Text(stringResource(R.string.tv_no_results, result?.query.orEmpty()), style = MaterialTheme.typography.bodyLarge, color = TvColors.onSurfaceVariant)
+            }
+            SearchView.Results -> if (found != null) {
                 if (found.shows.isNotEmpty()) item(key = "shows") { ShowRow(stringResource(R.string.tv_shows), found.shows, onShow = { go.show(it.id) }) }
                 if (found.episodes.isNotEmpty()) {
                     item(key = "episodes-title") { SectionTitle(stringResource(R.string.tv_episodes)) }

@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.tv.cloud
 
+import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
 import cx.aswin.boxlore.core.network.model.SyncPullRequest
 import cx.aswin.boxlore.core.network.model.SyncPullResponse
 import cx.aswin.boxlore.core.network.model.SyncPushRequest
@@ -7,7 +8,9 @@ import cx.aswin.boxlore.core.network.model.SyncPushResponse
 import cx.aswin.boxlore.core.network.model.TvSignInStartResponse
 import cx.aswin.boxlore.tv.data.TvLibraryStore
 import java.io.File
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -109,5 +112,38 @@ class TvAccountTest {
         assertTrue(account.signIn.value is TvSignIn.SignedIn)
         account.refused("new")
         assertEquals(TvSignIn.SignedOut, account.signIn.value)
+    }
+
+    @Test
+    fun `only a 401 naming the refused token signs the TV out`() {
+        assertTrue(RetrofitTvCloudApi.refusesToken(401, """{"error":"watch_token_invalid"}"""))
+        assertFalse(RetrofitTvCloudApi.refusesToken(401, """{"error":"session_expired"}"""))
+        assertFalse(RetrofitTvCloudApi.refusesToken(401, null))
+        assertFalse(RetrofitTvCloudApi.refusesToken(500, """{"error":"watch_token_invalid"}"""))
+    }
+
+    @Test
+    fun `an answer from before a sign-out or account switch changes nothing`(@TempDir folder: File) {
+        val scope = TestScope(StandardTestDispatcher())
+        val store = TvLibraryStore(File(folder, "library.json"), scope, StandardTestDispatcher(scope.testScheduler))
+        val tokens = Tokens().apply { token = "first-account" }
+        val answer = CompletableDeferred<CloudAnswer<SyncPullResponse>>()
+        val api =
+            object : TvCloudApi by FakeApi(ArrayDeque()) {
+                override suspend fun pull(token: String, request: SyncPullRequest) = answer.await()
+            }
+        val sync = TvCloudSync(api, tokens, store, { null }, { null }, scope)
+
+        val result = scope.async { sync.syncNow() }
+        scope.runCurrent()
+        // Another account signs in while the first account's pull is on its way.
+        tokens.token = "second-account"
+        val row = ListeningHistorySyncDto(episodeId = "a", podcastId = "1", progressMs = 60_000, durationMs = 600_000, lastPlayedAt = 5, updatedAt = 5)
+        answer.complete(CloudAnswer.Ok(SyncPullResponse(history = listOf(row), syncedAt = 99), renewedToken = null))
+        scope.runCurrent()
+
+        assertEquals(CloudSyncResult.NotSignedIn, result.getCompleted())
+        assertEquals(0L, store.state.value.cloudSince)
+        assertTrue(store.state.value.episodes.isEmpty())
     }
 }

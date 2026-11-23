@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.tv.ui.show
 
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -64,7 +65,8 @@ fun ShowScreen(showId: String, container: TvContainer, go: TvNavigator) {
     val current = show
     if (current == null) {
         // A show the API cannot describe: say so rather than leave the page blank.
-        if (listing == ShowEpisodes.Failed) ListNote(stringResource(R.string.tv_show_failed), Modifier.padding(start = TvSpace.contentStart, top = TvSpace.safeTop))
+        // Focusable, so the remote has somewhere to return to from the rail.
+        if (listing == ShowEpisodes.Failed) ListNote(stringResource(R.string.tv_show_failed), Modifier.padding(start = TvSpace.contentStart, top = TvSpace.safeTop).focusable())
         return
     }
 

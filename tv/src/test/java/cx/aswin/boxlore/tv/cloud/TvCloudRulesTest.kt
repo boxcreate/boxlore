@@ -77,6 +77,13 @@ class TvCloudRulesTest {
         assertTrue("a" in TvCloudRules.withRow(tv, newer, playingId = null).played)
         // Never over the episode playing on the TV right now.
         assertFalse("a" in TvCloudRules.withRow(tv, newer, playingId = "a").played)
+
+        // Marked unplayed elsewhere, later: the TV's finish and place go too.
+        val finished = TvCloudRules.withRow(tv, newer, playingId = null)
+        val reset = TvCloudRules.withRow(finished, older.copy(progressMs = 0, lastPlayedAt = 5_000), playingId = null)
+        assertFalse("a" in reset.played)
+        assertNull(reset.positions["a"])
+        assertEquals(5_000L, reset.playedAt["a"])
     }
 
     @Test

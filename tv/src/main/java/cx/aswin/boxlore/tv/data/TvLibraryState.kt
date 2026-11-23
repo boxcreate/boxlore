@@ -165,7 +165,16 @@ data class TvLibraryState(
     /** Keeps [episode], carrying over what is already known about it unless the copy says more. */
     internal fun remember(episode: TvEpisode): TvLibraryState {
         val saved = episodes[episode.id]
-        val kept = if (saved == null) episode else episode.copy(minutesLeft = episode.minutesLeft ?: saved.minutesLeft)
+        val kept =
+            if (saved == null) {
+                episode
+            } else {
+                // A refresh that does not know the length keeps the one already known.
+                episode.copy(
+                    minutesLeft = episode.minutesLeft ?: saved.minutesLeft,
+                    durationMinutes = if (episode.durationMinutes > 0) episode.durationMinutes else saved.durationMinutes,
+                )
+            }
         return copy(episodes = episodes + (episode.id to kept.copy(played = false, liked = false)))
     }
 

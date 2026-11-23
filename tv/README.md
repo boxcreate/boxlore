@@ -63,8 +63,8 @@ src/release/java/...         # release TvContainerFactory
   See all opens Library's New episodes), Your shows, Daily Mix, then charts: top shows and one row
   per genre (`ChartGenre`), each loaded as it nears the screen. Home opens with the remote on Resume;
   coming into a row lands on its first item.
-- `ui.home.YourShowsRules` lays out Your shows: up to three rows of eight covers filling the width,
-  so at most 24 on Home. All shows opens the rest in Library.
+- `ui.home.YourShowsRules` lays out Your shows in a few full-width rows of covers, so the whole set
+  fits on screen; All shows opens the rest in Library.
 - Focus follows one rule. Content the remote lands on (artwork, rows, covers) takes a light outline
   and lifts (`ContentSurface`); actions take the iris fill (`PillButton`, `RoundButton`). Nothing in
   focus covers another item: a show cover widens into a pill with its name and the other covers in
@@ -82,16 +82,16 @@ src/release/java/...         # release TvContainerFactory
   side panels hold Up Next, the sleep timer and speed. `handleMediaKey` maps the remote's
   play/pause, rewind and fast-forward.
 - Links in episode notes can't open a browser on a TV, so OK on one shows it for the phone.
-- Text and controls stay inside the 5% safe area (`TvSpace`); rails that slide sideways may run past
+- Text and controls stay inside the TV safe area (`TvSpace`); rails that slide sideways may run past
   the right edge to show there is more. Lists scroll only as far as it takes to show the whole item
   the remote moves to (`ui.KeepInView`).
 - `data.TvLibraryState` is the whole saved library as one value: followed shows, Up next, places,
   played, likes, history and each followed show's newest episode. Every change is a pure function;
   `TvLibraryStore` keeps it in a file.
-- A show's episodes come from its own feed, as on the phone (address from `/v2/podcast`, the shared
-  feed reader and episode IDs); the API's list stands in only when the feed cannot be read. Only
-  `/v2` routes are used. A show page keeps a list once shown (`TvLibraryRules`). It shows the newest 50 episodes at once, then reads
-  the whole feed in the background, at most every 30 minutes per show; `ui.show.EpisodeSearch` searches it.
+- A show's episodes come from its own feed, as on the phone (the shared feed reader and episode
+  IDs); the API's list stands in only when the feed cannot be read. A show page keeps a list once
+  shown (`TvLibraryRules`): the newest episodes at once, then the whole feed in the background, not
+  on every visit. `ui.show.EpisodeSearch` searches it.
 - Daily Mix is worked out on the TV: one unfinished episode per followed show, its newest, newest
   first. Followed shows' feeds are read again, a few at a time, at most every six hours.
 - Your shows on Home use the Smart order: shows listened to most recently first, then as followed.
@@ -100,10 +100,9 @@ src/release/java/...         # release TvContainerFactory
   `playback.TvSmartQueue` picks the show's next release, then another followed show's newest
   unfinished episode, never a played one or a trailer. The service's media
   session takes the remote's media keys while the app is closed.
-- Signing in: `LiveTvAccount` asks the API for a code (`/auth/tv/start`), shows it, and asks every
-  few seconds whether a phone approved it (`/auth/tv/poll`). A code that runs out is replaced by a
-  fresh one until the listener leaves the page. The TV then holds its own account token, used as the
-  watch's is, and gives it up on Sign out.
+- Signing in: `LiveTvAccount` shows a code from the API until a phone signed in to the account
+  approves it, replacing a code that runs out until the listener leaves the page. The TV then holds
+  its own account token, used as the watch's is, and gives it up on Sign out.
 - `cloud.TvCloudSync` pushes what changed on the TV, then pulls what changed elsewhere: at start, a
   little after each change, and every 15 minutes. `cloud.TvCloudRules` merges by the rows the phone
   and the watch exchange: each part of a listening row (play, like) wins where it is newer, and the
@@ -132,7 +131,6 @@ src/release/java/...         # release TvContainerFactory
   controller run on the main thread.
 - `TvPlaybackService` is a foreground media service: audio keeps playing with the app in the
   background, and the service stops when the app is closed with nothing playing.
-- The TV holds a limited API session: it has no device attestation.
 
 ## Persistence & identity
 

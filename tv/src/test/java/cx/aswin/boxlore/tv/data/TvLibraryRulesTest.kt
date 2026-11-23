@@ -19,6 +19,10 @@ class TvLibraryRulesTest {
         val shown = listOf(episode("gone", 300), episode("kept", 100))
         val read = listOf(episode("newest", 400), episode("again", 200))
         assertEquals(listOf("newest", "again", "kept"), TvLibraryRules.replaced(shown, read).map { it.id })
+        // Two releases with their own feed keys stay two, even on one reused audio file.
+        val rerun = episode("rerun", 50).copy(audioUrl = "https://example.com/same.mp3")
+        val original = episode("original", 400).copy(audioUrl = "https://example.com/same.mp3")
+        assertEquals(listOf("original", "rerun"), TvLibraryRules.replaced(listOf(rerun), listOf(original)).map { it.id })
     }
 
     @Test

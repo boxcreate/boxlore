@@ -101,12 +101,17 @@ private fun PanelChoices(
 ) {
     val landing = { landsHere: Boolean -> if (landsHere) Modifier.focusRequester(first) else Modifier }
     when (panel) {
-        PlayerPanel.UpNext -> upNext.forEachIndexed { index, episode ->
+        // An empty Up Next still has one choice, so the remote stays in the panel until it closes.
+        PlayerPanel.UpNext -> if (upNext.isEmpty()) {
+            PanelChoice(stringResource(R.string.tv_up_next_empty), stringResource(R.string.tv_up_next_empty_hint), false, palette, landing(true)) { onClose() }
+        } else {
+            upNext.forEachIndexed { index, episode ->
             val left = timeLeftText(episode.minutesLeft ?: episode.durationMinutes)
             PanelChoice(episode.title, stringResource(R.string.tv_show_and_time, episode.showTitle, left), false, palette, landing(index == 0), episode.artworkUrl) {
                 playback.play(episode.id)
                 onClose()
             }
+        }
         }
         PlayerPanel.SleepTimer -> SleepTimerChoice.entries.forEach { choice ->
             PanelChoice(sleepTimerText(choice), null, choice == now.sleepTimer, palette, landing(choice == now.sleepTimer)) {

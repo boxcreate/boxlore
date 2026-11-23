@@ -7,6 +7,7 @@ import cx.aswin.boxlore.tv.model.TvShow
 import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -34,13 +35,20 @@ class LiveTvLibrary(
     feeds: TvFeedReader?,
     private val scope: CoroutineScope,
     private val clock: () -> Long = System::currentTimeMillis,
+    /** Where long lists are put together, off the main thread. */
+    private val compute: CoroutineDispatcher = Dispatchers.Default,
     country: () -> String = { Locale.getDefault().country.lowercase(Locale.ROOT).ifBlank { DEFAULT_COUNTRY } },
 ) : TvLibrary {
     private val source = TvShowSource(store, catalog, feeds, country)
     private val fetchedEpisodes = MutableStateFlow<Map<String, TvEpisode>>(emptyMap())
     private val showEpisodes = MutableStateFlow<Map<String, List<String>>>(emptyMap())
     private val episodeLoads = MutableStateFlow<Map<String, EpisodeLoad>>(emptyMap())
+
+    // Shows whose page list is being read; kept apart from Daily Mix reads, so a page never waits on one.
     private val inFlight: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
+
+    // Followed shows whose newest episode is being read for Daily Mix.
+    private val refreshing: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
 
     // When each show's whole feed was last read for its page, by show ID.
     private val wholeFeedReadAt = ConcurrentHashMap<String, Long>()
@@ -76,7 +84,7 @@ class LiveTvLibrary(
             TvLibraryRules.state(loads[showId], listed, showId in unknown)
         }.distinctUntilChanged().onStart { scope.launch { loadEpisodes(showId) } }
             // A whole feed can list thousands of episodes: matched with the library off the main thread.
-            .flowOn(Dispatchers.Default)
+            .flowOn(compute)
 
     override fun episode(episodeId: String): Flow<TvEpisode?> =
         combine(fetchedEpisodes, store.state) { fetched, state -> (fetched[episodeId] ?: state.episodes[episodeId])?.let(state::shown) }.distinctUntilChanged()
@@ -140,14 +148,14 @@ class LiveTvLibrary(
         val state = store.state.value
         state.shows.filter { TvLibraryRules.wantsRefresh(state.latestReadAt[it.id], now) }.forEach { show ->
             scope.launch {
-                if (inFlight.add(show.id)) {
+                if (refreshing.add(show.id)) {
                     try {
                         reads.withPermit {
                             val newest = source.episodes(show.id, NEWEST_ONLY)?.episodes?.maxByOrNull { it.releasedAtMillis ?: 0L }
                             if (newest != null) store.update { it.newest(newest, clock()) }
                         }
                     } finally {
-                        inFlight.remove(show.id)
+                        refreshing.remove(show.id)
                     }
                 }
             }
