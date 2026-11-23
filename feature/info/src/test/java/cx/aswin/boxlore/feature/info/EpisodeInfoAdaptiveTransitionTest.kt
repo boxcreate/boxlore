@@ -41,6 +41,10 @@ import cx.aswin.boxlore.core.testing.SystemInsets
 import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import cx.aswin.boxlore.core.testing.walkWindows
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.feature.info.components.EPISODE_HERO_ART_TAG
+import cx.aswin.boxlore.feature.info.components.EPISODE_PAGE_SKELETON_TAG
+import cx.aswin.boxlore.feature.info.components.EPISODE_SKELETON_ART_TAG
+import cx.aswin.boxlore.feature.info.components.EPISODE_SKELETON_RAIL_TAG
 import cx.aswin.boxlore.feature.info.components.EpisodeLinkStatusTags
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -324,6 +328,33 @@ class EpisodeInfoAdaptiveTransitionTest {
 
         recreate(BoxloreTestWindows.W600_H900)
         assertTrue("open after recreation", shareSheetShown())
+    }
+
+    @Test
+    fun `the loading outline sits where the loaded page will, with Back working and no second load`() {
+        listOf(BoxloreTestWindows.PHONE, BoxloreTestWindows.SPLIT_HALF, BoxloreTestWindows.UPRIGHT_BOOK).forEach { size ->
+            window.value = size
+            uiState.value = EpisodeInfoUiState.Loading
+            if (size == BoxloreTestWindows.PHONE) render() else fixture.compose.waitForIdle()
+            val skeletonArt = fixture.compose.onNodeWithTag(EPISODE_SKELETON_ART_TAG, useUnmergedTree = true).getBoundsInRoot()
+            val skeletonRail = fixture.compose.onNodeWithTag(EPISODE_SKELETON_RAIL_TAG, useUnmergedTree = true).getBoundsInRoot()
+            showEpisode("How we find our way home again after a long winter away")
+            val art = fixture.compose.onNodeWithTag(EPISODE_HERO_ART_TAG).getBoundsInRoot()
+            val rail = fixture.compose.onNodeWithTag(EpisodeInfoTags.RAIL).getBoundsInRoot()
+            assertEquals("art at $size", art, skeletonArt)
+            assertEquals("rail start at $size", rail.left.value, skeletonRail.left.value, 0.5f)
+            assertEquals("rail width at $size", rail.right.value - rail.left.value, skeletonRail.right.value - skeletonRail.left.value, 0.5f)
+        }
+
+        uiState.value = EpisodeInfoUiState.Loading
+        fixture.compose.walkWindows(window, BoxloreTestWindows.W599_H900, BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900) { size ->
+            fixture.compose.onNodeWithTag(EPISODE_PAGE_SKELETON_TAG, useUnmergedTree = true).assertExists()
+        }
+        val loads = mockingDetails(model).invocations.count { it.method.name == "loadEpisode" }
+        assertEquals("window changes while loading don't load again", 1, loads)
+        fixture.compose.onNodeWithContentDescription(BACK).performClick()
+        fixture.compose.waitForIdle()
+        assertEquals("Back works while loading", 1, backs)
     }
 
     private fun playBounds() = fixture.compose.onNode(hasText(PLAY) and hasClickAction()).getBoundsInRoot()

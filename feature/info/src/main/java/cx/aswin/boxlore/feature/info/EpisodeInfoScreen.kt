@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
-import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeContentPadding
 import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
@@ -221,11 +220,30 @@ fun EpisodeInfoScreen(
             val blockCap = if (heroForm == EpisodeHeroForm.Stacked) Modifier else Modifier.fillMaxWidth().wrapContentWidth(Alignment.Start).widthIn(max = EpisodeBlockMaxWidth)
             when (val state = uiState) {
                 is EpisodeInfoUiState.Loading -> {
-                    Box(
-                        modifier = modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        BoxLoreLoader.Expressive(size = 80.dp)
+                    // The page's outline while it loads, with Back already where it will be.
+                    Box(modifier = modifier.fillMaxSize()) {
+                        cx.aswin.boxlore.feature.info.components.EpisodePageSkeleton(
+                            form = heroForm,
+                            artSize = heroArtSize,
+                            topPadding = collapsedHeaderHeight + 16.dp,
+                            railMaxWidth = EpisodeRailMaxWidth,
+                            blockModifier = blockCap,
+                            modifier = Modifier.boxloreHorizontalSafePadding(),
+                        )
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(collapsedHeaderHeight)
+                                .boxlorePaneStatusBarsPadding()
+                                .boxloreHorizontalSafePadding(),
+                        ) {
+                            cx.aswin.boxlore.feature.info.components.EpisodeInfoHeaderButton(
+                                icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                                label = stringResource(R.string.episode_info_back),
+                                onClick = onBack,
+                                modifier = Modifier.align(Alignment.CenterStart).padding(start = EpisodeHeaderButtonInset),
+                            )
+                        }
                     }
                 }
                 is EpisodeInfoUiState.Error -> {
