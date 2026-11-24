@@ -45,6 +45,40 @@ class ArchitectureGuardTest {
     }
 
     @Test
+    fun `every Maven Central repository comes after Google's Maven Central mirror`() {
+        val buildFiles =
+            projectRoot
+                .walkTopDown()
+                .onEnter { it == projectRoot || !(it.name.startsWith(".") || it.name == "build" || it.name == "node_modules") }
+                .filter { it.name == "settings.gradle.kts" || it.name == "build.gradle.kts" }
+                .toList()
+        val violations = mutableListOf<String>()
+        var centrals = 0
+        for (file in buildFiles) {
+            var mirrored = false
+            file.readLines().forEachIndexed { index, raw ->
+                // Skip whole comment lines only: the mirror's own URL contains "//".
+                val line = raw.trim()
+                when {
+                    line.startsWith("//") -> Unit
+                    line.startsWith("repositories") -> mirrored = false
+                    MAVEN_CENTRAL_MIRROR in line -> mirrored = true
+                    line.startsWith("mavenCentral()") -> {
+                        centrals++
+                        if (!mirrored) violations += "${file.relativeTo(projectRoot)}:${index + 1}: $line"
+                    }
+                }
+            }
+        }
+        assertTrue(centrals > 0, "No mavenCentral() repositories found under $projectRoot")
+        assertTrue(
+            violations.isEmpty(),
+            "List $MAVEN_CENTRAL_MIRROR before mavenCentral() in the same repositories block, so " +
+                "rate-limited CI runners resolve from the mirror:\n" + violations.joinToString("\n"),
+        )
+    }
+
+    @Test
     fun `no feature package imports another feature package`() {
         val featureNames =
             File(projectRoot, "feature")
@@ -258,6 +292,7 @@ class ArchitectureGuardTest {
 
     private companion object {
         val RAW_DIALOG = Regex("""^import androidx\.compose\.material3\.(?:Basic)?AlertDialog(?:\s+as\s+\w+)?$|androidx\.compose\.material3\.(?:Basic)?AlertDialog\(""")
+        const val MAVEN_CENTRAL_MIRROR = "https://maven-central.storage-download.googleapis.com/maven2/"
     }
 
     @Test
