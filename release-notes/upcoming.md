@@ -32,9 +32,7 @@ Announcement title:
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.
 - On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.
-- Library's cards now say what's inside, like how many shows have something new, and Liked episodes has a Play all button and shows how much listening is left.
-- A show's long-press menu in Subscriptions now offers Pin to Home and Unsubscribe for every show, and New Episodes' sort opens a sheet with a Hide played switch.
-- Library pages now show an outline of the page while they load, and empty pages say what's missing with one clear button.
+- Library's cards now say what's inside, Liked episodes has a Play all button, every show's long-press menu in Subscriptions offers Pin to Home and Unsubscribe, and loading or empty Library pages look finished.
 
 ## Fixed
 
@@ -46,5 +44,4 @@ Announcement title:
 - Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.
-- Library lists, selections and open menus now stay as you left them when you fold, unfold or resize boxlore, or when Android restarts the screen.
-- Long Library page titles in other languages or at large text sizes now fit, and sideways phones show more of the page under a slim header.
+- Library now fits sideways phones, foldables and tablets, long titles in other languages fit, and lists, selections and open menus stay as you left them when you fold, unfold or resize boxlore.
