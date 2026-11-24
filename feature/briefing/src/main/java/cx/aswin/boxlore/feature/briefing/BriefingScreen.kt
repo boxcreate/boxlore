@@ -221,6 +221,8 @@ fun BriefingScreen(
     val edition = success?.briefing?.let { it.region to it.date }
     val listState = key(edition) { rememberLazyListState() }
     val startScroll = key(edition) { rememberScrollState() }
+    // Above the layouts, so a listener's recent scroll still holds playback off after a window change.
+    val followHold = key(edition) { remember { StoryFollowHold() } }
     var storyIndex by rememberSaveable(edition?.first, edition?.second) { mutableIntStateOf(0) }
     var showPreferences by remember { mutableStateOf(false) }
     var showSources by remember { mutableStateOf(false) }
@@ -275,7 +277,7 @@ fun BriefingScreen(
                 Box(Modifier.fillMaxSize()) {
                     val masthead = briefingMastheadLeftPadding()
                     val onCoverMeasured: (Int) -> Unit = { coverHeight = it.toFloat() }
-                    val layout = BriefingPageLayout(mode, split, storyIndex, { storyIndex = it }, listState, startScroll)
+                    val layout = BriefingPageLayout(mode, split, storyIndex, { storyIndex = it }, listState, startScroll, followHold)
                     AnimatedContent(uiState, contentKey = { it.presentationKey() }, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "briefingState") { displayedState ->
                         when (displayedState) {
                             is BriefingUiState.Loading -> BriefingLoadingContent(displayedState.selectedRegion, topPadding, masthead, onCoverMeasured, split, mode)
@@ -500,6 +502,7 @@ private class BriefingPageLayout(
     val onStoryIndex: (Int) -> Unit,
     val listState: LazyListState,
     val startScroll: ScrollState,
+    val followHold: StoryFollowHold,
 )
 
 @Composable
@@ -548,7 +551,7 @@ private fun BriefingEditionContent(
             val model = rememberStoryListModel(state, actions)
             // Arriving from a pager: open at the story the listener was on (the edition stays above story 1).
             // Playback moves the list only once the listener is among the stories, never away from Listen and the seek bar.
-            FollowPlayingStory(layout.listState, model, firstStoryItem = 1, startAt = layout.storyIndex.takeIf { it > 0 }, onStoryInView = layout.onStoryIndex) { it.firstVisibleItemIndex >= 1 }
+            FollowPlayingStory(layout.listState, model, firstStoryItem = 1, startAt = layout.storyIndex.takeIf { it > 0 }, onStoryInView = layout.onStoryIndex, hold = layout.followHold) { it.firstVisibleItemIndex >= 1 }
             LazyColumn(
                 state = layout.listState,
                 modifier = Modifier.fillMaxSize().testTag("briefingArticle"),
@@ -564,7 +567,7 @@ private fun BriefingEditionContent(
         // Wide windows: the edition at the start, every story in a list beside it.
         BriefingLayoutMode.TwoPane -> {
             val model = rememberStoryListModel(state, actions)
-            FollowPlayingStory(layout.listState, model, firstStoryItem = 0, startAt = layout.storyIndex, onStoryInView = layout.onStoryIndex)
+            FollowPlayingStory(layout.listState, model, firstStoryItem = 0, startAt = layout.storyIndex, onStoryInView = layout.onStoryIndex, hold = layout.followHold)
             val split = layout.split ?: BriefingTwoPaneSplit(BRIEFING_START_PANE_MIN_DP.dp, 24.dp)
             Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(split.gap)) {
                 Column(

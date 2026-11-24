@@ -60,7 +60,9 @@ internal class HistoryHarness(private val compose: AndroidComposeTestRule<Activi
                 LocalDensity provides Density(density.density, fontScale.value),
             ) {
                 BoxLoreTheme(darkTheme = false, dynamicColor = false) {
-                    Box(Modifier.requiredSize(window.value.widthDp.dp, window.value.heightDp.dp)) {
+                    // A pane (a tabletop half) is the space the screen gets; otherwise the whole window.
+                    val space = pane.value
+                    Box(Modifier.requiredSize((space?.width ?: window.value.widthDp).dp, (space?.height ?: window.value.heightDp).dp)) {
                         HistoryScreen(
                             viewModel = viewModel,
                             onBack = {},

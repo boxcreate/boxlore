@@ -49,8 +49,10 @@ import cx.aswin.boxlore.feature.history.story.STORY_ENTRY_TOTAL_TAG
 import cx.aswin.boxlore.feature.history.timeline.JumpToDayContent
 import cx.aswin.boxlore.feature.history.timeline.JumpToDayState
 import cx.aswin.boxlore.feature.history.timeline.PLAY_DISC_TAG
+import cx.aswin.boxlore.feature.history.timeline.QUICK_JUMP_CHIP_TAG
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -192,6 +194,17 @@ class HistoryControlsTest {
         }
         compose.onNode(hasText("A week ago", substring = true)).performClick()
         assertEquals(listOf(today.minusWeeks(1)), jumps)
+
+        // Narrow, at twice the text size: a label that wraps grows its chip instead of spilling out of it.
+        width.value = 240.dp
+        fontScale.floatValue = 2f
+        compose.waitForIdle()
+        val layouts = labels.map { label ->
+            val text = compose.onNode(hasText(label, substring = true) and hasAnyAncestor(hasTestTag(QUICK_JUMP_CHIP_TAG)), useUnmergedTree = true)
+            mutableListOf<TextLayoutResult>().also { text.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action?.invoke(it) }.single()
+        }
+        assertTrue("A label wraps at this size", layouts.any { it.lineCount > 1 })
+        layouts.forEachIndexed { index, layout -> assertFalse("${labels[index]} stays inside its chip", layout.didOverflowHeight) }
     }
 
     private fun timelineList() =

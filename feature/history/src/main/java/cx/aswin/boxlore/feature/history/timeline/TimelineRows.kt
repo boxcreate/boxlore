@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.history.timeline
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -43,6 +44,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
@@ -315,16 +317,27 @@ internal fun TimelineGroupingToggle(grouping: TimelineGrouping, onChange: (Timel
     val measurer = rememberTextMeasurer()
     val widest = with(LocalDensity.current) { options.maxOf { (_, text) -> measurer.measure(text, style).size.width }.toDp() }
     val segment = widest + GroupingPadding * 2 + 2.dp
-    ConnectedOptionSelector(
-        options = options,
-        selected = grouping,
-        onSelect = onChange,
-        labelStyle = style,
-        contentPadding = PaddingValues(horizontal = GroupingPadding),
-        colors = historySelectorColors(),
-        modifier = Modifier.width(segment * 2 + ButtonGroupDefaults.ConnectedSpaceBetween).height(40.dp).semantics { contentDescription = label },
-    )
+    val wanted = segment * 2 + ButtonGroupDefaults.ConnectedSpaceBetween
+    BoxWithConstraints {
+        ConnectedOptionSelector(
+            options = options,
+            selected = grouping,
+            onSelect = onChange,
+            labelStyle = style,
+            contentPadding = PaddingValues(horizontal = GroupingPadding),
+            colors = historySelectorColors(),
+            modifier = Modifier.width(wanted).then(groupingToggleHeight(maxWidth, wanted)?.let { Modifier.height(it) } ?: Modifier).semantics { contentDescription = label },
+        )
+    }
 }
+
+/**
+ * The toggle's fixed height when it gets the [wanted] width out of [available]: then both halves sit
+ * side by side. In less room the selector may wrap or stack its options, so its height is left free.
+ */
+internal fun groupingToggleHeight(available: Dp, wanted: Dp): Dp? = if (available >= wanted) GroupingHeight else null
+
+private val GroupingHeight = 40.dp
 
 private val GroupingPadding = 14.dp
 

@@ -308,7 +308,7 @@ class StoryLogicTest {
 
     @Test
     fun earlierStoriesFoldToTwoRowsUntilOpened() {
-        val months = (1..8).map { StoryMonth(YearMonth.of(2026, 1).plusMonths(it.toLong()), it * MINUTE, EchoOutfit.HELLO) }
+        val months = (1..11).map { StoryMonth(YearMonth.of(2026, 1).plusMonths(it.toLong()), it * MINUTE, EchoOutfit.HELLO) }
         assertTrue(EarlierStories.folds(months))
         assertEquals(months.take(6), EarlierStories.shown(months, expanded = false))
         assertEquals(months, EarlierStories.shown(months, expanded = true))

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -26,6 +27,8 @@ import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.components.BOXLORE_SNACKBAR_TAG
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
@@ -41,6 +44,7 @@ import cx.aswin.boxlore.feature.history.insights.INSIGHTS_LIST_TAG
 import cx.aswin.boxlore.feature.history.insights.INSIGHTS_PAIR_TAG
 import cx.aswin.boxlore.feature.history.insights.MOSAIC_GRID_TAG
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -79,6 +83,7 @@ class HistoryTabsStateTest {
         compose.mainClock.autoAdvance = false
         vm.removeHistoryItem("diginotar")
         frames()
+        assertFalse("the removed row leaves the timeline", "episode_diginotar" in vm.timelineKeys())
         compose.walkWindows(
             history.window,
             BoxloreTestWindows.PHONE,
@@ -109,6 +114,7 @@ class HistoryTabsStateTest {
         compose.waitForIdle()
         compose.onNodeWithTag(BOXLORE_SNACKBAR_TAG).assertDoesNotExist()
         assertEquals(listOf("diginotar"), board.restored)
+        assertTrue("Undo puts the row back", "episode_diginotar" in vm.timelineKeys())
     }
 
     @Test fun `with no history both tabs show one empty page whose Explore button is always reachable`() {
@@ -275,6 +281,27 @@ class HistoryTabsStateTest {
         }
     }
 
+    @Test fun `a card scrolled partway keeps its place inside it across the column change and back`() {
+        // Short enough that the list scrolls well past the type card; 1100dp wide pairs the cards in two columns.
+        val oneColumn = cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(800f, 640f)
+        val twoColumns = cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(1_100f, 640f)
+        history.window.value = oneColumn
+        history.render(tab = HistoryTab.INSIGHTS)
+        val list = compose.onNodeWithTag(INSIGHTS_LIST_TAG)
+        // The type card has a row of its own in one column and shares the time card's row in two.
+        list.performScrollToKey("type")
+        // A slow drag, so the list stops where the finger does: partway into the card.
+        list.performTouchInput { swipe(center, center - Offset(0f, 200f), durationMillis = 2_000) }
+        compose.waitForIdle()
+        // Where the type card's title sits against the list's top, its card scrolled partway in.
+        fun titleAt() = compose.onNode(hasText("Your listening type") and hasAnyAncestor(hasTestTag(INSIGHTS_LIST_TAG)), useUnmergedTree = true).bounds().top - list.bounds().top
+        val start = titleAt()
+        compose.walkWindows(history.window, twoColumns, oneColumn) { window ->
+            compose.waitForIdle()
+            assertEquals("$window keeps the place inside the card", start, titleAt(), 12f)
+        }
+    }
+
     /** [heading]'s card is the one at the top of the Insights list. */
     private fun assertCardAtTop(heading: String, where: String) {
         val list = compose.onNodeWithTag(INSIGHTS_LIST_TAG).bounds()
@@ -304,6 +331,9 @@ class HistoryTabsStateTest {
         compose.waitForIdle()
         return compose.onNodeWithText("Explore podcasts")
     }
+
+    private fun cx.aswin.boxlore.feature.history.HistoryViewModel.timelineKeys(): List<String> =
+        (timelineState.value as? cx.aswin.boxlore.feature.history.TimelineUiState.Ready)?.entries.orEmpty().map { it.key }
 
     private fun frames() {
         repeat(6) {

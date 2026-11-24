@@ -127,13 +127,13 @@ const val INSIGHTS_PAIR_TAG = "insights_pair"
  * columns it was laid out in. Held by the screen and saved, so a window change while Timeline is
  * open, or the activity being recreated, still brings the listener back to the same card.
  */
-internal class InsightsPlace(anchor: String? = null, var columns: Int = 0) {
+internal class InsightsPlace(anchor: String? = null, var columns: Int = 0, var offset: Int = 0) {
     var anchor: String? = anchor
 
     companion object {
         val Saver: Saver<InsightsPlace, Any> = listSaver(
-            save = { listOf(it.anchor.orEmpty(), it.columns) },
-            restore = { InsightsPlace((it[0] as String).ifEmpty { null }, it[1] as Int) },
+            save = { listOf(it.anchor.orEmpty(), it.columns, it.offset) },
+            restore = { InsightsPlace((it[0] as String).ifEmpty { null }, it[1] as Int, it.getOrNull(2) as? Int ?: 0) },
         )
     }
 }
@@ -141,18 +141,21 @@ internal class InsightsPlace(anchor: String? = null, var columns: Int = 0) {
 /**
  * Keeps the listener on their card when the number of columns changes: the card at the top (kept
  * while it shares a row with another, so going back to one column returns to it, not its partner)
- * is brought back to the top in the new layout.
+ * is brought back to the top in the new layout, as far into it as the listener had scrolled.
  */
 @Composable
 private fun KeepFirstCardInView(listState: LazyListState, rows: List<List<String>>, columns: Int, leading: Int, place: InsightsPlace) {
     val currentRows by rememberUpdatedState(rows)
     LaunchedEffect(listState, place) {
         // The first card below the list's top padding: one peeking into the padding isn't the listener's.
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.firstOrNull { it.offset + it.size > 0 }?.key as? String }.collect { key ->
-            if (key == null) return@collect
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo.firstOrNull { it.offset + it.size > 0 }?.let { (it.key as? String) to maxOf(0, -it.offset) }
+        }.collect { seen ->
+            val key = seen?.first ?: return@collect
             val row = currentRows.getOrNull(InsightsLayout.rowOf(currentRows, key))
             val anchor = place.anchor
             place.anchor = if (anchor != null && row != null && anchor in row) anchor else key
+            place.offset = seen.second
         }
     }
     // While composing the new layout, before the list measures it: ask it to open at the row holding the card.
@@ -160,7 +163,7 @@ private fun KeepFirstCardInView(listState: LazyListState, rows: List<List<String
         val changed = place.columns != 0
         place.columns = columns
         val row = place.anchor?.let { InsightsLayout.rowOf(rows, it) } ?: -1
-        if (changed && row >= 0) listState.requestScrollToItem(leading + row)
+        if (changed && row >= 0) listState.requestScrollToItem(leading + row, place.offset)
     }
 }
 

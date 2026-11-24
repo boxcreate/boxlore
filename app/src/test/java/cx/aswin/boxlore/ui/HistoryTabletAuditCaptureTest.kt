@@ -59,6 +59,7 @@ import java.time.YearMonth
 import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -356,14 +357,20 @@ internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE, load
     fun story(month: YearMonth, today: LocalDate) = StoryLogic.build(month, history, listening, played, today, ZoneId.systemDefault())
 
     /** [value] now ([whenCleared] after Clear all), or never while the board is [loading]. */
-    private fun <T> answer(value: T, whenCleared: T = value): Flow<T> = flow {
+    private fun <T> answer(value: T, whenCleared: T = value): Flow<T> = answerAsItStands(MutableStateFlow(value), whenCleared)
+
+    /** [values] as they change ([whenCleared] after Clear all), or never while the board is [loading]. */
+    private fun <T> answerAsItStands(values: Flow<T>, whenCleared: T): Flow<T> = flow {
         loading.first { !it }
-        emitAll(cleared.map { if (it) whenCleared else value })
+        emitAll(combine(cleared, values) { isCleared, value -> if (isCleared) whenCleared else value })
     }
 
-    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = answer(history, emptyList())
+    /** The history as it stands: a removal takes its row out and Undo puts it back in its place. */
+    private val shownHistory = MutableStateFlow(history)
 
-    override fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>> = answer(history, emptyList())
+    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = answerAsItStands(shownHistory, emptyList())
+
+    override fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>> = answerAsItStands(shownHistory, emptyList())
 
     override fun observeListeningByDay(): Flow<List<ListeningDayEpisode>> = answer(listening, emptyList())
 
@@ -393,13 +400,19 @@ internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE, load
         ),
     )
 
-    override suspend fun removeHistoryItem(episodeId: String): ListeningHistoryRemoval? = history.firstOrNull { it.episodeId == episodeId }?.let { ListeningHistoryRemoval(it) }
+    override suspend fun removeHistoryItem(episodeId: String): ListeningHistoryRemoval? {
+        val item = shownHistory.value.firstOrNull { it.episodeId == episodeId } ?: return null
+        shownHistory.value = shownHistory.value - item
+        return ListeningHistoryRemoval(item)
+    }
 
     /** Episodes put back by Undo, in order. */
     val restored = mutableListOf<String>()
 
     override suspend fun restoreHistoryRemoval(removal: ListeningHistoryRemoval) {
         restored += removal.item.episodeId
+        val kept = shownHistory.value.map { it.episodeId }.toSet() + removal.item.episodeId
+        shownHistory.value = history.filter { it.episodeId in kept }
     }
 
     /** How many times Clear all reached the history. */

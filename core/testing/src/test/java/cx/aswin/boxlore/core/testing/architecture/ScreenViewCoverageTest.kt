@@ -132,6 +132,7 @@ class ScreenViewCoverageTest {
                 "player:feature/player/v2/ControlDeck.kt#SleepSheet" to SHEET_CONTENT,
                 "settings:feature/settings/pages/SupportDevelopmentPage.kt#SupportPageScreen" to SHEET_CONTENT,
                 "history:feature/history/timeline/TimelineTab.kt#TimelineTab" to SHEET_CONTENT,
+                "history:feature/history/insights/InsightsTab.kt#InsightsTab" to SHEET_CONTENT,
             )
     }
 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -279,6 +280,9 @@ private fun CalendarLegend() {
     }
 }
 
+/** Test tag on each quick-jump chip. */
+const val QUICK_JUMP_CHIP_TAG = "history_quick_jump_chip"
+
 @Composable
 private fun QuickJumpChip(text: String, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
@@ -286,14 +290,16 @@ private fun QuickJumpChip(text: String, onClick: () -> Unit) {
     Box(
         modifier =
         Modifier
-            .height(48.dp)
+            // 48dp for one line; a label that wraps (long words at large text) grows the chip instead.
+            .heightIn(min = 48.dp)
             .expressiveClickable(shape = shape, feedback = ExpressivePressFeedback.Control, onClick = onClick)
             .background(colors.surfaceContainerHighest, shape)
             .semantics { role = Role.Button }
             // Narrow enough that the three English quick jumps share one line on a regular phone.
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .testTag(QUICK_JUMP_CHIP_TAG),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, style = TimelineType.label.copy(fontWeight = GoogleSansWeight.semiBold), color = colors.onSurface)
+        Text(text, style = TimelineType.label.copy(fontWeight = GoogleSansWeight.semiBold), color = colors.onSurface, textAlign = TextAlign.Center)
     }
 }

@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -177,12 +176,14 @@ internal val BriefingStoryListSpacing = Arrangement.spacedBy(16.dp)
  * last few seconds. [firstStoryItem] is the list index of story 0; [startAt] is the story to open at.
  */
 @Composable
+@Suppress("LongParameterList", "kotlin:S107") // The list, its page and the hold the page keeps across layouts.
 internal fun FollowPlayingStory(
     listState: LazyListState,
     model: BriefingStoryListModel,
     firstStoryItem: Int,
     startAt: Int?,
     onStoryInView: (Int) -> Unit,
+    hold: StoryFollowHold,
     canFollow: (LazyListState) -> Boolean = { true },
 ) {
     val report by rememberUpdatedState(onStoryInView)
@@ -197,12 +198,8 @@ internal fun FollowPlayingStory(
         }
         arrived.value = true
     }
-    val lastListenerScroll = remember { mutableLongStateOf(0L) }
-    val following = remember { mutableLongStateOf(0L) }
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress }.collect { scrolling ->
-            if (scrolling && following.longValue == 0L) lastListenerScroll.longValue = System.currentTimeMillis()
-        }
+    LaunchedEffect(listState, hold) {
+        snapshotFlow { listState.isScrollInProgress }.collect { scrolling -> hold.onScrolling(scrolling, System.currentTimeMillis()) }
     }
     val storyInView by remember(listState, firstStoryItem) {
         derivedStateOf {
@@ -215,18 +212,44 @@ internal fun FollowPlayingStory(
     LaunchedEffect(storyInView, arrived.value) { if (arrived.value) storyInView?.let(report) }
     LaunchedEffect(model.activeIndex, model.isPlaying) {
         if (!model.isPlaying || model.activeIndex !in model.chapters.indices || !canFollow(listState)) return@LaunchedEffect
-        if (System.currentTimeMillis() - lastListenerScroll.longValue < LISTENER_SCROLL_HOLD_MS) return@LaunchedEffect
+        if (!hold.mayFollow(System.currentTimeMillis())) return@LaunchedEffect
         if (storyInView == model.activeIndex) return@LaunchedEffect
-        following.longValue = 1L
+        hold.following = true
         try {
             listState.animateScrollToItem(firstStoryItem + model.activeIndex)
         } finally {
-            following.longValue = 0L
+            hold.following = false
         }
     }
+}
+
+/**
+ * When the listener last scrolled the story list. The page keeps it above its layouts, so a window
+ * change doesn't end the hold. Playback leaves the list alone while the listener scrolls and for
+ * [LISTENER_SCROLL_HOLD_MS] after the scroll ends; the list's own moves to the playing story don't count.
+ */
+internal class StoryFollowHold {
+    /** True while the list moves to the playing story by itself. */
+    var following = false
+    private var listenerScrolling = false
+    private var listenerScrollEnded = Long.MIN_VALUE / 2
+
+    /** The list started ([scrolling]) or stopped scrolling at [nowMs]. */
+    fun onScrolling(scrolling: Boolean, nowMs: Long) {
+        when {
+            scrolling && !following -> listenerScrolling = true
+            !scrolling && listenerScrolling -> {
+                listenerScrolling = false
+                listenerScrollEnded = nowMs
+            }
+        }
+    }
+
+    /** Whether playback may bring its story into view at [nowMs]. */
+    fun mayFollow(nowMs: Long): Boolean = !listenerScrolling && nowMs - listenerScrollEnded >= LISTENER_SCROLL_HOLD_MS
 }
 
 private const val ARRIVAL_WAIT_MS = 1_000L
 
 /** After the listener scrolls the stories, playback leaves the list alone this long. */
-private const val LISTENER_SCROLL_HOLD_MS = 4_000L
+internal const val LISTENER_SCROLL_HOLD_MS = 4_000L
