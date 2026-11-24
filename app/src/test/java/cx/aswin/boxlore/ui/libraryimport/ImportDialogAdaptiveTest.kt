@@ -32,6 +32,7 @@ import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.echo.LocalEchoMotion
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
@@ -42,6 +43,8 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
+import cx.aswin.boxlore.core.testing.SystemInsets
+import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -276,6 +279,21 @@ class ImportDialogAdaptiveTest {
             assertEquals("Column width at $next", expected, (column.right - column.left).value, 0.5f)
             val overlay = compose.onNodeWithTag("import_overlay").getUnclippedBoundsInRoot()
             assertEquals("Column centre at $next", ((overlay.left + overlay.right) / 2).value, ((column.left + column.right) / 2).value, 0.5f)
+        }
+    }
+
+    @Test fun `a side inset narrows the import column only where the column reaches it`() {
+        compose.runOnUiThread { WindowCompat.setDecorFitsSystemWindows(compose.activity.window, false) }
+        render()
+        val sides = SystemInsets.SIDEWAYS_3_BUTTON.let { it.cutoutStart + it.navEnd }
+        listOf(BoxloreTestWindows.PHONE_LAND, BoxloreWindowLayout(600f, 412f), BoxloreTestWindows.PHONE_LAND).forEach { next ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            // Sent again after each change, as the window would (the page asks the window for fresh insets).
+            compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets.SIDEWAYS_3_BUTTON) }
+            compose.waitForIdle()
+            val column = compose.onNodeWithTag("import_column").getUnclippedBoundsInRoot()
+            assertEquals("Column width at $next", minOf(ImportMaxWidthDp, next.widthDp - sides), (column.right - column.left).value, 0.5f)
         }
     }
 

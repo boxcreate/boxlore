@@ -19,8 +19,10 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -226,10 +228,13 @@ private fun ImportDialogSurface(state: OpmlImportState, actions: OpmlImportDialo
             modifier =
             Modifier
                 .boxloreFoldSafeViewport()
+                // Side insets first, on the full-width layer, so a centred column far from the cutout
+                // or the side navigation buttons keeps its full width.
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
                 .boxloreReadingColumn(maxWidthDp = ImportMaxWidthDp)
                 .fillMaxHeight()
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical))
                 .testTag("import_column")
-                .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             ImportDialogBody(
@@ -333,4 +338,4 @@ private fun ImportDialogBody(
 }
 
 /** The import screens stay a readable column on tablets and unfolded foldables. */
-private const val ImportMaxWidthDp = 560f
+internal const val ImportMaxWidthDp = 560f
