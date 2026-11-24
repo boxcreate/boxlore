@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.explore
 
 import android.app.Application
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
@@ -15,16 +16,19 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.unit.DpRect
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.COVER_443
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.COVER_475
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.DESKTOP
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.FOLD_TABLETOP
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.PHONE
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.PHONE_LAND
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.SPLIT_HALF
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.TABLET
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.TABLET_PORTRAIT
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import org.junit.Assert.assertEquals
@@ -85,9 +89,11 @@ class LoreStateCardTest {
     @Test
     fun `the header stays in one place for every state on phones and tablets`() {
         host.render()
-        for (window in listOf(PHONE, TABLET)) {
+        // Tall tablet panes centre the header with the deck, so every state's panel must take the deck's frame.
+        for (window in listOf(PHONE, TABLET, TABLET_PORTRAIT, BoxloreWindowLayout(600f, 960f), DESKTOP)) {
             host.moveTo(window)
-            val bounds = States.map { state ->
+            // Every state after every other, both ways round.
+            val bounds = (States + States.reversed()).map { state ->
                 host.show(state)
                 header()
             }
@@ -119,6 +125,8 @@ class LoreStateCardTest {
             val card = host.bounds(host.activeCard())
             host.show(LearnUiState.Loading)
             fixture.compose.onNode(hasTestTag(LoreDeckHost.ACTIVE_CARD), useUnmergedTree = true).assertDoesNotExist()
+            // Screen readers still hear that the deck is loading.
+            fixture.compose.onNode(SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo.Indeterminate)).assertExists()
             val placeholder = host.bounds(fixture.compose.onNode(hasTestTag(LORE_CARD_SKELETON_TAG), useUnmergedTree = true))
             assertEquals("$window left", card.left.value, placeholder.left.value, 1f)
             assertEquals("$window top", card.top.value, placeholder.top.value, 1f)

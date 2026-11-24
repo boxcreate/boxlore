@@ -15,7 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -43,7 +45,8 @@ internal fun LoreCardSkeleton(accentColor: Color, modifier: Modifier = Modifier)
     val spec = loreTextSpecs.first()
     val heading = MaterialTheme.typography.headlineMedium.loreHeading(spec)
     val body = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 24.sp)
-    LoreDeckFrame(modifier.clearAndSetSemantics { }) { short ->
+    // Screen readers hear that the deck is loading, as they did with the old spinner.
+    LoreDeckFrame(modifier.clearAndSetSemantics { progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate }) { short ->
         ShimmerScope(active = true) {
             Surface(
                 shape = MaterialTheme.shapes.extraLarge,

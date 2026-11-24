@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.explore
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -213,10 +214,11 @@ fun LearnScreen(
                             )
                         }
                         is LearnUiState.CaughtUp -> {
-                            LoreStateCard(
+                            LoreStatePanel(
+                                tablet = tablet,
+                                compactSpacing = compactSpacing,
                                 title = stringResource(R.string.lore_caught_up_title),
                                 description = stringResource(R.string.lore_caught_up_body),
-                                modifier = Modifier.weight(1f),
                             ) {
                                 FilledTonalButton(
                                     onClick = viewModel::refresh,
@@ -258,10 +260,11 @@ fun LearnScreen(
                             )
                         }
                         is LearnUiState.Error -> {
-                            LoreStateCard(
+                            LoreStatePanel(
+                                tablet = tablet,
+                                compactSpacing = compactSpacing,
                                 title = stringResource(R.string.lore_error_title),
                                 description = state.message.asString(),
-                                modifier = Modifier.weight(1f),
                             ) {
                                 FilledTonalButton(
                                     onClick = viewModel::refresh,
@@ -313,6 +316,33 @@ private fun playLoreEpisode(
  * Lore's caught-up and failed panels: centred under the header when they fit, scrolling when the
  * window is too short, so their buttons are never cut off and pull to refresh still works.
  */
+/**
+ * Caught up and error panels. On tablets they take the deck's frame, after the same gap, so the
+ * header stays exactly where it is for the cards; on every window they stay as narrow as the header.
+ */
+@Composable
+private fun ColumnScope.LoreStatePanel(
+    tablet: Boolean,
+    compactSpacing: Boolean,
+    title: String,
+    description: String,
+    content: @Composable () -> Unit,
+) {
+    if (tablet) {
+        Spacer(modifier = Modifier.height(if (compactSpacing) 8.dp else 16.dp))
+        LoreDeckFrame(
+            Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .padding(horizontal = if (compactSpacing) 12.dp else 20.dp),
+        ) { _ ->
+            LoreStateCard(title, description, Modifier.fillMaxSize(), content)
+        }
+    } else {
+        LoreStateCard(title, description, Modifier.weight(1f).widthIn(max = LoreHeaderMaxWidth), content)
+    }
+}
+
 @Composable
 private fun LoreStateCard(
     title: String,

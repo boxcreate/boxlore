@@ -45,7 +45,7 @@ internal fun LoreDeckHeader(
             .testTag(LORE_DECK_HEADER_TAG)
             .boxloreCardWidth(BoxloreCardFamily.Reading, maximumWidthDp = 560f)
             // boxloreCardWidth leaves compact windows alone; a sideways phone still caps here.
-            .widthIn(max = 560.dp)
+            .widthIn(max = LoreHeaderMaxWidth)
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = if (compactSpacing) 0.dp else 4.dp),
     ) {
@@ -95,3 +95,6 @@ internal fun LoreLogo(accentColor: State<Color>, modifier: Modifier = Modifier) 
 }
 
 internal const val LORE_DECK_HEADER_TAG = "lore_deck_header"
+
+/** The widest Lore's header (and the caught-up and error panels under it) gets. */
+internal val LoreHeaderMaxWidth = 560.dp
