@@ -23,10 +23,13 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.feature.library.downloads.downloadSummary
+import java.util.TimeZone
 
 /** The hub's cards in order, keyed so a window change keeps the card in view. */
 internal object LibraryHubKeys {
@@ -132,8 +135,9 @@ internal data class LibraryHubStatus(val subscriptions: String, val liked: Strin
 
 /**
  * What each hub card says is inside: shows and how many have a new episode (the same NEW rule as
- * Subscriptions), liked episodes, downloaded episodes, and when the listener last played something.
- * Worked out when the lists change, never per playback tick.
+ * Subscriptions), liked episodes (each once, as the Liked page lists them), episodes on the phone
+ * (as Downloads counts them, without failed downloads), and the day the listener last played
+ * something. Worked out when the lists or the day change, never per playback tick.
  */
 @Composable
 internal fun rememberLibraryHubStatus(state: LibraryUiState.Success, lastSeenEpisodes: Map<String, String>): LibraryHubStatus {
@@ -146,19 +150,29 @@ internal fun rememberLibraryHubStatus(state: LibraryUiState.Success, lastSeenEpi
         add(pluralStringResource(R.plurals.library_show_count, shows, shows))
         if (newCount > 0) add(pluralStringResource(R.plurals.library_folder_new_count, newCount, newCount))
     }.joinToString(STATUS_SEPARATOR)
-    val liked = state.likedEpisodes.size
-    val downloaded = state.downloadedEpisodes.size
-    val lastPlayed = state.recentHistory.maxOfOrNull { it.lastPlayedAt }
+    val liked = remember(state.likedEpisodes) { LazyListKeyPolicy.deduplicateById(state.likedEpisodes) { it.episodeId }.size }
+    val downloaded = remember(state.downloadedEpisodes) { state.downloadedEpisodes.downloadSummary().episodeCount }
+    val lastPlayed = remember(state.recentHistory) { state.recentHistory.maxOfOrNull { it.lastPlayedAt }?.takeIf { it > 0L } }
+    val zone = remember { TimeZone.getDefault() }
+    val now = System.currentTimeMillis()
+    val today = localEpochDay(now, zone)
+    val daysAgo = remember(lastPlayed, today) { lastPlayed?.let { today - localEpochDay(it, zone) } }
     return LibraryHubStatus(
         subscriptions = subscriptions,
         liked = if (liked == 0) stringResource(R.string.library_hub_no_likes) else pluralStringResource(R.plurals.library_hub_episode_count, liked, liked),
         downloads = if (downloaded == 0) stringResource(R.string.library_hub_no_downloads) else pluralStringResource(R.plurals.library_hub_episode_count, downloaded, downloaded),
-        history = if (lastPlayed == null || lastPlayed <= 0L) {
-            stringResource(R.string.library_hub_no_history)
-        } else {
-            stringResource(R.string.library_hub_last_played, LocaleFormats.relativeTime(lastPlayed, System.currentTimeMillis(), locale))
+        history = when {
+            daysAgo == null -> stringResource(R.string.library_hub_no_history)
+            daysAgo <= 0L -> stringResource(R.string.library_hub_played_today)
+            daysAgo == 1L -> stringResource(R.string.library_hub_played_yesterday)
+            // Whole days: "3 days ago", then weeks and months.
+            else -> stringResource(R.string.library_hub_last_played, LocaleFormats.relativeTime(now - daysAgo * DAY_MS, now, locale))
         },
     )
 }
 
+/** The calendar day [epochMillis] falls on in [zone], counted from 1 January 1970. */
+internal fun localEpochDay(epochMillis: Long, zone: TimeZone): Long = Math.floorDiv(epochMillis + zone.getOffset(epochMillis), DAY_MS)
+
+private const val DAY_MS = 86_400_000L
 private const val STATUS_SEPARATOR = " · "

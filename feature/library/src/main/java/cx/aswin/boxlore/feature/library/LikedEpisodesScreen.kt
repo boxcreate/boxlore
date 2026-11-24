@@ -69,7 +69,8 @@ fun LikedEpisodesScreen(
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val listState = rememberLazyListState()
     val header = rememberLibraryHeaderState()
-    val scrollBehavior = rememberLibraryHeaderScrollBehavior { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
+    val listAtTop = { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior(listAtTop)
 
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
@@ -118,7 +119,7 @@ fun LikedEpisodesScreen(
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = libraryHeaderScrolledColor(listAtTop),
                 ),
             )
         },

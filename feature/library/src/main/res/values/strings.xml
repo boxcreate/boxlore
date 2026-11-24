@@ -37,14 +37,10 @@
     <string name="library_turn_off">Turn off</string>
     <!-- Snackbar action -->
     <string name="library_undo">Undo</string>
-    <!-- Screen-reader label that clears the search text -->
-    <string name="library_clear">Clear</string>
     <!-- Screen-reader label for the search button -->
     <string name="library_search">Search</string>
     <!-- Screen-reader label for the sort button -->
     <string name="library_sort">Sort</string>
-    <!-- Screen-reader label for the tick beside the chosen menu option -->
-    <string name="library_selected">Selected</string>
     <!-- Screen-reader name of the long-press action that starts selecting -->
     <string name="library_select">Select</string>
     <!-- Screen-reader label -->
@@ -53,7 +49,7 @@
     <string name="library_cancel_selection">Cancel selection</string>
     <!-- Screen-reader label -->
     <string name="library_delete_selected">Delete selected</string>
-    <string name="library_delete_all">Delete All</string>
+    <string name="library_delete_all">Delete all</string>
     <!-- Under a sheet title: how many shows are ticked -->
     <plurals name="library_selected_count">
         <item quantity="one">%1$d selected</item>
@@ -71,7 +67,7 @@
     <!-- Screen-reader label for an episode's ⋮ button -->
     <string name="library_options">Options</string>
     <string name="library_play">Play</string>
-    <string name="library_play_next">Play Next</string>
+    <string name="library_play_next">Play next</string>
     <!-- Screen-reader label -->
     <string name="library_play_episode">Play episode</string>
     <!-- Screen-reader label for the played tick -->
@@ -178,6 +174,10 @@
     </plurals>
     <!-- %1$s is how long ago, such as "3 days ago" -->
     <string name="library_hub_last_played">Last played %1$s</string>
+    <!-- Hub card status when the last play was today -->
+    <string name="library_hub_played_today">Played today</string>
+    <!-- Hub card status when the last play was yesterday -->
+    <string name="library_hub_played_yesterday">Played yesterday</string>
     <string name="library_hub_no_downloads">Nothing downloaded yet</string>
     <string name="library_hub_no_likes">No likes yet</string>
     <string name="library_hub_no_history">Nothing played yet</string>

@@ -37,14 +37,10 @@
     <string name="library_turn_off">Desativar</string>
     <!-- Snackbar action -->
     <string name="library_undo">Desfazer</string>
-    <!-- Screen-reader label that clears the search text -->
-    <string name="library_clear">Limpar</string>
     <!-- Screen-reader label for the search button -->
     <string name="library_search">Pesquisar</string>
     <!-- Screen-reader label for the sort button -->
     <string name="library_sort">Ordenar</string>
-    <!-- Screen-reader label for the tick beside the chosen menu option -->
-    <string name="library_selected">Selecionado</string>
     <!-- Screen-reader name of the long-press action that starts selecting -->
     <string name="library_select">Selecionar</string>
     <!-- Screen-reader label -->
@@ -176,6 +172,8 @@
         <item quantity="other">%1$d playlists</item>
     </plurals>
     <string name="library_hub_last_played">Ouvido pela última vez %1$s</string>
+    <string name="library_hub_played_today">Ouvido hoje</string>
+    <string name="library_hub_played_yesterday">Ouvido ontem</string>
     <string name="library_hub_no_downloads">Nada baixado ainda</string>
     <string name="library_hub_no_likes">Nenhum episódio curtido ainda</string>
     <string name="library_hub_no_history">Nada ouvido ainda</string>

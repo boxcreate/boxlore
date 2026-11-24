@@ -74,6 +74,7 @@ import cx.aswin.boxlore.feature.library.LibraryUiState
 import cx.aswin.boxlore.feature.library.LibraryViewModel
 import cx.aswin.boxlore.feature.library.PlayAllFab
 import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.library.libraryHeaderScrolledColor
 import cx.aswin.boxlore.feature.library.rememberLibraryHeaderScrollBehavior
 import cx.aswin.boxlore.feature.library.rememberLibraryHeaderState
 
@@ -95,7 +96,8 @@ fun DownloadedEpisodesScreen(
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val listState = rememberLazyListState()
     val header = rememberLibraryHeaderState()
-    val scrollBehavior = rememberLibraryHeaderScrollBehavior { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
+    val listAtTop = { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior(listAtTop)
 
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
@@ -222,7 +224,7 @@ fun DownloadedEpisodesScreen(
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.surface,
-                            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            scrolledContainerColor = libraryHeaderScrolledColor(listAtTop),
                         ),
                     )
                 } else {
@@ -252,7 +254,7 @@ fun DownloadedEpisodesScreen(
                         scrollBehavior = scrollBehavior,
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.surface,
-                            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            scrolledContainerColor = libraryHeaderScrolledColor(listAtTop),
                         ),
                     )
                 }

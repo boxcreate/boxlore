@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,6 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -168,7 +171,8 @@ fun LibraryContent(
     // One grid state for every window, so folding or unfolding keeps the hub where it was.
     val gridState = rememberLazyGridState()
     val header = rememberLibraryHeaderState()
-    val scrollBehavior = rememberLibraryHeaderScrollBehavior { gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0 }
+    val listAtTop = { gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0 }
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior(listAtTop)
 
     Scaffold(
         modifier = Modifier
@@ -201,7 +205,7 @@ fun LibraryContent(
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = if (LocalBoxloreWindowLayout.current.usesTabletLayout) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = libraryHeaderScrolledColor(listAtTop, if (LocalBoxloreWindowLayout.current.usesTabletLayout) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainer),
                 ),
             )
         },
@@ -249,8 +253,13 @@ fun LibraryMenuCard(
     contentColor: Color = contentColorFor(containerColor),
 ) {
     val shape = RoundedCornerShape(HubCardCorner)
-    // On a sideways phone or a wide split half the collage sits at the card's end, not mid-card.
-    val wideCompact = !LocalBoxloreWindowLayout.current.usesTabletLayout && boxloreContentWidthDp() > PHONE_MAX_WIDTH_DP
+    val layout = LocalBoxloreWindowLayout.current
+    val form = when {
+        layout.usesTabletLayout -> HubCardForm.Tablet
+        // On a sideways phone or a wide split half the collage sits at the card's end, not mid-card.
+        boxloreContentWidthDp() > PHONE_MAX_WIDTH_DP -> HubCardForm.WideCompact
+        else -> HubCardForm.Phone
+    }
     val artwork = images.filter(String::isNotEmpty)
     Surface(
         color = containerColor,
@@ -262,16 +271,18 @@ fun LibraryMenuCard(
             .height(HubCardHeight)
             .expressiveClickable(shape = shape, onClick = onClick),
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val geometry = hubCardGeometry(maxWidth, form, hasArtwork = artwork.isNotEmpty())
             if (artwork.isEmpty()) {
-                EmptyMedallion(icon, shapes.firstOrNull() ?: ExpressiveShapes.Circle, Modifier.align(Alignment.CenterEnd).padding(end = 24.dp))
+                EmptyMedallion(icon, shapes.firstOrNull() ?: ExpressiveShapes.Circle, Modifier.align(Alignment.CenterEnd).padding(end = MedallionEndPadding))
             } else {
                 Box(
                     modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = CollageEndPadding)
+                        .align(Alignment.CenterStart)
+                        .offset(x = geometry.collageCenter - CollageBoxWidth / 2)
                         .fillMaxHeight()
-                        .then(if (wideCompact) Modifier.width(CollageWidth) else Modifier.fillMaxWidth(0.5f)),
+                        .width(CollageBoxWidth)
+                        .testTag(HUB_CARD_COLLAGE_TAG),
                 ) {
                     LibraryCardCollage(images = artwork, shapes = shapes)
                 }
@@ -296,15 +307,17 @@ fun LibraryMenuCard(
                     contentDescription = null,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(16.dp)
-                        .size(32.dp)
+                        .padding(CornerIconPadding)
+                        .size(CornerIconSize)
                 )
             }
 
+            // The title and status stop before the artwork: a long or translated title wraps to its second line instead.
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(16.dp),
+                    .padding(TitleStartPadding)
+                    .widthIn(max = geometry.titleMaxWidth),
             ) {
                 Text(
                     text = title,
@@ -312,6 +325,7 @@ fun LibraryMenuCard(
                     fontWeight = GoogleSansWeight.bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag(HUB_CARD_TITLE_TAG),
                 )
                 if (status != null) {
                     Text(
@@ -325,6 +339,31 @@ fun LibraryMenuCard(
             }
         }
     }
+}
+
+/** How a hub card places its collage: today's phone card, a wide compact window, or a tablet card. */
+internal enum class HubCardForm { Phone, WideCompact, Tablet }
+
+/** Where a hub card's collage is centred, and how wide its title and status may run before reaching the art. */
+internal data class HubCardGeometry(val collageCenter: Dp, val titleMaxWidth: Dp)
+
+/**
+ * A hub card's layout for a card [cardWidth] wide. Phones keep today's collage, centred in the
+ * card's end half. Wide compact windows put it at the card's end; tablet cards keep it in the end
+ * half, clear of the corner icon on cards wide enough to leave the title [TabletTitleRoom]. The title column ends where the art starts (or the empty
+ * medallion, when there is no artwork).
+ */
+internal fun hubCardGeometry(cardWidth: Dp, form: HubCardForm, hasArtwork: Boolean = true): HubCardGeometry {
+    val endHalfCenter = (cardWidth - PhoneCollageEndPadding) * END_HALF_CENTER
+    val clearOfIcon = cardWidth - CollageIconClearance
+    val center = when (form) {
+        HubCardForm.Phone -> endHalfCenter
+        HubCardForm.WideCompact -> clearOfIcon
+        // Clear of the corner icon, unless that would leave the title too little room on a narrow card.
+        HubCardForm.Tablet -> minOf(endHalfCenter, maxOf(clearOfIcon, TabletTitleRoom + TitleStartPadding + CollageArtStartReach))
+    }
+    val artStart = if (hasArtwork) center - CollageArtStartReach else cardWidth - MedallionEndPadding - MedallionSize
+    return HubCardGeometry(center, (artStart - TitleStartPadding).coerceAtLeast(0.dp))
 }
 
 @Composable
@@ -396,14 +435,32 @@ private fun EmptyMedallion(icon: ImageVector, shape: Shape, modifier: Modifier) 
 private val HubCardHeight = 120.dp
 private val HubCardCorner = 24.dp
 private val MedallionSize = 64.dp
-private val CollageWidth = 160.dp
+private val MedallionEndPadding = 24.dp
+private val TitleStartPadding = 16.dp
+private val CornerIconPadding = 16.dp
+private val CornerIconSize = 32.dp
 
-/** The collage keeps clear of the corner icon. */
-private val CollageEndPadding = 56.dp
+/** The collage's box: wide enough for its three covers fanned out from the centre. */
+private val CollageBoxWidth = 160.dp
+
+/** Today's phone collage: the end half of the card, 16dp in from its edge, art centred in it. */
+private val PhoneCollageEndPadding = 16.dp
+private const val END_HALF_CENTER = 0.75f
+
+/** How far the collage's art reaches left of its centre: the top cover (80dp) tilted 10 degrees. */
+internal val CollageArtStartReach = 47.dp
+
+/** A collage centred this far from the card's end keeps its rightmost cover clear of the corner icon. */
+private val CollageIconClearance = 124.dp
+
+/** The least room a tablet card's title gets before the art: "Subscriptions" and "Liked episodes" on one line. */
+private val TabletTitleRoom = 150.dp
 private const val PHONE_MAX_WIDTH_DP = 430f
 
-/** Test tags for a hub card's status line and an empty section's medallion. */
+/** Test tags for a hub card's title, status line, collage and an empty section's medallion. */
+internal const val HUB_CARD_TITLE_TAG = "library_hub_card_title"
 internal const val HUB_CARD_STATUS_TAG = "library_hub_card_status"
+internal const val HUB_CARD_COLLAGE_TAG = "library_hub_card_collage"
 internal const val HUB_CARD_MEDALLION_TAG = "library_hub_card_medallion"
 
 /**

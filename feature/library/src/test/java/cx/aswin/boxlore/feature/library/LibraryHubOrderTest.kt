@@ -11,6 +11,8 @@ import androidx.compose.ui.test.hasScrollToKeyAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -104,5 +106,28 @@ class LibraryHubOrderTest {
         }
     }
 
+    @Test
+    fun `a header collapsed on the cover opens again once the unfolded hub is at its top`() {
+        window.value = BoxloreTestWindows.COVER_443
+        showHub()
+        // A short drag: enough to collapse the header while the first card stays on screen.
+        compose.onNode(hasScrollToKeyAction()).performTouchInput { swipeUp(startY = centerY, endY = centerY - 150f, durationMillis = 2_000) }
+        compose.waitForIdle()
+        assertTrue("the cover's header collapsed", card("Subscriptions").top < EXPANDED_FIRST_CARD_TOP)
+        with(BoxloreTestWindows) {
+            compose.walkWindows(window, FOLD_FLAT, COVER_443) {
+                // Wherever the window leaves the grid, the header is open whenever its first card is fully in view.
+                compose.onNode(hasScrollToKeyAction()).performScrollToKey(LibraryHubKeys.SUBSCRIPTIONS)
+                compose.waitForIdle()
+                assertEquals(EXPANDED_FIRST_CARD_TOP, card("Subscriptions").top)
+            }
+        }
+    }
+
     private fun card(title: String) = compose.onNodeWithText(title).fetchSemanticsNode().boundsInRoot
+
+    private companion object {
+        /** The large header (152dp) and the grid's 8dp top padding. */
+        const val EXPANDED_FIRST_CARD_TOP = 160f
+    }
 }

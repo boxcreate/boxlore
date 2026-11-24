@@ -89,6 +89,8 @@ import cx.aswin.boxlore.feature.library.LibraryLargeTitle
 import cx.aswin.boxlore.feature.library.LibraryLoading
 import cx.aswin.boxlore.feature.library.R
 import cx.aswin.boxlore.feature.library.libraryGridWidthDp
+import cx.aswin.boxlore.feature.library.libraryHeaderScrolledColor
+import cx.aswin.boxlore.feature.library.playlistsCardContainer
 import cx.aswin.boxlore.feature.library.rememberLibraryHeaderScrollBehavior
 import cx.aswin.boxlore.feature.library.rememberLibraryHeaderState
 import kotlinx.coroutines.launch
@@ -198,7 +200,8 @@ internal fun PlaylistsContent(
     val gridState = rememberLazyGridState()
     val wideGrid = isPlaylistWideGrid((libraryGridWidthDp() - PlaylistGridSidePadding).dp)
     val header = rememberLibraryHeaderState()
-    val scrollBehavior = rememberLibraryHeaderScrollBehavior { gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0 }
+    val listAtTop = { gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0 }
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior(listAtTop)
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -214,7 +217,7 @@ internal fun PlaylistsContent(
                     scrollBehavior = scrollBehavior,
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        scrolledContainerColor = libraryHeaderScrolledColor(listAtTop),
                     ),
                 )
             },
@@ -232,8 +235,8 @@ internal fun PlaylistsContent(
                             shape = ExpressiveShapes.Cookie4,
                             actionText = stringResource(PlaylistCopy.NEW_PLAYLIST),
                         ),
-                        containerColor = MaterialTheme.colorScheme.tertiaryFixedDim,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryFixed,
+                        containerColor = MaterialTheme.colorScheme.playlistsCardContainer(),
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         onAction = state::openCreate,
                         modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                         bottomPadding = boxloreContentBottomPadding(bottomPadding),

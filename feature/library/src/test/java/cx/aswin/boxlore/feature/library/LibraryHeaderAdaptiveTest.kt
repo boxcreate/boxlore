@@ -3,12 +3,18 @@ package cx.aswin.boxlore.feature.library
 import android.app.Application
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -46,6 +52,7 @@ class LibraryHeaderAdaptiveTest {
     private val window = mutableStateOf(BoxloreTestWindows.PHONE)
     private val pane = mutableStateOf<BoxloreLayoutBounds?>(null)
     private val fixtures = LibraryCaptureFixtures
+    private lateinit var typography: Typography
 
     private fun show(fontScale: Float = 1f, content: @Composable () -> Unit) {
         compose.setContent {
@@ -56,6 +63,7 @@ class LibraryHeaderAdaptiveTest {
                 LocalDensity provides Density(density, fontScale),
             ) {
                 BoxLoreTheme(dynamicColor = false) {
+                    typography = MaterialTheme.typography
                     val width = pane.value?.width ?: window.value.widthDp
                     val height = pane.value?.height ?: window.value.heightDp
                     Box(Modifier.size(width.dp, height.dp)) { content() }
@@ -73,14 +81,20 @@ class LibraryHeaderAdaptiveTest {
         onNavigateToHistory = {},
     )
 
-    /** The expanded title (the lower of the two the large header draws) fits its lines and sits under the top row. */
-    private fun assertTitleFits(title: String) {
+    /** The expanded title (the lower of the two the large header draws) and its text layout. */
+    private fun expandedTitle(title: String): Pair<SemanticsNode, TextLayoutResult> {
         val node = compose.onAllNodesWithText(title).fetchSemanticsNodes().maxBy { it.boundsInRoot.top }
         val layouts = mutableListOf<TextLayoutResult>()
         node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
-        val layout = layouts.single()
+        return node to layouts.single()
+    }
+
+    /** The expanded title fits its lines, sits under the top row and, even a size smaller, keeps the bold large-title font. */
+    private fun assertTitleFits(title: String) {
+        val (node, layout) = expandedTitle(title)
         assertFalse("$title is cut short", layout.isLineEllipsized(layout.lineCount - 1) || layout.didOverflowHeight)
         assertTrue("$title starts under the header's top row (${node.boundsInRoot.top})", node.boundsInRoot.top >= 64f)
+        assertEquals("$title keeps the large title's bold font", typography.displayMedium.fontFamily, layout.layoutInput.style.fontFamily)
     }
 
     @Test
@@ -109,6 +123,18 @@ class LibraryHeaderAdaptiveTest {
     }
 
     @Test
+    fun `a regular small phone keeps the same bold title as a larger phone`() {
+        show { hub() }
+        val phone = expandedTitle("Library").second.layoutInput.style
+        compose.runOnIdle { window.value = BoxloreTestWindows.PHONE_SMALL }
+        compose.waitForIdle()
+        val small = expandedTitle("Library").second.layoutInput.style
+        assertEquals(typography.displayMedium.fontSize, phone.fontSize)
+        assertEquals(phone.fontSize, small.fontSize)
+        assertEquals(phone.fontFamily, small.fontFamily)
+    }
+
+    @Test
     fun `short windows start with a slim header and show two hub cards`() {
         val tabletopLower = BoxloreLayoutBounds(0f, 336f, 932f, 650f)
         window.value = BoxloreTestWindows.PHONE_LAND
@@ -130,6 +156,25 @@ class LibraryHeaderAdaptiveTest {
         assertEquals(160f, card("Subscriptions").top)
         compose.walkWindows(window, BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE) { step ->
             if (step == BoxloreTestWindows.PHONE_LAND) assertTrue(card("Subscriptions").top <= 72f) else assertEquals(160f, card("Subscriptions").top)
+        }
+    }
+
+    @Test
+    fun `Subscriptions in a short window tucks its header away so two rows of shows come first, and brings it back when tall`() {
+        window.value = BoxloreTestWindows.W900_H480
+        show { SubscriptionsScreen(fixtures.viewModel(fixtures.loaded(), folders = emptyList()), onBack = {}, onPodcastClick = {}, onExploreClick = {}) }
+        val titles = fixtures.podcasts.map { it.title }.toSet()
+        val poster = SemanticsMatcher("a show's poster") { node -> node.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().any { it in titles } }
+        compose.walkWindows(window, BoxloreTestWindows.W900_H479, BoxloreTestWindows.W900_H480) { step ->
+            if (step == BoxloreTestWindows.W900_H479) {
+                val rows = compose.onAllNodes(poster).fetchSemanticsNodes()
+                    .filter { it.boundsInRoot.top >= 0f && it.boundsInRoot.bottom <= step.heightDp + 0.5f }
+                    .map { it.boundsInRoot.top }
+                    .distinct()
+                assertTrue("rows fully shown: $rows", rows.size >= 2)
+            } else {
+                compose.onNodeWithText("Subscriptions").assertIsDisplayed()
+            }
         }
     }
 

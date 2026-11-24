@@ -101,6 +101,8 @@ import cx.aswin.boxlore.feature.library.LibraryLargeTitle
 import cx.aswin.boxlore.feature.library.LibraryLoading
 import cx.aswin.boxlore.feature.library.LibraryRowsSkeleton
 import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.library.libraryHeaderScrolledColor
+import cx.aswin.boxlore.feature.library.playlistsCardContainer
 import cx.aswin.boxlore.feature.library.rememberLibraryHeaderScrollBehavior
 import cx.aswin.boxlore.feature.library.rememberLibraryHeaderState
 import kotlinx.coroutines.launch
@@ -206,7 +208,8 @@ internal fun PlaylistDetailContent(
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val header = rememberLibraryHeaderState()
-    val scrollBehavior = rememberLibraryHeaderScrollBehavior { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
+    val listAtTop = { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior(listAtTop)
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -240,7 +243,7 @@ internal fun PlaylistDetailContent(
                     scrollBehavior = scrollBehavior,
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        scrolledContainerColor = libraryHeaderScrolledColor(listAtTop),
                     ),
                 )
             },
@@ -258,8 +261,8 @@ internal fun PlaylistDetailContent(
                             shape = ExpressiveShapes.Cookie4,
                             actionText = PlaylistDetailCopy.ADD_SHOWS,
                         ),
-                        containerColor = MaterialTheme.colorScheme.tertiaryFixedDim,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryFixed,
+                        containerColor = MaterialTheme.colorScheme.playlistsCardContainer(),
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         onAction = { state.openAddShows(ready.playlist.id) },
                         modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                         bottomPadding = playlistChromeBottom(isPlayerActive),

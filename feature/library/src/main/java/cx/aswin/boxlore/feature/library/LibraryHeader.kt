@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -20,6 +21,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.lerp
@@ -29,9 +31,11 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.boxloreLargeTitlePresentation
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentHeightDp
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import kotlinx.coroutines.flow.first
 
 /**
  * The large header of a Library page. It remembers how tall its expanded title needs to be, so a
@@ -57,25 +61,41 @@ internal fun rememberLibraryHeaderState(): LibraryHeaderState = remember { Libra
 /**
  * An exit-until-collapsed header that starts as one slim row in a short window (a sideways phone,
  * a split-screen half, the lower half of a half-open fold), so the content shows first. When the
- * window becomes tall again with the list at its top ([listAtTop]), the header opens back up. The
+ * window changes to one that isn't short, the header opens back up as soon as the list is at its
+ * top (at once if it already is), so a list that now fits never sits under a collapsed title. The
  * same state is kept throughout.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun rememberLibraryHeaderScrollBehavior(listAtTop: () -> Boolean): TopAppBarScrollBehavior {
     val short = boxloreIsShortPane()
+    val paneWidth = boxloreContentWidthDp()
+    val paneHeight = boxloreContentHeightDp()
     val collapseLimit = with(LocalDensity.current) { (TopAppBarDefaults.LargeAppBarCollapsedHeight - TopAppBarDefaults.LargeAppBarExpandedHeight).toPx() }
     val state = rememberTopAppBarState(initialHeightOffsetLimit = collapseLimit, initialHeightOffset = if (short) collapseLimit else 0f)
     val atTop by rememberUpdatedState(listAtTop)
-    LaunchedEffect(short) {
+    LaunchedEffect(short, paneWidth, paneHeight) {
         if (short) {
             // The bar sets its own limit when it lays out (taller for a two-line title).
             snapshotFlow { state.heightOffsetLimit }.collect { limit -> if (limit > -Float.MAX_VALUE) state.heightOffset = limit }
-        } else if (atTop()) {
+        } else {
+            snapshotFlow { atTop() }.first { it }
             state.heightOffset = 0f
         }
     }
     return TopAppBarDefaults.exitUntilCollapsedScrollBehavior(state)
+}
+
+/**
+ * The bar's colour once content scrolls under it. In a short window the header starts slim with
+ * the list at its top, so it keeps the page's surface until the list really scrolls.
+ */
+@Composable
+internal fun libraryHeaderScrolledColor(listAtTop: () -> Boolean, scrolled: Color = MaterialTheme.colorScheme.surfaceContainer): Color {
+    val short = boxloreIsShortPane()
+    val currentAtTop by rememberUpdatedState(listAtTop)
+    val atTop by remember { derivedStateOf { currentAtTop() } }
+    return if (short && atTop) MaterialTheme.colorScheme.surface else scrolled
 }
 
 /**
@@ -100,7 +120,17 @@ internal fun LibraryLargeTitle(
         val paneWidth = boxloreContentWidthDp()
         val maxWidth = constraints.maxWidth
         val expanded = remember(title, subtitle, maxWidth, fontScale, paneWidth, typography, largeStyle) {
-            val start = boxloreLargeTitlePresentation(typography, 0f, fontScale = fontScale, paneWidthDp = paneWidth, largeStyle = largeStyle).style
+            // Regular phones (360dp and wider) keep today's size; narrower panes and large text start a
+            // step smaller. Only the size comes from the shared helper: the style keeps [largeStyle]'s
+            // font family, so the title stays bold.
+            val sized = boxloreLargeTitlePresentation(
+                typography,
+                0f,
+                fontScale = fontScale,
+                paneWidthDp = if (paneWidth < PHONE_MIN_WIDTH_DP) paneWidth else Float.POSITIVE_INFINITY,
+                largeStyle = largeStyle,
+            ).style
+            val start = largeStyle.resized(sized).copy(fontWeight = GoogleSansWeight.bold)
             val oneLine = measurer.measure(title, start, maxLines = 1, softWrap = false, constraints = Constraints(maxWidth = maxWidth))
             val style = if (oneLine.hasVisualOverflow) typography.stepDown(start) else start
             val wrapped = measurer.measure(title, style, maxLines = 2, overflow = TextOverflow.Ellipsis, constraints = Constraints(maxWidth = maxWidth))
@@ -135,13 +165,20 @@ internal fun LibraryLargeTitle(
     }
 }
 
-/** One size down the display and headline scale, bold. */
+/** One size down the display and headline scale, in [style]'s own font family (so it stays bold). */
 private fun Typography.stepDown(style: TextStyle): TextStyle {
     val ladder = listOf(displayLarge, displayMedium, displaySmall, headlineLarge, headlineMedium, headlineSmall, titleLarge)
     val index = ladder.indexOfFirst { it.fontSize == style.fontSize }
     val next = if (index in 0 until ladder.lastIndex) ladder[index + 1] else style
-    return next.copy(fontWeight = GoogleSansWeight.bold)
+    return style.resized(next)
 }
+
+/** This style at [size]'s font size, line height and letter spacing; everything else, the font family included, stays. */
+private fun TextStyle.resized(size: TextStyle): TextStyle =
+    copy(fontSize = size.fontSize, lineHeight = size.lineHeight, letterSpacing = size.letterSpacing)
+
+/** Panes narrower than the smallest regular phone start the title a step smaller. */
+private const val PHONE_MIN_WIDTH_DP = 360f
 
 /** Material's large bar keeps this much room under its expanded title. */
 private val LargeTitleBottomPadding = 28.dp

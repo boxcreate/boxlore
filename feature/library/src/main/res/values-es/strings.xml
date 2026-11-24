@@ -24,10 +24,8 @@
     <string name="library_manage">Gestionar</string>
     <string name="library_turn_off">Desactivar</string>
     <string name="library_undo">Deshacer</string>
-    <string name="library_clear">Borrar</string>
     <string name="library_search">Buscar</string>
     <string name="library_sort">Ordenar</string>
-    <string name="library_selected">Seleccionado</string>
     <string name="library_select">Seleccionar</string>
     <string name="library_select_all">Seleccionar todo</string>
     <string name="library_cancel_selection">Cancelar selección</string>
@@ -128,6 +126,8 @@
         <item quantity="other">%1$d playlists</item>
     </plurals>
     <string name="library_hub_last_played">Última escucha: %1$s</string>
+    <string name="library_hub_played_today">Escuchado hoy</string>
+    <string name="library_hub_played_yesterday">Escuchado ayer</string>
     <string name="library_hub_no_downloads">Aún no hay descargas</string>
     <string name="library_hub_no_likes">Aún no hay episodios que te gusten</string>
     <string name="library_hub_no_history">Aún no has escuchado nada</string>
