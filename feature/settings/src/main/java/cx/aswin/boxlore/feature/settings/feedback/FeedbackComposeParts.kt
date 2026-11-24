@@ -57,6 +57,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
@@ -122,7 +123,13 @@ internal fun FeedbackTypePills(
 
 /** Compact type picker for the typing layout: the chosen pill, opening a menu of every choice. */
 @Composable
-internal fun FeedbackTypeMenuPill(choices: List<FeedbackChoice>, selected: FeedbackChoice, enabled: Boolean, onSelect: (String) -> Unit) {
+internal fun FeedbackTypeMenuPill(
+    choices: List<FeedbackChoice>,
+    selected: FeedbackChoice,
+    enabled: Boolean,
+    onSelect: (String) -> Unit,
+    maxWidth: Dp = FEEDBACK_TYPE_PILL_MAX_WIDTH,
+) {
     val menu = rememberBoxloreMenuState()
     Box {
         val a11yLabel = stringResource(R.string.feedback_type_change_description, selected.label.asString())
@@ -136,7 +143,7 @@ internal fun FeedbackTypeMenuPill(choices: List<FeedbackChoice>, selected: Feedb
             modifier = Modifier
                 .testTag(FEEDBACK_TYPE_PILL_TAG)
                 .minimumInteractiveComponentSize()
-                .widthIn(max = FEEDBACK_TYPE_PILL_MAX_WIDTH)
+                .widthIn(max = maxWidth)
                 .heightIn(min = 40.dp)
                 .semantics { contentDescription = a11yLabel },
         ) {

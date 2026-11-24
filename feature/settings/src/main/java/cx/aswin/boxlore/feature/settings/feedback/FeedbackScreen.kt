@@ -50,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -356,25 +357,39 @@ private fun Intro(state: FeedbackUiState) {
 
 @Composable
 internal fun TypingHeader(state: FeedbackUiState, actions: FeedbackComposeActions) {
-    Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp).testTag(FEEDBACK_TYPING_HEADER_TAG),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_navigate_back), actions.onBack)
-        // One row above the keyboard: the title shortens, and on a narrow row it gives way to the type pill.
-        BoxWithConstraints(Modifier.weight(1f)) {
-            val title = stringResource(R.string.feedback_form_title)
-            val style = MaterialTheme.typography.titleLarge
-            val measurer = rememberTextMeasurer()
-            val fits = remember(title, style, constraints.maxWidth) {
-                !measurer.measure(title, style, maxLines = 1, softWrap = false).let { it.size.width > constraints.maxWidth }
-            }
-            if (fits || maxWidth >= FEEDBACK_TYPING_TITLE_ROOM) {
-                Text(title, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
+    // One row above the keyboard: the title shortens with "…"; only on a row narrower than
+    // FEEDBACK_TYPING_TITLE_ROOM, where it would be cut, it gives way and the type pill takes its room.
+    BoxWithConstraints(Modifier.fillMaxWidth().testTag(FEEDBACK_TYPING_HEADER_TAG)) {
+        val rowWidth = maxWidth
+        val title = stringResource(R.string.feedback_form_title)
+        val style = MaterialTheme.typography.titleLarge
+        val measurer = rememberTextMeasurer()
+        val density = LocalDensity.current
+        val pillMax = FEEDBACK_TYPE_PILL_MAX_WIDTH
+        val titleRoom = rowWidth - FEEDBACK_TYPING_ROW_CHROME - pillMax
+        val titleFits = remember(title, style, titleRoom) {
+            measurer.measure(title, style, maxLines = 1, softWrap = false).size.width <= with(density) { titleRoom.toPx() }
         }
-        Box(Modifier.padding(end = 8.dp)) {
-            FeedbackTypeMenuPill(choices = state.choices, selected = state.choice, enabled = !state.isSubmitting, onSelect = actions.onCategorySelected)
+        val showTitle = titleFits || rowWidth >= FEEDBACK_TYPING_TITLE_ROOM
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_navigate_back), actions.onBack)
+            if (showTitle) {
+                Text(title, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            } else {
+                Spacer(Modifier.weight(1f))
+            }
+            Box(Modifier.padding(end = 8.dp)) {
+                FeedbackTypeMenuPill(
+                    choices = state.choices,
+                    selected = state.choice,
+                    enabled = !state.isSubmitting,
+                    onSelect = actions.onCategorySelected,
+                    maxWidth = if (showTitle) pillMax else (rowWidth - FEEDBACK_TYPING_ROW_CHROME).coerceAtLeast(pillMax),
+                )
+            }
         }
     }
 }
@@ -415,6 +430,9 @@ internal const val FEEDBACK_TYPING_HEADER_TAG = "feedback_typing_header"
 
 /** Below this header width a title that would be cut is left out; the type pill and the page already say what it is. */
 private val FEEDBACK_TYPING_TITLE_ROOM = 400.dp
+
+/** The typing header's fixed parts: the row's side padding, Back and the pill's end padding. */
+private val FEEDBACK_TYPING_ROW_CHROME = 68.dp
 
 /** The app's Play listing: the store app when there is one, else the web page. */
 internal fun openPlayStorePage(context: android.content.Context) {

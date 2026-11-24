@@ -9,20 +9,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertTouchHeightIsEqualTo
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.settings.R
+import cx.aswin.boxlore.feature.settings.text
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -102,5 +110,30 @@ class FeedbackComposePartsTest {
         val header = compose.onNodeWithTag(FEEDBACK_TYPING_HEADER_TAG).fetchSemanticsNode().boundsInRoot
         assertTrue("header height ${header.height}", header.height <= 64f)
         compose.onNodeWithTag(FEEDBACK_TYPE_PILL_TAG).assertExists()
+        // The title gave way here, so the pill uses that room and its name ("Funktionsidee") shows whole.
+        compose.onNodeWithText(text(R.string.feedback_form_title)).assertDoesNotExist()
+        val labels = compose.onAllNodes(hasAnyAncestor(hasTestTag(FEEDBACK_TYPE_PILL_TAG)) and SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
+            .fetchSemanticsNodes()
+        assertTrue(labels.isNotEmpty())
+        labels.forEach { node ->
+            val layouts = mutableListOf<TextLayoutResult>()
+            node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+            assertFalse("pill label cut", layouts.last().isLineEllipsized(0))
+        }
+    }
+
+    // Regression: the title gave way on regular phones too, so English listeners lost "Share your thoughts".
+    @Config(qualifiers = "en-w412dp-h915dp-mdpi")
+    @Test
+    fun `on a regular phone in English the typing header keeps its title on one row`() {
+        val actions = FeedbackComposeActions({}, {}, {}, {}, {}, {}, {}, {}, {})
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                androidx.compose.foundation.layout.Box(Modifier.width(412.dp)) { TypingHeader(FeedbackUiState(message = "Hello"), actions) }
+            }
+        }
+        compose.onNodeWithText(text(R.string.feedback_form_title)).assertExists()
+        val header = compose.onNodeWithTag(FEEDBACK_TYPING_HEADER_TAG).fetchSemanticsNode().boundsInRoot
+        assertTrue("header height ${header.height}", header.height <= 64f)
     }
 }
