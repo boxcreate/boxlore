@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings.downloads
 
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -14,15 +15,18 @@ class SmartDownloadsActionsTest {
     private val tracked = mutableListOf<String>()
     private var state = SmartDownloadsState(enabled = false, wifiOnly = true, chargingOnly = false, maxEpisodes = 10, storageBudget = 1000L, cleanupRule = "after_24h")
     private var asking = false
+    private var slowWrites = false
 
     private val prefs = object : SmartDownloadsPrefs {
         override suspend fun setEnabled(enabled: Boolean) {
             calls += "enabled=$enabled"
         }
         override suspend fun setWifiOnly(wifiOnly: Boolean) {
+            if (slowWrites) kotlinx.coroutines.delay(100)
             calls += "wifi=$wifiOnly"
         }
         override suspend fun setChargingOnly(chargingOnly: Boolean) {
+            if (slowWrites) kotlinx.coroutines.delay(100)
             calls += "charging=$chargingOnly"
         }
         override suspend fun setMaxEpisodes(count: Int) {
@@ -101,6 +105,18 @@ class SmartDownloadsActionsTest {
         actions().setChargingOnly(true)
         runCurrent()
         assertEquals(listOf("charging=true", "schedule(true,true)"), calls)
+    }
+
+    @Test
+    fun `two limits changed before either is saved end on the schedule that matches what was saved`() = runTest {
+        state = state.copy(enabled = true)
+        slowWrites = true
+        val actions = actions()
+        actions.setWifiOnly(false)
+        actions.setChargingOnly(true)
+        advanceUntilIdle()
+        assertEquals("schedule(false,true)", calls.last { it.startsWith("schedule") })
+        assertEquals(listOf("wifi=false", "charging=true"), calls.filterNot { it.startsWith("schedule") })
     }
 
     @Test

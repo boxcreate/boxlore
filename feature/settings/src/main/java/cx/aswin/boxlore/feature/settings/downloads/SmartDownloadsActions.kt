@@ -5,6 +5,8 @@ import cx.aswin.boxlore.core.downloads.SmartDownloadManager
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** The background work Smart Downloads starts and stops; tests replace it. */
 internal interface SmartDownloadScheduler {
@@ -108,23 +110,40 @@ internal class SmartDownloadsActions(
     /** Keep Smart Downloads on: nothing changes and nothing is reported. */
     fun dismissDisable() = onConfirmOffChange(false)
 
+    /**
+     * The latest Wi-Fi and charging choices, set when tapped. Their writes run one at a time, and each
+     * schedule after a write uses both latest choices, so the last schedule matches what was saved.
+     */
+    private var latestWifiOnly: Boolean? = null
+    private var latestChargingOnly: Boolean? = null
+    private val constraintWrites = Mutex()
+
     fun setWifiOnly(wifiOnly: Boolean) {
         val current = state()
+        latestWifiOnly = wifiOnly
         scope.launch {
             track("smart_downloads_wifi_only_toggled", wifiOnly, current.wifiOnly)
-            prefs.setWifiOnly(wifiOnly)
-            if (current.enabled) scheduler.schedule(wifiOnly = wifiOnly, chargingOnly = current.chargingOnly)
+            constraintWrites.withLock {
+                prefs.setWifiOnly(wifiOnly)
+                if (current.enabled) scheduleLatest(current)
+            }
         }
     }
 
     fun setChargingOnly(chargingOnly: Boolean) {
         val current = state()
+        latestChargingOnly = chargingOnly
         scope.launch {
             track("smart_downloads_charging_only_toggled", chargingOnly, current.chargingOnly)
-            prefs.setChargingOnly(chargingOnly)
-            if (current.enabled) scheduler.schedule(wifiOnly = current.wifiOnly, chargingOnly = chargingOnly)
+            constraintWrites.withLock {
+                prefs.setChargingOnly(chargingOnly)
+                if (current.enabled) scheduleLatest(current)
+            }
         }
     }
+
+    private fun scheduleLatest(current: SmartDownloadsState) =
+        scheduler.schedule(wifiOnly = latestWifiOnly ?: current.wifiOnly, chargingOnly = latestChargingOnly ?: current.chargingOnly)
 
     fun setMaxEpisodes(count: Int) {
         val current = state()

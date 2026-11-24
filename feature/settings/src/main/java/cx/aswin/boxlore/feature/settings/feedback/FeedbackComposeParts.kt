@@ -380,14 +380,17 @@ internal fun FeedbackTypingBar(
                 }
             }
         }
-        BoxloreFilterChip(
-            selected = state.attachDiagnostics,
-            onClick = onToggleDiagnostics,
-            label = stringResource(R.string.feedback_diagnostics),
-            showCheckWhenSelected = true,
-            enabled = !state.isSubmitting,
-        )
-        Spacer(Modifier.weight(1f))
+        // Send is measured first and keeps its width; the diagnostics chip takes what is left and shortens its label.
+        Box(Modifier.weight(1f)) {
+            BoxloreFilterChip(
+                selected = state.attachDiagnostics,
+                onClick = onToggleDiagnostics,
+                label = stringResource(R.string.feedback_diagnostics),
+                showCheckWhenSelected = true,
+                enabled = !state.isSubmitting,
+                modifier = Modifier.testTag(FEEDBACK_DIAGNOSTICS_CHIP_TAG),
+            )
+        }
         FeedbackSendButton(enabled = state.canSend, sending = state.isSubmitting, onClick = onSend, label = stringResource(R.string.feedback_send), modifier = Modifier.heightIn(min = 48.dp))
     }
 }
@@ -396,3 +399,6 @@ internal fun FeedbackTypingBar(
 internal fun FeedbackIconButton(icon: ImageVector, description: String, onClick: () -> Unit) {
     IconButton(onClick = onClick) { Icon(icon, contentDescription = description) }
 }
+
+/** Test tag on the typing bar's diagnostics chip. */
+internal const val FEEDBACK_DIAGNOSTICS_CHIP_TAG = "feedback_diagnostics_chip"

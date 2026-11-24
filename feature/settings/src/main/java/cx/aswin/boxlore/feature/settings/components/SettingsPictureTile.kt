@@ -181,7 +181,8 @@ internal fun <T> SettingsPictureRow(
             } else if (selectedIndex > 0) {
                 (selectedIndex * step).roundToInt()
             } else {
-                0
+                // The first tile is picked: stay where the row is (a restored scroll after recreation).
+                scroll.value
             }
             if (target != scroll.value) scroll.scrollTo(target)
         }

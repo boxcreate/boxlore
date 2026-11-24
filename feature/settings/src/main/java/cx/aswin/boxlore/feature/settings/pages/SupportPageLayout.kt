@@ -88,6 +88,8 @@ internal fun SupportPageBody(
     mission: @Composable () -> Unit,
 ) {
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    // Above the layouts, so a page scrolled while stacked is where it was after a side-by-side window.
+    val scroll = rememberScrollState()
     BoxWithConstraints(modifier.fillMaxSize()) {
         val arrangement = supportPageArrangement(maxWidth, maxHeight, LocalDensity.current.fontScale)
         if (arrangement.sideBySide) {
@@ -118,7 +120,7 @@ internal fun SupportPageBody(
                     modifier = Modifier
                         .boxloreCardWidth(BoxloreCardFamily.Utility)
                         .then(if (fixedGaps) Modifier.fillMaxWidth() else Modifier.fillMaxSize())
-                        .then(if (arrangement.scrolls) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                        .then(if (arrangement.scrolls) Modifier.verticalScroll(scroll) else Modifier)
                         .navigationBarsPadding()
                         .padding(horizontal = 16.dp, vertical = 6.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,

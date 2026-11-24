@@ -116,7 +116,11 @@ class SmartDownloadsSettingsScreenTest {
         compose.waitForIdle()
         val question = text(R.string.settings_smart_downloads_off_title)
         compose.onNodeWithText(question).assertExists()
-        for (size in listOf(BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND)) {
+        // Sideways and back, then across the 600dp width gate and the 480dp height gate both ways.
+        val walk = with(BoxloreTestWindows) {
+            listOf(PHONE_LAND, PHONE, PHONE_LAND, W599_H900, W600_H900, W599_H900, W900_H479, W900_H480, W900_H479, PHONE)
+        }
+        for (size in walk) {
             compose.runOnIdle { window.value = size }
             compose.waitForIdle()
             compose.onNodeWithText(question).assertExists()

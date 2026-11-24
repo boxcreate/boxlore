@@ -17,6 +17,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.designsystem.theme.SkeletonBlock
@@ -31,7 +34,8 @@ private const val SKELETON_ROWS = 3
 @Composable
 internal fun FeedbackListSkeleton(contentPadding: PaddingValues, modifier: Modifier = Modifier) {
     ShimmerScope(active = true) {
-        Column(modifier.fillMaxSize().padding(contentPadding).testTag(FEEDBACK_SKELETON_TAG)) {
+        // Says "loading" to a screen reader, as the progress indicator it replaced did.
+        Column(modifier.fillMaxSize().padding(contentPadding).testTag(FEEDBACK_SKELETON_TAG).semantics { progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate }) {
             SkeletonTextLines(MaterialTheme.typography.titleSmall, lines = 1, widths = listOf(0.4f), modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
             repeat(SKELETON_ROWS) { index ->
                 val first = index == 0
@@ -64,7 +68,8 @@ internal fun FeedbackListSkeleton(contentPadding: PaddingValues, modifier: Modif
 internal fun FeedbackThreadSkeleton(modifier: Modifier = Modifier) {
     ShimmerScope(active = true) {
         Column(
-            modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 8.dp).testTag(FEEDBACK_SKELETON_TAG),
+            modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 8.dp).testTag(FEEDBACK_SKELETON_TAG)
+                .semantics { progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate },
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             listOf(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.colorScheme.surfaceContainerHigh).forEach { color ->

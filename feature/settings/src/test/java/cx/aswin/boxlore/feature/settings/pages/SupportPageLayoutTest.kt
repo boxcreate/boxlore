@@ -2,6 +2,9 @@ package cx.aswin.boxlore.feature.settings.pages
 
 import android.app.Application
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -18,6 +21,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
@@ -95,6 +99,39 @@ class SupportPageLayoutTest {
                 assertEquals("${next.world}: price $cost cut", cost.length, layouts.last().getLineEnd(0))
             }
         }
+    }
+
+    @Config(qualifiers = "w1000dp-h1000dp")
+    @Test
+    fun `a page scrolled while stacked keeps its place through a side-by-side window and back`() {
+        var size by mutableStateOf(androidx.compose.ui.unit.DpSize(443.dp, 560.dp))
+        compose.setContent {
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density, 1.7f)) {
+                BoxLoreTheme(dynamicColor = false) {
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.requiredSize(size)) {
+                        SupportPageBody(
+                            androidx.compose.ui.Modifier,
+                            stage = { androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxWidth().height(320.dp)) },
+                            picker = { androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxWidth().height(260.dp)) },
+                            cta = { androidx.compose.material3.Text("Back boxlore") },
+                            mission = { androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.height(120.dp)) },
+                        )
+                    }
+                }
+            }
+        }
+        val scrolling = SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)
+        fun offset() = compose.onNode(scrolling).fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+        compose.onNode(scrolling).performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 150f) }
+        compose.waitForIdle()
+        val scrolled = offset()
+        assertTrue("the stacked page scrolled, to $scrolled", scrolled > 0f)
+        compose.runOnIdle { size = androidx.compose.ui.unit.DpSize(800.dp, 560.dp) }
+        compose.waitForIdle()
+        compose.runOnIdle { size = androidx.compose.ui.unit.DpSize(443.dp, 560.dp) }
+        compose.waitForIdle()
+        assertEquals(scrolled, offset(), 1f)
     }
 
     @Config(qualifiers = "w800dp-h1200dp")
