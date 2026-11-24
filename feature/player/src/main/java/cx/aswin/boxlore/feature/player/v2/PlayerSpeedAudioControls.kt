@@ -229,9 +229,9 @@ private fun InlineAudioTile(
     Column(
         modifier = modifier
             .height(56.dp)
+            .quickActionPress(enabled = enabled, shape = shape, onClick = onClick)
             .clip(shape)
             .background(container)
-            .quickActionClickable(enabled = enabled, shape = shape, onClick = onClick)
             .semantics(mergeDescendants = true) { contentDescription = tileDescription }
             .padding(horizontal = 12.dp),
         verticalArrangement = Arrangement.Center,

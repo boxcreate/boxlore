@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Test
 class PlayerLayoutLogicTest {
     @Test
     fun compactAudioHeroUsesAvailableHeight() {
-        val layout = calculateResponsiveHeroLayout(400.dp, 600.dp, isVideo = false)
+        val layout = calculateResponsiveHeroLayout(400.dp, 540.dp, isVideo = false)
 
         assertTrue(layout.isCompact)
-        assertEquals(168f, layout.dimensions.width.value, 0.001f)
+        assertEquals(151.2f, layout.dimensions.width.value, 0.001f)
         assertEquals(layout.dimensions.width, layout.dimensions.height)
     }
 
@@ -35,10 +35,56 @@ class PlayerLayoutLogicTest {
 
     @Test
     fun videoHeroClampsToAvailableHeight() {
-        val layout = calculateResponsiveHeroLayout(800.dp, 600.dp, isVideo = true)
+        val layout = calculateResponsiveHeroLayout(800.dp, 540.dp, isVideo = true)
 
-        assertEquals(168f, layout.dimensions.height.value, 0.001f)
-        assertEquals(168f * 16f / 9f, layout.dimensions.width.value, 0.001f)
+        assertEquals(151.2f, layout.dimensions.height.value, 0.001f)
+        assertEquals(151.2f * 16f / 9f, layout.dimensions.width.value, 0.001f)
+    }
+
+    @Test
+    fun `cover grows smoothly across cover-screen heights and phones keep today's size`() {
+        val sizes = (540..700 step 5).map { height -> calculateResponsiveHeroLayout(443.dp, height.dp, isVideo = false).dimensions.width.value }
+        sizes.zipWithNext().forEach { (shorter, taller) ->
+            assertTrue(taller >= shorter, "the cover never shrinks as the window grows")
+            assertTrue(taller - shorter < 8f, "no jump between $shorter and $taller")
+        }
+        // 412x915 and 360x800 phones (no system bars in the fixture): the width cap, as before.
+        assertEquals(280.16f, calculateResponsiveHeroLayout(412.dp, 915.dp, isVideo = false).dimensions.width.value, 0.01f)
+        assertEquals(244.8f, calculateResponsiveHeroLayout(360.dp, 800.dp, isVideo = false).dimensions.width.value, 0.01f)
+        assertEquals(14f, calculateResponsiveHeroLayout(412.dp, 843.dp, isVideo = false).topSpacing.value, 0.01f)
+    }
+
+    @Test
+    fun `the Cast panel keeps room for its controls on short windows and matches the cover on phones`() {
+        listOf(443 to 577, 915 to 370).forEach { (width, height) ->
+            val art = calculateResponsiveHeroLayout(width.dp, height.dp, isVideo = false).dimensions
+            val panel = castHeroDimensions(art, width.dp, canControlVolume = true)
+            assertTrue(panel.height.value >= 200f, "${width}x$height panel ${panel.height}")
+            assertTrue(panel.width.value <= width - 48f)
+        }
+        val phoneArt = calculateResponsiveHeroLayout(412.dp, 843.dp, isVideo = false).dimensions
+        assertEquals(phoneArt, castHeroDimensions(phoneArt, 412.dp, canControlVolume = true))
+    }
+
+    @Test
+    fun `sideways phones use two columns and upright phones, narrow halves and tablets keep one`() {
+        fun columns(width: Float, height: Float, tablet: Boolean = false) = usesSidewaysPhoneColumns(width, height, tablet, shortPane = height < 480f)
+        assertTrue(columns(915f, 412f))
+        assertTrue(columns(695f, 475f))
+        assertTrue(columns(800f, 360f))
+        assertFalse(columns(412f, 915f))
+        assertFalse(columns(443f, 649f))
+        assertFalse(columns(412f, 450f))
+        assertFalse(columns(932f, 650f, tablet = true))
+        // Sideways split-screen halves: two columns would leave each under the play controls' width.
+        assertFalse(columns(599f, 412f))
+        assertTrue(columns(600f, 412f))
+        assertFalse(columns(457f, 412f))
+        assertTrue(sidewaysHeroSize(433.dp, 388.dp).value in 96f..280f)
+        // Short sideways phones tighten the controls; taller ones keep them.
+        assertTrue(usesTightSidewaysControls(336.dp))
+        assertTrue(usesTightSidewaysControls(399.dp))
+        assertFalse(usesTightSidewaysControls(412.dp))
     }
 
     @Test

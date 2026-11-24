@@ -78,8 +78,6 @@ class SharedHostUsageTest {
                 "feature/library/src/main/java/cx/aswin/boxlore/feature/library/SubscriptionsScreen.kt" to 1,
                 "feature/library/src/main/java/cx/aswin/boxlore/feature/library/playlists/PlaylistsScreen.kt" to 1,
                 "feature/library/src/main/java/cx/aswin/boxlore/feature/library/playlists/PlaylistDetailScreen.kt" to 1,
-                "feature/player/src/main/java/cx/aswin/boxlore/feature/player/v2/TabletPlayerBody.kt" to 1,
-                "feature/player/src/main/java/cx/aswin/boxlore/feature/player/v2/FullPlayerV2.kt" to 2,
             ),
         ),
     )

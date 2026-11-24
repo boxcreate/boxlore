@@ -30,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -82,6 +83,7 @@ data class PlayerProgressFlows(
 )
 
 @Composable
+@Suppress("LongParameterList")
 fun PlayerSeekbar(
     progressFlows: PlayerProgressFlows,
     durationMs: Long,
@@ -90,7 +92,9 @@ fun PlayerSeekbar(
     onSeek: (Long) -> Unit,
     chapters: List<Chapter> = emptyList(),
     modifier: Modifier = Modifier,
-) = PlayerSeekbarContent(progressFlows, SeekbarPresentation(durationMs, isPlaying, colorScheme, chapters), onSeek, modifier)
+    /** Whether the end label shows the total length instead of the time left; kept by the caller when given. */
+    showTotalDuration: MutableState<Boolean>? = null,
+) = PlayerSeekbarContent(progressFlows, SeekbarPresentation(durationMs, isPlaying, colorScheme, chapters, showTotalDuration = showTotalDuration), onSeek, modifier)
 
 @Composable
 internal fun MinimalPlayerSeekbar(
@@ -102,7 +106,14 @@ internal fun MinimalPlayerSeekbar(
     chapters: List<Chapter>,
 ) = PlayerSeekbarContent(progressFlows, SeekbarPresentation(durationMs, isPlaying, colorScheme, chapters, minimal = true), onSeek, Modifier)
 
-private data class SeekbarPresentation(val durationMs: Long, val isPlaying: Boolean, val colors: ColorScheme, val chapters: List<Chapter>, val minimal: Boolean = false)
+private data class SeekbarPresentation(
+    val durationMs: Long,
+    val isPlaying: Boolean,
+    val colors: ColorScheme,
+    val chapters: List<Chapter>,
+    val minimal: Boolean = false,
+    val showTotalDuration: MutableState<Boolean>? = null,
+)
 
 @Composable
 private fun PlayerSeekbarContent(progressFlows: PlayerProgressFlows, model: SeekbarPresentation, onSeek: (Long) -> Unit, modifier: Modifier) {
@@ -181,7 +192,7 @@ private fun PlayerSeekbarContent(progressFlows: PlayerProgressFlows, model: Seek
         }
 
         if (!minimal) {
-            SeekbarTimeLabels(dragFraction?.let { (it * duration).toLong() } ?: position, duration, colorScheme)
+            SeekbarTimeLabels(dragFraction?.let { (it * duration).toLong() } ?: position, duration, colorScheme, model.showTotalDuration)
         }
     }
 }
@@ -260,8 +271,11 @@ private fun SeekbarPreview(dragFraction: Float?, duration: Long, chapters: List<
 }
 
 @Composable
-private fun SeekbarTimeLabels(previewPosition: Long, duration: Long, colorScheme: ColorScheme) {
-    var showTotalDuration by rememberSaveable { mutableStateOf(false) }
+private fun SeekbarTimeLabels(previewPosition: Long, duration: Long, colorScheme: ColorScheme, kept: MutableState<Boolean>?) {
+    val local = rememberSaveable { mutableStateOf(false) }
+    // The state in use, the caller's when given: the tap below follows it when the episode changes.
+    val label = kept ?: local
+    var showTotalDuration by label
     Spacer(modifier = Modifier.height(2.dp))
 
     // Time labels
@@ -284,8 +298,8 @@ private fun SeekbarTimeLabels(previewPosition: Long, duration: Long, colorScheme
             },
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
             color = colorScheme.primary.copy(alpha = 0.85f),
-            modifier = Modifier.pointerInput(Unit) {
-                detectTapGestures { showTotalDuration = !showTotalDuration }
+            modifier = Modifier.pointerInput(label) {
+                detectTapGestures { label.value = !label.value }
             }
         )
     }

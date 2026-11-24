@@ -70,6 +70,8 @@ data class PlayerState(
     val sameShowContinuation: SameShowContinuationState = SameShowContinuationState.HIDDEN,
     /** The playing show's own speed and trim silence, and the app's trim silence setting. */
     val audio: PlaybackAudioState = PlaybackAudioState(),
+    /** The length a listener picked for the running fixed sleep timer, or null with no fixed timer. */
+    val sleepTimerPresetMinutes: Int? = null,
 )
 
 object SleepTimerHolder {
