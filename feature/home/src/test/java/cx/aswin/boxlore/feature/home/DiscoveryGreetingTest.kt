@@ -52,4 +52,12 @@ class DiscoveryGreetingTest {
             discoveryGreetingFor(ContentDaypart.LATE_NIGHT, weekday).subtitle,
         )
     }
+
+    @Test
+    fun `the greeting shows while its picks load or once some arrive, never over an empty set`() {
+        assertEquals(true, showsDiscoveryGreeting(settingOn = true, rowsLoading = true, rowCount = 0))
+        assertEquals(true, showsDiscoveryGreeting(settingOn = true, rowsLoading = false, rowCount = 2))
+        assertEquals(false, showsDiscoveryGreeting(settingOn = true, rowsLoading = false, rowCount = 0))
+        assertEquals(false, showsDiscoveryGreeting(settingOn = false, rowsLoading = false, rowCount = 2))
+    }
 }

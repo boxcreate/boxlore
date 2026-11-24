@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -303,6 +304,26 @@ private fun PlayerArtworkCard(
         }
     }
 }
+
+/**
+ * The small cover beside a show page: a plain rounded card with a soft shadow. Swiping to the next
+ * episode stays on the bigger covers, and skipping stays on the controls.
+ */
+@Composable
+internal fun CompactPlayerArtwork(artwork: PlayerHeroArtwork, colorScheme: ColorScheme, size: Dp, modifier: Modifier = Modifier) {
+    val chapterArt by artwork.chapterArtFlow.collectAsStateWithLifecycle(initialValue = null)
+    PlayerArtworkCard(
+        artworkUrl = chapterArt?.takeIf { it.isNotBlank() } ?: artwork.artworkUrl,
+        fallbackArtworkUrls = listOf(artwork.artworkUrl) + artwork.fallbackArtworkUrls,
+        colorScheme = colorScheme,
+        modifier = modifier
+            .size(size)
+            .shadow(elevation = 6.dp, shape = MaterialTheme.shapes.extraLarge, clip = false)
+            .testTag(COMPACT_PLAYER_ARTWORK_TAG)
+    )
+}
+
+internal const val COMPACT_PLAYER_ARTWORK_TAG = "compact_player_artwork"
 
 /** Builds a flow of the active chapter's artwork URL for the current position. */
 fun chapterArtFlow(

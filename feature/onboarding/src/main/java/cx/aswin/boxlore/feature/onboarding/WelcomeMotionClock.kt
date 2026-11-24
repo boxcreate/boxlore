@@ -45,14 +45,16 @@ internal fun rememberWelcomeMotionClock(): WelcomeMotionClock {
     val revealComplete = remember { mutableStateOf(false) }
     val animationsDisabled = remember { mutableStateOf(false) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(lifecycle) {
+    // The system setting as well as the frame clock's scale, so "Remove animations" always rests the screen.
+    val settingOff = rememberAnimationsOff()
+    LaunchedEffect(lifecycle, settingOff) {
         val durationScale = currentCoroutineContext()[MotionDurationScale]
         var elapsedNanos = elapsed.longValue * 1_000_000.0
         // Lay out and decode the covers for a few frames before motion starts, so a cold-start
         // hitch never eats the beginning of the glide. Only the very first entry waits.
         var warmupFrames = if (elapsed.longValue == 0L) WelcomeFrameTiming.WarmupFrames else 0
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            snapshotFlow { durationScale?.scaleFactor ?: 1f }.collectLatest { scale ->
+            snapshotFlow { if (settingOff) 0f else durationScale?.scaleFactor ?: 1f }.collectLatest { scale ->
                 animationsDisabled.value = scale <= 0f
                 revealComplete.value = WelcomeReelMotion.isRevealComplete(elapsed.longValue, scale <= 0f, revealComplete.value)
                 if (scale <= 0f) return@collectLatest

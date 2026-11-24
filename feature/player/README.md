@@ -36,7 +36,7 @@ Used by `:app`:
 - Expansion follows the sheet fraction both ways (`PlayerSheetRevealLogic`): the mini content fades out before the full player fades in, and the two never show together.
 - Scrolling the full player's content stops at its top; collapsing takes a new downward swipe (`PlayerSheetNestedScrollLogic`).
 - A paused bar can be swiped sideways to dismiss after a confirmation (`MiniPlayerDismissLogic`).
-- The sheet runs past the screen's foot; `FullPlayerDisplay.visibleHeight` and `Modifier.fitVisibleHeight` keep full-screen transcript controls on screen.
+- The sheet runs past the screen's foot; `FullPlayerDisplay.visibleHeight` and `Modifier.fitVisibleHeight` keep the full-screen transcript and video controls and the queue's Undo message on screen.
 
 ## Queue and Cast
 
@@ -48,7 +48,8 @@ Used by `:app`:
 
 ## Tablets and foldables
 
-- `TabletPlayerBody`, `TabletPlayerSupport` and `TabletPlayerLayoutLogic` arrange the player as stacked, columns or around a horizontal or vertical fold, keeping regions off the hinge.
+- `TabletPlayerBody`, `TabletPlayerSupport` and `TabletPlayerLayoutLogic` arrange the player as stacked, columns (from 1000dp wide, or from 840dp on landscape windows; never beside a page) or around a horizontal or vertical fold, keeping regions off the hinge. Stacked and in book posture, the supporting panel takes the height left under the controls, down to a measured minimum; stacked, the hero gives way first by its own shape, and a cover that would get too small becomes the small cover beside the title. The supporting panel is one movable piece, so its tab content keeps its place across arrangements.
+- Phones held sideways (a short pane, wider than tall, at least 600dp wide) show the Standard player in two columns: cover and title, then seekbar, controls, quick actions, Up next and notes (`usesSidewaysPhoneColumns`). The hero moves between the arrangements and each keeps its own scroll position, so turning the phone keeps the inline transcript, page position and seekbar label.
 - Up next, Chapters, Transcript and Notes become supporting tabs (`PlayerSupportingTab`) that survive recreation and window changes through `FullPlayerUiStateSaver` and `RetainedPlayerPresentation`.
 - A phone keeps its own player state until the first tablet frame, which continues it. Window gates and transition rules are in [adaptive UI and state](../../ARCHITECTURE.md#adaptive-ui-and-state).
 

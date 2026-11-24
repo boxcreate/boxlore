@@ -85,6 +85,7 @@ internal fun AccountSettingsPage(
     syncStatus: CloudSyncUiStatus = CloudSyncUiStatus.Idle,
     onSyncNow: () -> Unit = {},
     isOnboarding: Boolean = false,
+    tvSignIn: TvSignInApprover? = null,
     emailLink: AccountEmailLinkUi = AccountEmailLinkUi(),
 ) {
     val context = LocalContext.current
@@ -98,6 +99,7 @@ internal fun AccountSettingsPage(
     )
 
     var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
+    var showTvSignIn by rememberSaveable { mutableStateOf(false) }
     var showReauthRequiredDialog by rememberSaveable { mutableStateOf(false) }
 
     val authState = rememberAccountAuthState(
@@ -129,6 +131,7 @@ internal fun AccountSettingsPage(
             handleSignOut(authRepository, authState, context)
         },
         onDeleteAccountClick = { showDeleteConfirmation = true },
+        onTvSignIn = tvSignIn?.let { { showTvSignIn = true } },
         onOpenAccountDeletionInfo = onOpenAccountDeletionInfo,
         onSyncNow = {
             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSettingsInteraction("account_sync_now")
@@ -148,6 +151,8 @@ internal fun AccountSettingsPage(
     ) {
         AccountModeContent(mode, user, syncStatus, authState, emailLink, signedInActions)
     }
+
+    if (showTvSignIn && tvSignIn != null) TvSignInDialog(tvSignIn, onDismiss = { showTvSignIn = false })
 
     AccountSettingsDialogs(
         showDeleteConfirmation = showDeleteConfirmation,
@@ -292,4 +297,6 @@ internal data class SignedInActions(
     val onDeleteAccountClick: () -> Unit,
     val onOpenAccountDeletionInfo: () -> Unit,
     val onSyncNow: () -> Unit,
+    /** Opens TV sign-in; null when the app offers none. */
+    val onTvSignIn: (() -> Unit)? = null,
 )

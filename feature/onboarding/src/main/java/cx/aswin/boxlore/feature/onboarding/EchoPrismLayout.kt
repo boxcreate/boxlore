@@ -32,6 +32,12 @@ internal data class PrismPlan(
     val showPublisher: Boolean,
     val height: Int,
     val hookSp: Float = EchoPrismLayout.HookSp,
+    /** False only on the shortest slots, where the pitch gives way so the name and art still show whole. */
+    val showHook: Boolean = true,
+    /** True only for a slot smaller than any card with the whole name: no art, no pitch, and the name ends in "…". */
+    val titleCut: Boolean = false,
+    /** False only on a slot too short for the tag and a line of the name: the name keeps the room. */
+    val showTag: Boolean = true,
 )
 
 /**
@@ -76,14 +82,20 @@ internal object EchoPrismLayout {
     /** The name may show the publisher beside it only at this size or above (or on one line). */
     const val PublisherMinSp = 22f
     const val MaxTitleLines = 3
+
     private const val HugPasses = 3
 
     private val StackedSizes = listOf(24f, 23f, 22f, 21f, 20f, 19f, 18f)
     private val StackedSmallSizes = listOf(18f, 17f, 16f)
     private val CompactSizes = listOf(18f, 17f, 16f, 15f)
     private val CompactSmallSizes = listOf(15f, 14f, 13f)
+    private val CompactTightSizes = listOf(15f, 14f, 13f, 12f)
 
-    data class TitleFit(val sizeSp: Float, val box: PrismTextBox, val publisher: Boolean)
+    /** Only for a name that would otherwise be cut, alone on the card. */
+    private val LastResortSizes = listOf(11f, 10f)
+
+    /** [truncated] is set when the name needs more than [MaxTitleLines] lines even at the smallest size. */
+    data class TitleFit(val sizeSp: Float, val box: PrismTextBox, val publisher: Boolean, val truncated: Boolean = false)
 
     fun fitTitle(text: String, widthPx: Int, compact: Boolean, measure: PrismTextMeasure): TitleFit {
         for (size in if (compact) CompactSizes else StackedSizes) {
@@ -96,7 +108,7 @@ internal object EchoPrismLayout {
             if (box.lines <= MaxTitleLines) return TitleFit(size, box, false)
         }
         val box = measure.title(text, small.last(), widthPx)
-        return TitleFit(small.last(), PrismTextBox(MaxTitleLines, box.height * MaxTitleLines / box.lines.coerceAtLeast(1)), false)
+        return TitleFit(small.last(), PrismTextBox(MaxTitleLines, box.height * MaxTitleLines / box.lines.coerceAtLeast(1)), false, truncated = true)
     }
 
     /**
@@ -115,10 +127,11 @@ internal object EchoPrismLayout {
             val snug = max(min(maxWidth, px.dp(MinWidth)), plan.art + px.dp(SideClearance * 2 + (Border + Padding) * 2 + SnugExtra))
             if (snug >= plan.width) return@repeat
             val hugged = stacked(title, hook, hasPublisher, snug, maxHeightPx, px, measure)
-            if (hugged.art < px.dp(MinStackedArt)) return@repeat
+            if (hugged.art < px.dp(MinStackedArt) || hugged.titleCut) return@repeat
             plan = hugged
         }
-        return if (plan.art >= px.dp(MinStackedArt)) plan else compact(title, hook, maxWidth, maxHeightPx, px, measure)
+        // A name the stacked card would cut goes to the compact card, which can give it the full width.
+        return if (plan.art >= px.dp(MinStackedArt) && !plan.titleCut) plan else compact(title, hook, maxWidth, maxHeightPx, px, measure)
     }
 
     private fun stacked(title: String, hook: String, hasPublisher: Boolean, width: Int, maxHeight: Int, px: Px, measure: PrismTextMeasure): PrismPlan {
@@ -130,33 +143,107 @@ internal object EchoPrismLayout {
             px.dp(HookGap) + hookBox(hook, HookSp, inner, px, measure)
         val frame = px.dp((Border + Padding) * 2 + TiltClearance)
         val art = min(inner - px.dp(SideClearance * 2), maxHeight - frame - words)
-        return PrismPlan(false, width, art, fit.sizeSp, fit.box.lines, publisher, frame + art + words)
+        return PrismPlan(false, width, art, fit.sizeSp, fit.box.lines, publisher, frame + art + words, titleCut = fit.truncated)
     }
 
     /**
-     * Art beside the tag and name, the pitch underneath. When even that is too tall, the art
-     * shrinks, then the pitch steps down a size or two, and as a last resort the art goes; the
-     * pitch is never cut.
+     * Art beside the tag and name, the pitch underneath. The name is never cut while anything else
+     * can give way: when it would need a fourth line, the art shrinks and then goes to give it room,
+     * and then the name steps down to 12sp. When the card is too tall, the art shrinks, then the
+     * pitch steps down a size or two, and then the art goes; the pitch is never cut. On slots
+     * shorter still the pitch is left out, so the card is never taller than its slot. Only a card
+     * smaller than any whole name (no art, no pitch) ends the name in "…".
      */
     private fun compact(title: String, hook: String, width: Int, maxHeight: Int, px: Px, measure: PrismTextMeasure): PrismPlan {
-        val inner = width - px.dp((Border + Padding) * 2)
-        val tag = max(px.dp(TagMinHeight), px.sp(TagLineSp) + px.dp(8f))
-        val arts = generateSequence(CompactMaxArt) { (it - CompactArtStep).takeIf { next -> next >= CompactMinArt } }.toList() + 0f
-        var plan: PrismPlan? = null
-        for (hookSp in CompactHookSizes) {
-            val hookHeight = px.dp(HookGap) + hookBox(hook, hookSp, inner, px, measure)
-            for (art in arts) {
-                val artPx = px.dp(art)
-                val gap = if (artPx > 0) px.dp(CompactGap) else 0
-                val fit = fitTitle(title, inner - artPx - gap, compact = true, measure)
-                val row = max(artPx, tag + px.dp(TagGap) + fit.box.height)
-                plan = PrismPlan(true, width, artPx, fit.sizeSp, fit.box.lines, false, px.dp((Border + Padding) * 2) + row + hookHeight, hookSp)
-                if (plan.height <= maxHeight) return plan
-                // Dropping the art is the last resort, only once the pitch is at its smallest.
-                if (art == CompactMinArt && hookSp != CompactHookSizes.last()) break
+        val card = CompactCard(title, width, maxHeight, px, measure)
+        for (tight in listOf(false, true)) {
+            for (hookSp in CompactHookSizes) {
+                card.withPitch(hook, hookSp, tight)?.let { return it }
             }
         }
-        return plan!!
+        return card.bare()
+    }
+
+    /** The compact card's sizes for one name in one slot, and its plans with and without the pitch. */
+    private class CompactCard(val title: String, val width: Int, val maxHeight: Int, val px: Px, val measure: PrismTextMeasure) {
+        val inner = width - px.dp((Border + Padding) * 2)
+        val tag = max(px.dp(TagMinHeight), px.sp(TagLineSp) + px.dp(8f))
+        val frame = px.dp((Border + Padding) * 2)
+
+        // The steps down from the largest art end on the smallest even when the step skips past it, then no art.
+        private val arts = (generateSequence(CompactMaxArt) { (it - CompactArtStep).takeIf { next -> next >= CompactMinArt } }.toList() + CompactMinArt).distinct() + 0f
+
+        fun nameFit(artPx: Int, tight: Boolean): TitleFit {
+            val nameWidth = inner - artPx - (if (artPx > 0) px.dp(CompactGap) else 0)
+            return if (tight) fitTightTitle(title, nameWidth, measure) else fitTitle(title, nameWidth, compact = true, measure)
+        }
+
+        /**
+         * The first art size, largest first, whose plan with the pitch at [hookSp] fits; a cut name
+         * is never kept (a smaller art gives it the room). The art only goes once the pitch is at
+         * its smallest, unless the name needs the room.
+         */
+        fun withPitch(hook: String, hookSp: Float, tight: Boolean): PrismPlan? {
+            val hookHeight = px.dp(HookGap) + hookBox(hook, hookSp, inner, px, measure)
+            val lastPitch = hookSp == CompactHookSizes.last()
+            for (art in arts) {
+                val artPx = px.dp(art)
+                val fit = nameFit(artPx, tight)
+                val plan = PrismPlan(true, width, artPx, fit.sizeSp, fit.box.lines, false, frame + row(artPx, fit.box.height) + hookHeight, hookSp)
+                val tooTallAtSmallestArt = art == CompactMinArt && !lastPitch && plan.height > maxHeight
+                when {
+                    !fit.truncated && plan.height <= maxHeight -> return plan
+                    tooTallAtSmallestArt && !fit.truncated -> return null
+                }
+            }
+            return null
+        }
+
+        /**
+         * Without the pitch: the art at its smallest, then none, then the name alone a size or two
+         * smaller; a slot smaller than any card with the whole name cuts it to the lines it has.
+         */
+        fun bare(): PrismPlan {
+            for (art in listOf(CompactMinArt, 0f)) {
+                val artPx = px.dp(art)
+                val fit = nameFit(artPx, tight = true)
+                val plan = PrismPlan(true, width, artPx, fit.sizeSp, fit.box.lines, false, frame + row(artPx, fit.box.height), CompactHookSizes.last(), showHook = false)
+                if (plan.height <= maxHeight) return plan
+            }
+            for (size in LastResortSizes) {
+                val box = measure.title(title, size, inner)
+                val plan = PrismPlan(true, width, 0, size, box.lines, false, frame + row(0, box.height), CompactHookSizes.last(), showHook = false)
+                if (plan.height <= maxHeight) return plan
+            }
+            // Before the name is cut, the tag gives way: the whole name alone, at any size that fits.
+            for (size in (CompactTightSizes + LastResortSizes).distinct()) {
+                val box = measure.title(title, size, inner)
+                if (frame + box.height <= maxHeight) {
+                    return PrismPlan(true, width, 0, size, box.lines, false, frame + box.height, CompactHookSizes.last(), showHook = false, showTag = false)
+                }
+            }
+            val fit = nameFit(0, tight = true)
+            val lineHeight = fit.box.height / fit.box.lines.coerceAtLeast(1)
+            // The tag gives way too when it leaves no room for a line of the name.
+            val showTag = frame + tag + px.dp(TagGap) + lineHeight <= maxHeight
+            val chrome = frame + if (showTag) tag + px.dp(TagGap) else 0
+            val lines = ((maxHeight - chrome) / lineHeight.coerceAtLeast(1)).coerceIn(1, fit.box.lines)
+            return PrismPlan(true, width, 0, fit.sizeSp, lines, false, chrome + lineHeight * lines, CompactHookSizes.last(), showHook = false, titleCut = lines < fit.box.lines, showTag = showTag)
+        }
+
+        private fun row(artPx: Int, nameHeight: Int): Int = max(artPx, tag + px.dp(TagGap) + nameHeight)
+    }
+
+    /**
+     * The name down to 12sp for the shortest slots: in at most three lines while a size allows it,
+     * then whole at 12sp in as many lines as it needs.
+     */
+    private fun fitTightTitle(text: String, widthPx: Int, measure: PrismTextMeasure): TitleFit {
+        for (size in CompactTightSizes) {
+            val box = measure.title(text, size, widthPx)
+            if (box.lines <= MaxTitleLines) return TitleFit(size, box, false)
+        }
+        return TitleFit(CompactTightSizes.last(), measure.title(text, CompactTightSizes.last(), widthPx), false)
     }
 
     private fun hookBox(hook: String, sizeSp: Float, inner: Int, px: Px, measure: PrismTextMeasure): Int =

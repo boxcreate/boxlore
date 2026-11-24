@@ -88,13 +88,29 @@ class AppVersion:
     def tag(self) -> str:
         return f"v{self.name}"
 
+    # GitHub lists a release's files by name, letter by letter, so every name below sorts after the
+    # phone APK and the phone APK stays first. Its own name never changes: the README button, the
+    # update feed and announcements in older app versions link to it.
+
     @property
     def apk_asset(self) -> str:
+        """The phone app, for installing by hand."""
         return f"boxlore-{self.tag}.apk"
 
     @property
     def aab_asset(self) -> str:
-        return f"boxlore-{self.tag}.aab"
+        """The phone app as a bundle, for Google Play."""
+        return f"boxlore-{self.tag}.play.aab"
+
+    @property
+    def tv_apk_asset(self) -> str:
+        """The Android TV app, for installing on a TV by hand."""
+        return f"boxlore-{self.tag}.tv.apk"
+
+    @property
+    def tv_aab_asset(self) -> str:
+        """The Android TV app as a bundle, for Google Play's Android TV track."""
+        return f"boxlore-{self.tag}.tv.aab"
 
     @property
     def wear_apk_asset(self) -> str:
@@ -109,7 +125,15 @@ class AppVersion:
     @property
     def built_assets(self) -> set[str]:
         """Every file one build produces; a release holding all of them needs no second build."""
-        return {self.apk_asset, self.aab_asset, self.wear_apk_asset, self.wear_aab_asset, "SHA256SUMS"}
+        return {
+            self.apk_asset,
+            self.aab_asset,
+            self.tv_apk_asset,
+            self.tv_aab_asset,
+            self.wear_apk_asset,
+            self.wear_aab_asset,
+            "SHA256SUMS",
+        }
 
 
 def fail(message: str) -> None:
@@ -1302,6 +1326,8 @@ def resolve_build(args: argparse.Namespace) -> None:
             "tag": current.tag,
             "apk_asset": current.apk_asset,
             "aab_asset": current.aab_asset,
+            "tv_apk_asset": current.tv_apk_asset,
+            "tv_aab_asset": current.tv_aab_asset,
             "wear_apk_asset": current.wear_apk_asset,
             "wear_aab_asset": current.wear_aab_asset,
             "merge_sha": merge_sha,

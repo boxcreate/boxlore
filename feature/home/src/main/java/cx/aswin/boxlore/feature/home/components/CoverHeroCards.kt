@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -67,6 +68,9 @@ import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
 
 private val CoverTileShape = RoundedCornerShape(18.dp)
 
+/** A short card's title line: the base title size's (26sp) line height. */
+private val ShortCopyTitleLine = 30.sp
+
 /**
  * The Cover hero card: the cover fills the card and fades into a shade ([rememberCoverShade]) behind
  * the words, with the solid cards' type (context line, measured title, show name and progress) and a
@@ -94,13 +98,15 @@ internal fun CoverHeroCard(
     val progressState = if (item.type == HeroType.RESUME && progress > 0f) HeroProgressState(progress, pause) else null
     val imageUrl = heroArtworkUrl(item.podcast, showFirst = item.type == HeroType.SPOTLIGHT)
     val shade = rememberCoverShade(imageUrl)
+    val cardPeek = heroPeekContent()
     Card(
         onClick = onArrowClick,
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = shade.deep, contentColor = shade.content),
-        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_cover"),
+        modifier = modifier.heroPeekCardLabel(cardPeek, heroTitle(item)).boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_cover"),
     ) {
-        Box(Modifier.fillMaxSize()) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val short = maxHeight < ShortHeroHeight
             OptimizedImage(
                 url = imageUrl,
                 fallbackUrls = heroArtworkSources(item),
@@ -113,7 +119,8 @@ internal fun CoverHeroCard(
                 Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep)
                     .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 20.dp),
             ) {
-                CoverCopy(item, shade, progressState)
+                // Play is measured first, so long words give way instead of squeezing it.
+                Box(Modifier.weight(1f, fill = false)) { CoverCopy(item, shade, progressState, short = short) }
                 Spacer(Modifier.height(16.dp))
                 HeroActions(
                     pause = pause,
@@ -132,6 +139,9 @@ internal fun CoverHeroCard(
  * The words over a full-artwork card: an optional one-line context (Cover's; Duotone shows the solid
  * cards' context block at the top instead), the measured title, the show name and progress. The
  * context stops [contextEndInset] short of the end, clear of anything beside it (Tide's Play disc).
+ * On a [short] card (sideways phones, split-screen halves, above a tabletop fold) the title keeps to
+ * two lines at the base size and the progress bar drops out (the context line already says the time
+ * left), so Play keeps its full height.
  */
 @Composable
 internal fun CoverCopy(
@@ -140,24 +150,30 @@ internal fun CoverCopy(
     progressState: HeroProgressState?,
     showContext: Boolean = true,
     contextEndInset: Dp = 0.dp,
+    short: Boolean = false,
 ) {
     val measurer = rememberTextMeasurer()
+    val shortTitleRoom = with(LocalDensity.current) { (ShortCopyTitleLine * 2).roundToPx() }
     val baseStyle = heroTitleStyle()
     val title = heroTitle(item)
     val supportingName = heroSupportingName(item)
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
+    BoxWithConstraints(Modifier.fillMaxWidth().heroPeekFade(heroPeekContent())) {
         val width = constraints.maxWidth
-        // The card has room above the words, so the title takes the largest size that fits two lines.
-        val titleStyle = remember(title, baseStyle, width) {
-            measureHeroTitle(title, baseStyle, measurer, Constraints(maxWidth = width), Int.MAX_VALUE).layoutInput.style
+        // A tall card has room above the words, so the title takes the largest size that fits two lines.
+        val titleRoom = if (short) shortTitleRoom else Int.MAX_VALUE
+        val titleStyle = remember(title, baseStyle, width, titleRoom) {
+            measureHeroTitle(title, baseStyle, measurer, Constraints(maxWidth = width), titleRoom).layoutInput.style
         }
         Column(Modifier.fillMaxWidth()) {
             if (showContext) {
+                // Beside Tide's Play disc the line is shorter: there the time left keeps its words
+                // together and moves to a second line rather than being cut mid-number.
+                val besideDisc = contextEndInset > 0.dp
                 Text(
-                    coverContext(item, shade.content),
+                    coverContext(item, shade.content, keepDetailTogether = besideDisc),
                     style = HeroContextTypography.label(),
                     color = shade.softContent,
-                    maxLines = 1,
+                    maxLines = if (besideDisc) 2 else 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(end = contextEndInset).testTag("home_hero_context"),
                 )
@@ -167,7 +183,7 @@ internal fun CoverCopy(
                 title,
                 style = titleStyle,
                 color = shade.content,
-                maxLines = 3,
+                maxLines = if (short) 2 else 3,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth().testTag("home_hero_title").semantics { heading() },
             )
@@ -182,7 +198,7 @@ internal fun CoverCopy(
                     modifier = Modifier.testTag("home_hero_supporting_name"),
                 )
             }
-            if (progressState != null) {
+            if (progressState != null && !short) {
                 Spacer(Modifier.height(14.dp))
                 HeroProgress(progressState.value, shade.accent, shade.container, Modifier.testTag("home_hero_progress"), playing = progressState.playing)
             }
@@ -192,7 +208,7 @@ internal fun CoverCopy(
 
 /** One line of context: the status in [strong] (Resume, New episode, #1, a genre) and its detail. */
 @Composable
-private fun coverContext(item: SmartHeroItem, strong: Color): AnnotatedString {
+private fun coverContext(item: SmartHeroItem, strong: Color, keepDetailTogether: Boolean = false): AnnotatedString {
     val strongStyle = SpanStyle(color = strong, fontWeight = GoogleSansWeight.semiBold)
     if (item.type == HeroType.SPOTLIGHT) {
         return when (val context = remember(item.label, item.podcast.genre) { heroSpotlightContext(item.label, item.podcast.genre) }) {
@@ -220,6 +236,7 @@ private fun coverContext(item: SmartHeroItem, strong: Color): AnnotatedString {
     val resume = item.type == HeroType.RESUME
     val duration = HomeHeroStyle.minutes(item.podcast, resume)?.let { heroDurationText(it) }
     val detail = duration?.let { if (resume) stringResource(R.string.home_hero_remaining, it) else it }
+        ?.let { if (keepDetailTogether) it.replace(' ', NoBreakSpace) else it }
     return buildAnnotatedString {
         withStyle(strongStyle) { append(label) }
         if (detail != null) {
@@ -291,7 +308,7 @@ internal fun CoverHeroGridCard(
 @Composable
 internal fun HeroCollectionHeading(title: String, count: Int, countColor: Color) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        Modifier.fillMaxWidth().heroPeekFade(heroPeekContent()).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -345,10 +362,14 @@ private fun CoverGridTile(
     val shade = rememberCoverShade(podcast.imageUrl)
     val resume = mode == HeroGridMode.Resume
     val duration = HomeHeroStyle.minutes(podcast, resume)?.let { heroDurationText(it) }
-    Box(
+    val peek = heroPeekContent()
+    BoxWithConstraints(
         modifier.clip(CoverTileShape).background(shade.deep).testTag(tag)
-            .expressiveClickable(shape = CoverTileShape) { currentOnClick(currentPodcast) },
+            .expressiveClickable(enabled = peek.shown, shape = CoverTileShape) { currentOnClick(currentPodcast) },
     ) {
+        // On a short card (sideways phones, split-screen halves) the words reach the tile's top: they keep
+        // clear of the Play button and drop to two lines, and Play draws above them.
+        val short = maxHeight < CoverTileShortHeight
         OptimizedImage(
             url = podcast.imageUrl,
             fallbackUrls = podcast.artworkUrls(),
@@ -359,10 +380,7 @@ private fun CoverGridTile(
         )
         // A new episode's length sits on its cover; Resume tiles keep time left beside their progress.
         if (!resume && duration != null) {
-            CoverTileLength(duration, shade, Modifier.align(Alignment.TopStart).padding(10.dp).testTag("${tag}_time"))
-        }
-        if (podcast.latestEpisode != null) {
-            CoverTilePlayback(nowPlaying, shade, Modifier.align(Alignment.TopEnd).testTag("${tag}_play")) { currentOnPlayback(currentPodcast) }
+            CoverTileLength(duration, shade, Modifier.align(Alignment.TopStart).heroPeekFade(peek).padding(10.dp).testTag("${tag}_time"))
         }
         CoverTileCopy(
             title = podcast.latestEpisode?.title?.ifEmpty { podcast.title } ?: podcast.title,
@@ -372,10 +390,23 @@ private fun CoverGridTile(
             timeLeft = if (resume) duration?.let { stringResource(R.string.home_hero_remaining, it) } else null,
             nowPlaying = nowPlaying,
             tag = tag,
-            modifier = Modifier.align(Alignment.BottomStart),
+            modifier = Modifier.align(Alignment.BottomStart).heroPeekFade(peek),
+            endInset = if (short) CoverTilePlayReserve else 0.dp,
+            maxTitleLines = if (short) 2 else null,
         )
+        if (podcast.latestEpisode != null) {
+            CoverTilePlayback(nowPlaying, shade, peek.shown, Modifier.align(Alignment.TopEnd).heroPeekFade(peek).testTag("${tag}_play")) {
+                currentOnPlayback(currentPodcast)
+            }
+        }
     }
 }
+
+/** Tiles lower than this (a short card) keep their words clear of the Play button. */
+private val CoverTileShortHeight = 120.dp
+
+/** The Play button's 32dp and its 8dp inset from the tile's end, which short tiles' words keep clear of. */
+private val CoverTilePlayReserve = 40.dp
 
 /** The tile's title over its shade, then Resume progress and time left on one row. */
 @Composable
@@ -389,10 +420,12 @@ private fun CoverTileCopy(
     nowPlaying: Boolean,
     tag: String,
     modifier: Modifier,
+    endInset: Dp = 0.dp,
+    maxTitleLines: Int? = null,
 ) {
     Column(
         modifier.fillMaxWidth().coverScrim(shade.deep, fade = 64.dp, solid = 8.dp)
-            .padding(start = 10.dp, end = 10.dp, top = 2.dp, bottom = 10.dp),
+            .padding(start = 10.dp, end = 10.dp + endInset, top = 2.dp, bottom = 10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
@@ -403,7 +436,7 @@ private fun CoverTileCopy(
                 fontWeight = GoogleSansWeight.bold,
             ),
             color = shade.content,
-            maxLines = if (wide) 2 else 3,
+            maxLines = maxTitleLines ?: if (wide) 2 else 3,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.testTag("${tag}_title"),
         )
@@ -450,7 +483,7 @@ private fun CoverTileLength(length: String, shade: ArtworkShade, modifier: Modif
 
 /** Play or Pause on the tile's cover, a 32dp button in the tile's shade inside a 48dp target. */
 @Composable
-private fun CoverTilePlayback(playing: Boolean, shade: ArtworkShade, modifier: Modifier, onClick: () -> Unit) {
+private fun CoverTilePlayback(playing: Boolean, shade: ArtworkShade, enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val label = stringResource(if (playing) R.string.home_hero_pause else R.string.home_hero_play)
     Box(
         modifier.size(48.dp)
@@ -458,7 +491,7 @@ private fun CoverTilePlayback(playing: Boolean, shade: ArtworkShade, modifier: M
                 contentDescription = label
                 role = Role.Button
             }
-            .expressiveClickable(shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick),
+            .expressiveClickable(enabled = enabled, shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(32.dp).background(shade.accent, CircleShape), contentAlignment = Alignment.Center) {
@@ -466,3 +499,6 @@ private fun CoverTilePlayback(playing: Boolean, shade: ArtworkShade, modifier: M
         }
     }
 }
+
+/** Joins the words of the time left so a line break never falls inside it. */
+private const val NoBreakSpace = '\u00A0'

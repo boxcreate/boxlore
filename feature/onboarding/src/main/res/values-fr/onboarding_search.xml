@@ -11,8 +11,8 @@
     <string name="onboarding_search_matches">Résultats</string>
     <string name="onboarding_search_also_found">Également trouvés</string>
     <plurals name="onboarding_search_selected_shows">
-        <item quantity="one">Podcasts sélectionnés (%d)</item>
-        <item quantity="other">Podcasts sélectionnés (%d)</item>
+        <item quantity="one">Votre sélection (%d)</item>
+        <item quantity="other">Votre sélection (%d)</item>
     </plurals>
     <string name="onboarding_search_remove">Retirer</string>
     <string name="onboarding_search_selected">Sélectionné</string>

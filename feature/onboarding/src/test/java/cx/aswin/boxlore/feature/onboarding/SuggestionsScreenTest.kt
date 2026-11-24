@@ -17,6 +17,7 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumPodcastDto
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -59,7 +60,7 @@ class SuggestionsScreenTest {
                             val selected = if (on) s.selectedPodcasts + shows.associateBy { it.id } else s.selectedPodcasts - shows.map { it.id }.toSet()
                             state.value = s.copy(selectedPodcasts = selected, subscribedPodcastIds = selected.keys)
                         },
-                        onRegionChange = {},
+                        onRegionChange = { actions += "region:$it" },
                         onRetry = { actions += "retry" },
                         onFinish = { actions += "finish" },
                     ),
@@ -133,5 +134,34 @@ class SuggestionsScreenTest {
         compose.onNodeWithText("Try again").performClick()
         compose.onNodeWithText("Start without adding").performClick()
         assertEquals(listOf("retry", "finish"), actions)
+    }
+
+    @Test
+    fun `Popular now picks its country from a small chip under the title`() {
+        state.value = OnboardingUiState(
+            reachedSuggestionsViaAiFlow = true,
+            currentRegion = "us",
+            genreChartsPodcasts = listOf(show("c1"), show("c2"), show("c3")),
+        )
+        render()
+        val chip = compose.onNodeWithTag("suggestions_region")
+        assertTrue("the chip is too small to tap", chip.fetchSemanticsNode().boundsInRoot.height >= 48f)
+        chip.performClick()
+        settle()
+        compose.onNodeWithText("Germany", substring = true).performClick()
+        settle()
+        assertEquals(listOf("region:de"), actions)
+    }
+
+    @Test
+    fun `a skipped check names the check, not the connection`() {
+        state.value = OnboardingUiState(
+            reachedSuggestionsViaSearchFlow = true,
+            onboardingError = "check",
+            onboardingErrorKind = OnboardingErrorKind.VerificationSkipped,
+        )
+        render()
+        compose.onNodeWithText("Similar shows need a quick check").assertIsDisplayed()
+        compose.onNodeWithText("Couldn’t load suggestions").assertDoesNotExist()
     }
 }

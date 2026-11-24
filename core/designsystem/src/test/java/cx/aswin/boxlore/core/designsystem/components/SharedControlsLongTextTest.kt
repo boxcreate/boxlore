@@ -628,6 +628,19 @@ class SharedControlsLongTextTest {
         }
     }
 
+    @Test
+    @Config(qualifiers = "+de")
+    fun `the compact country chip shows a long country whole at 360dp and 130 percent text`() {
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, fontScale = 1.3f)) {
+                Page(BoxloreTestWindows.PHONE_SMALL) { RegionSegmentedSelector("de", onSwitchRegion = {}, compact = true) }
+            }
+        }
+        val layout = textLayout("Deutschland")
+        assertFalse("the country is cut", layout.didOverflowHeight || layout.isLineEllipsized(0))
+        assertEquals(1, layout.lineCount)
+    }
+
     private fun textLayout(text: String): TextLayoutResult {
         val results = mutableListOf<TextLayoutResult>()
         compose.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode().config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)

@@ -51,7 +51,8 @@ internal fun FullPlayerFullscreenOverlays(
             seekBackwardSeconds = (model.state.seekBackwardMs / 1_000L).toInt(),
             seekForwardSeconds = (model.state.seekForwardMs / 1_000L).toInt(),
             positionFlow = model.positionFlow,
-            controller = dependencies.playbackRepository.controller
+            controller = dependencies.playbackRepository.controller,
+            visibleHeight = display.visibleHeight
         ),
         colorScheme = model.colorScheme,
         actions = VideoFullscreenActions(
@@ -72,6 +73,7 @@ internal fun FullPlayerTranscriptOverlay(
     visibleHeight: androidx.compose.ui.unit.Dp = androidx.compose.ui.unit.Dp.Unspecified,
 ) {
     val fullscreenRequest = LocalPlayerFullscreenRequest.current
+    val tabletop = cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.tabletopFold != null
     AnimatedVisibility(
         visible = ui.showFullscreenTranscript,
         enter = slideInVertically(initialOffsetY = { it }),
@@ -98,7 +100,8 @@ internal fun FullPlayerTranscriptOverlay(
                 fullscreenRequest?.invoke(PlayerFullscreenOverlay.Transcript, false)
             },
             // The sheet can be taller than the screen; keep the controls in view, then away from a fold.
-            modifier = Modifier.fitVisibleHeight(visibleHeight).boxloreFoldSafeViewport(),
+            // Half-open on a table the screen splits itself around the hinge instead of using one half.
+            modifier = Modifier.fitVisibleHeight(visibleHeight).let { fitted -> if (tabletop) fitted else fitted.boxloreFoldSafeViewport() },
             transcriptUrl = model.episode.transcriptUrl
         )
     }
@@ -219,7 +222,9 @@ internal fun PlayerSleepSheet(
             playbackRepository.setSleepTimer(minutes)
             ui.showSleepSheet = false
         },
-        onDismiss = { ui.showSleepSheet = false }
+        onDismiss = { ui.showSleepSheet = false },
+        presetMinutes = model.state.sleepTimerPresetMinutes,
+        sleepAtEndOfEpisode = model.state.sleepAtEndOfEpisode
     )
 }
 

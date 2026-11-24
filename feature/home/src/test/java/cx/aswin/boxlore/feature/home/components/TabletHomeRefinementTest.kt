@@ -12,13 +12,17 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
@@ -53,6 +57,7 @@ import org.robolectric.annotation.GraphicsMode
 class TabletHomeRefinementTest {
     @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1280, 1400, false))
     private val width = mutableStateOf(900)
+    private val window = mutableStateOf(BoxloreWindowLayout(1280f, 1400f))
     private val podcast = TestFixtures.podcast(title = "Seed show", imageUrl = PhoneGoldenRule.ARTWORK_URL)
 
     @Test fun `single recommendation rail matches featured artwork and poster heights at fractional density and large text`() {
@@ -93,7 +98,7 @@ class TabletHomeRefinementTest {
         assertEquals(1, swapClicks)
     }
 
-    @Test fun `genre row reveals additional chips on wider panes and retains a late selection`() {
+    @Test fun `genre row reveals additional chips on wider panes, retains a late selection and keeps More open`() {
         val selections = mutableListOf<String?>()
         render { GenreSelector("Government", { selections += it }) }
         fixture.compose.onNodeWithText("Govt").assertIsSelected()
@@ -104,11 +109,54 @@ class TabletHomeRefinementTest {
         captureReview("home-tablet-inline-genres")
         fixture.compose.onNodeWithText("More").performClick()
         fixture.compose.onNodeWithText("Browse genres").assertIsDisplayed()
-        fixture.compose.runOnIdle { width.value = 700 }
-        settle()
-        fixture.compose.onNodeWithText("Browse genres").assertDoesNotExist()
+        val wide = sheetChips()
+        assertTrue("The sheet lists the genres behind More", wide > 0)
+        // A narrower pane puts more genres behind More; the open sheet follows and stays open, both ways.
+        for (pane in listOf(700, 1200, 700)) {
+            fixture.compose.runOnIdle { width.value = pane }
+            settle()
+            fixture.compose.onNodeWithText("Browse genres").assertIsDisplayed()
+            assertTrue("At ${pane}dp the sheet lists ${sheetChips()} genres", sheetChips() > 0)
+        }
+        assertTrue("A narrower row has more behind More", sheetChips() >= wide)
         fixture.compose.onNodeWithText("Govt").assertIsSelected()
     }
+
+    @Test fun `More genres stays open between phone and tablet windows and lists every genre on phones`() {
+        val phone = BoxloreWindowLayout(412f, 915f)
+        val fold = BoxloreWindowLayout(841f, 701f)
+        window.value = phone
+        width.value = 412
+        render { GenreSelector(null, {}) }
+        // The phone row scrolls, so More can sit past the edge: tap it as TalkBack would.
+        fixture.compose.onNodeWithTag("home_genres_more").performSemanticsAction(SemanticsActions.OnClick)
+        settle()
+        assertEquals("Every genre and Top on a phone", 20, sheetChips())
+        for ((layout, pane) in listOf(fold to 809, phone to 412, fold to 809, BoxloreWindowLayout(1000f, 800f) to 968, fold to 809)) {
+            fixture.compose.runOnIdle {
+                window.value = layout
+                width.value = pane
+            }
+            settle()
+            fixture.compose.onNodeWithText("Browse genres").assertIsDisplayed()
+            assertTrue("${layout.widthDp}dp: the sheet is empty", sheetChips() > 0)
+        }
+    }
+
+    @Test fun `genre chips keep a 48dp target on the row and pick a genre once`() {
+        val selections = mutableListOf<String?>()
+        window.value = BoxloreWindowLayout(412f, 915f)
+        width.value = 412
+        render { GenreSelector(null, { selections += it }) }
+        fixture.compose.onAllNodes(hasTestTag("home_genre_chip"), useUnmergedTree = true).fetchSemanticsNodes().forEach { chip ->
+            assertTrue("A genre chip is ${chip.size.height}dp tall", chip.size.height >= 48 - 1)
+        }
+        fixture.compose.onNodeWithText("News").performClick()
+        assertEquals(listOf<String?>("News"), selections)
+    }
+
+    private fun sheetChips() = fixture.compose.onAllNodes(hasTestTag("home_genre_chip") and hasAnyAncestor(hasTestTag("home_genres_sheet")), useUnmergedTree = true)
+        .fetchSemanticsNodes().size
 
     @Test fun `tablet loading Your shows uses the same full width split frame`() {
         render { YourShowsSkeleton(subscribedCount = 8) }
@@ -154,7 +202,7 @@ class TabletHomeRefinementTest {
     private fun render(density: Float = 1f, fontScale: Float = 1f, content: @androidx.compose.runtime.Composable () -> Unit) {
         fixture.prepare()
         fixture.setContent {
-            CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(1280f, 1400f), LocalDensity provides Density(density, fontScale)) {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value, LocalDensity provides Density(density, fontScale)) {
                 BoxLoreTheme(dynamicColor = false) { Box(Modifier.fillMaxSize()) { Box(Modifier.requiredSize(width.value.dp, 800.dp)) { content() } } }
             }
         }

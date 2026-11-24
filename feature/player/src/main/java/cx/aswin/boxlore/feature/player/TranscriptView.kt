@@ -9,10 +9,14 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -22,6 +26,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -32,9 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -46,6 +50,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneBottomInset
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.delay
 
@@ -102,10 +112,8 @@ fun TranscriptView(
     ) {
         if (transcript.isEmpty()) {
             if (transcriptUrl != null) {
-                CircularProgressIndicator(
-                    color = colorScheme.primary,
-                    modifier = Modifier.size(36.dp)
-                )
+                // The same boxlore loader as the tablet transcript tab.
+                BoxLoreLoader.Expressive(size = 40.dp)
             } else {
                 Text(
                     text = stringResource(R.string.player_no_transcript),
@@ -147,6 +155,7 @@ fun TranscriptView(
                         segment = segment,
                         isActive = index == activeIndex,
                         colorScheme = colorScheme,
+                        following = isSyncEnabled,
                         onClick = {
                             onSeek(segment.startMs)
                             clickedIndex = index
@@ -196,10 +205,17 @@ private fun TranscriptSegmentItem(
     segment: TranscriptSegment,
     isActive: Boolean,
     colorScheme: ColorScheme,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    following: Boolean = true
 ) {
+    // Lines fade around the spoken one only while the transcript follows the audio; scrolled back to
+    // read, every line is full-contrast text until the listener returns to following.
     val textColor by animateColorAsState(
-        targetValue = if (isActive) colorScheme.primary else colorScheme.onSurface,
+        targetValue = when {
+            isActive -> colorScheme.primary
+            following -> colorScheme.onSurface
+            else -> colorScheme.onSurfaceVariant
+        },
         animationSpec = tween(durationMillis = 300),
         label = "textColor"
     )
@@ -210,7 +226,7 @@ private fun TranscriptSegmentItem(
         label = "textScale"
     )
     val textOpacity by animateFloatAsState(
-        targetValue = if (isActive) 1.0f else 0.35f,
+        targetValue = transcriptLineOpacity(isActive, following),
         animationSpec = tween(durationMillis = 300),
         label = "textOpacity"
     )
@@ -250,35 +266,25 @@ private fun TranscriptSyncButton(
         exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
         modifier = modifier
     ) {
-        Box(
-            modifier = Modifier
-                .shadow(4.dp, CircleShape)
-                .clip(CircleShape)
-                .background(colorScheme.secondaryContainer)
-                .border(
-                    width = 1.dp,
-                    color = colorScheme.outlineVariant,
-                    shape = CircleShape
-                )
-                .clickable { onClick() }
-                .padding(horizontal = 14.dp, vertical = 8.dp)
+        FilledTonalButton(
+            onClick = onClick,
+            shape = CircleShape,
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = colorScheme.secondaryContainer,
+                contentColor = colorScheme.onSecondaryContainer
+            ),
+            elevation = ButtonDefaults.filledTonalButtonElevation(defaultElevation = 3.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Sync,
-                    contentDescription = null,
-                    tint = colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(
-                    text = stringResource(R.string.player_transcript_sync_scroll),
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.bold),
-                    color = colorScheme.onSecondaryContainer
-                )
-            }
+            Icon(
+                imageVector = Icons.Rounded.Sync,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.player_transcript_sync_scroll),
+                style = MaterialTheme.typography.labelLarge
+            )
         }
     }
 }
@@ -311,15 +317,7 @@ fun FullscreenTranscriptScreen(
     val positionMs by positionFlow.collectAsState(initial = 0L)
     val containerColor = colorScheme.surface
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(containerColor)
-            .padding(
-                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            )
-    ) {
+    val reading: @Composable ColumnScope.() -> Unit = {
         // Top bar
         Row(
             modifier = Modifier
@@ -362,7 +360,8 @@ fun FullscreenTranscriptScreen(
                 transcriptUrl = transcriptUrl
             )
         }
-
+    }
+    val controls: @Composable () -> Unit = {
         // Bottom controls (Pause/Play and Seek only)
         Column(
             modifier = Modifier
@@ -419,4 +418,49 @@ fun FullscreenTranscriptScreen(
             )
         }
     }
+    val topInset = boxlorePaneTopInset()
+    val container = modifier
+        .fillMaxSize()
+        .background(containerColor)
+        .padding(top = topInset, bottom = boxlorePaneBottomInset())
+        // Sideways phones: the close button and transport stay clear of side system buttons and cutouts.
+        .boxloreHorizontalSafePadding()
+    // Half-open on a table: the transcript fills the part above the hinge and the controls sit in the
+    // middle of the part below it. One column either way, so the transcript keeps its place when the
+    // fold opens or closes. The overlay starts at the top of its pane, so the split comes from layout,
+    // not from where the overlay is while it slides in.
+    // A hinge too near the bottom leaves the controls less than their own height: the window is then
+    // laid out as if flat, so the controls keep their size and stay reachable.
+    val hinge = LocalBoxloreWindowLayout.current.tabletopFold?.bounds
+    val paneTop = LocalBoxlorePaneBounds.current?.top ?: 0f
+    BoxWithConstraints(container) {
+        val split = hinge?.let { fold ->
+            val above = (fold.top - paneTop).dp - topInset
+            TabletopSplit(above, fold.height.dp).takeIf { above > 0.dp && maxHeight - above - fold.height.dp >= TabletopControlsMinHeight }
+        }
+        Column(Modifier.fillMaxSize()) {
+            Column(
+                Modifier.fillMaxWidth().then(if (split != null) Modifier.height(split.reading) else Modifier.weight(1f)),
+                content = reading
+            )
+            if (split != null) {
+                Spacer(Modifier.height(split.hinge))
+                Box(
+                    Modifier.fillMaxWidth().weight(1f).background(colorScheme.surfaceContainerHigh),
+                    contentAlignment = Alignment.Center
+                ) { controls() }
+            } else {
+                controls()
+            }
+        }
+    }
 }
+
+/** The transcript's height above a tabletop hinge, and the hinge's own. */
+private class TabletopSplit(val reading: Dp, val hinge: Dp)
+
+/** The seekbar, its times and the transport row: the least room the controls need under a hinge. */
+private val TabletopControlsMinHeight = 180.dp
+
+/** How strongly a transcript line shows: dimmed around the spoken line only while following the audio. */
+internal fun transcriptLineOpacity(isActive: Boolean, following: Boolean): Float = if (isActive || !following) 1f else 0.35f

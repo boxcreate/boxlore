@@ -18,8 +18,8 @@
     <string name="onboarding_search_also_found">Também encontrados</string>
     <!-- Above the row of picked shows at the bottom. -->
     <plurals name="onboarding_search_selected_shows">
-        <item quantity="one">Podcasts selecionados (%d)</item>
-        <item quantity="other">Podcasts selecionados (%d)</item>
+        <item quantity="one">Sua seleção (%d)</item>
+        <item quantity="other">Sua seleção (%d)</item>
     </plurals>
     <!-- Screen-reader label of the small badge that removes a picked show. -->
     <string name="onboarding_search_remove">Remover</string>
