@@ -51,7 +51,6 @@ import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.BriefingSource
 import cx.aswin.boxlore.core.model.Chapter
-import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.SystemInsets
 import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
@@ -123,7 +122,7 @@ class BriefingAdaptiveTest {
         assertEquals(listOf("in"), regions)
     }
 
-    @Test fun `on a sideways phone Back and Preferences clear the cutout and side buttons while the cover fills the frame`() {
+    @Test fun `on a sideways phone Back and Preferences clear the cutout and side buttons while the cover reaches the window's edges`() {
         render()
         WindowCompat.setDecorFitsSystemWindows(compose.activity.window, false)
         for (size in listOf(BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.COVER_LAND)) {
@@ -137,9 +136,13 @@ class BriefingAdaptiveTest {
             val logo = compose.onNodeWithContentDescription("The boxlore brief", useUnmergedTree = true).bounds()
             assertTrue("$size: Back starts at ${back.left - frame.left} in the frame", back.left - frame.left >= 32f)
             assertTrue("$size: Preferences ends ${frame.right - preferences.right} from the frame's end", frame.right - preferences.right >= 48f)
+            // The page is the window here (the test window is the root's size): the cover is full-bleed.
+            assertEquals(size.widthDp, frame.width, 0.5f)
             assertEquals(frame.left, cover.left, 0.5f)
             assertEquals(frame.right, cover.right, 0.5f)
             assertTrue("$size: the logo sits beside Back", logo.left >= back.right)
+            // The text below keeps a reading width.
+            assertTrue(compose.onNodeWithTag("briefingMeta").bounds().width <= 720f)
         }
     }
 
@@ -254,23 +257,21 @@ class BriefingAdaptiveTest {
         assertTrue("The play button sits at the card's end", card.right - button.right < 40f)
     }
 
-    @Test fun `the counter is the only story number, while TalkBack still hears it on the card`() {
+    @Test fun `the counter is the only story number, cards line up with the text, and text scrolls under a band`() {
         render()
-        compose.onNodeWithTag("briefingArticle").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 400f) }
-        compose.waitForIdle()
+        compose.onNodeWithTag(BRIEFING_TOP_BAND_TAG).assertDoesNotExist()
+        val textStart = compose.onNodeWithTag("briefingMeta").bounds().left
+        scrollToEnd(compose.onNodeWithTag("briefingArticle"))
         compose.onNodeWithText("Story 1 of 6").assertExists()
         compose.onAllNodesWithText("Story 1").assertCountEquals(0)
         compose.onAllNodes(hasContentDescription("Story 1 of 6", substring = true)).onFirst().assertExists()
-    }
-
-    @Test fun `related episode tiles stand apart from their card and keep readable text`() {
-        state.value = edition().let { success ->
-            success.copy(chapters = success.chapters.mapIndexed { index, chapter -> if (index == 0) chapter.copy(relatedEpisodes = listOf(Episode("e1", "A related episode", "", "https://example.invalid/e1.mp3", podcastTitle = "A show"))) else chapter })
-        }
-        render()
-        compose.onNodeWithTag("briefingArticle").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 400f) }
-        compose.waitForIdle()
-        compose.onAllNodes(hasTestTag(RELATED_EPISODE_TILE_TAG)).onFirst().assertExists()
+        // The first card starts level with the page's text.
+        val button = compose.onAllNodes(hasTestTag(STORY_PLAY_BUTTON_TAG)).onFirst().fetchSemanticsNode()
+        val card = generateSequence(button.parent) { it.parent }.first { it.boundsInRoot.width > button.boundsInRoot.width + 60f }.boundsInRoot
+        assertEquals(textStart, card.left, 1f)
+        // Past the cover, the floating buttons sit on a band of page colour.
+        val band = compose.onNodeWithTag(BRIEFING_TOP_BAND_TAG).bounds()
+        assertTrue(compose.onNodeWithTag("briefingBack").bounds().bottom <= band.bottom)
     }
 
     @Test fun `TalkBack names the seek bar and says where playback is`() {

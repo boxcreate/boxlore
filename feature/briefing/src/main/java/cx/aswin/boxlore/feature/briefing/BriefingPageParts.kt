@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -106,7 +106,8 @@ internal fun BriefingErrorContent(state: BriefingUiState.Error, topPadding: Dp, 
     ) {
         Text(state.message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
         Spacer(Modifier.height(20.dp))
-        FilledTonalButton(onClick = { onRegionSelect(state.selectedRegion) }, modifier = Modifier.heightIn(min = 48.dp)) {
+        // The page's one way forward, filled; the edition menu below stays tonal.
+        Button(onClick = { onRegionSelect(state.selectedRegion) }, modifier = Modifier.heightIn(min = 48.dp)) {
             Text(stringResource(R.string.briefing_try_again))
         }
         Spacer(Modifier.height(12.dp))

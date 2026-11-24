@@ -154,7 +154,12 @@ class BriefingAuditCaptureTest(private val view: String, configuration: PhoneGol
         fun configurations(): List<Array<Any>> {
             if (System.getProperty("boxlore.tabletCaptures") != "audit") return listOf(arrayOf("brief-page", PhoneGoldenConfiguration(412, 915, false)))
             val sizes = PhoneGoldenConfiguration.auditConfigurations(extra = listOf(PhoneGoldenConfiguration(360, 800, false)))
-            return VIEWS.flatMap { view -> sizes.map { arrayOf<Any>(view, it) } }
+            // Dark checks for the editorial colours on chosen rows, menus and story tiles.
+            val dark = DARK_VIEWS.flatMap { view -> DARK_SIZES.map { (width, height) -> arrayOf<Any>(view, PhoneGoldenConfiguration(width, height, true)) } }
+            return VIEWS.flatMap { view -> sizes.map { arrayOf<Any>(view, it) } } + dark
         }
+
+        private val DARK_VIEWS = listOf("brief-preferences", "brief-edition-menu", "brief-page-scrolled")
+        private val DARK_SIZES = listOf(412 to 915, 1_280 to 800)
     }
 }

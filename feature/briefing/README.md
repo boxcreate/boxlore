@@ -22,7 +22,7 @@ Owns the Brief page: loading a regional edition, the cover and headline, story p
 
 ## Stories and playback
 
-- `BriefingLayoutMode` picks the layout from the pane: phones and short panes page through stories with `BriefingStoriesPager`, portrait tablets list every story in the page's column, and wide windows put the edition at the start with every story listed beside it (`BriefingWideLayout.kt`). The current story carries across layouts, and listed stories follow playback unless the listener just scrolled.
+- `BriefingLayoutMode` picks the layout from the pane: phones and short panes page through stories with `BriefingStoriesPager`, portrait tablets and narrower landscape windows list every story in the page's column, and windows wide enough for a readable story list put the edition at the start with every story listed beside it, split at the hinge on a foldable held like a book (`BriefingWideLayout.kt`). The current story carries across layouts, and listed stories follow playback unless the listener just scrolled.
 - `BriefingStoriesPager` gives every story card the height of the tallest, capped, so long stories scroll inside their text. In short windows `storyCardScrollsAsOne` makes the whole card scroll instead, keeping the heading and actions reachable.
 - `resolveBriefingPlaybackAction` (`BriefingPlaybackLogic.kt`) decides whether a tap pauses, resumes, starts or seeks; choosing another story seeks instead of pausing.
 - Playback hands the shared `briefingShowPodcast` show from `:core:designsystem` to `QueueManager.playEpisode`, so the player and Android Auto show the Brief under one title.

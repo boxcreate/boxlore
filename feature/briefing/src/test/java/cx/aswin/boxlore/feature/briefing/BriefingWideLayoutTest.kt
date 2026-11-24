@@ -20,6 +20,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
@@ -28,8 +29,11 @@ import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
+import cx.aswin.boxlore.core.testing.SystemInsets
+import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import cx.aswin.boxlore.core.testing.walkWindows
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -72,6 +76,12 @@ class BriefingWideLayoutTest {
         assertEquals(BriefingLayoutMode.TwoPane, BriefingLayoutMode.of(841f, 900f, shortPane = false))
         assertEquals(BriefingLayoutMode.List, BriefingLayoutMode.of(839f, 900f, shortPane = false))
         assertEquals(BriefingLayoutMode.TwoPane, BriefingLayoutMode.of(932f, 650f, shortPane = false))
+        // Landscape windows too narrow for a readable story list beside the edition keep one column.
+        assertEquals(BriefingLayoutMode.List, BriefingLayoutMode.of(600f, 480f, shortPane = false))
+        assertEquals(BriefingLayoutMode.List, BriefingLayoutMode.of(700f, 500f, shortPane = false))
+        assertEquals(BriefingLayoutMode.Pager, BriefingLayoutMode.of(599f, 479f, shortPane = true))
+        assertTrue(briefingStoryListRoom(764f) >= BRIEFING_STORY_LIST_MIN_DP)
+        assertEquals(BriefingLayoutMode.TwoPane, BriefingLayoutMode.of(764f, 600f, shortPane = false))
     }
 
     @Test fun `a landscape tablet shows the edition beside every story`() {
@@ -81,8 +91,69 @@ class BriefingWideLayoutTest {
         assertTrue("start pane is ${start.width} wide", start.width in BRIEFING_START_PANE_MIN_DP..BRIEFING_START_PANE_MAX_DP)
         compose.onNodeWithText("Listen to the Brief").assertIsDisplayed()
         compose.onNodeWithContentDescription("Next story").assertDoesNotExist()
+        val list = compose.onNodeWithTag(BRIEFING_STORY_LIST_TAG).fetchSemanticsNode().boundsInRoot
+        assertTrue("the story list is ${list.width} wide", list.width <= BRIEFING_STORY_LIST_MAX_DP + 0.5f)
+        // The list starts below the floating buttons, so no story passes under Preferences.
+        assertTrue(list.top >= compose.onNodeWithContentDescription("Brief preferences").fetchSemanticsNode().boundsInRoot.bottom)
         compose.onNodeWithTag(BRIEFING_STORY_LIST_TAG).performScrollToIndex(5)
         compose.onNode(hasContentDescription("Story 6 of 6", substring = true)).assertExists()
+        // The cover sits in the start pane, not under the whole status bar: dark icons on the light page.
+        assertTrue(lightStatusBars())
+        window.value = BoxloreTestWindows.PHONE
+        compose.waitForIdle()
+        assertFalse(lightStatusBars())
+    }
+
+    @Test fun `held like a book, neither pane crosses the hinge`() {
+        window.value = BoxloreTestWindows.FOLD_BOOK
+        render()
+        val frame = compose.onNodeWithTag("briefing_reading_frame").fetchSemanticsNode().boundsInRoot
+        val start = compose.onNodeWithTag(BRIEFING_START_PANE_TAG).fetchSemanticsNode().boundsInRoot
+        val list = compose.onNodeWithTag(BRIEFING_STORY_LIST_TAG).fetchSemanticsNode().boundsInRoot
+        assertTrue("start pane ends at ${start.right - frame.left}", start.right - frame.left <= 456f + 0.5f)
+        assertTrue("story list starts at ${list.left - frame.left}", list.left - frame.left >= 477f - 0.5f)
+    }
+
+    @Test fun `the lists end above a 3-button navigation bar`() {
+        render()
+        WindowCompat.setDecorFitsSystemWindows(compose.activity.window, false)
+        for (size in listOf(BoxloreTestWindows.TABLET_PORTRAIT, BoxloreTestWindows.TABLET)) {
+            window.value = size
+            compose.waitForIdle()
+            // Sent after the window has settled, as the system would.
+            compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets(statusTop = 24, navBottom = 48)) }
+            compose.waitForIdle()
+            val frame = compose.onNodeWithTag("briefing_reading_frame").fetchSemanticsNode().boundsInRoot
+            val (list, lastIndex) = if (size == BoxloreTestWindows.TABLET) BRIEFING_STORY_LIST_TAG to 5 else "briefingArticle" to 7
+            compose.onNodeWithTag(list).performScrollToIndex(lastIndex)
+            compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets(statusTop = 24, navBottom = 48)) }
+            compose.waitForIdle()
+            val last = if (size == BoxloreTestWindows.TABLET) {
+                compose.onAllNodesWithTag(BRIEFING_LISTED_STORY_TAG).fetchSemanticsNodes().maxBy { it.boundsInRoot.bottom }.boundsInRoot
+            } else {
+                compose.onNodeWithText("Report an issue").fetchSemanticsNode().boundsInRoot
+            }
+            assertTrue("$size: the last item ends at ${frame.bottom - last.bottom} above the window's bottom", last.bottom <= frame.bottom - 48f)
+        }
+    }
+
+    @Test fun `in one column, playback moving on leaves Listen in view until the listener scrolls to the stories`() {
+        window.value = BoxloreTestWindows.TABLET_PORTRAIT
+        state.value = edition().copy(isPlaying = true, currentPosition = 0)
+        render()
+        state.value = edition().copy(isPlaying = true, currentPosition = 75_000L + 1_000)
+        compose.waitForIdle()
+        compose.onNodeWithText("Pause the Brief").assertIsDisplayed()
+    }
+
+    @Test fun `another edition opens at its first story`() {
+        render()
+        repeat(2) { compose.onNodeWithContentDescription("Next story").performScrollTo().performClick() }
+        compose.waitForIdle()
+        compose.onNodeWithText("Story 3 of 6").assertExists()
+        state.value = edition().copy(briefing = edition().briefing.copy(region = "us", date = "2026-10-31"), selectedRegion = "us")
+        compose.waitForIdle()
+        compose.onNodeWithText("Story 1 of 6").assertExists()
     }
 
     @Test fun `the current story stays current through layouts and window changes`() {
@@ -97,11 +168,14 @@ class BriefingWideLayoutTest {
             BoxloreTestWindows.PHONE,
             BoxloreTestWindows.W839,
             BoxloreTestWindows.W841,
+            BoxloreTestWindows.GATE_599x479,
+            BoxloreTestWindows.GATE_600x480,
+            BoxloreTestWindows.GATE_599x479,
             BoxloreTestWindows.FOLD_FLAT,
             BoxloreTestWindows.PHONE,
         ) { size ->
             compose.waitForIdle()
-            if (size == BoxloreTestWindows.PHONE) {
+            if (BriefingLayoutMode.of(size.widthDp, size.heightDp, size.heightDp < 480f) == BriefingLayoutMode.Pager) {
                 compose.onNodeWithText("Story 3 of 6").assertExists()
             } else {
                 val listed = compose.onAllNodesWithTag(BRIEFING_LISTED_STORY_TAG).fetchSemanticsNodes()
@@ -132,6 +206,10 @@ class BriefingWideLayoutTest {
         compose.onNodeWithContentDescription("Next story").assertExists()
         compose.onAllNodesWithTag(BRIEFING_LISTED_STORY_TAG).fetchSemanticsNodes().let { assertTrue(it.isEmpty()) }
         compose.onNode(hasTestTag("briefing_reading_frame")).assertExists()
+    }
+
+    private fun lightStatusBars(): Boolean = compose.runOnIdle {
+        WindowCompat.getInsetsController(compose.activity.window, compose.activity.window.decorView).isAppearanceLightStatusBars
     }
 
     private fun listedAfterScroll(): Boolean {

@@ -313,7 +313,7 @@ private fun BriefingStoriesPagerContent(
     }
 }
 
-private val PagerSidePadding = 24.dp
+private val PagerSidePadding = 20.dp
 
 /** Cards never grow past this share of the screen; longer stories scroll inside their card. */
 private const val STORY_CARD_MAX_SCREEN_FRACTION = 0.7f

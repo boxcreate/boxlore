@@ -96,8 +96,8 @@ class BriefingScreenTest {
                 compose.runOnIdle { state.value = content }
                 val frame = compose.onNodeWithTag("briefing_reading_frame").fetchSemanticsNode().boundsInRoot
                 val back = compose.onNodeWithTag("briefingBack").fetchSemanticsNode().boundsInRoot
-                // A landscape tablet's edition sits in two panes in a wider frame; everything else reads at 720dp.
-                val twoPane = layout.widthDp > layout.heightDp && content is BriefingUiState.Success
+                // A landscape tablet's edition, and its loading page, sit in two panes in a wider frame; a portrait one reads at 720dp.
+                val twoPane = layout.widthDp > layout.heightDp
                 assertEquals(if (twoPane) BRIEFING_TWO_PANE_MAX_WIDTH_DP else 720f, frame.width, 1f)
                 assertEquals(layout.widthDp / 2, frame.center.x, 1f)
                 assertTrue(back.left >= frame.left && back.right <= frame.right)
