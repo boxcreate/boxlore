@@ -31,6 +31,8 @@
     <string name="suggestions_loading_library">Wir suchen Podcasts wie die in deiner Bibliothek.</string>
     <string name="suggestions_error_title">Vorschläge konnten nicht geladen werden</string>
     <string name="suggestions_error_body">Prüf deine Verbindung und versuch es dann noch mal.</string>
+    <string name="suggestions_check_title">Ähnliche Podcasts brauchen eine kurze Prüfung</string>
+    <string name="suggestions_check_body">Die Prüfung wurde nicht abgeschlossen, daher kann boxlore gerade keine ähnlichen Podcasts finden. Du kannst schon loslegen und später mehr entdecken.</string>
     <string name="suggestions_empty_title">Diesmal keine Vorschläge</string>
     <string name="suggestions_empty_body">Versuch es noch mal oder starte ohne sie.</string>
     <string name="suggestions_try_again">Noch mal versuchen</string>
@@ -63,4 +65,8 @@
     <string name="suggestions_details_remove">Entfernen</string>
     <string name="suggestions_details_fallback">Entdecke Folgen und Themen aus %1$s.</string>
     <string name="suggestions_details_fallback_with_host">Entdecke Folgen und Themen aus %1$s von %2$s.</string>
+    <plurals name="suggestions_show_all">
+        <item quantity="one">Alle %d zeigen</item>
+        <item quantity="other">Alle %d zeigen</item>
+    </plurals>
 </resources>

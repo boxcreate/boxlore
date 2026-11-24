@@ -28,8 +28,9 @@ internal class PlayerPresentationStore(
     override var expanded by mutableStateOf(expanded)
     fun forEpisode(id: String): FullPlayerUiState {
         if (episodeId != id) {
+            val previous = ui
             episodeId = id
-            ui = FullPlayerUiState()
+            ui = FullPlayerUiState().apply { inheritCastToggle(previous) }
         }
         return ui
     }
@@ -37,6 +38,7 @@ internal class PlayerPresentationStore(
     /** Phone-only sessions use [local] but still hand it to the first tablet presentation. */
     fun uiFor(id: String, local: FullPlayerUiState): FullPlayerUiState {
         if (tabletUsed) return forEpisode(id)
+        if (episodeId != id && ui !== local) local.inheritCastToggle(ui)
         episodeId = id
         ui = local
         return local

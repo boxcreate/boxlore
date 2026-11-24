@@ -64,6 +64,18 @@ class PublicationPlanTest(unittest.TestCase):
             self.plan(tag_target=SHA_A, release_assets=PUBLISHED - {V13.wear_apk_asset, V13.wear_aab_asset}, built_from=SHA_A),
         )
 
+    def test_the_phone_apk_lists_first_and_keeps_its_name(self):
+        # GitHub lists a release's files by name, ignoring case, and older apps link to the phone APK by name.
+        self.assertEqual("boxlore-v0.0.13.apk", V13.apk_asset)
+        self.assertEqual({"boxlore-v0.0.13.tv.apk", "boxlore-v0.0.13.tv.aab"}, {V13.tv_apk_asset, V13.tv_aab_asset})
+        self.assertEqual(V13.apk_asset, min(PUBLISHED, key=str.lower))
+
+    def test_a_release_published_before_the_tv_files_existed_is_built_again(self):
+        self.assertEqual(
+            {"build": "true", "release": "upload"},
+            self.plan(tag_target=SHA_A, release_assets=PUBLISHED - {V13.tv_apk_asset, V13.tv_aab_asset}, built_from=SHA_A),
+        )
+
     def test_a_tag_made_without_a_release_is_used_as_it_is(self):
         self.assertEqual({"build": "true", "release": "create"}, self.plan(tag_target=SHA_A, release_assets=None))
 
@@ -250,12 +262,36 @@ class WorkflowShapeTest(unittest.TestCase):
         self.assertIn("expected_wear_code=$((EXPECTED_VERSION_CODE + 1000000))", verify)
         self.assertIn('"$wear_apk_cert" != "$expected_cert"', verify)
         stage = publish.split("- name: Stage release assets", 1)[1].split("      - name: ", 1)[0]
-        self.assertIn('sha256sum "$APK_ASSET" "$AAB_ASSET" "$WEAR_APK_ASSET" "$WEAR_AAB_ASSET" > SHA256SUMS', stage)
+        self.assertIn('"$WEAR_APK_ASSET" "$WEAR_AAB_ASSET" > SHA256SUMS', stage)
         upload = publish.split("- name: Publish the files to the GitHub release", 1)[1].split("      - name: ", 1)[0]
         for name in ("$WEAR_APK_ASSET", "$WEAR_AAB_ASSET"):
             self.assertIn(f'"$RUNNER_TEMP/release-assets/{name}"', upload)
         dry_run = (self.root / ".github/workflows/release-contracts.yml").read_text()
         self.assertIn(":wear:assembleRelease :wear:bundleRelease :wear:lintRelease", dry_run)
+
+    def test_the_tv_app_is_built_checked_and_published_with_the_phone_app(self):
+        workflow = (self.root / ".github/workflows/changelog-on-merge.yml").read_text()
+        publish = workflow.split("  publish-release:\n", 1)[1].split("\n  refresh-update-feed:\n", 1)[0]
+        # The same Gradle run as the phone app, so they share a commit and a signing key; a release made
+        # before the TV app existed builds without it instead of failing.
+        build = publish.split("- name: Build signed release APK and AAB", 1)[1].split("      - name: ", 1)[0]
+        self.assertIn("if [[ -f tv/build.gradle.kts ]]; then\n            tasks+=(:tv:assembleRelease :tv:bundleRelease)", build)
+        self.assertIn('./gradlew --no-daemon "${tasks[@]}"', build)
+        verify = publish.split("- name: Verify artifact versions and signatures", 1)[1].split("      - name: ", 1)[0]
+        self.assertIn("expected_tv_code=$((EXPECTED_VERSION_CODE + 2000000))", verify)
+        self.assertIn('"$tv_apk_cert" != "$expected_cert"', verify)
+        stage = publish.split("- name: Stage release assets", 1)[1].split("      - name: ", 1)[0]
+        self.assertIn('tv_assets=("$TV_APK_ASSET" "$TV_AAB_ASSET")', stage)
+        self.assertIn('"${tv_assets[@]}"', stage.split("sha256sum", 1)[1].split("> SHA256SUMS", 1)[0])
+        reuse = publish.split("- name: Reuse the release's published files", 1)[1].split("      - name: ", 1)[0]
+        self.assertIn('--pattern "$TV_APK_ASSET" --pattern "$TV_AAB_ASSET"', reuse)
+        upload = publish.split("- name: Publish the files to the GitHub release", 1)[1].split("      - name: ", 1)[0]
+        for name in ("$TV_APK_ASSET", "$TV_AAB_ASSET"):
+            self.assertIn(f'"$RUNNER_TEMP/release-assets/{name}"', upload)
+        # A refreshed release drops the phone bundle's old name, so no stale bundle sorts above the phone APK.
+        self.assertIn('gh release delete-asset "$TAG" "$legacy_aab"', upload)
+        dry_run = (self.root / ".github/workflows/release-contracts.yml").read_text()
+        self.assertIn(":tv:assembleRelease :tv:bundleRelease :tv:lintRelease", dry_run)
 
     def test_files_record_their_commit_and_the_feed_text_comes_from_master(self):
         workflow = (self.root / ".github/workflows/changelog-on-merge.yml").read_text()

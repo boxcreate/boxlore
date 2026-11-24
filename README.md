@@ -63,14 +63,26 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>✨ Highlights:</b>
+<ul align="left">
+<li>boxlore now has an Android TV app: browse charts and your shows, pick up where you left off, and keep listening as one episode leads to the next.</li>
+</ul>
+<b>🆕 New:</b>
+<ul align="left">
+<li>To bring your shows to your TV, open Cloud Sync & Backups on your phone, choose Sign in on a TV, and enter the code your TV shows.</li>
+</ul>
 <b>⚡ Improved:</b>
 <ul align="left">
 <li>The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.</li>
 <li>The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.</li>
 <li>In Android Auto, a show's page now lists its episodes from newest to oldest. Episodes you've started stay in their place and show the time left.</li>
 <li>Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.</li>
-<li>On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.</li>
+<li>On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold. Half-open on a table, the full-screen transcript sits above the fold with its controls below.</li>
 <li>On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.</li>
+<li>The player fits more screens: on a phone turned sideways the Standard player style shows the cover beside the controls, an unfolded foldable shows Up next beside the player, and on tablets Up next fills the space under the controls.</li>
+<li>Getting started with boxlore fits more screens: Echo's questions and show cards always show in full, the welcome screen fits the Galaxy Z Fold cover, and it sits beside its picture on sideways phones and tablets.</li>
+<li>Picking your language now flows straight into the welcome screen.</li>
+<li>While you get started, search keeps more shows in view on sideways phones, and Shows for you lays its shows out in rows on tablets.</li>
 </ul>
 <b>🐛 Fixed:</b>
 <ul align="left">
@@ -85,6 +97,10 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.</li>
 <li>Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.</li>
 <li>Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.</li>
+<li>After a video plays full screen, your phone turns with you again instead of staying upright.</li>
+<li>The player keeps an open speed or sleep panel when you fold, unfold or turn your phone, and its place on the page when you turn it. A running sleep timer stays highlighted when you open the sleep options again, and an episode you remove from Up next stays removed even if you fold or unfold before Undo goes away.</li>
+<li>Pick topics instead now keeps the topics you already chose with Echo.</li>
+<li>If you skip the quick check before similar shows, boxlore now says so instead of asking you to check your connection.</li>
 </ul>
 <!-- release-upcoming:end -->
 

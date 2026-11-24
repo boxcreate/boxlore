@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
 import cx.aswin.boxlore.core.network.model.OnboardingSelectedShowDto
 import cx.aswin.boxlore.core.network.model.OnboardingSimilarShowsRequest
+import cx.aswin.boxlore.core.network.session.ApiErrorCodes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
@@ -30,6 +31,7 @@ internal fun OnboardingViewModel.launchSimilarShowsFetch(
                 isSynthesizing = true,
                 aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
                 onboardingError = null,
+                onboardingErrorKind = OnboardingErrorKind.Network,
                 aiCurriculumRows = emptyList(),
                 genreChartsPodcasts = emptyList(),
                 suggestionSeedCount = seedCount,
@@ -45,7 +47,7 @@ internal fun OnboardingViewModel.launchSimilarShowsFetch(
             } catch (e: Exception) {
                 if (SimilarShowsChoice.acceptsResult(_uiState.value)) {
                     Log.e("OnboardingViewModel", "Error in $errorContext", e)
-                    showSimilarError()
+                    showSimilarError((e as? OnboardingRequestFailed)?.kind ?: OnboardingErrorKind.Network)
                 }
             }
         }
@@ -82,8 +84,9 @@ private suspend fun OnboardingViewModel.requestSimilarRows(
                     request = request,
                 ).execute()
         }
+    if (!response.isSuccessful) throw OnboardingRequestFailed(EchoRequestPolicy.errorKind(ApiErrorCodes.of(response)), response.code())
     val body = response.body()
-    check(response.isSuccessful && body != null) { "Failed to load similar shows from backend: ${response.code()}" }
+    check(body != null) { "Failed to load similar shows from backend: ${response.code()}" }
     return OnboardingSuggestionsPresentation.filterCurriculumRowsExcluding(
         rows = body.map { it.copy(episodes = emptyList()) },
         excludeIds = seedIds,
@@ -102,9 +105,10 @@ private fun OnboardingViewModel.showSimilarRows(rows: List<OnboardingCurriculumR
     }
 }
 
-private fun OnboardingViewModel.showSimilarError() {
+private fun OnboardingViewModel.showSimilarError(kind: OnboardingErrorKind) {
     _uiState.update { state ->
         state.copy(
+            onboardingErrorKind = kind,
             isAiLoading = false,
             isSynthesizing = false,
             aiLoadingStage = AiLoadingStage.IDLE,
@@ -149,3 +153,6 @@ internal fun OnboardingViewModel.goHomeFromSimilar(onDone: () -> Unit) {
     }
     finishAiOnboarding(onDone)
 }
+
+/** A failed onboarding API answer, with the cause it names. */
+internal class OnboardingRequestFailed(val kind: OnboardingErrorKind, code: Int) : Exception("Onboarding request failed: $code")

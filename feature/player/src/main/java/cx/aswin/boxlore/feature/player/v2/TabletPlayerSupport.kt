@@ -11,20 +11,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
+import androidx.compose.material.icons.automirrored.outlined.QueueMusic
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -33,6 +36,8 @@ import androidx.core.text.HtmlCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.components.DiscoveryTab
+import cx.aswin.boxlore.core.designsystem.components.DiscoveryTabSwitcher
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
@@ -45,11 +50,11 @@ import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.TranscriptView
 import kotlinx.coroutines.launch
 
-internal enum class PlayerSupportingTab(val label: Int) {
-    UpNext(R.string.minimal_up_next),
-    Chapters(R.string.player_chapters_tab),
-    Transcript(R.string.player_transcript_tab),
-    Notes(R.string.player_notes_tab),
+internal enum class PlayerSupportingTab(val label: Int, val icon: ImageVector) {
+    UpNext(R.string.minimal_up_next, Icons.AutoMirrored.Outlined.QueueMusic),
+    Chapters(R.string.player_chapters_tab, Icons.AutoMirrored.Outlined.FormatListBulleted),
+    Transcript(R.string.player_transcript_tab, Icons.Outlined.Subtitles),
+    Notes(R.string.player_notes_tab, Icons.Outlined.Info),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,30 +77,28 @@ internal fun TabletPlayerSupport(
         contentColor = colors.onSurface,
     ) {
         Column(Modifier.fillMaxSize()) {
-            PrimaryScrollableTabRow(
-                selectedTabIndex = ui.supportingTab.ordinal,
-                containerColor = colors.surfaceContainerLow,
-                contentColor = colors.primary,
-                edgePadding = 0.dp,
-            ) {
-                PlayerSupportingTab.entries.forEach { tab ->
-                    Tab(
-                        selected = ui.supportingTab == tab,
-                        onClick = {
-                            if (ui.supportingTab != tab) {
-                                val event = when (tab) {
-                                    PlayerSupportingTab.UpNext -> "queue"
-                                    PlayerSupportingTab.Chapters -> "chapters_sheet"
-                                    PlayerSupportingTab.Transcript -> cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.TRANSCRIPT_OPENED
-                                    PlayerSupportingTab.Notes -> null
-                                }
-                                event?.let { cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction(it) }
-                                ui.selectSupportingTab(tab)
+            val tabs = PlayerSupportingTab.entries.map { DiscoveryTab(stringResource(it.label), it.icon) }
+            MaterialTheme(colorScheme = colors) {
+                // boxlore's rounded tab switcher in the player's colours; long names drop icons, then shrink.
+                DiscoveryTabSwitcher(
+                    tabs = tabs,
+                    selectedIndex = ui.supportingTab.ordinal,
+                    onTabSelected = { index ->
+                        val tab = PlayerSupportingTab.entries[index]
+                        if (ui.supportingTab != tab) {
+                            val event = when (tab) {
+                                PlayerSupportingTab.UpNext -> "queue"
+                                PlayerSupportingTab.Chapters -> "chapters_sheet"
+                                PlayerSupportingTab.Transcript -> cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.TRANSCRIPT_OPENED
+                                PlayerSupportingTab.Notes -> null
                             }
-                        },
-                        text = { Text(stringResource(tab.label), maxLines = 1) },
-                    )
-                }
+                            event?.let { cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction(it) }
+                            ui.selectSupportingTab(tab)
+                        }
+                    },
+                    floating = false,
+                    modifier = Modifier.padding(12.dp),
+                )
             }
             Crossfade(ui.supportingTab, animationSpec = ExpressiveMotion.QuickSpring, label = "playerSupportingContent") { tab ->
                 when (tab) {
@@ -126,7 +129,7 @@ internal fun TabletPlayerSupport(
                                     cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("episode_info")
                                     actions.onCollapse()
                                     actions.onEpisodeInfoClick(model.episode)
-                                })
+                                }, expandedState = ui.notesExpandedState)
                             }
                         }
                     }

@@ -18,7 +18,7 @@
     <string name="player_hero_up_next">À suivre : %1$s</string>
     <string name="player_show_artwork">Illustration du podcast</string>
     <string name="player_no_chapters">Aucun chapitre disponible</string>
-    <string name="player_transcript_sync_scroll">Défilement synchronisé</string>
+    <string name="player_transcript_sync_scroll">Suivre l\'audio</string>
     <string name="player_inline_open_fullscreen_transcript">Ouvrir la transcription en plein écran</string>
     <string name="player_collapse">Réduire le lecteur</string>
     <string name="player_swipe_down_tip">Balayez vers le bas pour réduire</string>
@@ -84,6 +84,7 @@
     <string name="player_same_show_hide_preview">Masquer l’aperçu</string>
     <string name="player_cast">Caster</string>
     <string name="player_change_cast_device">Changer d’appareil Cast</string>
+    <string name="player_cast_volume">Volume de l’appareil Cast</string>
     <string name="player_show_cast_controls">Afficher les commandes Cast</string>
     <string name="player_cast_available_devices">Appareils disponibles</string>
     <string name="player_cast_this_phone">Ce téléphone</string>

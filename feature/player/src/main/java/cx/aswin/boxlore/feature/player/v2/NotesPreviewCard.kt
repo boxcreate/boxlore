@@ -4,17 +4,21 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -47,7 +51,8 @@ fun NotesPreviewCard(
     description: String,
     colorScheme: ColorScheme,
     onOpenEpisodeInfo: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    expandedState: androidx.compose.runtime.MutableState<Boolean>? = null
 ) {
     val plainText = remember(description) {
         androidx.core.text.HtmlCompat.fromHtml(
@@ -57,7 +62,8 @@ fun NotesPreviewCard(
     }
     if (plainText.isBlank()) return
 
-    var expanded by rememberSaveable { mutableStateOf(false) }
+    val localExpanded = rememberSaveable { mutableStateOf(false) }
+    var expanded by (expandedState ?: localExpanded)
 
     val cardShape = AbsoluteSmoothCornerShape(
         cornerRadiusTL = 28.dp,
@@ -95,10 +101,17 @@ fun NotesPreviewCard(
                     color = colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(
+                // The same button style as the Up next card's View queue.
+                FilledTonalButton(
                     onClick = onOpenEpisodeInfo,
-                    colors = ButtonDefaults.textButtonColors(contentColor = colorScheme.primary)
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = colorScheme.primaryContainer,
+                        contentColor = colorScheme.onPrimaryContainer
+                    ),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp)
                 ) {
+                    Icon(imageVector = Icons.Outlined.Info, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(stringResource(R.string.player_episode_details))
                 }
             }
