@@ -58,8 +58,7 @@ class SharedHostUsageTest {
             name = "SnackbarHost",
             replacement = "the shared snackbar host in :core:designsystem",
             skipDesignSystem = true,
-            allowed = mapOf(
-            ),
+            allowed = emptyMap(),
         ),
     )
 

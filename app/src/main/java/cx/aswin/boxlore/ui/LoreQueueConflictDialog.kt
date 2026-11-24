@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.ui
 
-import android.util.Log
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -14,7 +13,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -25,7 +23,6 @@ import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
-import kotlinx.coroutines.launch
 
 /**
  * The show name and author a Lore episode is queued with when it carries no show of its own. These
@@ -49,9 +46,8 @@ internal fun loreQueuePodcast(episode: Episode, fallback: LoreShowFallback): Pod
 
 /** Conflict dialog when starting a Lore queue over an existing normal queue. */
 @Composable
-fun LoreQueueConflictDialog(pendingLoreEpisode: Episode, onDismiss: () -> Unit, onConfirmStart: suspend (Episode) -> Unit,) {
+fun LoreQueueConflictDialog(pendingLoreEpisode: Episode, onDismiss: () -> Unit, onConfirmStart: (Episode) -> Unit,) {
     TrackScreenView("lore_queue_conflict")
-    val scope = rememberCoroutineScope()
     BoxloreAlertDialog(
         onDismissRequest = {
             AnalyticsHelper.trackLoreQueueConflictResult(pendingLoreEpisode.id, "cancelled")
@@ -86,18 +82,13 @@ fun LoreQueueConflictDialog(pendingLoreEpisode: Episode, onDismiss: () -> Unit, 
         confirmButton = {
             FilledTonalButton(
                 onClick = {
-                    onDismiss()
                     AnalyticsHelper.trackLoreQueueConflictResult(
                         pendingLoreEpisode.id,
                         "start_lore_queue",
                     )
-                    scope.launch {
-                        try {
-                            onConfirmStart(pendingLoreEpisode)
-                        } catch (e: Exception) {
-                            Log.e("MainActivity", "Failed to start Lore queue", e)
-                        }
-                    }
+                    // The caller runs the start on a scope that outlives this dialog, then it closes.
+                    onConfirmStart(pendingLoreEpisode)
+                    onDismiss()
                 },
                 shape = CircleShape,
             ) {
@@ -122,5 +113,20 @@ fun LoreQueueConflictDialog(pendingLoreEpisode: Episode, onDismiss: () -> Unit, 
         iconContentColor = MaterialTheme.colorScheme.onTertiaryContainer,
         titleContentColor = MaterialTheme.colorScheme.onSurface,
         textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+/**
+ * Shows "Start a Lore queue?" while [dialogs] holds a pending episode. Start runs [startLore] on
+ * the holder's scope, which outlives the activity, so clearing the queue is always followed by
+ * starting Lore, even across a recreation.
+ */
+@Composable
+internal fun LoreQueueConflictHost(dialogs: ShellPendingDialogs, startLore: suspend (Episode) -> Unit) {
+    val episode = dialogs.loreQueueConflictEpisode ?: return
+    LoreQueueConflictDialog(
+        pendingLoreEpisode = episode,
+        onDismiss = { dialogs.loreQueueConflictEpisode = null },
+        onConfirmStart = { pending -> dialogs.startLoreQueue(pending, startLore) },
     )
 }

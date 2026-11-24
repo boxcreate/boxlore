@@ -3,9 +3,12 @@ package cx.aswin.boxlore.session.turnstile
 import android.app.Application
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
@@ -34,7 +37,7 @@ class TurnstileHostAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         golden.setContent(foldSafeViewport = true) {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
                 Box(Modifier.fillMaxSize().testTag(ROOT_TAG)) {
-                    TurnstileStepUpSheet(onSkip = {}) { TurnstileChallengeFrame {} }
+                    TurnstileStepUpSheet(onSkip = {}, loading = true) { Box(Modifier.fillMaxWidth().height(72.dp)) }
                 }
             }
         }

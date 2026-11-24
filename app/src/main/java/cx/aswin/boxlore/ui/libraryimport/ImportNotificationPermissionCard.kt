@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -131,6 +132,11 @@ internal fun ImportNotificationPermissionCard(
                     }
                 },
                 modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp),
+                // The card's own darker colour, so Continue stays the page's only main-colour button.
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                ),
             ) {
                 Text(
                     text = stringResource(if (canRequestRuntimePermission) R.string.import_notify_allow else R.string.import_notify_settings),

@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.ui.announcement
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,6 +52,7 @@ import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.analytics.AnnouncementRef
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog as Dialog
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository.Announcement
 import cx.aswin.boxlore.ui.NativeDialogSystemBars
 import cx.aswin.boxlore.updates.ReleaseNotesMarkdown
@@ -78,9 +81,23 @@ fun InAppAnnouncementDialog(announcement: Announcement, onDismiss: () -> Unit, o
     LaunchedEffect(announcement.timestamp) {
         AnalyticsHelper.trackInAppAnnouncementViewed(announcement.category, hasImage, hasAction, ref)
     }
+    // Hoisted so the body keeps its scroll when the window crosses into or out of the tablet layout.
+    val bodyScroll = rememberScrollState()
+    // Tablets host the card in boxlore's own panel over one dim layer; phones and the full-screen
+    // presentation draw their own backdrop.
+    val tabletCard = LocalBoxloreWindowLayout.current.usesTabletLayout && !fullscreen
     MaterialTheme(colorScheme = colors) {
-        Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        Dialog(
+            onDismissRequest = dismiss,
+            properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+            maxWidth = if (tabletCard) 560.dp else 640.dp,
+            scrimColor = colors.scrim.copy(alpha = if (tabletCard) 0.38f else 0.32f),
+        ) {
             NativeDialogSystemBars(colors.surface, dimmed = !fullscreen)
+            if (tabletCard) {
+                AnnouncementPanel(announcement, actions, fullscreen = false, bodyScroll, dismiss, act, Modifier.fillMaxWidth().testTag(ANNOUNCEMENT_PANEL_TAG))
+                return@Dialog
+            }
             BoxWithConstraints(
                 Modifier.fillMaxSize()
                     .background(if (fullscreen) colors.surface else colors.scrim.copy(alpha = 0.38f))
@@ -89,29 +106,45 @@ fun InAppAnnouncementDialog(announcement: Announcement, onDismiss: () -> Unit, o
                 contentAlignment = Alignment.Center,
             ) {
                 val panel = if (fullscreen) Modifier.fillMaxSize() else Modifier.widthIn(max = 560.dp).fillMaxWidth().heightIn(max = maxHeight * 0.9f)
-                Surface(
-                    modifier = panel,
-                    shape = RoundedCornerShape(if (fullscreen) 0.dp else 28.dp),
-                    color = if (fullscreen) colors.surface else colors.surfaceContainer,
-                    shadowElevation = if (fullscreen) 0.dp else 3.dp,
-                ) {
-                    Column {
-                        AnnouncementHeader(announcement.category, dismiss)
-                        Column(
-                            Modifier.weight(1f, fill = fullscreen).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            AnnouncementImage(announcement)
-                            Text(announcement.title, style = if (fullscreen) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineSmall)
-                            ReleaseNotesMarkdown(announcement.body, stripPrLinks = false)
-                        }
-                        AnnouncementFooter(actions, dismiss, act)
-                    }
-                }
+                AnnouncementPanel(announcement, actions, fullscreen, bodyScroll, dismiss, act, panel.testTag(ANNOUNCEMENT_PANEL_TAG))
             }
         }
     }
 }
+
+@Composable
+@Suppress("LongParameterList") // The announcement, its actions and the presentation it is drawn in.
+private fun AnnouncementPanel(
+    announcement: Announcement,
+    actions: List<AnnouncementAction>,
+    fullscreen: Boolean,
+    bodyScroll: ScrollState,
+    dismiss: () -> Unit,
+    act: (String) -> Unit,
+    modifier: Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = if (fullscreen) RoundedCornerShape(0.dp) else MaterialTheme.shapes.extraLarge,
+        color = if (fullscreen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainer,
+        shadowElevation = if (fullscreen) 0.dp else 3.dp,
+    ) {
+        Column {
+            AnnouncementHeader(announcement.category, dismiss)
+            Column(
+                Modifier.weight(1f, fill = fullscreen).verticalScroll(bodyScroll).padding(horizontal = 24.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                AnnouncementImage(announcement)
+                Text(announcement.title, style = if (fullscreen) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineSmall)
+                ReleaseNotesMarkdown(announcement.body, stripPrLinks = false)
+            }
+            AnnouncementFooter(actions, dismiss, act)
+        }
+    }
+}
+
+internal const val ANNOUNCEMENT_PANEL_TAG = "announcement_panel"
 
 @Composable
 private fun AnnouncementHeader(category: String, onDismiss: () -> Unit) {

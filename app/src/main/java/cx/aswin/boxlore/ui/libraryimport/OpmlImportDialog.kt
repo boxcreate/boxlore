@@ -19,7 +19,10 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -51,9 +54,8 @@ import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.catalog.backup.JsonBackupPhase
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
-import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
-import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
+import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -208,21 +210,31 @@ private fun ImportDialogSurface(state: OpmlImportState, actions: OpmlImportDialo
         )
     }
 
+    // The page covers the whole window with its own background, so nothing behind it shows or can be
+    // tapped; its content is a centred reading column, kept to one side of a half-open fold.
     Surface(
         modifier =
         Modifier
             .fillMaxSize()
             .zIndex(200f)
-            .boxloreFoldSafeViewport()
-            .boxloreCardWidth(BoxloreCardFamily.Utility, maximumWidthDp = ImportMaxWidthDp)
-            .pointerInput(Unit) { /* Block touch-through to welcome / player. */ },
+            .testTag("import_overlay")
+            // Hit-testing stops at this full-window layer, so touches never reach the page behind.
+            // It must not consume anything: a parent that consumes moves cancels its children's
+            // taps and scroll gestures.
+            .pointerInput(Unit) {},
         color = backgroundColor,
     ) {
         Box(
             modifier =
             Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .boxloreFoldSafeViewport()
+                // Side insets first, on the full-width layer, so a centred column far from the cutout
+                // or the side navigation buttons keeps its full width.
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                .boxloreReadingColumn(maxWidthDp = ImportMaxWidthDp)
+                .fillMaxHeight()
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical))
+                .testTag("import_column")
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             ImportDialogBody(
@@ -326,4 +338,4 @@ private fun ImportDialogBody(
 }
 
 /** The import screens stay a readable column on tablets and unfolded foldables. */
-private const val ImportMaxWidthDp = 560f
+internal const val ImportMaxWidthDp = 560f

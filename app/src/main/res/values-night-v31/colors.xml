@@ -3,4 +3,6 @@
     <!-- Use System Accent 1 (Primary) for Splash Logo on API 31+ (Dark Mode) -->
     <!-- 200 is standard for Dark Mode Primary -->
     <color name="splash_logo_color">#FFFFFF</color>
+    <!-- boxlore's dark background (brand kit), so a dark-theme launch never flashes the light purple. -->
+    <color name="splash_background">#121318</color>
 </resources>

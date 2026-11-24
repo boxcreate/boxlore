@@ -8,6 +8,7 @@ import android.net.Uri
 import android.provider.Settings
 import android.widget.Toast
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.components.boxloreShowsOwnCopyConfirmation
 
 internal fun copyDeletionId(
     context: Context,
@@ -16,7 +17,7 @@ internal fun copyDeletionId(
     AnalyticsHelper.trackSettingsInteraction("delete_id_copied")
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.settings_privacy_clipboard_label), deletionId))
-    Toast.makeText(context, R.string.settings_privacy_id_copied, Toast.LENGTH_SHORT).show()
+    if (boxloreShowsOwnCopyConfirmation()) Toast.makeText(context, R.string.settings_privacy_id_copied, Toast.LENGTH_SHORT).show()
 }
 
 internal fun requestAnalyticsDeletionByEmail(

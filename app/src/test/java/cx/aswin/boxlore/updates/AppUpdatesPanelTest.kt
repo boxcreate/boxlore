@@ -6,16 +6,32 @@ import android.os.Looper
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasProgressBarRangeInfo
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +41,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,6 +54,110 @@ import org.robolectric.annotation.Config
 @Config(sdk = [33], application = Application::class)
 class AppUpdatesPanelTest {
     @get:Rule val composeRule = createComposeRule()
+
+    private val window = mutableStateOf(BoxloreTestWindows.PHONE)
+
+    private fun installer(onPrepare: suspend ((ApkInstallState) -> Unit) -> File = { error("This test never downloads") }) = object : ApkInstaller {
+        override suspend fun prepare(manifest: UpdateManifest, onState: (ApkInstallState) -> Unit): File = onPrepare(onState)
+        override suspend fun launch(activity: Activity, manifest: UpdateManifest, file: File): Boolean = error("This test never installs")
+    }
+
+    private fun showPanel(updates: AppUpdates) {
+        composeRule.setContent {
+            BoxLoreTheme(darkTheme = false, dynamicColor = false) {
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) { AppUpdatesPanel(updates, {}, {}) }
+            }
+        }
+    }
+
+    @Test fun `a first check shows only the Check button's loader, and a re-check over an offer shows one bar`() {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        try {
+            composeRule.mainClock.autoAdvance = false // The loaders spin while the check runs.
+            val first = UpdateChecker(UpdateSource { awaitCancellation() }, MemoryUpdateStore(), 28, 34)
+            val firstCheck = AppUpdates(first, false, installer(), scope).apply { open() }
+            val shown = mutableStateOf(firstCheck)
+            composeRule.setContent {
+                BoxLoreTheme(darkTheme = false, dynamicColor = false) {
+                    CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) { AppUpdatesPanel(shown.value, {}, {}) }
+                }
+            }
+            composeRule.mainClock.advanceTimeBy(100)
+            composeRule.onNodeWithTag(UPDATES_CHECK_LOADER_TAG, useUnmergedTree = true).assertExists()
+            composeRule.onNodeWithTag(UPDATES_TOP_PROGRESS_TAG).assertDoesNotExist()
+
+            var lookups = 0
+            val again = UpdateChecker(
+                UpdateSource { if (lookups++ == 0) UpdateLookup(UpdateOffer(29, "0.0.29", updateManifest())) else awaitCancellation() },
+                MemoryUpdateStore(),
+                28,
+                34,
+            )
+            runBlocking { again.check() }
+            val recheck = AppUpdates(again, false, installer(), scope).apply { open() }
+            composeRule.runOnIdle { shown.value = recheck }
+            composeRule.mainClock.advanceTimeBy(100)
+            assertEquals(UpdateCheckStatus.CHECKING, again.state.value.status)
+            composeRule.onAllNodesWithTag(UPDATES_TOP_PROGRESS_TAG).assertCountEquals(1)
+            composeRule.onNodeWithTag(UPDATES_CHECK_LOADER_TAG, useUnmergedTree = true).assertDoesNotExist()
+        } finally {
+            scope.cancel()
+        }
+    }
+
+    @Test fun `a download reports its progress, and the main actions are full-width 56dp pills`() {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        try {
+            val checker = UpdateChecker(UpdateSource { UpdateLookup(UpdateOffer(29, "0.0.29", updateManifest())) }, MemoryUpdateStore(), 28, 34)
+            runBlocking { checker.check() }
+            val updates = AppUpdates(
+                checker,
+                false,
+                installer { onState ->
+                onState(ApkInstallState(ApkInstallStage.DOWNLOADING, 0.4f))
+                awaitCancellation()
+            },
+                scope
+            )
+            updates.open(checkNow = false)
+            showPanel(updates)
+            val panel = composeRule.onNode(isDialog()).getUnclippedBoundsInRoot()
+            val download = composeRule.onNodeWithText("Download update").getUnclippedBoundsInRoot()
+            assertTrue("Download is ${download.height} tall", download.height >= 56.dp)
+            assertTrue("Download spans the page", download.width >= panel.width - 48.dp - 1.dp)
+            composeRule.mainClock.autoAdvance = false
+            composeRule.onNodeWithText("Download update").performClick()
+            composeRule.mainClock.advanceTimeBy(100)
+            composeRule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.4f, 0f..1f))).assertExists()
+        } finally {
+            scope.cancel()
+        }
+    }
+
+    @Test fun `upcoming changes open from their row, say so to TalkBack, and stay open across the tablet width`() {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        try {
+            val checker = UpdateChecker(UpdateSource { UpdateLookup(upcoming = "Smoother playback between shows") }, MemoryUpdateStore(), 28, 34)
+            runBlocking { checker.check() }
+            val updates = AppUpdates(checker, false, installer(), scope).apply { open(checkNow = false) }
+            window.value = BoxloreTestWindows.W599_H900
+            showPanel(updates)
+            val row = composeRule.onNodeWithTag(UPDATES_UPCOMING_ROW_TAG)
+            row.assert(SemanticsMatcher.keyIsDefined(SemanticsActions.Expand))
+            composeRule.onNodeWithText("Smoother playback between shows").assertDoesNotExist()
+            row.performClick()
+            composeRule.onNodeWithText("Smoother playback between shows").performScrollTo().assertIsDisplayed()
+            row.assert(SemanticsMatcher.keyIsDefined(SemanticsActions.Collapse))
+            listOf(BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900).forEach { next ->
+                composeRule.runOnIdle { window.value = next }
+                composeRule.onNodeWithText("Smoother playback between shows").performScrollTo().assertIsDisplayed()
+            }
+            composeRule.onNodeWithTag(UPDATES_UPCOMING_ROW_TAG).performScrollTo().performClick()
+            composeRule.onNodeWithText("Smoother playback between shows").assertDoesNotExist()
+        } finally {
+            scope.cancel()
+        }
+    }
 
     @Test fun `long notes scroll without hiding download or close actions`() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)

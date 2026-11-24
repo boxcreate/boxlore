@@ -2,14 +2,22 @@ package cx.aswin.boxlore.ui.libraryimport
 
 import android.app.Application
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -19,9 +27,12 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.echo.LocalEchoMotion
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
@@ -31,6 +42,9 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
+import cx.aswin.boxlore.core.testing.SystemInsets
+import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -75,6 +89,15 @@ class ImportDialogAdaptiveTest {
         BoxloreWindowLayout(800f, 1280f),
         BoxloreWindowLayout(673f, 841f, listOf(fold)),
         BoxloreWindowLayout(673f, 841f),
+        BoxloreTestWindows.FOLD_FLAT,
+        BoxloreTestWindows.FOLD_BOOK,
+        BoxloreTestWindows.FOLD_TABLETOP,
+        BoxloreTestWindows.FOLD_FLAT,
+        BoxloreTestWindows.W841,
+        BoxloreTestWindows.W839,
+        BoxloreTestWindows.PHONE_LAND,
+        BoxloreTestWindows.PHONE,
+        BoxloreTestWindows.PHONE_LAND,
         BoxloreWindowLayout(360f, 740f),
     )
 
@@ -116,7 +139,7 @@ class ImportDialogAdaptiveTest {
             compose.runOnIdle { window.value = next }
             compose.waitForIdle()
             compose.onNodeWithText("12 of 48 shows").performScrollTo().assertIsDisplayed()
-            compose.onNodeWithText("Subscribing to The Rest Is History").assertIsDisplayed()
+            compose.onNodeWithText("Subscribing to The Rest Is History").performScrollTo().assertIsDisplayed()
             compose.onNodeWithTag("import_echo").assertExists()
         }
         compose.onNodeWithTag("import_close").assertDoesNotExist()
@@ -220,12 +243,111 @@ class ImportDialogAdaptiveTest {
         compose.onNodeWithText("Bring your shows").assertIsDisplayed()
     }
 
+    @Test fun `the import page covers the whole window and nothing behind it can be tapped`() {
+        val windows = listOf(
+            BoxloreTestWindows.W600_H900,
+            BoxloreTestWindows.TABLET,
+            BoxloreTestWindows.FOLD_BOOK,
+            BoxloreTestWindows.FOLD_TABLETOP,
+            BoxloreWindowLayout(673f, 841f, listOf(fold)),
+        )
+        var behindClicks = 0
+        render(behind = { Box(Modifier.fillMaxSize().testTag("behind").clickable { behindClicks++ }) })
+        windows.forEach { next ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            val overlay = compose.onNodeWithTag("import_overlay").getUnclippedBoundsInRoot()
+            assertEquals("Overlay width at $next", next.widthDp, (overlay.right - overlay.left).value, 0.5f)
+            assertEquals("Overlay height at $next", next.heightDp, (overlay.bottom - overlay.top).value, 0.5f)
+            listOf(8f, next.widthDp - 8f).forEach { x ->
+                compose.onNodeWithTag("behind").performTouchInput { click(Offset(x.dp.toPx(), center.y)) }
+            }
+            assertEquals("Taps reached the page behind at $next", 0, behindClicks)
+        }
+        compose.onNodeWithText("In a boxlore backup").performScrollTo().assertIsDisplayed()
+        assertEquals(0, dismissed)
+    }
+
+    @Test fun `the import column is a centred 560dp column on wide windows and the full width on phones`() {
+        render()
+        mapOf(
+            BoxloreTestWindows.TABLET to 560f,
+            BoxloreTestWindows.PHONE_LAND to 560f,
+            BoxloreTestWindows.PHONE to BoxloreTestWindows.PHONE.widthDp,
+            BoxloreTestWindows.COVER_443 to BoxloreTestWindows.COVER_443.widthDp,
+        ).forEach { (next, expected) ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            val column = compose.onNodeWithTag("import_column").getUnclippedBoundsInRoot()
+            assertEquals("Column width at $next", expected, (column.right - column.left).value, 0.5f)
+            val overlay = compose.onNodeWithTag("import_overlay").getUnclippedBoundsInRoot()
+            assertEquals("Column centre at $next", ((overlay.left + overlay.right) / 2).value, ((column.left + column.right) / 2).value, 0.5f)
+        }
+    }
+
+    @Test fun `a side inset narrows the import column only where the column reaches it`() {
+        compose.runOnUiThread { WindowCompat.setDecorFitsSystemWindows(compose.activity.window, false) }
+        render()
+        val sides = SystemInsets.SIDEWAYS_3_BUTTON.let { it.cutoutStart + it.navEnd }
+        listOf(BoxloreTestWindows.PHONE_LAND, BoxloreWindowLayout(600f, 412f), BoxloreTestWindows.PHONE_LAND).forEach { next ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            // Sent again after each change, as the window would (the page asks the window for fresh insets).
+            compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets.SIDEWAYS_3_BUTTON) }
+            compose.waitForIdle()
+            val column = compose.onNodeWithTag("import_column").getUnclippedBoundsInRoot()
+            assertEquals("Column width at $next", minOf(ImportMaxWidthDp, next.widthDp - sides), (column.right - column.left).value, 0.5f)
+        }
+    }
+
+    @Test fun `a tap that moves a little still reaches the import page's own controls`() {
+        var accountPicked = 0
+        state.value = OpmlImportState.AskCompleted(shows, shows.map { it.id }.toSet())
+        render(onSyncAccountSelected = { accountPicked++ })
+        compose.onNodeWithTag("import_fresh_confirm").performTouchInput { tapWithSmallMove() }
+        compose.waitForIdle()
+        assertEquals(1, confirmed)
+
+        // Picking the account hands over to the Account page, so it comes last.
+        compose.runOnIdle { state.value = OpmlImportState.ShowSelector }
+        compose.onNodeWithTag("import_option_account").performScrollTo().performTouchInput { tapWithSmallMove() }
+        compose.waitForIdle()
+        assertEquals(1, accountPicked)
+    }
+
+    /** A real finger moves a pixel or two between touching down and lifting. */
+    private fun TouchInjectionScope.tapWithSmallMove() {
+        down(center)
+        moveBy(Offset(0f, 3f))
+        up()
+    }
+
+    @Test fun `a finger swipe scrolls the list of shows on phones held either way`() {
+        state.value = OpmlImportState.AskCompleted(shows, shows.map { it.id }.toSet())
+        render()
+        listOf(BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND).forEach { next ->
+            compose.runOnIdle { window.value = next }
+            compose.onNodeWithTag("import_fresh_list").performScrollToIndex(0)
+            compose.waitForIdle()
+            compose.onNodeWithText("Show 1").assertIsDisplayed()
+            compose.onNodeWithTag("import_fresh_list").performTouchInput { swipeUp() }
+            compose.waitForIdle()
+            compose.onNodeWithText("Show 1").assertIsNotDisplayed()
+        }
+    }
+
     private fun back() {
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
     }
 
-    private fun render(withRetry: Boolean = true, direction: LayoutDirection = LayoutDirection.Ltr, fontScale: Float = 1f) {
+    private fun render(
+        withRetry: Boolean = true,
+        direction: LayoutDirection = LayoutDirection.Ltr,
+        fontScale: Float = 1f,
+        behind: (@Composable () -> Unit)? = null,
+        onSyncAccountSelected: () -> Unit = {},
+    ) {
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(
@@ -237,6 +359,7 @@ class ImportDialogAdaptiveTest {
                     val layout = window.value
                     CompositionLocalProvider(LocalBoxloreWindowLayout provides layout) {
                         Box(Modifier.requiredSize(layout.widthDp.dp, layout.heightDp.dp)) {
+                            behind?.invoke()
                             OpmlImportDialog(
                                 state.value,
                                 OpmlImportDialogActions(
@@ -244,6 +367,7 @@ class ImportDialogAdaptiveTest {
                                     onSelectionChanged = { ids -> (state.value as? OpmlImportState.AskCompleted)?.let { state.value = it.copy(selectedIds = ids) } },
                                     onConfirmCompleted = { confirmed++ },
                                     onSkipCompleted = { skipped++ },
+                                    onSyncAccountSelected = onSyncAccountSelected,
                                     onChooseAnotherFile = if (withRetry) ({ retried++ }) else null,
                                 ),
                             )

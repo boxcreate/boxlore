@@ -1,7 +1,9 @@
 package cx.aswin.boxlore.session.turnstile
 
 import android.app.Application
+import android.content.Context
 import android.view.View
+import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
@@ -18,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.echo.LocalEchoMotion
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
@@ -28,6 +31,7 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.network.session.TurnstileResult
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -85,6 +89,20 @@ class TurnstileStepUpHostAdaptiveTest {
         BoxloreWindowLayout(360f, 740f),
     )
 
+    /** Set to hold back the page's "drawn" report, as a real check does while Cloudflare loads. */
+    private var holdDrawing = false
+    private val heldDraws = mutableListOf<() -> Unit>()
+    private val pages = object : TurnstilePageFactory {
+        override fun create(context: Context, pageUrl: String, onMessage: (String?) -> Unit, onFailed: (String) -> Unit): View {
+            urls += pageUrl
+            return View(context).also { created += it }
+        }
+
+        override fun whenDrawn(page: View, onDrawn: () -> Unit) {
+            if (holdDrawing) heldDraws += onDrawn else super.whenDrawn(page, onDrawn)
+        }
+    }
+
     @After
     fun tearDown() = scope.cancel()
 
@@ -98,10 +116,7 @@ class TurnstileStepUpHostAdaptiveTest {
                         TurnstileStepUpHost(
                             controller = controller,
                             apiBaseUrl = "https://api.boxlore.example/",
-                            pageFactory = { context, url, _, _ ->
-                                urls += url
-                                View(context).also { created += it }
-                            },
+                            pageFactory = pages,
                             destroyPage = { destroyed += it },
                         )
                     }
@@ -208,13 +223,7 @@ class TurnstileStepUpHostAdaptiveTest {
         render()
         val result = start()
         askForInteraction()
-        // Until Cloudflare's box draws over it, a placeholder of its size shimmers in the 72dp frame.
-        compose.onNodeWithTag(CHALLENGE_PLACEHOLDER_TAG).assertIsDisplayed()
-        assertEquals(72f, compose.onNodeWithTag(CHALLENGE_PAGE_TAG).getUnclippedBoundsInRoot().let { it.bottom - it.top }.value, 0.5f)
-        // Once the box has had time to draw, the placeholder goes and the frame keeps its height.
-        compose.mainClock.advanceTimeBy(CHECK_PLACEHOLDER_MILLIS + 100)
-        compose.waitForIdle()
-        compose.onNodeWithTag(CHALLENGE_PLACEHOLDER_TAG).assertDoesNotExist()
+        // The check's page keeps its 72dp frame in the card.
         assertEquals(72f, compose.onNodeWithTag(CHALLENGE_PAGE_TAG).getUnclippedBoundsInRoot().let { it.bottom - it.top }.value, 0.5f)
 
         compose.onNodeWithText("Skip").performClick()
@@ -243,8 +252,103 @@ class TurnstileStepUpHostAdaptiveTest {
         assertEquals(1, destroyed.size)
     }
 
+    @Test
+    fun `Echo shrinks to fit a tabletop half and grows back when the fold opens flat or the window gets taller`() {
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        val result = start()
+        val page = created.single()
+        askForInteraction()
+        val steps = listOf(
+            BoxloreTestWindows.FOLD_FLAT to 96f,
+            BoxloreTestWindows.FOLD_TABLETOP to 56f,
+            BoxloreTestWindows.FOLD_FLAT to 96f,
+            BoxloreTestWindows.W900_H479 to 56f,
+            BoxloreTestWindows.W900_H480 to 96f,
+            BoxloreTestWindows.W900_H479 to 56f,
+            BoxloreTestWindows.PHONE to 96f,
+        )
+        steps.forEach { (next, echoSize) ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            val echo = compose.onNodeWithTag(CHECK_ECHO_TAG).getUnclippedBoundsInRoot()
+            assertEquals("Echo at $next", echoSize, (echo.right - echo.left).value, 0.5f)
+            compose.onNodeWithText("Skip").assertIsDisplayed()
+            if (next == BoxloreTestWindows.FOLD_TABLETOP) {
+                // The whole of Skip and the check fit in the panel in the top half, with no scrolling.
+                val panel = compose.onNodeWithTag(EXPANDED_PANEL_TAG).getUnclippedBoundsInRoot()
+                listOf(compose.onNodeWithText("Skip"), compose.onNodeWithTag(CHALLENGE_CARD_TAG)).forEach { node ->
+                    val bounds = node.getUnclippedBoundsInRoot()
+                    assertTrue("$bounds inside the panel $panel", bounds.top >= panel.top && bounds.bottom <= panel.bottom)
+                }
+            }
+            assertSame("the same page at $next", page, created.single())
+            assertFalse("$next: a window change is not a skip", result.isCompleted)
+        }
+    }
+
+    @Test
+    fun `the card shows a loader until the check has drawn, and a resize never rebuilds the page`() {
+        holdDrawing = true
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        start()
+        compose.mainClock.autoAdvance = false // The loader spins until the page draws.
+        askForInteraction()
+        compose.mainClock.advanceTimeBy(100)
+        compose.onNodeWithTag(CHALLENGE_LOADER_TAG).assertExists()
+
+        compose.runOnIdle { heldDraws.removeAt(0).invoke() }
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onNodeWithTag(CHALLENGE_LOADER_TAG).assertDoesNotExist()
+
+        compose.runOnIdle { window.value = BoxloreTestWindows.COVER_443 }
+        compose.mainClock.advanceTimeBy(1_000)
+        assertEquals(1, created.size)
+        assertTrue("no draw left waiting", heldDraws.isEmpty())
+    }
+
+    @Test
+    fun `a drawn check that changes size in its card waits to redraw and is never rebuilt`() {
+        holdDrawing = true
+        var built = 0
+        val holder = TurnstilePageHolder(
+            create = { context -> View(context).also { built++ } },
+            destroy = {},
+            whenDrawn = pages::whenDrawn,
+        )
+        compose.runOnUiThread {
+            val page = holder.attachToCard(compose.activity)
+            compose.activity.addContentView(page, ViewGroup.LayoutParams(300, 72))
+        }
+        compose.runOnIdle { holder.cardResized(IntSize(300, 72)) }
+        assertFalse("not drawn before the page reports it", holder.drawn)
+        compose.runOnIdle { heldDraws.removeAt(0).invoke() }
+        assertTrue(holder.drawn)
+
+        compose.runOnIdle { holder.cardResized(IntSize(300, 72)) }
+        assertTrue("the same size needs no redraw", holder.drawn)
+        compose.runOnIdle { holder.cardResized(IntSize(260, 72)) }
+        assertFalse("a new size shows the loader until the page redraws", holder.drawn)
+        compose.runOnIdle { heldDraws.removeAt(0).invoke() }
+        assertTrue(holder.drawn)
+
+        // Two sizes before the first redraw reports: only the latest size's draw hides the loader.
+        compose.runOnIdle {
+            holder.cardResized(IntSize(240, 72))
+            holder.cardResized(IntSize(220, 72))
+        }
+        compose.runOnIdle { heldDraws.removeAt(0).invoke() }
+        assertFalse("an earlier size's draw keeps the loader", holder.drawn)
+        compose.runOnIdle { heldDraws.removeAt(0).invoke() }
+        assertTrue(holder.drawn)
+        assertEquals(1, built)
+        assertTrue(heldDraws.isEmpty())
+    }
+
     private companion object {
         const val TITLE = "I’m the only robot allowed in this chat."
+        const val EXPANDED_PANEL_TAG = "expanded_sheet_panel"
         const val BODY = "Tap the box so Cloudflare can check you’re human, then I’ll keep finding shows for you."
     }
 }
