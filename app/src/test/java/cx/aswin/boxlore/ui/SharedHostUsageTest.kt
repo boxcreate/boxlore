@@ -51,8 +51,6 @@ class SharedHostUsageTest {
             replacement = "the shared menu in :core:designsystem",
             skipDesignSystem = true,
             allowed = mapOf(
-                "feature/history/src/main/java/cx/aswin/boxlore/feature/history/HistoryScreen.kt" to 1,
-                "feature/history/src/main/java/cx/aswin/boxlore/feature/history/timeline/TimelineRows.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeSelectionToolbar.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/PodcastInfoChrome.kt" to 1,
                 "feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/feedback/FeedbackComposeParts.kt" to 1,
@@ -65,7 +63,6 @@ class SharedHostUsageTest {
             replacement = "the shared snackbar host in :core:designsystem",
             skipDesignSystem = true,
             allowed = mapOf(
-                "feature/history/src/main/java/cx/aswin/boxlore/feature/history/HistoryScreen.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoScreen.kt" to 1,
             ),
         ),

@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.history.timeline
 
+import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import java.time.LocalDate
 import java.time.YearMonth
@@ -11,6 +12,14 @@ import org.junit.jupiter.api.Test
 
 /** Jump to a day's calendar (A2), the fast scroller, the Timeline's words for time and its list entries. */
 class TimelinePiecesTest {
+    @Test
+    fun `the Days and Shows toggle keeps its 40dp height only when both halves fit side by side`() {
+        assertEquals(40.dp, groupingToggleHeight(available = 300.dp, wanted = 180.dp))
+        assertEquals(40.dp, groupingToggleHeight(available = 180.dp, wanted = 180.dp))
+        // Narrower than it asks for, the selector may stack its options; a fixed height would hide the second.
+        assertNull(groupingToggleHeight(available = 179.dp, wanted = 180.dp))
+    }
+
     @Test
     fun calendarShadesFollowTheBoardsDays() {
         assertEquals(0, HistoryCalendarLogic.level(0L, played = false))
