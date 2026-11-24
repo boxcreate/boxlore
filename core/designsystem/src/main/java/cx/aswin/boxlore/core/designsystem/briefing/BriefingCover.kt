@@ -60,13 +60,15 @@ fun BriefingCover(
         if (mastheadScrim) {
             Box(
                 Modifier.fillMaxSize().drawBehind {
+                    // A logo moved right on a narrow or cropped cover lands on the bright map: a wider, deeper scrim keeps it readable.
+                    val strong = mastheadLeftPadding > 0.dp && (artworkContentScale == ContentScale.Crop || size.width < STRONG_SCRIM_BELOW_WIDTH.toPx())
                     drawRect(
                         Brush.radialGradient(
-                            0f to Color.Black.copy(alpha = 0.45f),
-                            0.5f to Color.Black.copy(alpha = 0.22f),
+                            0f to Color.Black.copy(alpha = if (strong) 0.55f else 0.45f),
+                            0.5f to Color.Black.copy(alpha = if (strong) 0.3f else 0.22f),
                             1f to Color.Transparent,
                             center = Offset(84.dp.toPx() + mastheadLeftPadding.toPx(), mastheadTopPadding.toPx() + 32.dp.toPx()),
-                            radius = 146.dp.toPx(),
+                            radius = (if (strong) 190.dp else 146.dp).toPx(),
                         ),
                     )
                 },
@@ -84,6 +86,8 @@ fun BriefingCover(
         footer()
     }
 }
+
+private val STRONG_SCRIM_BELOW_WIDTH = 480.dp
 
 /** One readable line, leaving the architecture and upper image untouched. */
 @Composable
