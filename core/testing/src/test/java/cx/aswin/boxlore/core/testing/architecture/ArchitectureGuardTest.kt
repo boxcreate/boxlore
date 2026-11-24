@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.testing.architecture
 import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.verify.assertTrue
 import java.io.File
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -52,30 +53,50 @@ class ArchitectureGuardTest {
                 .onEnter { it == projectRoot || !(it.name.startsWith(".") || it.name == "build" || it.name == "node_modules") }
                 .filter { it.name == "settings.gradle.kts" || it.name == "build.gradle.kts" }
                 .toList()
-        val violations = mutableListOf<String>()
-        var centrals = 0
-        for (file in buildFiles) {
-            var mirrored = false
-            file.readLines().forEachIndexed { index, raw ->
-                // Skip whole comment lines only: the mirror's own URL contains "//".
-                val line = raw.trim()
-                when {
-                    line.startsWith("//") -> Unit
-                    line.startsWith("repositories") -> mirrored = false
-                    MAVEN_CENTRAL_MIRROR in line -> mirrored = true
-                    line.startsWith("mavenCentral()") -> {
-                        centrals++
-                        if (!mirrored) violations += "${file.relativeTo(projectRoot)}:${index + 1}: $line"
-                    }
-                }
+        val calls = buildFiles.associateWith { mavenCentralCalls(it.readText()) }
+        val violations =
+            calls.flatMap { (file, found) ->
+                found.filterNot { it.second }.map { "${file.relativeTo(projectRoot)}:${it.first}: mavenCentral()" }
             }
-        }
+        val centrals = calls.values.sumOf { it.size }
         assertTrue(centrals > 0, "No mavenCentral() repositories found under $projectRoot")
         assertTrue(
             violations.isEmpty(),
             "List $MAVEN_CENTRAL_MIRROR before mavenCentral() in the same repositories block, so " +
                 "rate-limited CI runners resolve from the mirror:\n" + violations.joinToString("\n"),
         )
+    }
+
+    @Test
+    fun `mirror detector reads one-line and multi-line repository blocks`() {
+        val script =
+            """
+            pluginManagement {
+                repositories { google(); mavenCentral(); gradlePluginPortal() }
+            }
+            dependencyResolutionManagement {
+                repositories {
+                    // mavenCentral()
+                    maven("$MAVEN_CENTRAL_MIRROR")
+                    mavenCentral()
+                }
+            }
+            """.trimIndent()
+        assertEquals(listOf(2 to false, 8 to true), mavenCentralCalls(script))
+    }
+
+    /** Each `mavenCentral()` call's line and whether the mirror came before it in the same `repositories` block. */
+    private fun mavenCentralCalls(script: String): List<Pair<Int, Boolean>> {
+        // Blank whole comment lines only: the mirror's own URL contains "//".
+        val code = script.lines().joinToString("\n") { if (it.trim().startsWith("//")) "" else it }
+        var mirrored = false
+        return REPOSITORY_TOKEN.findAll(code).mapNotNull { match ->
+            when (match.value) {
+                MAVEN_CENTRAL_MIRROR -> null.also { mirrored = true }
+                "mavenCentral()" -> code.take(match.range.first).count { it == '\n' } + 1 to mirrored
+                else -> null.also { mirrored = false }
+            }
+        }.toList()
     }
 
     @Test
@@ -293,6 +314,7 @@ class ArchitectureGuardTest {
     private companion object {
         val RAW_DIALOG = Regex("""^import androidx\.compose\.material3\.(?:Basic)?AlertDialog(?:\s+as\s+\w+)?$|androidx\.compose\.material3\.(?:Basic)?AlertDialog\(""")
         const val MAVEN_CENTRAL_MIRROR = "https://maven-central.storage-download.googleapis.com/maven2/"
+        val REPOSITORY_TOKEN = Regex("""\brepositories\s*\{|mavenCentral\(\)|""" + Regex.escape(MAVEN_CENTRAL_MIRROR))
     }
 
     @Test
