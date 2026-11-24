@@ -18,6 +18,8 @@ android {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.useJUnitPlatform()
+            // The show and episode page suites render many Robolectric screens in one JVM.
+            it.maxHeapSize = "1g"
         }
     }
     namespace = "cx.aswin.boxlore.feature.info"

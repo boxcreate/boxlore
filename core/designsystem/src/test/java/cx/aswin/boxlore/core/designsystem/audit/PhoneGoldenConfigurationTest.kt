@@ -76,6 +76,16 @@ class PhoneGoldenConfigurationTest {
     }
 
     @Test
+    fun `a phone with system bars is picked by name and sends its bars`() {
+        val picked = PhoneGoldenConfiguration.auditConfigurations(extra = PhoneGoldenConfiguration.PHONE_BARS_CONFIGURATIONS, sizes = "412x915-bars")
+
+        assertEquals(listOf(PhoneGoldenConfiguration(412, 915, false, "bars")), picked)
+        assertEquals("412x915-light-bars", picked.single().toString())
+        assertEquals(SystemInsets(statusTop = 24, navBottom = 24), picked.single().systemInsets)
+        assertEquals(PhoneGoldenConfiguration(475, 695, false, "bars"), PhoneGoldenConfiguration.auditConfigurations(sizes = "475x695-bars").single())
+    }
+
+    @Test
     fun `capture names stay stable`() {
         assertEquals("915x412-light-insets", PhoneGoldenConfiguration(915, 412, false, "insets").toString())
         assertEquals("932x650-dark-tabletop", PhoneGoldenConfiguration(932, 650, true, "tabletop").toString())

@@ -32,6 +32,9 @@ class LocaleFormatsTest {
         assertEquals("Donnerstag, 5. März 2026", plain(LocaleFormats.date(moment, DateStyle.WEEKDAY_DAY_MONTH_YEAR, german, utc)))
         assertEquals("March 2026", plain(LocaleFormats.date(moment, DateStyle.MONTH_YEAR, english, utc)))
         assertEquals("März", plain(LocaleFormats.date(moment, DateStyle.MONTH, german, utc)))
+        assertEquals("Mar", plain(LocaleFormats.date(moment, DateStyle.SHORT_MONTH, english, utc)))
+        assertEquals("Mär", plain(LocaleFormats.date(moment, DateStyle.SHORT_MONTH, german, utc)))
+        assertEquals("5", plain(LocaleFormats.date(moment, DateStyle.DAY, german, utc)))
         assertEquals("Donnerstag", plain(LocaleFormats.date(moment, DateStyle.WEEKDAY, german, utc)))
     }
 

@@ -53,6 +53,8 @@ import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.echo.EchoCharacter
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.feature.settings.R
@@ -111,10 +113,10 @@ internal fun FeedbackSentScreen(
 
     Surface(modifier = modifier.fillMaxSize().testTag(FEEDBACK_SENT_TAG), color = MaterialTheme.colorScheme.surface) {
         Box(
-            modifier = Modifier.fillMaxSize().statusBarsPadding().feedbackBottomSpace(chrome = bottomContentPadding, extra = systemBar),
+            modifier = Modifier.fillMaxSize().statusBarsPadding().boxloreHorizontalSafePadding().feedbackBottomSpace(chrome = bottomContentPadding, extra = systemBar),
             contentAlignment = Alignment.TopCenter,
         ) {
-            Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
+            Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility).boxloreReadingColumn()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
                     FeedbackIconButton(Icons.Rounded.Close, stringResource(R.string.feedback_close), onDone)
                 }

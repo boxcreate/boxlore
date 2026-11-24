@@ -66,6 +66,10 @@
     <string name="episode_info_more_from">More from %1$s</string>
     <!-- Small label above the show name in the show row that heads the More from list. -->
     <string name="episode_info_more_from_label">More from</string>
+    <!-- After the show name on the "More from" row, which opens the show page. -->
+    <string name="episode_info_see_all">See all</string>
+    <!-- Above an episode number on a small tile, where an episode has no picture of its own or date; short. -->
+    <string name="episode_info_number_short">Ep.</string>
     <string name="episode_info_explore_podcast">Explore podcast</string>
     <string name="episode_info_no_more">No other episodes available</string>
     <string name="episode_info_people">People in this episode</string>
@@ -108,14 +112,15 @@
     <string name="episode_archive_undo">Undo</string>
     <string name="episode_archived">Archived</string>
     <string name="podcast_info_show_archived">Show archived episodes (%d)</string>
-    <string name="podcast_info_hide_archived">Hide archived episodes</string>
     <string name="episode_selection_failed">Couldn’t load every episode. Check your connection and try again.</string>
     <string name="episode_selection_too_long">This show has too many episodes to select them all.</string>
     <string name="subscribe_to_edit_genre">Subscribe to the show to edit genre</string>
     <string name="genre_visibility_hint">Visible on this podcast page, Subscriptions filters, and folders.</string>
-    <string name="genre_edit_placeholder">Click to set custom tag</string>
+    <string name="genre_edit_placeholder">Tap to set a custom tag</string>
     <string name="episode_info_episode_from_show">%1$s, from %2$s</string>
     <string name="podcast_info_load_error">Couldn’t load this podcast</string>
+    <!-- Under "Couldn’t load this episode" or "Couldn’t load this podcast"; Try again (podcast_info_retry) and Back sit below it. -->
+    <string name="info_load_error_body">Check your internet connection, then try again.</string>
     <string name="podcast_info_retry">Try again</string>
     <!-- End of a show's episode list when its next page couldn't load; Try again (podcast_info_retry) sits under it. -->
     <string name="podcast_info_more_episodes_failed">Couldn’t load more episodes</string>
@@ -132,13 +137,15 @@
     <string name="podcast_info_search_in_show">Search episodes in %1$s</string>
     <string name="podcast_info_close_search">Close episode search</string>
     <string name="podcast_info_clear_search">Clear search</string>
-    <string name="podcast_info_no_search_results">No matching episodes. Try another title or keyword.</string>
     <!-- %1$s is the number of episodes searched, already formatted for the language (1,000). -->
     <plurals name="podcast_info_search_newest_only">
         <item quantity="one">Searched only the newest %1$s episode of this show.</item>
         <item quantity="other">Searched only the newest %1$s episodes of this show.</item>
     </plurals>
     <string name="podcast_info_search_failed">Couldn’t search this show’s episodes. Check your connection.</string>
+    <!-- A search found nothing: the card's title, then what to try. -->
+    <string name="podcast_info_no_matches_title">No matching episodes</string>
+    <string name="podcast_info_no_matches_body">Try another title or keyword.</string>
     <string name="podcast_info_missing_offer">Missing episodes?</string>
     <string name="podcast_info_missing_fetching">Updating…</string>
     <string name="podcast_info_missing_updated">Up to date</string>

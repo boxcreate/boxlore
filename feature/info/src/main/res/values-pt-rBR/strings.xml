@@ -66,6 +66,8 @@
     <string name="episode_info_more_from">Mais de %1$s</string>
     <!-- Small label above the show name in the show row that heads the More from list. -->
     <string name="episode_info_more_from_label">Mais de</string>
+    <string name="episode_info_see_all">Ver tudo</string>
+    <string name="episode_info_number_short">Ep.</string>
     <string name="episode_info_explore_podcast">Explorar podcast</string>
     <string name="episode_info_no_more">Nenhum outro episódio disponível</string>
     <string name="episode_info_people">Pessoas neste episódio</string>
@@ -108,7 +110,6 @@
     <string name="episode_archive_undo">Desfazer</string>
     <string name="episode_archived">Arquivado</string>
     <string name="podcast_info_show_archived">Mostrar episódios arquivados (%d)</string>
-    <string name="podcast_info_hide_archived">Ocultar episódios arquivados</string>
     <string name="episode_selection_failed">Não foi possível carregar todos os episódios. Verifique sua conexão e tente de novo.</string>
     <string name="episode_selection_too_long">Este podcast tem episódios demais para selecionar todos.</string>
     <string name="subscribe_to_edit_genre">Siga o podcast para editar o gênero</string>
@@ -116,6 +117,7 @@
     <string name="genre_edit_placeholder">Toque para definir uma etiqueta personalizada</string>
     <string name="episode_info_episode_from_show">%1$s, de %2$s</string>
     <string name="podcast_info_load_error">Não foi possível carregar este podcast</string>
+    <string name="info_load_error_body">Verifique sua conexão com a internet e tente de novo.</string>
     <string name="podcast_info_retry">Tentar de novo</string>
     <!-- End of a show's episode list when its next page couldn't load; Try again (podcast_info_retry) sits under it. -->
     <string name="podcast_info_more_episodes_failed">Não foi possível carregar mais episódios</string>
@@ -132,13 +134,14 @@
     <string name="podcast_info_search_in_show">Pesquisar episódios em %1$s</string>
     <string name="podcast_info_close_search">Fechar pesquisa de episódios</string>
     <string name="podcast_info_clear_search">Limpar pesquisa</string>
-    <string name="podcast_info_no_search_results">Nenhum episódio encontrado. Tente outro título ou palavra-chave.</string>
     <!-- %1$s is the number of episodes searched, already formatted for the language (1,000). -->
     <plurals name="podcast_info_search_newest_only">
         <item quantity="one">Pesquisamos só no episódio mais recente deste podcast (%1$s).</item>
         <item quantity="other">Pesquisamos só nos %1$s episódios mais recentes deste podcast.</item>
     </plurals>
     <string name="podcast_info_search_failed">Não foi possível pesquisar os episódios deste podcast. Verifique sua conexão.</string>
+    <string name="podcast_info_no_matches_title">Nenhum episódio encontrado</string>
+    <string name="podcast_info_no_matches_body">Tente outro título ou palavra-chave.</string>
     <string name="podcast_info_missing_offer">Faltam episódios?</string>
     <string name="podcast_info_missing_fetching">Atualizando…</string>
     <string name="podcast_info_missing_updated">Atualizado</string>

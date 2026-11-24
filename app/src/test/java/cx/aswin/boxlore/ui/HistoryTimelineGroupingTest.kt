@@ -10,7 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
-import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelected
@@ -78,7 +78,7 @@ class HistoryTimelineGroupingTest {
         )) {
             compose.runOnIdle { window.value = size }
             compose.waitForIdle()
-            compose.onNodeWithText("Shows").assertIsSelected()
+            compose.onNodeWithText("Shows").assertIsOn()
             compose.onNodeWithText("Jump back in").assertDoesNotExist()
         }
         assertEquals(shows, toggleTop(), 1f)
@@ -101,7 +101,8 @@ class HistoryTimelineGroupingTest {
             compose.waitForIdle()
             compose.onNode(hasText("In progress") and isSelected()).assertIsDisplayed()
             compose.onNodeWithText("Search episodes and shows").assertIsNotDisplayed()
-            assertEquals(chips, chipTop(), 1f)
+            // A short window starts the title slim, so the filters may sit higher, never lower.
+            assertTrue("the filters moved down at $size", chipTop() <= chips + 1f)
         }
     }
 
@@ -172,7 +173,7 @@ class HistoryTimelineGroupingTest {
         }
         compose.mainClock.autoAdvance = true
         compose.waitForIdle()
-        compose.onNodeWithText(label).assertIsSelected()
+        compose.onNodeWithText(label).assertIsOn()
         return tops
     }
 

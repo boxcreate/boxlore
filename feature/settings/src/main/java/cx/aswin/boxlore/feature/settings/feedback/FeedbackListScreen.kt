@@ -33,7 +33,6 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -56,6 +55,8 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
@@ -99,8 +100,8 @@ internal fun FeedbackListScreen(
     val systemBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val bottom = bottomContentPadding + systemBar
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-        Box(Modifier.fillMaxSize().statusBarsPadding(), contentAlignment = Alignment.TopCenter) {
-            Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
+        Box(Modifier.fillMaxSize().statusBarsPadding().boxloreHorizontalSafePadding(), contentAlignment = Alignment.TopCenter) {
+            Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility).boxloreReadingColumn()) {
                 Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (onBack != null) FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_navigate_back), onBack) else Spacer(Modifier.width(16.dp))
                     Text(stringResource(R.string.feedback_title), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(start = 4.dp))
@@ -109,7 +110,7 @@ internal fun FeedbackListScreen(
                     when {
                         threads != null -> ThreadList(threads, selectedId, actions.onOpen, listState, PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = bottom + LIST_ACTIONS_HEIGHT + 16.dp))
                         loadFailed -> LoadFailed(actions.onRetry, Modifier.align(Alignment.Center).padding(bottom = bottom + LIST_ACTIONS_HEIGHT))
-                        else -> CircularProgressIndicator(Modifier.align(Alignment.Center).padding(bottom = bottom + LIST_ACTIONS_HEIGHT))
+                        else -> FeedbackListSkeleton(PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = bottom + LIST_ACTIONS_HEIGHT + 16.dp))
                     }
                     ListActions(
                         actions.onNew,

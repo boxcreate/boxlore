@@ -3,11 +3,14 @@ package cx.aswin.boxlore.feature.history.timeline
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -15,33 +18,39 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.rounded.Podcasts
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButtonColors
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.components.rememberBoxloreMenuState
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -54,7 +63,10 @@ internal object TimelineType {
     val meta @Composable get() = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.3.sp)
     val status @Composable get() = historyTextStyle(12f, 16f, GoogleSansWeight.semiBold)
     val header @Composable get() = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp, lineHeight = 22.sp, fontWeight = GoogleSansWeight.semiBold, letterSpacing = 0.sp)
-    val month @Composable get() = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = GoogleSansWeight.regular)
+
+    // The theme's titleLarge carries its weight in its font; this draws the boards' regular weight.
+    val month @Composable get() = historyTextStyle(22f, 28f, GoogleSansWeight.regular)
+
     val label @Composable get() = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp, fontWeight = GoogleSansWeight.semiBold, letterSpacing = 0.sp)
 }
 
@@ -78,15 +90,21 @@ internal fun TimelineProgressTrack(progress: Float, modifier: Modifier = Modifie
     }
 }
 
-/** The primary play disc on a cover: [size] across, a [iconSize] play icon in onPrimary. */
+/**
+ * The primary play disc on a cover: [size] across, a [iconSize] play icon in onPrimary. Its touch
+ * area is 48dp, centred on the disc ([modifier] places the disc itself), so a tap just beside a
+ * small disc still resumes; the disc and its colour shrink together when pressed.
+ */
 @Composable
 internal fun TimelinePlayDisc(contentDescription: String, size: Int, iconSize: Int, onClick: () -> Unit, modifier: Modifier = Modifier,) {
+    val reach = maxOf(size, PLAY_DISC_TOUCH)
+    // [modifier] places a [size] box; the touch box is that box grown to [reach] around the same centre
+    // (laid out at [reach] and moved back by half the difference), so the disc stays exactly where it was.
+    val shift = ((reach - size) / 2).dp
     Box(
-        modifier =
         modifier
-            .size(size.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary)
+            .offset(x = shift, y = shift)
+            .size(reach.dp)
             .expressiveClickable(shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick)
             .semantics {
                 this.contentDescription = contentDescription
@@ -94,11 +112,16 @@ internal fun TimelinePlayDisc(contentDescription: String, size: Int, iconSize: I
             },
         contentAlignment = Alignment.Center,
     ) {
-        Icon(Icons.Rounded.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(iconSize.dp))
+        Box(Modifier.size(size.dp).background(MaterialTheme.colorScheme.primary, CircleShape).testTag(PLAY_DISC_TAG), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(iconSize.dp))
+        }
     }
 }
 
-/** "29 min left" with its track, or the primary "Finished" check (and a heart when liked). */
+/** The play disc's touch size and its visible disc's test tag. */
+private const val PLAY_DISC_TOUCH = 48
+const val PLAY_DISC_TAG = "history_play_disc"
+
 @Composable
 internal fun TimelineEpisodeStatus(episode: TimelineEpisode, modifier: Modifier = Modifier) {
     if (episode.isFinished) {
@@ -194,9 +217,12 @@ internal fun TimelineEpisodeRow(episode: TimelineEpisode, actions: TimelineEpiso
 
 @Composable
 private fun TimelineRowMenu(episode: TimelineEpisode, actions: TimelineEpisodeActions) {
-    var open by remember { mutableStateOf(false) }
+    // Keyed by the episode, so a reused row never opens another row's menu; saved through a fold.
+    val menu = rememberBoxloreMenuState(episode.item.episodeId)
+    val goToShow = stringResource(R.string.history_go_to_show)
+    val remove = stringResource(R.string.history_remove_from_history)
     Box {
-        IconButton(onClick = { open = true }, modifier = Modifier.width(40.dp).height(48.dp)) {
+        IconButton(onClick = menu::open, modifier = Modifier.width(40.dp).height(48.dp)) {
             Icon(
                 Icons.Rounded.MoreVert,
                 contentDescription = stringResource(R.string.history_more_options_for, episode.item.episodeTitle),
@@ -204,21 +230,9 @@ private fun TimelineRowMenu(episode: TimelineEpisode, actions: TimelineEpisodeAc
                 modifier = Modifier.size(20.dp),
             )
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.history_go_to_show)) },
-                onClick = {
-                    open = false
-                    actions.onGoToShow(episode)
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.history_remove_from_history)) },
-                onClick = {
-                    open = false
-                    actions.onRemove(episode)
-                },
-            )
+        BoxloreDropdownMenu(menu) {
+            group { item(goToShow, onClick = { actions.onGoToShow(episode) }, leadingIcon = Icons.Rounded.Podcasts) }
+            group { item(remove, onClick = { actions.onRemove(episode) }, leadingIcon = Icons.Rounded.DeleteOutline, destructive = true) }
         }
     }
 }
@@ -293,41 +307,51 @@ internal fun TimelineMonthHeader(
 }
 
 /** Days|Shows: two 40dp halves, 2dp apart, outer corners 20 and inner 6; the chosen one primary. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun TimelineGroupingToggle(grouping: TimelineGrouping, onChange: (TimelineGrouping) -> Unit) {
     val label = stringResource(R.string.history_group_by)
-    Row(modifier = Modifier.semantics { contentDescription = label }, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        TimelineGroupingButton(
-            text = stringResource(R.string.history_group_days),
-            selected = grouping == TimelineGrouping.DAYS,
-            shape = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp, topEnd = 6.dp, bottomEnd = 6.dp),
-        ) { onChange(TimelineGrouping.DAYS) }
-        TimelineGroupingButton(
-            text = stringResource(R.string.history_group_shows),
-            selected = grouping == TimelineGrouping.SHOWS,
-            shape = RoundedCornerShape(topStart = 6.dp, bottomStart = 6.dp, topEnd = 20.dp, bottomEnd = 20.dp),
-        ) { onChange(TimelineGrouping.SHOWS) }
+    val options = listOf(TimelineGrouping.DAYS to stringResource(R.string.history_group_days), TimelineGrouping.SHOWS to stringResource(R.string.history_group_shows))
+    // As wide as its two equal segments need (the connected selector fills whatever width it gets).
+    val style = TimelineType.label
+    val measurer = rememberTextMeasurer()
+    val widest = with(LocalDensity.current) { options.maxOf { (_, text) -> measurer.measure(text, style).size.width }.toDp() }
+    val segment = widest + GroupingPadding * 2 + 2.dp
+    val wanted = segment * 2 + ButtonGroupDefaults.ConnectedSpaceBetween
+    BoxWithConstraints {
+        ConnectedOptionSelector(
+            options = options,
+            selected = grouping,
+            onSelect = onChange,
+            labelStyle = style,
+            contentPadding = PaddingValues(horizontal = GroupingPadding),
+            colors = historySelectorColors(),
+            modifier = Modifier.width(wanted).then(groupingToggleHeight(maxWidth, wanted)?.let { Modifier.height(it) } ?: Modifier).semantics { contentDescription = label },
+        )
     }
 }
 
+/**
+ * The toggle's fixed height when it gets the [wanted] width out of [available]: then both halves sit
+ * side by side. In less room the selector may wrap or stack its options, so its height is left free.
+ */
+internal fun groupingToggleHeight(available: Dp, wanted: Dp): Dp? = if (available >= wanted) GroupingHeight else null
+
+private val GroupingHeight = 40.dp
+
+private val GroupingPadding = 14.dp
+
+/** History's selectors: surfaceContainerHigh segments, the chosen one primary, as on the boards. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun TimelineGroupingButton(text: String, selected: Boolean, shape: RoundedCornerShape, onClick: () -> Unit) {
+internal fun historySelectorColors(): ToggleButtonColors {
     val colors = MaterialTheme.colorScheme
-    Box(
-        modifier =
-        Modifier
-            .height(40.dp)
-            .clip(shape)
-            .background(if (selected) colors.primary else colors.surfaceContainerHigh)
-            .expressiveClickable(shape = shape, feedback = ExpressivePressFeedback.Control, onClick = onClick)
-            .semantics {
-                role = Role.RadioButton
-                this.selected = selected
-            }.padding(horizontal = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text, style = TimelineType.label, color = if (selected) colors.onPrimary else colors.onSurfaceVariant)
-    }
+    return ToggleButtonDefaults.colors(
+        containerColor = colors.surfaceContainerHigh,
+        contentColor = colors.onSurface,
+        checkedContainerColor = colors.primary,
+        checkedContentColor = colors.onPrimary,
+    )
 }
 
 /** A 48dp chip: surfaceContainerHigh, or primaryContainer when [selected]. */
@@ -338,9 +362,9 @@ internal fun TimelineChip(selected: Boolean, onClick: () -> Unit, modifier: Modi
         modifier =
         modifier
             .height(48.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .background(if (selected) colors.primaryContainer else colors.surfaceContainerHigh)
-            .expressiveClickable(shape = RoundedCornerShape(24.dp), feedback = ExpressivePressFeedback.Control, onClick = onClick),
+            // The press layer wraps the colour, so the whole chip shrinks as one piece.
+            .expressiveClickable(shape = RoundedCornerShape(24.dp), feedback = ExpressivePressFeedback.Control, onClick = onClick)
+            .background(if (selected) colors.primaryContainer else colors.surfaceContainerHigh, RoundedCornerShape(24.dp)),
         contentAlignment = Alignment.Center,
     ) {
         androidx.compose.runtime.CompositionLocalProvider(

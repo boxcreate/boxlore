@@ -2,18 +2,30 @@ package cx.aswin.boxlore.feature.settings.pages
 
 import android.app.Application
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportWorld
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.supportWorldSkin
@@ -48,6 +60,95 @@ class SupportPageLayoutTest {
         assertEquals(SupportPageArrangement(sideBySide = true, showMission = false), supportPageArrangement(850.dp, 330.dp, 1f))
         assertEquals(SupportPageArrangement(sideBySide = true, showMission = true), supportPageArrangement(900.dp, 490.dp, 1f))
         assertEquals(SupportPageArrangement(sideBySide = false, showMission = true), supportPageArrangement(1280.dp, 690.dp, 1f))
+    }
+
+    @Test fun `the page scrolls only when even the reduced page cannot fit, never where it fits`() {
+        assertEquals(false, supportPageArrangement(443.dp, 560.dp, 1f).scrolls)
+        assertEquals(false, supportPageArrangement(443.dp, 560.dp, 1.3f).scrolls)
+        assertEquals(true, supportPageArrangement(443.dp, 560.dp, 1.7f).scrolls)
+        assertEquals(true, supportPageArrangement(443.dp, 560.dp, 2f).scrolls)
+        listOf(supportPageArrangement(392.dp, 800.dp, 1f), supportPageArrangement(360.dp, 600.dp, 1f), supportPageArrangement(800.dp, 392.dp, 1f)).forEach {
+            assertEquals(false, it.scrolls)
+        }
+    }
+
+    // Regression: at large text on the Fold 8 cover the tier picker and its button were pushed off the bottom.
+    @Config(qualifiers = "w443dp-h649dp", fontScale = 1.7f)
+    @Test
+    fun `at large text on the cover screen every world's button can be reached`() {
+        var style by mutableStateOf(styles.first())
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                key(style.world) { SupportDevelopmentPage(onBack = {}, totalListeningHours = 12L, style = style) }
+            }
+        }
+        styles.forEach { next ->
+            style = next
+            compose.waitForIdle()
+            val cta = compose.onNodeWithText(text(next.ctaVerb, next.tiers[2].title), substring = true)
+            cta.performScrollTo().assertIsDisplayed().assertHasClickAction()
+            // The price on the button shows whole; a long name shortens instead.
+            val button = cta.fetchSemanticsNode().boundsInRoot
+            val cost = next.tiers[2].cost
+            val prices = compose.onAllNodesWithText(cost, useUnmergedTree = true).fetchSemanticsNodes()
+                .filter { button.contains(it.boundsInRoot.center) }
+            assertTrue("${next.world}: a price on the button", prices.isNotEmpty())
+            prices.forEach { node ->
+                val layouts = mutableListOf<TextLayoutResult>()
+                node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+                assertEquals("${next.world}: price $cost cut", cost.length, layouts.last().getLineEnd(0))
+            }
+        }
+    }
+
+    @Config(qualifiers = "w1000dp-h1000dp")
+    @Test
+    fun `a page scrolled while stacked keeps its place through a side-by-side window and back`() {
+        var size by mutableStateOf(androidx.compose.ui.unit.DpSize(443.dp, 560.dp))
+        compose.setContent {
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density, 1.7f)) {
+                BoxLoreTheme(dynamicColor = false) {
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.requiredSize(size)) {
+                        SupportPageBody(
+                            androidx.compose.ui.Modifier,
+                            stage = { androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxWidth().height(320.dp)) },
+                            picker = { androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxWidth().height(260.dp)) },
+                            cta = { androidx.compose.material3.Text("Back boxlore") },
+                            mission = { androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.height(120.dp)) },
+                        )
+                    }
+                }
+            }
+        }
+        val scrolling = SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)
+        fun offset() = compose.onNode(scrolling).fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+        compose.onNode(scrolling).performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 150f) }
+        compose.waitForIdle()
+        val scrolled = offset()
+        assertTrue("the stacked page scrolled, to $scrolled", scrolled > 0f)
+        compose.runOnIdle { size = androidx.compose.ui.unit.DpSize(800.dp, 560.dp) }
+        compose.waitForIdle()
+        compose.runOnIdle { size = androidx.compose.ui.unit.DpSize(443.dp, 560.dp) }
+        compose.waitForIdle()
+        assertEquals(scrolled, offset(), 1f)
+    }
+
+    @Config(qualifiers = "w800dp-h1200dp")
+    @Test
+    fun `on a portrait tablet the page sits in the middle instead of bunching at the top`() {
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(800f, 1_200f)) {
+                    SupportDevelopmentPage(onBack = {}, totalListeningHours = 12L)
+                }
+            }
+        }
+        compose.waitForIdle()
+        val rootBottom = compose.onRoot().fetchSemanticsNode().boundsInRoot.bottom
+        val missionBottom = compose.onNodeWithText("Keeping boxlore fast, open, and ad-free").fetchSemanticsNode().boundsInRoot.bottom
+        assertTrue("space under the page ($missionBottom of $rootBottom)", rootBottom - missionBottom < rootBottom / 3f)
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).assertCountEquals(0)
     }
 
     @Config(qualifiers = "w392dp-h800dp")

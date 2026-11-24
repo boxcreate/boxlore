@@ -1,12 +1,9 @@
 package cx.aswin.boxlore.feature.info.components
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +23,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,24 +42,24 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChip
+import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChipDefaults
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
-import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.core.designsystem.icon.GenreIconItem
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
-import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.info.R
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun PodcastGenreEditSheet(
     catalogGenre: String,
@@ -126,6 +124,7 @@ internal fun PodcastGenreEditSheet(
 
             GenreEditLivePreview(
                 effectiveGenre = editState.effectiveGenre,
+                typed = editState.typed,
                 effectiveIcon = editState.effectiveIcon,
                 catalogGenre = catalogGenre,
                 isCustomized = editState.isCustomized,
@@ -172,6 +171,8 @@ internal fun PodcastGenreEditSheet(
 
 private data class GenreEditState(
     val effectiveGenre: String,
+    /** The listener typed the tag, so it shows as written. */
+    val typed: Boolean,
     val effectiveIcon: ImageVector,
     val canReset: Boolean,
     val canSave: Boolean,
@@ -199,6 +200,7 @@ private fun resolveGenreEditState(
 
     return GenreEditState(
         effectiveGenre = effectiveGenre,
+        typed = trimmed.isNotEmpty(),
         effectiveIcon = effectiveIcon,
         canReset = canReset,
         canSave = canSave,
@@ -206,6 +208,7 @@ private fun resolveGenreEditState(
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun GenreEditTopBar(
     onClose: () -> Unit,
@@ -247,30 +250,14 @@ private fun GenreEditTopBar(
             if (canReset) {
                 TextButton(
                     onClick = onReset,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
-                    ),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) {
-                    Text(
-                        text = stringResource(R.string.genre_edit_reset),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = GoogleSansWeight.medium,
-                    )
+                    Text(stringResource(R.string.genre_edit_reset))
                 }
             }
 
-            Button(
-                onClick = onSave,
-                enabled = canSave,
-                shape = ExpressiveShapes.Pill,
-                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.genre_edit_save),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = GoogleSansWeight.bold,
-                )
+            Button(onClick = onSave, enabled = canSave, shapes = ButtonDefaults.shapes()) {
+                Text(stringResource(R.string.genre_edit_save))
             }
         }
     }
@@ -279,6 +266,7 @@ private fun GenreEditTopBar(
 @Composable
 private fun GenreEditLivePreview(
     effectiveGenre: String,
+    typed: Boolean,
     effectiveIcon: ImageVector,
     catalogGenre: String,
     isCustomized: Boolean,
@@ -286,7 +274,6 @@ private fun GenreEditLivePreview(
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -304,20 +291,22 @@ private fun GenreEditLivePreview(
                     Text(
                         text = stringResource(R.string.genre_edit_live_preview),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = GoogleSansWeight.bold,
                     )
                     if (isCustomized && catalogGenre.isNotBlank()) {
                         Text(
                             text = stringResource(R.string.genre_edit_catalog, catalogGenre),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
 
+                // The name the show page's chip shows: translated for a catalog genre, as typed for a tag.
+                val label = genrePreviewLabel(effectiveGenre, typed)
                 GenreChip(
-                    genre = effectiveGenre,
+                    genre = label.res?.let { stringResource(it) } ?: label.raw,
                     icon = effectiveIcon,
                 )
             }
@@ -325,7 +314,7 @@ private fun GenreEditLivePreview(
             Text(
                 text = stringResource(R.string.genre_visibility_hint),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -342,9 +331,12 @@ private fun GenreEditInputField(
         value = genreText,
         onValueChange = onValueChange,
         placeholder = {
+            // One line, ending in "…" where the hint is long.
             Text(
                 text = stringResource(R.string.genre_edit_placeholder),
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         },
         leadingIcon = {
@@ -371,7 +363,7 @@ private fun GenreEditInputField(
             }
         },
         singleLine = true,
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,
             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
@@ -420,11 +412,12 @@ private fun GenreEditSuggestionsRow(
         ) {
             suggestions.forEach { suggestion ->
                 val isSelected = genreText.equals(suggestion.name, ignoreCase = true)
-                PillFilterChip(
-                    label = suggestion.name,
-                    icon = suggestion.icon,
+                BoxloreFilterChip(
                     selected = isSelected,
                     onClick = { onSelectSuggestion(suggestion) },
+                    label = suggestion.name,
+                    leadingIcon = suggestion.icon,
+                    container = BoxloreFilterChipDefaults.SheetContainer,
                 )
             }
         }
@@ -481,16 +474,9 @@ private fun GenreEditAllIconsGrid(
                 fontWeight = GoogleSansWeight.bold,
             )
             if (selectedIconKey != null) {
-                Text(
-                    text = stringResource(R.string.genre_edit_clear_icon),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = GoogleSansWeight.medium,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable { onSelectIcon(null) }
-                        .padding(4.dp),
-                )
+                TextButton(onClick = { onSelectIcon(null) }) {
+                    Text(stringResource(R.string.genre_edit_clear_icon))
+                }
             }
         }
 
@@ -551,7 +537,7 @@ private fun GenreIconCell(
         shape = CircleShape,
         color = containerColor,
         contentColor = contentColor,
-        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+        // One highlight for the chosen icon: its filled container.
         modifier = Modifier.size(44.dp),
     ) {
         Box(contentAlignment = Alignment.Center) {

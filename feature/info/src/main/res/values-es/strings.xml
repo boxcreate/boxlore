@@ -64,6 +64,8 @@
     <string name="episode_info_more_like_this">Prueba estos episodios</string>
     <string name="episode_info_more_from">Más de %1$s</string>
     <string name="episode_info_more_from_label">Más de</string>
+    <string name="episode_info_see_all">Ver todo</string>
+    <string name="episode_info_number_short">Ep.</string>
     <string name="episode_info_explore_podcast">Explorar podcast</string>
     <string name="episode_info_no_more">No hay más episodios disponibles</string>
     <string name="episode_info_people">Personas en este episodio</string>
@@ -104,7 +106,6 @@
     <string name="episode_archive_undo">Deshacer</string>
     <string name="episode_archived">Archivado</string>
     <string name="podcast_info_show_archived">Ver episodios archivados (%d)</string>
-    <string name="podcast_info_hide_archived">Ocultar episodios archivados</string>
     <string name="episode_selection_failed">No se pudieron cargar todos los episodios. Revisa tu conexión e inténtalo de nuevo.</string>
     <string name="episode_selection_too_long">Este podcast tiene demasiados episodios para seleccionarlos todos.</string>
     <string name="subscribe_to_edit_genre">Sigue el podcast para editar el género</string>
@@ -112,6 +113,7 @@
     <string name="genre_edit_placeholder">Toca para poner una etiqueta personalizada</string>
     <string name="episode_info_episode_from_show">%1$s, de %2$s</string>
     <string name="podcast_info_load_error">No se pudo cargar este podcast</string>
+    <string name="info_load_error_body">Comprueba tu conexión a internet y vuelve a intentarlo.</string>
     <string name="podcast_info_retry">Reintentar</string>
     <string name="podcast_info_more_episodes_failed">No se pudieron cargar más episodios</string>
     <string name="podcast_info_episodes_failed">No se pudieron cargar los episodios</string>
@@ -126,13 +128,14 @@
     <string name="podcast_info_search_in_show">Buscar episodios en %1$s</string>
     <string name="podcast_info_close_search">Cerrar búsqueda de episodios</string>
     <string name="podcast_info_clear_search">Borrar búsqueda</string>
-    <string name="podcast_info_no_search_results">No hay episodios que coincidan. Prueba con otro título o palabra clave.</string>
     <plurals name="podcast_info_search_newest_only">
         <item quantity="one">Solo se buscó en %1$s episodio, el más reciente de este podcast.</item>
         <item quantity="many">Solo se buscó en los %1$s episodios más recientes de este podcast.</item>
         <item quantity="other">Solo se buscó en los %1$s episodios más recientes de este podcast.</item>
     </plurals>
     <string name="podcast_info_search_failed">No se pudieron buscar los episodios de este podcast. Revisa tu conexión.</string>
+    <string name="podcast_info_no_matches_title">No hay episodios que coincidan</string>
+    <string name="podcast_info_no_matches_body">Prueba con otro título o palabra clave.</string>
     <string name="podcast_info_missing_offer">¿Faltan episodios?</string>
     <string name="podcast_info_missing_fetching">Actualizando…</string>
     <string name="podcast_info_missing_updated">Al día</string>

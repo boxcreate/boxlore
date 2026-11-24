@@ -15,7 +15,6 @@ import cx.aswin.boxlore.feature.library.subscriptions.hasAnyFolderShowNew
 import cx.aswin.boxlore.feature.library.subscriptions.hasFolderOverflowNew
 import cx.aswin.boxlore.feature.library.subscriptions.partitionSubscribedShows
 import cx.aswin.boxlore.feature.library.subscriptions.resolveSortedFolderShows
-import cx.aswin.boxlore.feature.library.subscriptions.truncateCompactFolderName
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -370,18 +369,6 @@ class SubscriptionFolderLayoutLogicTest {
         // Any folder show detection (for 1x1 compact folders)
         assertTrue(hasAnyFolderShowNew(listOf(showWithNew), lastSeenEpisodes))
         assertFalse(hasAnyFolderShowNew(listOf(showWithoutNew), lastSeenEpisodes))
-    }
-
-    @Test
-    fun `truncateCompactFolderName limits names exceeding max length with ellipsis`() {
-        // <= 10 chars remain untouched
-        assertEquals("Tech", truncateCompactFolderName("Tech"))
-        assertEquals("Technology", truncateCompactFolderName("Technology"))
-        assertEquals("1234567890", truncateCompactFolderName("1234567890"))
-
-        // > 10 chars are truncated to first 10 + ellipsis
-        assertEquals("Technology…", truncateCompactFolderName("Technology News"))
-        assertEquals("My Favorit…", truncateCompactFolderName("My Favorite Shows"))
     }
 
     @Test

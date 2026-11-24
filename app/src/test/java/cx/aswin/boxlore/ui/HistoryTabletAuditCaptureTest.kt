@@ -8,11 +8,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isRoot
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
@@ -28,7 +44,9 @@ import cx.aswin.boxlore.feature.history.HistoryScreen
 import cx.aswin.boxlore.feature.history.HistoryTab
 import cx.aswin.boxlore.feature.history.HistoryViewModel
 import cx.aswin.boxlore.feature.history.InsightsUiState
+import cx.aswin.boxlore.feature.history.R as HistoryR
 import cx.aswin.boxlore.feature.history.TimelineUiState
+import cx.aswin.boxlore.feature.history.insights.INSIGHTS_LIST_TAG
 import cx.aswin.boxlore.feature.history.story.StoryCard
 import cx.aswin.boxlore.feature.history.story.StoryLogic
 import cx.aswin.boxlore.feature.history.story.StoryPlayer
@@ -40,7 +58,12 @@ import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -62,10 +85,15 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
     @get:Rule val fixture = PhoneGoldenRule(configuration)
 
     @Test fun capture() {
-        assumeTrue(System.getProperty("boxlore.tabletCaptures") == "after")
-        val port = BoardHistory(empty = view == "empty", timedDays = if (view == "insights-early") 2 else Int.MAX_VALUE)
+        val mode = System.getProperty("boxlore.tabletCaptures")
+        assumeTrue(mode == "after" || mode == "audit")
+        val port = boardFor(view)
         val vm = HistoryViewModel(port, zoneId = { ZoneId.systemDefault() }, now = { TODAY })
         fixture.prepare()
+        if (view == "story-hello-sequence") {
+            captureStorySequence(port)
+            return
+        }
         if (view.startsWith("story-")) {
             captureStory(port, StoryCard.valueOf(view.removePrefix("story-").uppercase()))
             return
@@ -91,21 +119,121 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
         fixture.setContent(foldSafeViewport = true) {
             BoxLoreTheme(darkTheme = fixture.configuration.dark, dynamicColor = false) { HistoryScreen(vm, {}, {}, {}) }
         }
-        vm.selectTab(if (view.startsWith("insights")) HistoryTab.INSIGHTS else HistoryTab.TIMELINE)
+        val insightsTab = view.startsWith("insights") || view == "empty-insights" || view == "loading-insights"
+        vm.selectTab(if (insightsTab) HistoryTab.INSIGHTS else HistoryTab.TIMELINE)
+        if (view.startsWith("loading-")) {
+            fixture.compose.mainClock.advanceTimeBy(500)
+            fixture.compose.waitForIdle()
+            fixture.capture("history-$view")
+            return
+        }
         // The tabs work off the main thread: let the paused clock run until the open one is ready.
         repeat(50) {
-            if ((if (view.startsWith("insights")) vm.insightsState.value is InsightsUiState.Ready else vm.timelineState.value is TimelineUiState.Ready)) return@repeat
+            if ((if (insightsTab) vm.insightsState.value is InsightsUiState.Ready else vm.timelineState.value is TimelineUiState.Ready)) return@repeat
             fixture.compose.mainClock.advanceTimeBy(100)
             Thread.sleep(50)
             fixture.compose.waitForIdle()
         }
-        val ready = if (view.startsWith("insights")) vm.insightsState.value is InsightsUiState.Ready else vm.timelineState.value is TimelineUiState.Ready
+        val ready = if (insightsTab) vm.insightsState.value is InsightsUiState.Ready else vm.timelineState.value is TimelineUiState.Ready
         check(ready) { "The $view tab was still loading: a capture of it would show the loader" }
-        if (view == "shows") {
-            fixture.compose.mainClock.advanceTimeBy(1_000)
-            fixture.compose.onNodeWithText("Shows").performClick()
+        fixture.compose.mainClock.advanceTimeBy(1_000)
+        fixture.compose.waitForIdle()
+        interact()
+        if (view in ALL_WINDOW_VIEWS) {
+            val roots = fixture.compose.onAllNodes(isRoot()).fetchSemanticsNodes().size
+            check(roots > 1) { "$view opens its own window ($roots roots)" }
         }
-        fixture.capture("history-$view")
+        fixture.capture("history-$view", allWindows = view in ALL_WINDOW_VIEWS)
+    }
+
+    /** The boards' history as [view] needs it: none, early (two timed days), still loading, or all of it. */
+    private fun boardFor(view: String) = BoardHistory(
+        empty = view == "empty" || view == "empty-insights",
+        timedDays = if (view == "insights-early") 2 else Int.MAX_VALUE,
+        loading = view.startsWith("loading-"),
+    )
+
+    /** What the view shows beyond the tab: Shows, a lower card, an open menu or dialog, or Undo. */
+    private fun interact() {
+        when (view) {
+            "shows" -> {
+                val shows = text(HistoryR.string.history_group_shows)
+                withRunningClock { timelineList().performScrollToNode(hasText(shows)) }
+                tap(fixture.compose.onNodeWithText(shows))
+                withRunningClock { timelineList().performScrollToIndex(0) }
+            }
+            "insights-mosaic", "insights-when", "insights-records" -> {
+                val key = mapOf("insights-mosaic" to "mosaic", "insights-when" to "when", "insights-records" to "records").getValue(view)
+                // On large tablets When you listen shares a row keyed by the card beside it.
+                val rowKey = if (key == "when" && fixture.configuration.width >= 1_000) "top_shows" else key
+                withRunningClock { fixture.compose.onNodeWithTag(INSIGHTS_LIST_TAG).performScrollToKey(rowKey) }
+            }
+            "timeline-menu" -> tap(firstRowMore())
+            "history-menu", "clear-dialog" -> {
+                tap(fixture.compose.onNodeWithContentDescription(text(HistoryR.string.history_more_options)))
+                if (view == "clear-dialog") tap(fixture.compose.onNodeWithText(text(HistoryR.string.history_clear_all)))
+            }
+            "snackbar" -> {
+                tap(firstRowMore())
+                tap(fixture.compose.onNodeWithText(text(HistoryR.string.history_remove_from_history)))
+                // Let the removal reach the view model and its message reach the host.
+                repeat(10) {
+                    fixture.compose.mainClock.advanceTimeBy(50)
+                    Thread.sleep(30)
+                    fixture.compose.waitForIdle()
+                }
+            }
+        }
+    }
+
+    /** The Timeline's own list (Jump back in scrolls sideways). */
+    private fun timelineList(): SemanticsNodeInteraction =
+        fixture.compose.onAllNodes(hasScrollToNodeAction() and SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).onFirst()
+
+    /** Today's first row's More button, scrolled into view: short windows start with the search box and Jump back in. */
+    private fun firstRowMore(): SemanticsNodeInteraction {
+        val more = hasContentDescription(text(HistoryR.string.history_more_options_for, "Was Jack the Ripper a Freemason?"))
+        withRunningClock { timelineList().performScrollToNode(more) }
+        return fixture.compose.onAllNodes(more).onFirst()
+    }
+
+    /** Lazy lists scroll over frames: run the clock while [scroll] happens, then pause it again. */
+    private fun withRunningClock(scroll: () -> Unit) {
+        fixture.compose.mainClock.autoAdvance = true
+        try {
+            scroll()
+            fixture.compose.waitForIdle()
+        } finally {
+            fixture.compose.mainClock.autoAdvance = false
+        }
+    }
+
+    /** Clicks [node] through its semantics (popups open on the paused clock) and lets the result draw. */
+    private fun tap(node: SemanticsNodeInteraction) {
+        node.performSemanticsAction(SemanticsActions.OnClick)
+        repeat(5) {
+            Snapshot.sendApplyNotifications()
+            fixture.compose.mainClock.advanceTimeBy(100)
+            fixture.compose.waitForIdle()
+        }
+    }
+
+    /** A History string in the capture's locale; [args] fill its placeholders. */
+    private fun text(id: Int, vararg args: Any): String {
+        val resources = fixture.compose.activity.resources
+        return if (args.isEmpty()) resources.getString(id) else resources.getString(id, *args)
+    }
+
+    /** October's story opening on its first card, frame by frame across the first card's 8 seconds and the next card. */
+    private fun captureStorySequence(port: BoardHistory) {
+        val story = requireNotNull(port.story(YearMonth.of(2026, 10), LocalDate.of(2026, 11, 2)))
+        val open = mutableStateOf(false)
+        fixture.setContent(foldSafeViewport = true) {
+            BoxLoreTheme(darkTheme = fixture.configuration.dark, dynamicColor = false) {
+                if (open.value) StoryPlayer(story, StoryCard.HELLO, {}, {}, {}) else Box(Modifier.fillMaxSize())
+            }
+        }
+        fixture.captureSequence("history-story-hello-sequence", frames = 12, stepMs = 1_000) { open.value = true }
     }
 
     /** October's story as it shows on Nov 2, at [card], once the card's entrance has settled (Echo at rest). */
@@ -132,21 +260,50 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
             mapOf(3 to 35, 6 to 20, 8 to 44, 11 to 30, 14 to 50, 15 to 25, 16 to 40, 17 to 40, 19 to 30, 20 to 45, 21 to 45, 22 to 35, 23 to 25, 24 to 60, 25 to 50, 26 to 40, 27 to 55, 28 to 168, 30 to 23)
                 .entries.associate { (day, minutes) -> LocalDate.of(2026, 10, day) to minutes * 60_000L }
 
+        /** Audit-only views: menus, dialogs, the snackbar, loading, empty Insights, lower Insights cards and the story's first card over time. */
+        private val AUDIT_VIEWS = listOf(
+            "days", "shows", "jump", "empty", "empty-insights", "insights", "insights-early", "insights-mosaic", "insights-when", "insights-records",
+            "timeline-menu", "history-menu", "snackbar", "loading-insights", "loading-timeline", "clear-dialog",
+            "story-hello", "story-records", "story-share", "story-type",
+        )
+
+        /** Views whose subject (a menu or a dialog) lives in its own window. */
+        private val ALL_WINDOW_VIEWS = setOf("timeline-menu", "history-menu", "clear-dialog")
+
+        /** Where the story's first card has to wait or may move on: a phone, the Fold 8 cover and a tabletop fold. */
+        private val SEQUENCE_SIZES = setOf("412x915", "443x649", "932x650-tabletop")
+
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}-{1}")
-        fun configurations(): List<Array<Any>> = listOf("days", "shows", "jump", "empty", "insights", "insights-early").flatMap { view ->
-            listOf(400 to (if (view == "insights") 3_600 else 1_640), 400 to 890, 1280 to 800, 840 to 1280).flatMap { (width, height) ->
-                listOf(false, true).map { dark -> arrayOf<Any>(view, PhoneGoldenConfiguration(width, height, dark)) }
+        fun configurations(): List<Array<Any>> {
+            if (System.getProperty("boxlore.tabletCaptures") == "audit") {
+                val sizes = PhoneGoldenConfiguration.auditConfigurations(extra = listOf(PhoneGoldenConfiguration(360, 800, false)))
+                // Dark checks for the menus' and the red confirm's colours.
+                val dark = listOf("timeline-menu", "clear-dialog").flatMap { view -> listOf(412 to 915, 1_280 to 800).map { (width, height) -> arrayOf<Any>(view, PhoneGoldenConfiguration(width, height, true)) } }
+                return AUDIT_VIEWS.flatMap { view -> sizes.map { arrayOf<Any>(view, it) } } +
+                    sizes.filter { it.auditKey in SEQUENCE_SIZES }.map { arrayOf<Any>("story-hello-sequence", it) } + dark
             }
-        } + STORY_CARDS.flatMap { view ->
-            // The story is its own full-screen frame: the boards' size, a tablet, and a wide fold-out.
-            listOf(400 to 890, 1280 to 800, 840 to 1280).map { (width, height) -> arrayOf<Any>(view, PhoneGoldenConfiguration(width, height, true)) }
-        } + listOf(arrayOf<Any>("story-type", PhoneGoldenConfiguration(400, 890, false)))
+            return listOf("days", "shows", "jump", "empty", "insights", "insights-early").flatMap { view ->
+                listOf(400 to (if (view == "insights") 3_600 else 1_640), 400 to 890, 1280 to 800, 840 to 1280).flatMap { (width, height) ->
+                    listOf(false, true).map { dark -> arrayOf<Any>(view, PhoneGoldenConfiguration(width, height, dark)) }
+                }
+            } + STORY_CARDS.flatMap { view ->
+                // The story is its own full-screen frame: the boards' size, a tablet, and a wide fold-out.
+                listOf(400 to 890, 1280 to 800, 840 to 1280).map { (width, height) -> arrayOf<Any>(view, PhoneGoldenConfiguration(width, height, true)) }
+            } + listOf(arrayOf<Any>("story-type", PhoneGoldenConfiguration(400, 890, false)))
+        }
     }
 }
 
 /** The boards' history: Oct 26 to Oct 30, 2026, with their shows, times and progress. */
-internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : ListeningHistoryPort {
+internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE, loading: Boolean = false, finished: Int = Int.MAX_VALUE) : ListeningHistoryPort {
+    /** True while the board holds every answer back, as a slow database would; [finishLoading] lets them through. */
+    private val loading = MutableStateFlow(loading)
+
+    fun finishLoading() {
+        loading.value = false
+    }
+
     private val history =
         if (empty) {
             emptyList()
@@ -160,8 +317,15 @@ internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : Li
                 row("ai", "Inside the early days of the AI revolution", "The Vergecast", "vc", 27, 21, 10, completed = true),
                 row("sign", "The Sign of Four: Part One", "Sherlock Holmes Short Stories", "sh", 27, 7, 30, progress = 18, duration = 30),
                 row("molasses", "The Great Molasses Flood", "Stuff You Missed in History Class", "hc", 26, 18, 45, completed = true),
-            )
+            ).let { rows ->
+                // At most [finished] of them finished: the rest are dropped.
+                var kept = 0
+                rows.filter { !it.isCompleted || kept++ < finished }
+            }
         }
+
+    /** True once Clear all reached the history: every list then answers empty. */
+    private val cleared = MutableStateFlow(false)
 
     /** September (12 h 15 min, 2 h 05 min less than October), August (mostly history) and July (mostly science). */
     private val earlierMonths: List<ListeningDayEpisode> =
@@ -192,15 +356,27 @@ internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : Li
     /** A month's story from this history, as of [today]. */
     fun story(month: YearMonth, today: LocalDate) = StoryLogic.build(month, history, listening, played, today, ZoneId.systemDefault())
 
-    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = flowOf(history)
+    /** [value] now ([whenCleared] after Clear all), or never while the board is [loading]. */
+    private fun <T> answer(value: T, whenCleared: T = value): Flow<T> = answerAsItStands(MutableStateFlow(value), whenCleared)
 
-    override fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>> = flowOf(history)
+    /** [values] as they change ([whenCleared] after Clear all), or never while the board is [loading]. */
+    private fun <T> answerAsItStands(values: Flow<T>, whenCleared: T): Flow<T> = flow {
+        loading.first { !it }
+        emitAll(combine(cleared, values) { isCleared, value -> if (isCleared) whenCleared else value })
+    }
 
-    override fun observeListeningByDay(): Flow<List<ListeningDayEpisode>> = flowOf(listening)
+    /** The history as it stands: a removal takes its row out and Undo puts it back in its place. */
+    private val shownHistory = MutableStateFlow(history)
 
-    override fun observePlayedShows(): Flow<List<ListeningPlayedShow>> = flowOf(played)
+    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = answerAsItStands(shownHistory, emptyList())
 
-    override fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary> = flowOf(
+    override fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>> = answerAsItStands(shownHistory, emptyList())
+
+    override fun observeListeningByDay(): Flow<List<ListeningDayEpisode>> = answer(listening, emptyList())
+
+    override fun observePlayedShows(): Flow<List<ListeningPlayedShow>> = answer(played, emptyList())
+
+    override fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary> = answer(
         ListeningInsightSummary(
             period = period,
             trackingSinceEpochMs = null,
@@ -224,11 +400,28 @@ internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : Li
         ),
     )
 
-    override suspend fun removeHistoryItem(episodeId: String): ListeningHistoryRemoval? = null
+    override suspend fun removeHistoryItem(episodeId: String): ListeningHistoryRemoval? {
+        val item = shownHistory.value.firstOrNull { it.episodeId == episodeId } ?: return null
+        shownHistory.value = shownHistory.value - item
+        return ListeningHistoryRemoval(item)
+    }
 
-    override suspend fun restoreHistoryRemoval(removal: ListeningHistoryRemoval) = Unit
+    /** Episodes put back by Undo, in order. */
+    val restored = mutableListOf<String>()
 
-    override suspend fun clearHistory() = Unit
+    override suspend fun restoreHistoryRemoval(removal: ListeningHistoryRemoval) {
+        restored += removal.item.episodeId
+        val kept = shownHistory.value.map { it.episodeId }.toSet() + removal.item.episodeId
+        shownHistory.value = history.filter { it.episodeId in kept }
+    }
+
+    /** How many times Clear all reached the history. */
+    var clears = 0
+
+    override suspend fun clearHistory() {
+        clears++
+        cleared.value = true
+    }
 
     override suspend fun maintainListeningAnalytics() = Unit
 

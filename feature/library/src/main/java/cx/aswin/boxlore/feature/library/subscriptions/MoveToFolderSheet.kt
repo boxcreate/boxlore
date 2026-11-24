@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,7 +31,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -43,6 +41,7 @@ import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
+import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.artworkUrls
@@ -93,7 +92,7 @@ internal fun MoveToFolderSheet(
             )
 
             HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                color = MaterialTheme.colorScheme.outlineVariant,
                 thickness = 0.5.dp,
                 modifier = Modifier.padding(top = 6.dp),
             )
@@ -108,7 +107,7 @@ internal fun MoveToFolderSheet(
             )
 
             HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                color = MaterialTheme.colorScheme.outlineVariant,
                 thickness = 0.5.dp,
             )
 
@@ -238,7 +237,6 @@ private fun CreateNewFolderActionRow(
                 onDismissRequest()
                 onCreateNewFolder(podcast)
             },
-            shape = RoundedCornerShape(14.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(
@@ -262,21 +260,20 @@ private fun FolderPickRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
+            .expressiveClickable(shape = RoundedCornerShape(12.dp), onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Surface(
             shape = RoundedCornerShape(10.dp),
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.primaryContainer,
             modifier = Modifier.size(40.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = folderIcon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(22.dp),
                 )
             }

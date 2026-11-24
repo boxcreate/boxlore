@@ -4,12 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,6 +28,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -40,8 +43,13 @@ import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -63,17 +71,20 @@ internal fun SettingsCategoryCard(
     title: String,
     description: String,
     icon: ImageVector,
-    containerColor: Color,
-    contentColor: Color,
+    /** The card's container colour, then the colour of its text and icon. */
+    colors: Pair<Color, Color>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    descriptionMaxLines: Int = 3,
 ) {
+    val (containerColor, contentColor) = colors
     val shape = MaterialTheme.shapes.extraLarge
+    // Long names and large text take more lines, and the card grows to hold them.
     Card(
         modifier =
         modifier
             .fillMaxWidth()
-            .height(CategoryCardHeight)
+            .heightIn(min = CategoryCardHeight)
             .expressiveClickable(shape = shape, onClick = onClick),
         shape = shape,
         colors = CardDefaults.cardColors(containerColor = containerColor),
@@ -83,7 +94,7 @@ internal fun SettingsCategoryCard(
             modifier =
             Modifier
                 .fillMaxWidth()
-                .fillMaxHeight()
+                .heightIn(min = CategoryCardHeight)
                 .padding(horizontal = 18.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -102,7 +113,8 @@ internal fun SettingsCategoryCard(
                     fontFamily = rememberSectionHeaderFontFamily(),
                     fontWeight = FontWeight.Normal,
                     color = contentColor,
-                    maxLines = 1,
+                    // Two lines at any size: on two-column rows a longer language's name needs them.
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(2.dp))
@@ -110,7 +122,8 @@ internal fun SettingsCategoryCard(
                     text = description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = contentColor.copy(alpha = 0.78f),
-                    maxLines = 2,
+                    // Three lines at any size by default: two-column cards and longer languages need the room.
+                    maxLines = descriptionMaxLines,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -182,8 +195,8 @@ internal fun SettingsInfoTip(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -197,7 +210,7 @@ internal fun SettingsInfoTip(
                 Modifier
                     .padding(top = 1.dp)
                     .size(20.dp),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
             )
             Text(
                 text = text,
@@ -290,7 +303,7 @@ internal fun SettingsDurationSliderRow(
         if (supportingText != null) {
             Text(
                 text = supportingText,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -374,15 +387,20 @@ internal fun SettingsSwitchRow(
         onClick = { onCheckedChange(!checked) },
         modifier = modifier,
         icon = icon?.let { SettingsRowIcon(it, defaultIconColors.containerColor, defaultIconColors.contentColor) },
+        rowSemantics = Modifier.switchRowSemantics(checked),
         trailing = {
+            // The row is the one switch screen readers and taps reach; this only shows the state.
             Switch(
                 checked = checked,
-                onCheckedChange = onCheckedChange,
+                onCheckedChange = null,
+                // Without its own click the switch loses its 48dp box; keep it so rows keep their height.
+                modifier = Modifier.minimumInteractiveComponentSize(),
             )
         },
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun SettingsChoiceRow(
     title: String,
@@ -398,6 +416,10 @@ internal fun SettingsChoiceRow(
         modifier
             .fillMaxWidth()
             .expressiveClickable(shape = MaterialTheme.shapes.medium, onClick = onClick)
+            .semantics {
+                this.selected = selected
+                role = Role.RadioButton
+            }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SettingsRowItemGap),
@@ -409,16 +431,15 @@ internal fun SettingsChoiceRow(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            // Long names wrap rather than cut, in one weight whether picked or not (the radio shows the pick).
+            FlowRow(
+                itemVerticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (selected) GoogleSansWeight.semiBold else FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                 )
                 if (badge != null) {
                     Surface(
@@ -438,14 +459,16 @@ internal fun SettingsChoiceRow(
             if (supportingText != null) {
                 Text(
                     text = supportingText,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
         RadioButton(
             selected = selected,
-            onClick = onClick,
+            onClick = null,
+            // Keeps the radio's 48dp box (and the row's height) without a second click target.
+            modifier = Modifier.minimumInteractiveComponentSize(),
         )
     }
 }
@@ -524,6 +547,7 @@ private fun SettingsRowScaffold(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: SettingsRowIcon? = null,
+    rowSemantics: Modifier = Modifier,
     trailing: @Composable (() -> Unit)? = null,
 ) {
     val titleColor = text.titleColor.takeOrElse { MaterialTheme.colorScheme.onSurface }
@@ -535,6 +559,7 @@ private fun SettingsRowScaffold(
             .defaultMinSize(
                 minHeight = if (text.supportingText != null) SettingsRowHeight else SettingsRowHeightCompact,
             ).expressiveClickable(shape = MaterialTheme.shapes.medium, onClick = onClick)
+            .then(rowSemantics)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SettingsRowItemGap),
@@ -559,7 +584,7 @@ private fun SettingsRowScaffold(
             if (text.supportingText != null) {
                 Text(
                     text = text.supportingText,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = supportingColor,
                 )
             }
@@ -568,6 +593,12 @@ private fun SettingsRowScaffold(
             trailing()
         }
     }
+}
+
+/** A switch row reads as one switch with its state; the row's own click toggles it. */
+private fun Modifier.switchRowSemantics(checked: Boolean): Modifier = semantics {
+    role = Role.Switch
+    toggleableState = ToggleableState(checked)
 }
 
 @Composable

@@ -40,6 +40,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.library.R
@@ -121,6 +123,7 @@ internal fun SubscriptionReorderBar(
             tonalElevation = 6.dp,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
             modifier = Modifier
+                .boxloreCardWidth(BoxloreCardFamily.Grid)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {

@@ -13,4 +13,8 @@
     </plurals>
     <string name="briefing_screen_episode_description">Dein tägliches KI-generiertes Nachrichten-Briefing für %1$s.</string>
     <string name="briefing_screen_sources_heading">Referenzen &amp; Quellen</string>
+    <!-- TalkBack name of the Brief's seek bar. -->
+    <string name="briefing_screen_seek_name">Wiedergabeposition</string>
+    <!-- TalkBack position on the seek bar: where playback is, then the Brief's length, e.g. "12:03 of 58:00". -->
+    <string name="briefing_screen_seek_position">%1$s von %2$s</string>
 </resources>

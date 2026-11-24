@@ -48,8 +48,8 @@ Shared rules:
 
 - Every style shares ordering, playback, details and analytics callbacks. Colours follow the listener's choice (`LocalHeroCoverShade`).
 - Every Home hero style ships its own loading skeleton in `HeroSkeletonCards.kt`; `HeroSkeletonCardsTest` fails for any `HeroCardStyle` without one.
-- `homeHeroStyle` shows Cover instead of Marquee on tablets; the saved choice is unchanged. Below `ShortHeroHeight` (a hero above a tabletop fold), Halo shows as Cover.
-- Tablets use `ResponsiveHeroCarousel`, which keeps a small end padding to avoid a material3 carousel crash at certain widths (`HeroCarouselEndTest`).
+- `homeHeroStyle` shows Cover instead of Marquee on tablets; the saved choice is unchanged. `homeHeroHeight` fits the hero between the bars above a tabletop fold; on sideways phones and split-screen halves it shortens to a floor that grows with text size, so every style keeps its title and a full Play, and Marquee's words stay below the floating top bar. Below `ShortHeroHeight`, Halo shows as Cover and artwork styles keep titles to two lines.
+- `ResponsiveHeroCarousel` and its skeleton show one large card and a narrow peek in compact windows (such as the Galaxy Z Fold 8 cover), a row of whole cards on tablets and sideways phones, and one full-width card in panes too narrow for a peek. The row keeps a small end padding to avoid a material3 carousel crash at certain widths (`HeroCarouselEndTest`).
 
 ## Discovery and switchable sections
 
@@ -83,13 +83,14 @@ Shared rules:
 
 ## Adaptive layouts
 
-Window gates and state retention follow [`ARCHITECTURE.md#adaptive-ui-and-state`](../../ARCHITECTURE.md#adaptive-ui-and-state). Home-specific tablet behaviour: `TabletHomeLeadingSections` pairs Your shows with the Brief; on wide windows the Your shows picker becomes a sidebar beside its content, scrolling past four rows (`TabletYourShowsModule.kt`); recommendations become one bounded rail.
+Window gates and state retention follow [`ARCHITECTURE.md#adaptive-ui-and-state`](../../ARCHITECTURE.md#adaptive-ui-and-state). Home-specific tablet behaviour: `TabletHomeLeadingSections` pairs Your shows with the Brief; on wide windows the Your shows picker becomes a sidebar beside its content, scrolling past four rows (`TabletYourShowsModule.kt`); recommendations become one bounded rail. `HomeSectionsUiState` (saved above the grid) keeps rail and show-list scroll, the Brief's hide step, open menus and the hero card across the tablet gates, Marquee's tablet switch and recreation. The top bar, grid and Marquee's words keep clear of side system bars and cutouts.
 
 ## Internal structure
 
 ```text
 src/main/java/cx/aswin/boxlore/feature/home/
   HomeScreen.kt                 # HomeRoute, HomeScreen, top bar and sheets
+  HomeSectionsUiState.kt        # saved Your shows, Brief, menu and hero state above the grid
   HomeFeed*.kt                  # feed sections: Your shows, Brief, recommendations, editorial rows
   HomeViewModel*.kt             # ViewModel split by concern: LoadData, Selected, Serial,
                                 #   Sections, BecauseYouLike, Briefing

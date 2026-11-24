@@ -46,8 +46,8 @@
     </plurals>
     <!-- Small badge on a folder; all capitals where the language uses them -->
     <plurals name="library_folder_new_episodes_badge">
-        <item quantity="one">%1$d EPISÓDIO NOVO</item>
-        <item quantity="other">%1$d EPISÓDIOS NOVOS</item>
+        <item quantity="one">%1$d NOVO</item>
+        <item quantity="other">%1$d NOVOS</item>
     </plurals>
     <string name="library_folder_empty_tap_to_add">Pasta vazia • Toque para adicionar podcasts</string>
     <string name="library_folder_empty_title">Nenhum podcast nesta pasta</string>
@@ -132,7 +132,6 @@
     <string name="library_auto_organize">Organizar automaticamente</string>
     <string name="library_auto_organize_is_on">Organização automática ativada</string>
     <string name="library_auto_organize_turn_on">Ativar organização automática</string>
-    <string name="library_auto_organize_turn_off">Desativar organização automática</string>
     <string name="library_auto_organize_turn_off_title">Desativar organização automática?</string>
     <string name="library_auto_organize_turn_off_body">O boxlore para de criar pastas de gênero. As pastas de gênero que você já tem continuam, e podcasts novos do mesmo gênero ainda entram nelas.</string>
     <string name="library_auto_organize_turn_off_hint">Para se livrar de uma, exclua a pasta. Os podcasts dela continuam na sua biblioteca.</string>

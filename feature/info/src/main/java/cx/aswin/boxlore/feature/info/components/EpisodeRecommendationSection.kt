@@ -33,16 +33,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCard
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardSkeleton
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import cx.aswin.boxlore.core.model.Episode
@@ -85,15 +82,7 @@ internal fun EpisodeRecommendationSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            RecommendationBadge(state.icon)
-            Text(
-                state.title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = GoogleSansWeight.bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f).semantics { heading() },
-            )
+            EpisodeSectionHeader(state.title, Modifier.weight(1f), icon = { RecommendationBadge(state.icon) })
             if (onHeaderClick != null) Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.primary)
         }
         LazyRow(state = listState, contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -106,7 +95,8 @@ internal fun EpisodeRecommendationSection(
                         imageUrl = episode.imageUrl.orEmpty(),
                         fallbackImageUrls = listOf(episode.podcastImageUrl, state.fallbackImageUrl),
                         title = episode.title,
-                        subtitle = null,
+                        // These come from other shows, so each card names its show.
+                        subtitle = showName,
                         onClick = { onEpisodeClick(episode) },
                         presentation = FeedMediaCardPresentation.ExpressivePoster,
                         modifier = Modifier.width(160.dp).semantics { contentDescription = accessibleTitle },
@@ -143,10 +133,10 @@ internal fun EpisodeRecommendationSection(
 @Composable
 private fun RecommendationBadge(icon: ImageVector) {
     Box(
-        Modifier.size(40.dp).clip(MaterialShapes.Cookie9Sided.toShape()).background(MaterialTheme.colorScheme.primaryContainer),
+        Modifier.size(32.dp).clip(MaterialShapes.Cookie9Sided.toShape()).background(MaterialTheme.colorScheme.primaryContainer),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(22.dp))
+        Icon(icon, null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(18.dp))
     }
 }
 

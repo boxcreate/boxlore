@@ -4,6 +4,7 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
@@ -16,6 +17,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
@@ -30,6 +32,7 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.theme.CustomThemeSeeds
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansFlexRoundness
@@ -217,6 +220,38 @@ class CustomThemeEditorTest {
             writeScreenshot("large-rtl")
         }
     }
+
+    // Regression: turning the phone while editing jumped the controls to the top and dropped the hex field's focus.
+    @Config(qualifiers = "w1300dp-h1300dp-mdpi")
+    @Test
+    fun `turning or resizing keeps the controls' scroll, the hex draft and its focus`() {
+        val size = mutableStateOf(412 to 600)
+        composeRule.mainClock.autoAdvance = true
+        composeRule.setContent {
+            MaterialTheme(colorScheme = generatePersonalColorScheme(initial, false), typography = buildBoxLoreTypography(LocalContext.current, GoogleSansFlexRoundness)) {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.requiredSize(size.value.first.dp, size.value.second.dp)) {
+                    CustomThemeEditor(AppearanceUiState("system", false, initial.encode(), SurfaceStyles.STANDARD), onDismiss = {}, onSave = {})
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        openHex()
+        composeRule.onNodeWithTag("theme-editor-hex").performClick()
+        composeRule.onNodeWithTag("theme-editor-hex").performTextReplacement("62")
+        composeRule.waitForIdle()
+        val scrolled = scrollOf("theme-editor-controls")
+        assertTrue("the controls were scrolled ($scrolled)", scrolled > 0f)
+        for (next in listOf(915 to 412, 412 to 600, 720 to 500, 412 to 600)) {
+            composeRule.runOnIdle { size.value = next }
+            composeRule.waitForIdle()
+            composeRule.onNodeWithTag("theme-editor-hex").assertIsFocused()
+            composeRule.onNodeWithTag("theme-editor-save").assertIsNotEnabled()
+            assertTrue("$next keeps its place", scrollOf("theme-editor-controls") > 0f)
+        }
+    }
+
+    private fun scrollOf(tag: String): Float =
+        composeRule.onNodeWithTag(tag).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.VerticalScrollAxisRange].value()
 
     private fun openHex() {
         composeRule.onNodeWithTag("theme-editor-fine-tune").performScrollTo().performClick()

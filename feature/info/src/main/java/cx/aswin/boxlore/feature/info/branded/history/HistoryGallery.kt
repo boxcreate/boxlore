@@ -7,14 +7,11 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -53,6 +50,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.awaitPageSettled
@@ -76,7 +74,7 @@ internal fun GalleryWall(pictures: List<String?>, cover: String?) {
     val loaded = remember(pictures, cover) { List(shown) { (pictures[it] ?: cover) == null }.toMutableStateList() }
     val clock = rememberLightsClock(ready = art != null, loaded)
     val dark = LocalEffectiveDarkTheme.current
-    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val statusBar = boxlorePaneTopInset()
     val title = stringResource(R.string.trih_logo_description)
     BoxWithConstraints(Modifier.fillMaxWidth().height((HistoryWall.HEIGHT - HistoryWall.STATUS_BAR).dp)) {
         val centre = (maxWidth.value - HistoryWall.WIDTH) / 2f

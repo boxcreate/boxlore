@@ -220,6 +220,9 @@ class ImportDialogAdaptiveTest {
             compose.onNodeWithText(it).performScrollTo().assertIsDisplayed()
         }
         compose.onNodeWithText("Look for Export OPML in your podcast app’s settings.").performScrollTo().assertIsDisplayed()
+        // The three answers sit together as one group, a hair apart.
+        val options = listOf("import_option_account", "import_option_backup", "import_option_opml").map { compose.onNodeWithTag(it).getUnclippedBoundsInRoot() }
+        options.zipWithNext { above, below -> assertEquals(3f, (below.top - above.bottom).value, 0.5f) }
         val echo = compose.onNodeWithTag("import_echo").getUnclippedBoundsInRoot()
         val width = echo.right - echo.left
         assertTrue("Echo is $width", width >= ImportEchoMinSize && width <= ImportEchoMaxSize)

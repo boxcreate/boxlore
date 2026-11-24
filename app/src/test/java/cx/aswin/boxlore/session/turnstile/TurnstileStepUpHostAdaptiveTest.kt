@@ -223,6 +223,8 @@ class TurnstileStepUpHostAdaptiveTest {
         render()
         val result = start()
         askForInteraction()
+        // The check's page keeps its 72dp frame in the card.
+        assertEquals(72f, compose.onNodeWithTag(CHALLENGE_PAGE_TAG).getUnclippedBoundsInRoot().let { it.bottom - it.top }.value, 0.5f)
 
         compose.onNodeWithText("Skip").performClick()
 

@@ -48,6 +48,12 @@ object LocaleFormats {
         /** "March" (standalone month name) */
         MONTH("LLLL"),
 
+        /** "Mar" (standalone short month name) */
+        SHORT_MONTH("LLL"),
+
+        /** "5" (day of the month, in the language's own calendar) */
+        DAY("d"),
+
         /** "Thursday" (standalone weekday name) */
         WEEKDAY("cccc"),
 

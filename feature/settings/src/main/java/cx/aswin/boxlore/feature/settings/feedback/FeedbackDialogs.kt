@@ -8,7 +8,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Share
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,9 +39,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.components.boxloreShowsOwnCopyConfirmation
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -127,7 +125,7 @@ private fun LogsTextSurface(
                 modifier = Modifier.fillMaxWidth().height(140.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                BoxLoreLoader.CircularWavy(size = 32.dp)
             }
         } else {
             val verticalScroll = rememberScrollState()
@@ -141,11 +139,7 @@ private fun LogsTextSurface(
             ) {
                 Text(
                     text = logs ?: stringResource(R.string.feedback_logs_none),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
-                        lineHeight = 15.sp,
-                    ),
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -174,10 +168,8 @@ private fun LogsActionButtons(
             onClick = {
                 copyFeedbackReport(context, resources.getString(R.string.feedback_logs_clip_label), diagnosticInfo?.toMarkdownReport(logs) ?: (logs ?: ""))
             },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
             enabled = isActionEnabled,
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
-            shape = MaterialTheme.shapes.medium,
         ) {
             Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))
@@ -190,10 +182,8 @@ private fun LogsActionButtons(
 
         FilledTonalButton(
             onClick = onShare,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
             enabled = isActionEnabled,
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
-            shape = MaterialTheme.shapes.medium,
         ) {
             Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))

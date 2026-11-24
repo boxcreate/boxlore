@@ -45,10 +45,13 @@ import cx.aswin.boxlore.core.support.SendResult
 import cx.aswin.boxlore.core.support.SupportMeta
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import cx.aswin.boxlore.core.testing.SystemInsets
+import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import cx.aswin.boxlore.feature.settings.text
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -168,6 +171,26 @@ class FeedbackAdaptiveTransitionTest {
         fixture.compose.onNodeWithContentDescription("Add a photo or screenshot").performScrollTo().assertIsDisplayed()
     }
 
+    @Test
+    fun `on a sideways phone the form sits in the reading column, clear of a cutout, and the draft survives turning`() {
+        window.value = PHONE_LAND
+        render()
+        fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets.SIDEWAYS_3_BUTTON) }
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithTag(FEEDBACK_MESSAGE_TAG).performTextInput(MESSAGE)
+        val field = fixture.compose.onNodeWithTag(FEEDBACK_MESSAGE_TAG).fetchSemanticsNode().boundsInRoot
+        assertTrue("field width ${field.width}", field.width <= 720f)
+        assertTrue("field starts inside the centred column (${field.left})", field.left >= (PHONE_LAND.widthDp - 720f) / 2f)
+        val back = fixture.compose.onNodeWithContentDescription(text(cx.aswin.boxlore.feature.settings.R.string.settings_navigate_back)).fetchSemanticsNode().boundsInRoot
+        assertTrue("Back clears the cutout (${back.left})", back.left >= SystemInsets.SIDEWAYS_3_BUTTON.cutoutStart - 1f)
+        reach(FEEDBACK_SEND_TAG).assertIsEnabled()
+        for (size in listOf(COMPACT, PHONE_LAND, COMPACT)) {
+            fixture.compose.runOnIdle { window.value = size }
+            fixture.compose.waitForIdle()
+            fixture.compose.onNodeWithText(MESSAGE).assertExists()
+        }
+    }
+
     private fun composeStateKept() {
         fixture.compose.onNodeWithText(MESSAGE).assertExists()
         fixture.compose.onNodeWithText("Bug report").assertIsSelected()
@@ -259,6 +282,7 @@ class FeedbackAdaptiveTransitionTest {
     companion object {
         private const val MESSAGE = "The sleep timer stops one episode early"
         private val COMPACT = BoxloreWindowLayout(599f, 800f)
+        private val PHONE_LAND = BoxloreWindowLayout(915f, 412f)
         private val FOLD_FLAT = BoxloreWindowLayout(673f, 841f)
         private val FOLD_TABLETOP = FOLD_FLAT.copy(
             folds = listOf(

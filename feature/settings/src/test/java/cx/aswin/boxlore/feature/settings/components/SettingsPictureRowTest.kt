@@ -1,16 +1,35 @@
 package cx.aswin.boxlore.feature.settings.components
 
+import android.app.Application
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.feature.settings.pages.heroPickerPictureHeight
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * The scrolling picture row uses wide tiles and never fits a whole number of them, so the cut-off
  * tile always says there is more to scroll; a fling settles on a tile's start.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33], application = Application::class, qualifiers = "w1000dp-h800dp-mdpi")
 class SettingsPictureRowTest {
+    @get:Rule val compose = createComposeRule()
+
     private val gap = 8f
 
     /** How many tiles show across the row, counting the cut-off one as a fraction. */
@@ -55,6 +74,37 @@ class SettingsPictureRowTest {
         assertEquals(0f, settingsPictureRowSnapOffset(1100f, 1100f, 240f, velocity = 800f), 0.01f)
         assertEquals(1100f - 1000f, settingsPictureRowSnapOffset(1000f, 1100f, 240f, velocity = 800f), 0.01f)
         assertEquals(0f, settingsPictureRowSnapOffset(0f, 1100f, 240f, velocity = -800f), 0.01f)
+    }
+
+    // Regression: after a fold or rotation the picked Home style could rest half off-screen.
+    @Test fun `a resize keeps the same tile at the row's start, both ways`() {
+        val phone = settingsPictureRowTileWidth(380.dp).value + gap
+        val wide = settingsPictureRowTileWidth(820.dp).value + gap
+        val atThird = (3 * phone).toInt()
+        val widened = settingsPictureRowRescroll(atThird.toFloat(), phone, wide)
+        assertEquals(3 * wide, widened.toFloat(), 1f)
+        assertEquals(3 * phone, settingsPictureRowRescroll(widened.toFloat(), wide, phone).toFloat(), 1f)
+        assertEquals(0, settingsPictureRowRescroll(0f, phone, wide))
+    }
+
+    @Test fun `on screen, the tile at the row's start stays there as the row widens and narrows`() {
+        var rowWidth by mutableStateOf(380.dp)
+        compose.setContent {
+            Box(Modifier.width(rowWidth)) {
+                SettingsPictureRow(items = (0 until 8).toList(), selectedIndex = 3) { item, modifier, width ->
+                    Box(modifier.width(width).height(80.dp).testTag("tile$item"))
+                }
+            }
+        }
+        compose.waitForIdle()
+        // The row opens on the picked tile.
+        val start = compose.onNodeWithTag("tile3").fetchSemanticsNode().positionInRoot.x
+        assertTrue("tile 3 in view ($start)", start in 0f..40f)
+        for (next in listOf(820.dp, 380.dp)) {
+            compose.runOnIdle { rowWidth = next }
+            compose.waitForIdle()
+            assertEquals("tile 3 at the start at $next", start, compose.onNodeWithTag("tile3").fetchSemanticsNode().positionInRoot.x, 1f)
+        }
     }
 
     @Test fun `hero pictures keep the Home card's shape as the tile widens`() {

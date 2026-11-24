@@ -152,6 +152,8 @@ class AutoBackupPageAdaptiveTest {
         compose.onNodeWithTag(AutoBackupTestTags.FIX).performScrollTo().performClick()
         // The picker starts in the current folder.
         assertEquals(folder, registry.launches.single().second)
+        // Short choices are the shared connected buttons: each one a radio button.
+        compose.onNode(androidx.compose.ui.test.hasText("Daily") and androidx.compose.ui.test.SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.Role, androidx.compose.ui.semantics.Role.RadioButton)).assertExists()
         compose.onNodeWithText("Daily").performScrollTo().performClick()
         compose.onNodeWithText("10").performScrollTo().performClick()
         compose.onNodeWithText("Back up now").performScrollTo().performClick()

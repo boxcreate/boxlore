@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="library_subscriptions_error_loading">Error loading subscriptions</string>
-    <string name="library_subscriptions_empty_title">No Subscriptions Yet</string>
+    <string name="library_subscriptions_empty_title">No subscriptions yet</string>
     <string name="library_subscriptions_empty_body">Follow your favorite podcasts to see them here.</string>
-    <string name="library_latest_empty_title">No New Episodes</string>
+    <string name="library_latest_empty_title">No new episodes</string>
     <string name="library_latest_empty_body">You\'re all caught up! Explore for more content.</string>
     <string name="library_latest_all_hidden_title">You\'re all caught up</string>
     <string name="library_latest_all_hidden_body">Hidden played episodes are out of the way. Turn off Hide played in Sort to see them again.</string>
@@ -13,14 +13,10 @@
     <string name="library_search_subscribed_shows">Search subscribed shows…</string>
     <!-- Search field placeholder -->
     <string name="library_search_your_shows">Search your shows</string>
-    <!-- Screen-reader label -->
-    <string name="library_close_search">Close Search</string>
-    <!-- Screen-reader label -->
-    <string name="library_clear_search">Clear search</string>
     <!-- Screen-reader label for the button that switches to a list -->
-    <string name="library_list_view">List View</string>
+    <string name="library_list_view">List view</string>
     <!-- Screen-reader label for the button that switches to a grid -->
-    <string name="library_grid_view">Grid View</string>
+    <string name="library_grid_view">Grid view</string>
     <!-- Tab -->
     <string name="library_tab_shows">Shows</string>
     <!-- Tab -->
@@ -59,14 +55,6 @@
     <string name="library_sort_manual">Manual</string>
     <!-- Sort choice -->
     <string name="library_sort_chronological">Chronological</string>
-    <!-- Menu item -->
-    <string name="library_sort_smart_sort">Smart Sort</string>
-    <!-- Menu item -->
-    <string name="library_sort_recently_updated_menu">Recently Updated</string>
-    <!-- Menu item: alphabetical -->
-    <string name="library_sort_a_to_z_menu">A-Z</string>
-    <!-- Menu item -->
-    <string name="library_sort_most_listened_menu">Most Listened</string>
     <!-- Sort choice chip -->
     <string name="library_sort_recently_updated">Recently updated</string>
     <!-- Sort choice chip -->
@@ -77,8 +65,6 @@
     <string name="library_sort_same_as_shows">Same as shows</string>
     <!-- Sort choice chip: the order the listener arranged by hand -->
     <string name="library_sort_your_order">Your order</string>
-    <!-- Menu item -->
-    <string name="library_sort_auto_organize_into_folders">Auto-organize into folders</string>
     <!-- Menu item -->
     <string name="library_hide_played_episodes">Hide played episodes</string>
     <!-- Sheet title -->
@@ -135,4 +121,9 @@
     <string name="library_genre_full_religion">Religion &amp; Spirituality</string>
     <string name="library_genre_full_family">Kids &amp; Family</string>
     <string name="library_genre_full_govt">Government</string>
+    <!-- Long-press menu on a show: the same wording as the show page -->
+    <string name="library_pin_home">Pin to Home screen</string>
+    <string name="library_unpin_home">Unpin from Home screen</string>
+    <!-- Shown when Home already has the most pinned shows. %1$d is that number (more than one). -->
+    <string name="library_pin_capacity">You can pin up to %1$d shows on Home</string>
 </resources>

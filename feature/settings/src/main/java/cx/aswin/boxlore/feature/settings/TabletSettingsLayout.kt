@@ -5,8 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -27,20 +31,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
+import cx.aswin.boxlore.feature.settings.components.SettingsDivider
+import cx.aswin.boxlore.feature.settings.components.SettingsIconContainer
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportEntryImpression
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportEntrySurface
 
@@ -56,7 +65,8 @@ internal fun AdaptiveSettingsLayout(
     content: @Composable (ProfileSettingsDestination) -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-        val split = LocalBoxloreWindowLayout.current.usesTabletLayout && maxWidth >= 672.dp && !config.isOnboarding && destination != ProfileSettingsDestination.Support
+        // The app's split rule (wide landscape windows), plus room for a page beside the list.
+        val split = LocalBoxloreWindowLayout.current.usesSplitLayout && maxWidth >= 672.dp && !config.isOnboarding && destination != ProfileSettingsDestination.Support
         val displayed = if (split && destination == ProfileSettingsDestination.Hub) ProfileSettingsDestination.SyncAndBackups else destination
         Layout(content = {
             Box(Modifier.testTag("settings_category_pane")) {
@@ -82,19 +92,41 @@ internal fun AdaptiveSettingsLayout(
     }
 }
 
-private data class SettingsCategory(val destination: ProfileSettingsDestination, @StringRes val title: Int, val icon: ImageVector)
+/** The colour pair a category wears: its card on the hub and its icon chip in the tablet list. */
+internal enum class SettingsCategoryTone { Primary, Secondary, Tertiary, Neutral }
+
+/** [tone]'s container and content colours in the current theme. */
+@Composable
+internal fun settingsCategoryColors(tone: SettingsCategoryTone): Pair<Color, Color> {
+    val colors = MaterialTheme.colorScheme
+    return when (tone) {
+        SettingsCategoryTone.Primary -> colors.primaryContainer to colors.onPrimaryContainer
+        SettingsCategoryTone.Secondary -> colors.secondaryContainer to colors.onSecondaryContainer
+        SettingsCategoryTone.Tertiary -> colors.tertiaryContainer to colors.onTertiaryContainer
+        SettingsCategoryTone.Neutral -> colors.surfaceContainerHighest to colors.onSurface
+    }
+}
+
+private data class SettingsCategory(val destination: ProfileSettingsDestination, @StringRes val title: Int, val icon: ImageVector, val tone: SettingsCategoryTone)
 
 private val settingsCategories = listOf(
-    SettingsCategory(ProfileSettingsDestination.SyncAndBackups, R.string.settings_page_sync, Icons.Rounded.CloudSync),
-    SettingsCategory(ProfileSettingsDestination.Library, R.string.settings_page_library, Icons.AutoMirrored.Rounded.LibraryBooks),
-    SettingsCategory(ProfileSettingsDestination.Appearance, R.string.settings_page_appearance, Icons.Rounded.Palette),
-    SettingsCategory(ProfileSettingsDestination.Playback, R.string.settings_page_playback, Icons.Rounded.Tune),
-    SettingsCategory(ProfileSettingsDestination.Downloads, R.string.settings_page_downloads, Icons.Rounded.DownloadForOffline),
-    SettingsCategory(ProfileSettingsDestination.WearOs, R.string.settings_page_wear_os, Icons.Rounded.Watch),
-    SettingsCategory(ProfileSettingsDestination.Privacy, R.string.settings_privacy_title, Icons.Rounded.PrivacyTip),
-    SettingsCategory(ProfileSettingsDestination.About, R.string.settings_category_about, Icons.Rounded.Info),
-    SettingsCategory(ProfileSettingsDestination.Support, R.string.settings_page_support, Icons.Rounded.Favorite),
+    SettingsCategory(ProfileSettingsDestination.SyncAndBackups, R.string.settings_page_sync, Icons.Rounded.CloudSync, SettingsCategoryTone.Primary),
+    SettingsCategory(ProfileSettingsDestination.Library, R.string.settings_page_library, Icons.AutoMirrored.Rounded.LibraryBooks, SettingsCategoryTone.Secondary),
+    SettingsCategory(ProfileSettingsDestination.Appearance, R.string.settings_page_appearance, Icons.Rounded.Palette, SettingsCategoryTone.Primary),
+    SettingsCategory(ProfileSettingsDestination.Playback, R.string.settings_page_playback, Icons.Rounded.Tune, SettingsCategoryTone.Tertiary),
+    SettingsCategory(ProfileSettingsDestination.Downloads, R.string.settings_page_downloads, Icons.Rounded.DownloadForOffline, SettingsCategoryTone.Neutral),
+    SettingsCategory(ProfileSettingsDestination.WearOs, R.string.settings_page_wear_os, Icons.Rounded.Watch, SettingsCategoryTone.Primary),
+    SettingsCategory(ProfileSettingsDestination.Privacy, R.string.settings_privacy_title, Icons.Rounded.PrivacyTip, SettingsCategoryTone.Secondary),
+    SettingsCategory(ProfileSettingsDestination.About, R.string.settings_category_about, Icons.Rounded.Info, SettingsCategoryTone.Tertiary),
+    SettingsCategory(ProfileSettingsDestination.Support, R.string.settings_page_support, Icons.Rounded.Favorite, SettingsCategoryTone.Secondary),
 )
+
+/** The tone of [destination]'s category, shared by the hub's cards and the tablet list. */
+internal fun settingsCategoryTone(destination: ProfileSettingsDestination): SettingsCategoryTone =
+    settingsCategories.first { it.destination == destination }.tone
+
+/** Test tag on the tablet list's Check for updates button. */
+internal const val SETTINGS_CHECK_UPDATES_TAG = "settings_check_updates"
 
 /** The categories the split lists; Wear OS appears only for a phone linked with a watch. */
 private fun settingsCategoriesFor(showWearOs: Boolean): List<SettingsCategory> =
@@ -115,7 +147,7 @@ private fun TabletSettingsCategories(destination: ProfileSettingsDestination, co
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.settings_page_hub)) }, navigationIcon = {
+            TopAppBar(title = { Text(stringResource(R.string.settings_page_hub), style = MaterialTheme.typography.titleLarge) }, navigationIcon = {
                 IconButton(onClick = config.onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.settings_back)) }
             })
         },
@@ -126,18 +158,28 @@ private fun TabletSettingsCategories(destination: ProfileSettingsDestination, co
                     if (category.destination == ProfileSettingsDestination.Support) {
                         SupportEntryImpression(SupportEntrySurface.SettingsCategoryList)
                     }
+                    val (container, content) = settingsCategoryColors(category.tone)
                     NavigationDrawerItem(
                         label = { Text(stringResource(category.title)) },
                         selected = selected == category.destination,
                         onClick = { onNavigate(category.destination) },
-                        icon = { Icon(category.icon, contentDescription = null) },
+                        icon = { SettingsIconContainer(category.icon, containerColor = container, contentColor = content, size = 36.dp) },
                         modifier = Modifier.padding(vertical = 4.dp),
                     )
                 }
             }
+            // An action, not a page: set apart under the categories and never shown as picked.
             config.onCheckForUpdates?.let { check ->
-                item {
-                    NavigationDrawerItem(label = { Text(stringResource(R.string.settings_check_for_updates)) }, selected = false, onClick = check, icon = { Icon(Icons.Rounded.SystemUpdate, contentDescription = null) })
+                item(key = "check_for_updates") {
+                    SettingsDivider()
+                    TextButton(
+                        onClick = check,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp).heightIn(min = 48.dp).testTag(SETTINGS_CHECK_UPDATES_TAG),
+                    ) {
+                        Icon(Icons.Rounded.SystemUpdate, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.settings_check_for_updates), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
             }
         }

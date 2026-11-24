@@ -14,19 +14,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Backup
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -308,7 +305,6 @@ private fun AutoBackupProblemRow(settings: AutoBackupSettings, actions: AutoBack
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun <T> AutoBackupChoices(
     title: String,
@@ -326,20 +322,12 @@ private fun <T> AutoBackupChoices(
             fontWeight = GoogleSansWeight.medium,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            options.forEach { (value, label) ->
-                val isSelected = value == selected
-                FilterChip(
-                    selected = isSelected,
-                    onClick = { onSelect(value) },
-                    label = { Text(label) },
-                    leadingIcon = if (isSelected) {
-                        { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
-                    } else {
-                        null
-                    },
-                )
-            }
-        }
+        ConnectedOptionSelector(
+            options = options,
+            selected = selected,
+            onSelect = onSelect,
+            labelStyle = MaterialTheme.typography.labelMedium,
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+        )
     }
 }

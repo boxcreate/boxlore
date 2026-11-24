@@ -35,7 +35,6 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -65,6 +64,8 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -114,10 +115,10 @@ internal fun FeedbackThreadScreen(
     val systemBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     Surface(modifier = modifier.fillMaxSize().testTag(FEEDBACK_THREAD_TAG), color = MaterialTheme.colorScheme.surface) {
         Box(
-            Modifier.fillMaxSize().statusBarsPadding().feedbackBottomSpace(chrome = bottomContentPadding, extra = systemBar, imeBottom = imeBottom),
+            Modifier.fillMaxSize().statusBarsPadding().boxloreHorizontalSafePadding().feedbackBottomSpace(chrome = bottomContentPadding, extra = systemBar, imeBottom = imeBottom),
             contentAlignment = Alignment.TopCenter,
         ) {
-            Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
+            Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility).boxloreReadingColumn()) {
                 Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (actions.onBack != null) FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_navigate_back), actions.onBack) else Spacer(Modifier.width(16.dp))
                     Text(
@@ -131,7 +132,7 @@ internal fun FeedbackThreadScreen(
                         state.conversation != null -> Messages(state, actions)
                         state.gone -> Notice(stringResource(R.string.feedback_thread_gone), actions.onBack?.let { stringResource(R.string.settings_back) to it }, Modifier.align(Alignment.Center))
                         state.loadFailed -> Notice(stringResource(R.string.feedback_thread_error), stringResource(R.string.feedback_try_again) to actions.onRetry, Modifier.align(Alignment.Center))
-                        else -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                        else -> FeedbackThreadSkeleton()
                     }
                 }
                 if (state.replyOpen) ReplyBar(state, actions)

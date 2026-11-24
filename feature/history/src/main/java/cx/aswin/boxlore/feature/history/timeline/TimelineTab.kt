@@ -5,16 +5,13 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,21 +20,15 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -45,9 +36,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSearchField
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -186,7 +176,15 @@ internal fun TimelineTab(state: TimelineTabState, entries: List<TimelineEntry>, 
 private fun TimelineEntryContent(entry: TimelineEntry, state: TimelineTabState, callbacks: TimelineTabCallbacks) {
     val side = Modifier.padding(horizontal = 16.dp)
     when (entry) {
-        TimelineEntry.Search -> TimelineSearchField(state.query, callbacks.onQueryChange, side.padding(top = 16.dp))
+        // boxlore's shared search box, as on every other screen; its hint shortens with an ellipsis.
+        TimelineEntry.Search -> BoxloreSearchField(
+            query = state.query,
+            onQueryChange = callbacks.onQueryChange,
+            onSearch = {},
+            placeholder = stringResource(R.string.history_search_hint),
+            modifier = side.padding(top = 16.dp),
+            maxWidth = null,
+        )
         TimelineEntry.JumpBackIn ->
             AnimatedVisibility(
                 visible = timelineShowsJumpBackIn(state),
@@ -238,48 +236,6 @@ private fun TimelineEntryContent(entry: TimelineEntry, state: TimelineTabState, 
                 modifier = side.padding(top = 32.dp),
             )
     }
-}
-
-/** 52dp, 26dp corners, surfaceContainerHighest: a search icon and "Search episodes and shows". */
-@Composable
-private fun TimelineSearchField(query: String, onQueryChange: (String) -> Unit, modifier: Modifier) {
-    val colors = MaterialTheme.colorScheme
-    val textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, color = colors.onSurface)
-    BasicTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        singleLine = true,
-        textStyle = textStyle,
-        cursorBrush = SolidColor(colors.primary),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        modifier = modifier.fillMaxWidth(),
-        decorationBox = { field ->
-            Row(
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .clip(RoundedCornerShape(26.dp))
-                    .background(colors.surfaceContainerHighest)
-                    .padding(start = 16.dp, end = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Rounded.Search, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(22.dp))
-                Spacer(Modifier.width(12.dp))
-                Box(modifier = Modifier.weight(1f)) {
-                    if (query.isEmpty()) Text(stringResource(R.string.history_search_hint), style = textStyle.copy(color = colors.onSurfaceVariant), maxLines = 1)
-                    field()
-                }
-                if (query.isNotEmpty()) {
-                    IconButton(onClick = { onQueryChange("") }) {
-                        Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.history_search_clear), tint = colors.onSurfaceVariant)
-                    }
-                } else {
-                    Spacer(Modifier.width(12.dp))
-                }
-            }
-        },
-    )
 }
 
 @Composable

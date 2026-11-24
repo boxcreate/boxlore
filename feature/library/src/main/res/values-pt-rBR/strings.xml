@@ -13,11 +13,6 @@
     <string name="library_hub_listening_history">Histórico de reprodução</string>
     <!-- Library hub card and Playlists page title -->
     <string name="library_hub_playlists">Playlists</string>
-    <string name="library_empty_title">Sua biblioteca está vazia</string>
-    <!-- Two short lines -->
-    <string name="library_empty_body">Tem um universo enorme lá fora.\nComece a explorar.</string>
-    <!-- Button that opens Explore -->
-    <string name="library_empty_action">Explorar</string>
     <!-- Button that opens Explore -->
     <string name="library_find_podcasts">Encontrar podcasts</string>
     <!-- Button that opens Explore -->
@@ -42,14 +37,10 @@
     <string name="library_turn_off">Desativar</string>
     <!-- Snackbar action -->
     <string name="library_undo">Desfazer</string>
-    <!-- Screen-reader label that clears the search text -->
-    <string name="library_clear">Limpar</string>
     <!-- Screen-reader label for the search button -->
     <string name="library_search">Pesquisar</string>
     <!-- Screen-reader label for the sort button -->
     <string name="library_sort">Ordenar</string>
-    <!-- Screen-reader label for the tick beside the chosen menu option -->
-    <string name="library_selected">Selecionado</string>
     <!-- Screen-reader name of the long-press action that starts selecting -->
     <string name="library_select">Selecionar</string>
     <!-- Screen-reader label -->
@@ -171,4 +162,21 @@
     <string name="library_playlist_remove_show">Remover %1$s</string>
     <string name="library_playlist_no_followed">Siga alguns podcasts primeiro e depois adicione-os aqui.</string>
     <string name="library_playlist_all_added">Todos os podcasts que você segue já estão nesta playlist.</string>
+
+    <plurals name="library_hub_episode_count">
+        <item quantity="one">%1$d episódio</item>
+        <item quantity="other">%1$d episódios</item>
+    </plurals>
+    <plurals name="library_hub_playlist_count">
+        <item quantity="one">%1$d playlist</item>
+        <item quantity="other">%1$d playlists</item>
+    </plurals>
+    <string name="library_hub_last_played">Ouvido pela última vez %1$s</string>
+    <string name="library_hub_played_today">Ouvido hoje</string>
+    <string name="library_hub_played_yesterday">Ouvido ontem</string>
+    <string name="library_hub_no_downloads">Nada baixado ainda</string>
+    <string name="library_hub_no_likes">Nenhum episódio curtido ainda</string>
+    <string name="library_hub_no_history">Nada ouvido ainda</string>
+    <string name="library_hub_no_playlists">Nenhuma playlist ainda</string>
+    <string name="library_liked_time_left">faltam %1$s</string>
 </resources>

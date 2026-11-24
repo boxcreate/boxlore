@@ -2,10 +2,11 @@ package cx.aswin.boxlore.feature.info.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CloudOff
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,27 +22,21 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.feature.info.R
 
-/** Podcast Info error state (no local row and show details failed) with a retry action. */
+/** Podcast Info error state (no local row and show details failed): what happened, Try again and Back. */
 @Composable
 internal fun PodcastInfoLoadError(
     onRetry: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = stringResource(R.string.podcast_info_load_error),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-        )
-        FilledTonalButton(onClick = onRetry) {
-            Text(stringResource(R.string.podcast_info_retry))
-        }
-    }
+    InfoStatusMessage(
+        icon = Icons.Rounded.CloudOff,
+        title = stringResource(R.string.podcast_info_load_error),
+        body = stringResource(R.string.info_load_error_body),
+        primary = InfoStatusAction(stringResource(R.string.podcast_info_retry), onRetry),
+        secondary = InfoStatusAction(stringResource(R.string.episode_info_back), onBack),
+        modifier = modifier,
+    )
 }
 
 /**
@@ -71,7 +66,8 @@ internal fun ShowPageLoadFailedRow(
             textAlign = TextAlign.Center,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
-        FilledTonalButton(onClick = onRetry) {
+        // The same filled Try again as the page's other messages.
+        Button(onClick = onRetry) {
             Text(stringResource(R.string.podcast_info_retry))
         }
     }

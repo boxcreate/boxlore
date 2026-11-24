@@ -53,7 +53,7 @@ Rules and helpers:
 Text and formatting (`text/`; rules in [`docs/i18n/TRANSLATING.md`](../../docs/i18n/TRANSLATING.md)):
 
 - `UiText` (`Res`, `Plural`, `Raw`; `UiText.res`, `plural`, `raw`): listener text chosen where no `Context` is at hand, compared by resource ID and arguments in tests. `resolve(resources)` / `resolve(context)` turn it into words; Compose uses `asString()` from `:core:designsystem`.
-- `LocaleFormats`: dates (`DateStyle` skeletons), times (`use24Hour`), durations (`DurationWidth`), relative times (`RelativeStyle`), numbers, compact numbers and percentages through `android.icu`, always in a given `Locale`. `Context.displayLocale()` and `Context.formatTimeOfDay` read the screen's language and clock setting.
+- `LocaleFormats`: dates (`DateStyle` skeletons), times (`use24Hour`), durations (`DurationWidth`), relative times (`RelativeStyle`), numbers, compact numbers and percentages through `android.icu`, always in a given `Locale`. `Context.displayLocale()` and `Context.formatTimeOfDay` read the screen's language and clock setting. `ListeningTime` turns a position or stored progress into whole minutes left, rounding a partial minute up, so every "time left" agrees.
 
 ## Internal structure
 
@@ -76,7 +76,7 @@ src/main/java/cx/aswin/boxlore/core/model/
   FeedTelemetry.kt, RankingAggregateTelemetry.kt
   PlaybackEntryPoint.kt, AutoTranscriptState.kt, SleepTimerConstants.kt
   BoxLoreUser.kt
-  text/UiText.kt, text/LocaleFormats.kt
+  text/UiText.kt, text/LocaleFormats.kt, text/ListeningTime.kt
 src/main/res/values/strings_folder_size.xml
 ```
 

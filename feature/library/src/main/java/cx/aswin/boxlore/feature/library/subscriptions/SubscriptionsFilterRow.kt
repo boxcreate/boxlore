@@ -13,8 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -27,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChip
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.R
 
@@ -116,22 +115,14 @@ internal fun SubscriptionChip(
     icon: ImageVector? = null,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
 ) {
-    FilterChip(
+    // boxlore's one filter chip: the same 48dp filled pill as Explore and the rest of the app.
+    BoxloreFilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text(text = label, maxLines = 1) },
-        leadingIcon = icon?.let { { Icon(it, contentDescription = null, modifier = Modifier.size(18.dp)) } },
-        modifier = modifier.heightIn(min = 48.dp),
-        shape = CircleShape,
-        border = null,
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = containerColor,
-            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
+        label = label,
+        modifier = modifier,
+        leadingIcon = icon,
+        container = containerColor,
     )
 }
 

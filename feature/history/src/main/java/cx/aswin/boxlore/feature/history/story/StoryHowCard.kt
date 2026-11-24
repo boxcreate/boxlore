@@ -115,7 +115,7 @@ private fun StoryFresh(newShare: Float, palette: StoryPalette, clock: StoryClock
             StoryLegendDot(palette.vivid, newLabel, ink, outlined = false)
             StoryLegendDot(palette.shareBlob, olderLabel, ink, outlined = true, outline = palette.vivid)
         }
-        Text(stringResource(R.string.history_ins_fresh_hint), style = StoryType.of(12f, 16f), color = ink.copy(alpha = 0.8f))
+        Text(stringResource(R.string.history_ins_fresh_hint), style = StoryType.of(STORY_MIN_INFO_SP, 17f), color = ink)
     }
 }
 

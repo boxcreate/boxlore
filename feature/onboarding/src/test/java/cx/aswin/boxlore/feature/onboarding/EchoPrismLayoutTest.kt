@@ -51,10 +51,12 @@ class EchoPrismLayoutTest {
         assertTrue(plan.height <= 440)
     }
 
-    @Test fun `an extreme name takes at most three lines at the smallest size`() {
+    @Test fun `an extreme name still shows whole, smaller and on more lines`() {
         val plan = plan("The Dry Bar Comedy Podcast: Stand-Up Stories, Backstage Chats and Much More From the Road", 321, 480)
-        assertEquals(3, plan.titleLines)
+        assertFalse(plan.titleCut)
+        assertTrue(plan.titleLines >= 3)
         assertFalse(plan.showPublisher)
+        assertTrue(plan.height <= 480)
     }
 
     @Test fun `the pitch is always measured whole and the art gives way instead`() {
@@ -84,6 +86,47 @@ class EchoPrismLayoutTest {
         assertTrue(tight.hookSp >= 11f)
         val roomier = plan("Bloomberg Intelligence: Tech Disruptors", 272, 300, pitch = hook)
         assertEquals(EchoPrismLayout.HookSp, roomier.hookSp)
+    }
+
+    @Test fun `on the shortest slots the pitch gives way, so the card is never taller than its slot`() {
+        val long = List(3) { hook }.joinToString(" ")
+        val short = plan("Bloomberg Intelligence: Tech Disruptors", 272, 180, pitch = long)
+        assertTrue("height ${short.height}", short.height <= 180)
+        assertFalse(short.showHook)
+        assertTrue("the pitch shows wherever it fits", plan("Bloomberg Intelligence: Tech Disruptors", 272, 300, pitch = hook).showHook)
+        // A slot smaller than any card still never gets a pitch it can't show whole.
+        val tiny = plan("Bloomberg Intelligence: Tech Disruptors", 272, 60, pitch = long)
+        assertFalse(tiny.showHook)
+        assertEquals(0, tiny.art)
+        assertTrue("the card is ${tiny.height}px in a 60px slot", tiny.height <= 60)
+    }
+
+    @Test fun `the art steps down to its smallest size before it goes`() {
+        // A short name and pitch fit beside the smallest art in a 166px slot; the art never skipped past it to none.
+        val fit = plan("Serial", 272, 166, pitch = "A short pitch.")
+        assertTrue("the art went (${fit.art}px) where the smallest fits", fit.art > 0)
+    }
+
+    @Test fun `a long name is never cut while the art or the pitch can give way`() {
+        val name = "The Dry Bar Comedy Podcast: Stand-Up Stories, Backstage Chats and Much More"
+        val pitch = "Stand-up comedians swap stories from the road and the stage, with plenty of tangents along the way and a few surprises."
+        // Card slots beside the question on short, wide windows (673x410, 695x475, 475x330) and on phones.
+        listOf(330 to 300, 340 to 360, 250 to 220, 321 to 480, 272 to 170).forEach { (w, h) ->
+            val plan = plan(name, w, h, pitch = pitch)
+            assertFalse("the name is cut in a ${w}x$h slot ($plan)", plan.titleCut)
+            assertTrue("the card is taller than a ${w}x$h slot", plan.height <= h)
+        }
+        // A slot too short for the tag and the whole name drops the tag before it cuts the name.
+        val noTag = plan("AAAAAAAA BBBBBBBB CCCCCCCC DDDDDDDD EEEEEEEE FFFFFFFF", 272, 70)
+        assertFalse("the name is cut without its tag ($noTag)", noTag.titleCut)
+        assertFalse(noTag.showTag)
+        assertTrue(noTag.height <= 70)
+        // Only a slot smaller than any whole name cuts it, and then with no art and no pitch.
+        val tiny = plan(name, 120, 60, pitch = pitch)
+        if (tiny.titleCut) {
+            assertEquals(0, tiny.art)
+            assertFalse(tiny.showHook)
+        }
     }
 
     @Test fun `the card hugs its art and never grows past its widest`() {

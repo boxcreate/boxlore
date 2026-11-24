@@ -65,6 +65,18 @@ class HomeDiscoverySectionsFeedTest {
         )
     }
 
+    /** Large tablets stopped Explore shows at six, leaving a sparse last row. */
+    @Test
+    fun `tablets fill whole Explore rows, at most two, and phones keep six`() {
+        assertEquals(6, HomeFeedSpacing.exploreItemCount(columns = 2, tablet = false))
+        assertEquals(6, HomeFeedSpacing.exploreItemCount(columns = 5, tablet = false))
+        assertEquals(6, HomeFeedSpacing.exploreItemCount(columns = 3, tablet = true))
+        assertEquals(8, HomeFeedSpacing.exploreItemCount(columns = 4, tablet = true))
+        assertEquals(10, HomeFeedSpacing.exploreItemCount(columns = 5, tablet = true))
+        assertEquals(6, HomeFeedSpacing.exploreItemCount(columns = 6, tablet = true))
+        assertEquals(7, HomeFeedSpacing.exploreItemCount(columns = 7, tablet = true))
+    }
+
     @Test
     fun `switched-off sections stay hidden across the tablet width and height gates in both directions`() {
         render()

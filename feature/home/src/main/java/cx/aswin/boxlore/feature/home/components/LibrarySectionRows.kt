@@ -19,11 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.PushPin
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.VectorPath
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -44,7 +43,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupProperties
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
+import cx.aswin.boxlore.core.designsystem.components.BoxloreMenuState
 import cx.aswin.boxlore.core.designsystem.components.NewEpisodeBadge
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
@@ -52,6 +52,7 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
+import cx.aswin.boxlore.feature.home.LocalHomeSectionsUiState
 import cx.aswin.boxlore.feature.home.R
 
 internal data class CoverPin(
@@ -85,7 +86,20 @@ internal fun SelectorCover(
 
     val coverShape = rememberYourShowsSelectorShape(isSelected)
     val actionLabel = stringResource(if (pin.pinned) R.string.home_shows_unpin else R.string.home_shows_pin)
-    var showPinMenu by remember { mutableStateOf(false) }
+    // Home keeps which cover's menu is open above its grid, so it stays open across window changes.
+    val hoisted = LocalHomeSectionsUiState.current?.pinMenu
+    var localPinMenu by remember { mutableStateOf(false) }
+    val pinMenu = rememberHoistedMenuState(
+        open = hoisted?.value?.let { it == podcast.id } ?: localPinMenu,
+        onOpenChange = { open ->
+            when {
+                hoisted == null -> localPinMenu = open
+                open -> hoisted.value = podcast.id
+                hoisted.value == podcast.id -> hoisted.value = null
+            }
+        },
+        key = podcast.id,
+    )
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(22.dp))
@@ -93,7 +107,7 @@ internal fun SelectorCover(
                             feedback = ExpressivePressFeedback.Control,
                 shape = RoundedCornerShape(22.dp),
                 onLongClickLabel = actionLabel,
-                onLongClick = { showPinMenu = true },
+                onLongClick = pinMenu::open,
                 onClick = onClick,
             )
             .semantics {
@@ -131,42 +145,44 @@ internal fun SelectorCover(
                 }
             }
         }
-        CoverPinMenu(showPinMenu, actionLabel, { showPinMenu = false }, pin.onToggle)
+        CoverPinMenu(pinMenu, actionLabel, pin.onToggle)
     }
 }
 
+/** Pin or Unpin on a cover: boxlore's menu, opening under the cover from its start. */
 @Composable
 private fun CoverPinMenu(
-    expanded: Boolean,
+    state: BoxloreMenuState,
     actionLabel: String,
-    onDismiss: () -> Unit,
     onToggle: () -> Unit,
 ) {
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(20.dp),
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 3.dp,
-        shadowElevation = 3.dp,
+    BoxloreDropdownMenu(
+        state = state,
         offset = DpOffset(x = 0.dp, y = 4.dp),
-        properties = PopupProperties(clippingEnabled = false, focusable = true),
+        anchorAlignment = Alignment.Start,
+        modifier = Modifier.testTag("home_pin_menu"),
     ) {
-        DropdownMenuItem(
-            text = { Text(actionLabel) },
-            onClick = {
-                onDismiss()
-                onToggle()
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Rounded.PushPin,
-                    contentDescription = null,
-                    modifier = Modifier.graphicsLayer { rotationZ = 45f },
-                )
-            },
-        )
+        item(text = actionLabel, onClick = onToggle, leadingIcon = TiltedPushPin)
     }
+}
+
+/**
+ * The pin glyph tilted 45°, as on the pinned badge; boxlore's menu items take a vector, not a
+ * modifier, so the tilt is part of the vector.
+ */
+private val TiltedPushPin: ImageVector by lazy {
+    val source = Icons.Rounded.PushPin
+    ImageVector.Builder(
+        name = "TiltedPushPin",
+        defaultWidth = source.defaultWidth,
+        defaultHeight = source.defaultHeight,
+        viewportWidth = source.viewportWidth,
+        viewportHeight = source.viewportHeight,
+    ).addGroup(rotate = 45f, pivotX = source.viewportWidth / 2f, pivotY = source.viewportHeight / 2f).apply {
+        source.root.filterIsInstance<VectorPath>().forEach { path ->
+            addPath(pathData = path.pathData, pathFillType = path.pathFillType, fill = path.fill, fillAlpha = path.fillAlpha)
+        }
+    }.clearGroup().build()
 }
 
 @Composable

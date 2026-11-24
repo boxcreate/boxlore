@@ -29,7 +29,7 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class, qualifiers = "w475dp-h695dp")
-class LibraryImportRecreationTest {
+class LibraryImportViewModelRecreationTest {
     private lateinit var controller: ActivityController<ComponentActivity>
     private val restoreFinished = CompletableDeferred<Unit>()
     private var builds = 0

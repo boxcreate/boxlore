@@ -5,12 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -33,14 +31,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.theme.CustomThemeSeeds
@@ -51,6 +53,8 @@ import cx.aswin.boxlore.core.designsystem.theme.resolveThemeSeedColor
 import cx.aswin.boxlore.core.designsystem.theme.toThemeBrandHex
 import cx.aswin.boxlore.core.prefs.ThemeSelection
 import cx.aswin.boxlore.feature.settings.R
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -135,21 +139,56 @@ internal fun CustomThemeEditor(state: AppearanceUiState, onDismiss: () -> Unit, 
                         }
                     }
                 }
-                if (sideBySide) {
-                    Row(Modifier.widthIn(max = 1100.dp).fillMaxSize().align(Alignment.TopCenter)) {
-                        ThemeEditorPreview(dark, colors, compact, minimal, Modifier.weight(0.42f).padding(start = 16.dp, top = 12.dp, end = 8.dp)) { dark = it }
-                        Column(Modifier.weight(0.58f)) { editor() }
-                    }
-                } else {
-                    Column(Modifier.widthIn(max = 600.dp).fillMaxSize().align(Alignment.TopCenter)) {
-                        ThemeEditorPreview(dark, colors, compact, minimal, Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) { dark = it }
-                        Column(Modifier.weight(1f)) { editor() }
-                    }
+                // One layout for both arrangements, so turning the phone or resizing keeps the
+                // controls' scroll, the hex field's focus and the hue where they were.
+                Layout(
+                    contents = listOf(
+                        {
+                            val previewPadding = if (sideBySide) Modifier.padding(start = 16.dp, top = 12.dp, end = 8.dp) else Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            ThemeEditorPreview(dark, colors, compact, minimal, previewPadding) { dark = it }
+                        },
+                        editor,
+                    ),
+                    modifier = Modifier.fillMaxSize(),
+                ) { (preview, controls), constraints ->
+                    themeEditorPlacement(preview.single(), controls.single(), constraints, sideBySide)
                 }
             }
         }
     }
 }
+
+/**
+ * Side by side: the preview takes 42% of a column capped at 1100dp and the controls the rest.
+ * Stacked: a 600dp column with the preview on top and the controls filling what is left.
+ */
+private fun MeasureScope.themeEditorPlacement(preview: Measurable, controls: Measurable, constraints: Constraints, sideBySide: Boolean): MeasureResult {
+    val width = constraints.maxWidth
+    val height = constraints.maxHeight
+    val column = min(width, (if (sideBySide) EditorSideBySideMaxWidth else EditorStackedMaxWidth).roundToPx())
+    val start = (width - column) / 2
+    return if (sideBySide) {
+        val previewWidth = (column * EditorPreviewShare).roundToInt()
+        val previewPlaceable = preview.measure(Constraints(minWidth = previewWidth, maxWidth = previewWidth, maxHeight = height))
+        val controlsPlaceable = controls.measure(Constraints(minWidth = column - previewWidth, maxWidth = column - previewWidth, maxHeight = height))
+        layout(width, height) {
+            previewPlaceable.placeRelative(start, 0)
+            controlsPlaceable.placeRelative(start + previewWidth, 0)
+        }
+    } else {
+        val previewPlaceable = preview.measure(Constraints(maxWidth = column, maxHeight = height))
+        val rest = (height - previewPlaceable.height).coerceAtLeast(0)
+        val controlsPlaceable = controls.measure(Constraints(maxWidth = column, minHeight = rest, maxHeight = rest))
+        layout(width, height) {
+            previewPlaceable.placeRelative(start, 0)
+            controlsPlaceable.placeRelative(start, previewPlaceable.height)
+        }
+    }
+}
+
+private val EditorSideBySideMaxWidth = 1100.dp
+private val EditorStackedMaxWidth = 600.dp
+private const val EditorPreviewShare = 0.42f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

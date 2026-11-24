@@ -11,21 +11,16 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -61,6 +56,11 @@ import cx.aswin.boxlore.core.catalog.ShowListTooLongException
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeInsetsDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneBottomInset
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
@@ -75,6 +75,7 @@ import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbar
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarActions
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarState
+import cx.aswin.boxlore.feature.info.components.EpisodeViewChoices
 import cx.aswin.boxlore.feature.info.components.InfoArtworkBackground
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesChip
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesConfirmDialog
@@ -91,6 +92,7 @@ import cx.aswin.boxlore.feature.info.components.areAppNotificationsEnabled
 import cx.aswin.boxlore.feature.info.components.handleAutoDownloadToggle
 import cx.aswin.boxlore.feature.info.components.handleNotificationsToggle
 import cx.aswin.boxlore.feature.info.components.handleToolbarWarningAction
+import cx.aswin.boxlore.feature.info.components.infoReadingSidePadding
 import cx.aswin.boxlore.feature.info.logic.EpisodeArchiveLogic
 import cx.aswin.boxlore.feature.info.logic.EpisodeSelectionRange
 import cx.aswin.boxlore.feature.info.logic.FeedItem
@@ -99,6 +101,7 @@ import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.groupEpisodes
 import cx.aswin.boxlore.feature.info.logic.podcastSearchDisplayEpisodes
 import cx.aswin.boxlore.feature.info.logic.resolveAutoScrollTarget
+import cx.aswin.boxlore.feature.info.sections.ShowHeaderForm
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -177,7 +180,8 @@ fun PodcastInfoScreen(
             searchFocusRequester.requestFocus()
         }
     }
-    var toolbarWarning by remember { mutableStateOf(ToolbarWarning.NONE) }
+    // Saved, so a fold that recreates the page keeps the banner; its auto-dismiss starts again.
+    var toolbarWarning by rememberSaveable { mutableStateOf(ToolbarWarning.NONE) }
     LaunchedEffect(backgroundChecksEnabled) {
         if (backgroundChecksEnabled && toolbarWarning == ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY) {
             toolbarWarning = ToolbarWarning.NONE
@@ -189,7 +193,9 @@ fun PodcastInfoScreen(
     var showPodcastPlaybackSettings by rememberSaveable { mutableStateOf(false) }
     var showPodcastGenreEdit by rememberSaveable { mutableStateOf(false) }
     var showMissingEpisodesConfirm by rememberSaveable { mutableStateOf(false) }
-    var pendingRssNotificationAction by remember(podcastId) { mutableStateOf<(() -> Unit)?>(null) }
+    // The notifications change waiting on the RSS disclosure and the feed link it showed; saved, so
+    // the question survives a fold and confirming it consents to the link that was disclosed.
+    var pendingRssAction by rememberSaveable(podcastId, stateSaver = PendingRssQuestion.Saver) { mutableStateOf<PendingRssQuestion?>(null) }
     // Selection is saved as episode IDs. The episode pool cannot be saved, so a recreated page
     // looks its selected episodes up again (see the selection restore below).
     var selectedEpisodeIds by rememberSaveable(podcastId, stateSaver = EpisodeIdListSaver) { mutableStateOf(emptyList<String>()) }
@@ -241,17 +247,6 @@ fun PodcastInfoScreen(
             )
         }
     }
-    if (pendingRssNotificationAction != null) {
-        cx.aswin.boxlore.feature.info.components.RssNotificationDisclosureDialog(
-            onConfirm = {
-                val action = pendingRssNotificationAction
-                pendingRssNotificationAction = null
-                action?.invoke()
-            },
-            onDismiss = { pendingRssNotificationAction = null },
-        )
-    }
-
     // Use theme primary color (no dynamic extraction)
     val accentColor = MaterialTheme.colorScheme.primary
 
@@ -289,10 +284,23 @@ fun PodcastInfoScreen(
     val archivedInShow by viewModel.archivedEpisodeCount.collectAsState()
     // Show archived survives window changes and recreation, like the selection.
     var showArchived by rememberSaveable(podcastId) { mutableStateOf(false) }
-    val archiveSelection = rememberSelectionArchive(viewModel, snackbarHostState)
+    // An Undo still on offer, saved so a fold that recreates the page offers it again.
+    val pendingUndo = rememberPendingUndo(podcastId)
+    val archiveSelection = rememberSelectionArchive(viewModel, snackbarHostState, pendingUndo)
 
-    // Scroll-linked header and floating title, like Episode Info.
-    val titleMotion = rememberShowPageTitleMotion(listState)
+    // Wide tablet panes keep text and controls in a centred column; side system buttons and a
+    // camera cutout keep their own room on top of that.
+    val readingSide = infoReadingSidePadding(boxloreContentWidthDp().dp)
+    val (safeStart, safeEnd) = boxloreHorizontalSafeInsetsDp()
+    // Scroll-linked header and floating title, like Episode Info. Its pace follows the header form:
+    // beside the cover, the large title reaches the top bar after a short scroll.
+    var headerForm by remember(podcastId) { mutableStateOf(ShowHeaderForm.Stacked) }
+    val titleMotion = rememberShowPageTitleMotion(
+        listState,
+        readingSide + safeStart,
+        readingSide + safeEnd,
+        collapseDistance = if (headerForm == ShowHeaderForm.Stacked) StackedHeaderCollapse else SideHeaderCollapse,
+    )
 
     // State for options sheet
 
@@ -317,7 +325,7 @@ fun PodcastInfoScreen(
             }
 
             is PodcastInfoUiState.Error -> {
-                PodcastInfoLoadError(onRetry = viewModel::retryLoad)
+                PodcastInfoLoadError(onRetry = viewModel::retryLoad, onBack = onBack)
             }
 
             is PodcastInfoUiState.Success -> {
@@ -510,6 +518,8 @@ fun PodcastInfoScreen(
                 val sortedPersons = remember(state.episodes) { sortedShowPersons(state.episodes) }
 
                 val pullToRefreshState = rememberPullToRefreshState()
+                // The system navigation under this pane only: none for a pane that ends above it.
+                val paneBottomInset = boxlorePaneBottomInset()
                 val episodeListModifier =
                     Modifier
                         .fillMaxSize()
@@ -546,19 +556,32 @@ fun PodcastInfoScreen(
                     brandedSpotlightEpisode(state.episodes, state.currentSort, isSearchActive, hiddenIds = spotlightHiddenIds)
                 }
                 val listFeedItems = remember(feedItems, spotlightEpisode) { feedItemsWithoutSpotlight(feedItems, spotlightEpisode) }
-                val hideShow = rememberPodcastInfoHideShow(viewModel, state, snackbarHostState)
+                val hideShow = rememberPodcastInfoHideShow(viewModel, state, snackbarHostState, pendingUndo)
+                // A restored archive Undo looks in everything the selection could hold (Select all
+                // and search reach past the loaded list), then in the show's whole selection window.
+                val undoPool by rememberUpdatedState(selectionEpisodePool + state.episodes + displayEpisodes + state.searchResults.orEmpty())
+                val undoSort by rememberUpdatedState(state.currentSort)
+                RestorePendingUndo(pendingUndo, snackbarHostState, viewModel) { ids ->
+                    val known = undoPool.filter { it.id in ids }.distinctBy(Episode::id)
+                    val missing = ids.toSet() - known.map(Episode::id).toSet()
+                    if (missing.isEmpty()) {
+                        known
+                    } else {
+                        known + viewModel.selectionWindowResult(undoSort).getOrNull()?.episodes.orEmpty().filter { it.id in missing }.distinctBy(Episode::id)
+                    }
+                }
                 val contentState = EpisodeListContentState(
                     listState = listState,
                     modifier = episodeListModifier,
                     contentPadding = PaddingValues(
+                        start = readingSide + safeStart,
                         top = brandedPage?.let { titleMotion.statusBarHeight + it.headerTop } ?: (titleMotion.collapsedHeaderHeight + 16.dp),
+                        end = readingSide + safeEnd,
                         bottom = if (isSearchActive && titleMotion.keyboardVisible) {
                             16.dp
                         } else {
-                            WindowInsets.navigationBars
-                            .asPaddingValues()
-                            .calculateBottomPadding() + bottomContentPadding +
-                            if (selectionActive) 92.dp else 16.dp
+                            paneBottomInset + bottomContentPadding +
+                                if (selectionActive) 92.dp else 16.dp
                         },
                     ),
                     state = state,
@@ -578,10 +601,53 @@ fun PodcastInfoScreen(
                     spotlightEpisode = spotlightEpisode,
                     isHidden = hideShow.isHidden,
                     titlesOnly = titlesOnly,
+                    viewChoices = EpisodeViewChoices(
+                        hideCompleted = hideCompleted,
+                        onToggleHideCompleted = viewModel::toggleHideCompleted,
+                        archive = PodcastInfoArchiveMenu(maxOf(archivedInShow, EpisodeArchiveLogic.archivedCount(state.episodes, archivedEpisodeIds)), showArchived) { showArchived = !showArchived },
+                        titlesOnly = titlesOnly,
+                        onToggleTitlesOnly = viewModel::toggleEpisodeTitlesOnly,
+                    ),
                 )
+
+                val runWarningAction: (ToolbarWarning, Boolean, String?) -> Unit = { currentWarning, accepted, feedUrl ->
+                    val enableNotifications = { viewModel.enableShowNotifications(accepted, feedUrl) }
+                    notificationPermission.pendingAction = if (
+                        !areAppNotificationsEnabled(context) &&
+                        (currentWarning == ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY || !state.podcast.notificationsEnabled)
+                    ) {
+                        enableNotifications
+                    } else {
+                        null
+                    }
+                    handleToolbarWarningAction(
+                        warning = currentWarning,
+                        context = context,
+                        onEnableNotifications = enableNotifications,
+                        onRequestNotificationPermission = {
+                            notificationPermission.request()
+                        },
+                        onShowPermissionBlockedWarning = { toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED },
+                    )
+                }
+                pendingRssAction?.let { pending ->
+                    cx.aswin.boxlore.feature.info.components.RssNotificationDisclosureDialog(
+                        onConfirm = {
+                            pendingRssAction = null
+                            // The link disclosed when the question opened: a feed URL that changed since is refused.
+                            val feedUrl = pending.feedUrl
+                            when (val warning = pending.action.warning) {
+                                null -> toggleNotifications(true, feedUrl)
+                                else -> runWarningAction(warning, true, feedUrl)
+                            }
+                        },
+                        onDismiss = { pendingRssAction = null },
+                    )
+                }
 
                 val contentCallbacks = EpisodeListContentCallbacks(
                     onDescExpandedChange = { isDescExpanded = it },
+                    onHeaderFormChange = { headerForm = it },
                     onPlayEpisode = { viewModel.onPlayClick(it) },
                     onPodcastClick = onPodcastClick,
                     onEditGenre = handleEditGenreClick,
@@ -594,7 +660,7 @@ fun PodcastInfoScreen(
                             podcast = state.podcast,
                             onDisclosureRequired = {
                                 notificationPermission.pendingAction = null
-                                pendingRssNotificationAction = it
+                                pendingRssAction = PendingRssQuestion(PendingRssAction.ToggleNotifications, state.podcast.feedUrl)
                             },
                             onProceed = toggleNotifications,
                         )
@@ -623,28 +689,9 @@ fun PodcastInfoScreen(
                             podcast = state.podcast,
                             onDisclosureRequired = {
                                 notificationPermission.pendingAction = null
-                                pendingRssNotificationAction = it
+                                pendingRssAction = PendingRssQuestion(PendingRssAction.fromWarning(currentWarning), state.podcast.feedUrl)
                             },
-                            onProceed = { accepted, feedUrl ->
-                                val enableNotifications = { viewModel.enableShowNotifications(accepted, feedUrl) }
-                                notificationPermission.pendingAction = if (
-                                    !areAppNotificationsEnabled(context) &&
-                                    (currentWarning == ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY || !state.podcast.notificationsEnabled)
-                                ) {
-                                    enableNotifications
-                                } else {
-                                    null
-                                }
-                                handleToolbarWarningAction(
-                                    warning = currentWarning,
-                                    context = context,
-                                    onEnableNotifications = enableNotifications,
-                                    onRequestNotificationPermission = {
-                                        notificationPermission.request()
-                                    },
-                                    onShowPermissionBlockedWarning = { toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED },
-                                )
-                            },
+                            onProceed = { accepted, feedUrl -> runWarningAction(currentWarning, accepted, feedUrl) },
                         )
                     },
                     onEpisodeClick = { episode, entryPoint, index ->
@@ -711,17 +758,13 @@ fun PodcastInfoScreen(
                     podcast = state.podcast,
                     headerColor = titleMotion.headerColor,
                     collapsedHeaderHeight = titleMotion.collapsedHeaderHeight,
-                    hideCompleted = hideCompleted,
+                    sidePadding = readingSide,
                     actions =
                     PodcastInfoTopOverlayActions(
                         onBack = if (selectionActive) clearEpisodeSelection else onBack,
                         onMarkAllPlayed = { showMarkAllPlayedDialog = true },
                         onMarkAllUnplayed = { showMarkAllUnplayedDialog = true },
-                        onToggleHideCompleted = { viewModel.toggleHideCompleted() },
-                        archive = PodcastInfoArchiveMenu(maxOf(archivedInShow, EpisodeArchiveLogic.archivedCount(state.episodes, archivedEpisodeIds)), showArchived) { showArchived = !showArchived },
                         onPlaybackSettings = { showPodcastPlaybackSettings = true },
-                        titlesOnly = titlesOnly,
-                        onToggleTitlesOnly = viewModel::toggleEpisodeTitlesOnly,
                         isSubscribed = state.isSubscribed,
                         onAddToPlaylist = viewModel.playlists?.takeIf { state.isSubscribed }?.let { { playlistPicker.open = true } },
                         isPinnedToHome = isPinnedToHome,
@@ -753,13 +796,12 @@ fun PodcastInfoScreen(
                     Modifier
                         .align(Alignment.BottomCenter)
                         .adaptivePlayerOverlayOffset(isMiniPlayerVisible)
+                        .padding(horizontal = readingSide)
+                        .boxloreHorizontalSafePadding()
                         .padding(
                             start = 12.dp,
                             end = 12.dp,
-                            bottom =
-                            WindowInsets.navigationBars
-                                .asPaddingValues()
-                                .calculateBottomPadding() + bottomContentPadding + 12.dp,
+                            bottom = boxlorePaneBottomInset() + bottomContentPadding + 12.dp,
                         ),
                     enter = slideInVertically { height -> height } + fadeIn(),
                     exit = slideOutVertically { height -> height } + fadeOut(),
@@ -902,30 +944,25 @@ fun PodcastInfoScreen(
 
                 val jumpPillVisible =
                     targetJumpEpisode != null && !isTargetVisible && isFabVisible && !selectionActive && !isSearchActive
-                SnackbarHost(
+                // Reserves the bottom bar, mini player and system navigation once, only where they
+                // sit under this pane; the selection bar and Jump pill lift it above themselves.
+                BoxloreSnackbarHost(
                     hostState = snackbarHostState,
-                    modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(
-                            bottom =
-                            bottomContentPadding + 16.dp +
-                                when {
-                                    jumpPillVisible -> 56.dp
-                                    selectionActive -> 72.dp
-                                    else -> 0.dp
-                                },
-                        ),
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    extraBottom = when {
+                        jumpPillVisible -> 56.dp
+                        selectionActive -> 72.dp
+                        else -> 0.dp
+                    },
                 )
 
                 // Floating Jump-To Pill overlay
-                val systemBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 PodcastInfoJumpPillOverlay(
                     visible = jumpPillVisible,
                     isOngoing = isTargetOngoing,
                     episodeTitle = targetJumpEpisode?.title ?: "",
-                    bottomPadding = systemBottomPadding + bottomContentPadding + 16.dp,
+                    bottomPadding = boxlorePaneBottomInset() + bottomContentPadding + 16.dp,
+                    modifier = Modifier.padding(horizontal = readingSide).boxloreHorizontalSafePadding(),
                     onClick = {
                         coroutineScope.launch {
                             listState.animateScrollToItem(targetJumpIndex + 2)
@@ -946,6 +983,39 @@ fun PodcastInfoScreen(
             episodePendingDownloadRemoval = episodePendingDownloadRemoval,
         )
     }
+    }
+}
+
+/**
+ * A notifications change waiting on the RSS disclosure: the bell, or a warning banner's action
+ * ([warning]). Saved by name, so the question and what it confirms survive recreation.
+ */
+internal enum class PendingRssAction(val warning: ToolbarWarning?) {
+    ToggleNotifications(null),
+    AutoDownloadWarning(ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY),
+    BlockedWarning(ToolbarWarning.SYSTEM_PERMISSION_BLOCKED),
+    ;
+
+    companion object {
+        fun fromWarning(warning: ToolbarWarning): PendingRssAction = entries.firstOrNull { it.warning == warning } ?: ToggleNotifications
+    }
+}
+
+/**
+ * The RSS question on screen: what confirming does ([action]) and the feed link it disclosed
+ * ([feedUrl], captured when the question opened). Saved together, so a restored question still
+ * consents only to the link the listener was shown.
+ */
+internal data class PendingRssQuestion(val action: PendingRssAction, val feedUrl: String?) {
+    companion object {
+        val Saver: androidx.compose.runtime.saveable.Saver<PendingRssQuestion?, Any> = androidx.compose.runtime.saveable.Saver(
+            save = { question -> question?.let { arrayListOf(it.action.name, it.feedUrl.orEmpty(), it.feedUrl != null) } ?: false },
+            restore = { saved ->
+                (saved as? List<*>)?.let { parts ->
+                    PendingRssQuestion(PendingRssAction.valueOf(parts[0] as String), (parts[1] as String).takeIf { parts[2] == true })
+                }
+            },
+        )
     }
 }
 

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Constraints
@@ -43,6 +43,8 @@ import cx.aswin.boxlore.core.designsystem.components.FeedPosterSpacing
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.theme.SkeletonBlock
+import cx.aswin.boxlore.core.designsystem.theme.SkeletonTextLines
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import kotlin.math.roundToInt
@@ -76,29 +78,39 @@ fun HomeSkeleton(modifier: Modifier = Modifier) {
 }
 
 /**
- * Mirrors the real hero carousel: one large card and the narrow peek beside it, at the carousel's
- * own widths (see [heroSkeletonGeometry]). The large card follows the chosen hero style
+ * Mirrors the real hero carousel ([ResponsiveHeroCarousel]): on phones and wider compact windows one
+ * large card and the narrow peek beside it, at the carousel's own widths (see [heroSkeletonGeometry]);
+ * on tablets and sideways phones a row of cards. The large card follows the chosen hero style
  * ([HeroSkeletonCard]), so content settles in place instead of replacing a different shape.
  * Plain layouts only: nothing here subcomposes on a cold start.
  */
 @Composable
 fun HeroSkeleton(modifier: Modifier = Modifier) {
     val style = HeroCardStyle.sanitize(LocalHeroCardStyle.current)
-    if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
-        // Tablets show a row of hero cards; Home already swaps Marquee for Cover there (see homeHeroStyle).
-        androidx.compose.foundation.lazy.LazyRow(
-            modifier = modifier.fillMaxWidth().height(homeHeroHeight()).testTag("home_hero_skeleton"),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            items(count = 6, key = { "hero_skeleton_$it" }) {
-                Box(Modifier.width(320.dp).fillMaxHeight(), propagateMinConstraints = true) { HeroSkeletonCard(style) }
-            }
-        }
-        return
-    }
-    if (style == HeroCardStyle.MARQUEE) {
+    val window = LocalBoxloreWindowLayout.current
+    if (style == HeroCardStyle.MARQUEE && !window.usesTabletLayout) {
         // One card across the whole width, as tall as Marquee's hero.
         Box(modifier.fillMaxWidth().height(marqueeHeroHeight()).testTag("home_hero_skeleton")) { HeroSkeletonCard(style) }
+        return
+    }
+    if (heroRowMode(window) == HeroRowMode.Row) {
+        // Tablets and sideways phones show a row of hero cards as wide as the loaded row draws them: material3's
+        // uncontained carousel draws each card one gap wider than [heroTabletItemWidth] asks. Home already
+        // swaps Marquee for Cover on tablets (see homeHeroStyle).
+        Layout(
+            content = { repeat(HeroSkeletonRowCards) { HeroSkeletonCard(style) } },
+            modifier = modifier.fillMaxWidth().height(homeHeroHeight()).clipToBounds().testTag("home_hero_skeleton"),
+        ) { measurables, constraints ->
+            val available = (constraints.maxWidth / density).dp - UncontainedEndPadding
+            // A narrow pane's single card fills the row, which is as wide as material3 draws it.
+            val card = minOf((heroTabletItemWidth(available, HeroPreferredCard, HeroGap) + HeroGap).roundToPx(), constraints.maxWidth)
+            val step = card + HeroGap.roundToPx()
+            val height = constraints.maxHeight
+            val cards = measurables.map { it.measure(Constraints.fixed(card, height)) }
+            layout(constraints.maxWidth, height) {
+                cards.forEachIndexed { index, placeable -> if (index * step < constraints.maxWidth) placeable.placeRelative(index * step, 0) }
+            }
+        }
         return
     }
     Layout(
@@ -119,24 +131,19 @@ fun HeroSkeleton(modifier: Modifier = Modifier) {
     }
 }
 
+/** Enough loading cards to fill the widest hero row. */
+private const val HeroSkeletonRowCards = 6
+
 internal data class HeroSkeletonGeometry(val cardWidth: Int, val peekWidth: Int, val gap: Int)
 
-/**
- * The carousel aims for a 320dp card after a 16dp gap and keeps its peek between 40dp and 56dp, so
- * narrow phones shrink the card and wide phones grow it.
- */
+/** [heroCompactGeometry] in pixels: the carousel's card, gap and peek for a row [width] pixels wide. */
 internal fun heroSkeletonGeometry(width: Int, density: Float): HeroSkeletonGeometry {
     fun px(value: androidx.compose.ui.unit.Dp) = (value.value * density).roundToInt()
-    val gap = px(HeroSkeletonGap)
-    val peek = (width - gap - px(HeroSkeletonPreferredCard)).coerceIn(px(HeroSkeletonMinPeek), px(HeroSkeletonMaxPeek))
+    val gap = px(HeroGap)
+    val peek = (width - gap - px(HeroPreferredCard)).coerceIn(px(HeroMinPeek), px(HeroMaxPeek))
     val card = (width - gap - peek).coerceAtLeast(0)
     return HeroSkeletonGeometry(cardWidth = card, peekWidth = (width - card - gap).coerceAtLeast(0), gap = gap)
 }
-
-private val HeroSkeletonGap = 16.dp
-private val HeroSkeletonPreferredCard = 320.dp
-private val HeroSkeletonMinPeek = 40.dp
-private val HeroSkeletonMaxPeek = 56.dp
 
 @Composable
 fun RisingSkeleton() {
@@ -227,24 +234,6 @@ fun GridSkeletonItem(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun SkeletonBlock(
-    width: androidx.compose.ui.unit.Dp,
-    height: androidx.compose.ui.unit.Dp,
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(4.dp),
-    baseColor: androidx.compose.ui.graphics.Color,
-    highlightColor: androidx.compose.ui.graphics.Color,
-) {
-    Box(
-        modifier =
-        Modifier
-            .width(width)
-            .height(height)
-            .clip(shape)
-            .m3Shimmer(baseColor, highlightColor, shape = shape),
-    )
-}
-
-@Composable
 fun YourShowsSkeleton(
     subscribedCount: Int = 0,
     modifier: Modifier = Modifier,
@@ -257,59 +246,15 @@ fun YourShowsSkeleton(
     val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
 
     Column(modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility).padding(bottom = 16.dp)) {
-        // Section Header Row
-        Row(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SkeletonBlock(width = 120.dp, height = 24.dp, baseColor = baseColor, highlightColor = highlightColor)
-            }
-            Box(
-                modifier =
-                Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .m3Shimmer(baseColor, highlightColor, shape = CircleShape),
-            )
-        }
+        YourShowsHeaderSkeleton(baseColor, highlightColor)
 
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp)).background(homeMixModuleColor())) {
-            val count = if (subscribedCount == 0) 10 else subscribedCount + if (subscribedCount > 1) 1 else 0
-            BoxWithConstraints(
-                Modifier.fillMaxWidth().padding(YourShowsLayout.Padding),
-            ) {
-                val tileWidth = ((maxWidth - YourShowsLayout.Gap * 4) / 5).coerceAtMost(YourShowsLayout.TileWidth)
-                Column(verticalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap)) {
-                    val rows = if (subscribedCount == 0 || subscribedCount > 4) 2 else 1
-                    repeat(rows) { row ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap)) {
-                            repeat((count - row * 5).coerceIn(0, 5)) { column ->
-                                Column(
-                                    modifier = Modifier.width(if (rows == 1) YourShowsLayout.TileWidth else tileWidth)
-                                        .height(if (rows == 1) YourShowsLayout.TileHeight else tileWidth).padding(YourShowsLayout.TilePadding)
-                                        .testTag("home_show_skeleton_${row}_$column"),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                ) {
-                                    Box(
-                                        Modifier.widthIn(max = YourShowsLayout.CoverSize).fillMaxWidth().aspectRatio(1f).m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(15.dp))
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            YourShowsSelectorSkeletons(subscribedCount, baseColor, highlightColor)
             YourShowsDivider()
             Column(Modifier.padding(top = HomeMixLayout.TopPadding, bottom = HomeMixLayout.BottomPadding)) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = HomeMixLayout.ContentInset).height(HomeMixLayout.HeaderHeight), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    SkeletonBlock(width = 132.dp, height = 34.dp, baseColor = baseColor, highlightColor = highlightColor)
-                    SkeletonBlock(width = 88.dp, height = HomeMixLayout.HeaderHeight, baseColor = baseColor, highlightColor = highlightColor)
+                    SkeletonBlock(Modifier.width(132.dp).height(34.dp), baseColor = baseColor, highlightColor = highlightColor)
+                    SkeletonBlock(Modifier.width(88.dp).height(HomeMixLayout.HeaderHeight), baseColor = baseColor, highlightColor = highlightColor)
                 }
                 Spacer(Modifier.height(HomeMixLayout.HeaderGap))
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -365,5 +310,55 @@ internal fun HomeMediaCardSkeleton(
     val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
     FeedMediaCardSkeleton(modifier = modifier, presentation = presentation) { placeholderModifier ->
         Box(placeholderModifier.m3Shimmer(baseColor, highlightColor))
+    }
+}
+
+/** Your shows' heading while Home loads, in the loaded heading's row: icon, title line and browse button. */
+@Composable
+internal fun YourShowsHeaderSkeleton(baseColor: Color, highlightColor: Color) {
+    YourShowsHeaderRow(
+        modifier = Modifier.testTag("home_your_shows_header_skeleton"),
+        lead = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SkeletonBlock(Modifier.size(24.dp), shape = RoundedCornerShape(6.dp), baseColor = baseColor, highlightColor = highlightColor)
+                Spacer(Modifier.width(8.dp))
+                SkeletonTextLines(yourShowsHeadingStyle(), lines = 1, modifier = Modifier.width(120.dp), widths = listOf(1f), baseColor = baseColor, highlightColor = highlightColor)
+            }
+        },
+        action = { SkeletonBlock(Modifier.size(48.dp).testTag("home_your_shows_header_skeleton_action"), shape = CircleShape, baseColor = baseColor, highlightColor = highlightColor) },
+    )
+}
+
+/**
+ * The cover picker's placeholders, laid out as the loaded picker lays out its covers above the episodes:
+ * five a row at the picker's tile width, or one row of full tiles for a few shows.
+ */
+@Composable
+internal fun YourShowsSelectorSkeletons(subscribedCount: Int, baseColor: Color, highlightColor: Color) {
+    val count = if (subscribedCount == 0) 10 else subscribedCount + if (subscribedCount > 1) 1 else 0
+    BoxWithConstraints(
+        Modifier.fillMaxWidth().padding(YourShowsLayout.Padding),
+    ) {
+        val tileWidth = ((maxWidth - YourShowsLayout.Gap * 4) / 5).coerceAtMost(YourShowsLayout.TileWidth)
+        Column(verticalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap)) {
+            val rows = if (subscribedCount == 0 || subscribedCount > 4) 2 else 1
+            repeat(rows) { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap)) {
+                    repeat((count - row * 5).coerceIn(0, 5)) { column ->
+                        Column(
+                            modifier = Modifier.width(if (rows == 1) YourShowsLayout.TileWidth else tileWidth)
+                                .height(if (rows == 1) YourShowsLayout.TileHeight else tileWidth)
+                                .testTag("home_show_skeleton_${row}_$column").padding(YourShowsLayout.TilePadding),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Box(
+                                Modifier.widthIn(max = YourShowsLayout.CoverSize).fillMaxWidth().aspectRatio(1f).m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(15.dp))
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

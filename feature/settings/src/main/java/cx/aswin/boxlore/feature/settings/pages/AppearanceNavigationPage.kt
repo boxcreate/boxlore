@@ -7,6 +7,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.core.prefs.NavigationBlurLevel
 import cx.aswin.boxlore.core.prefs.OpenAppTo
@@ -15,6 +16,7 @@ import cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle
 import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
+import cx.aswin.boxlore.feature.settings.components.SettingsInfoTip
 import cx.aswin.boxlore.feature.settings.components.SettingsPictureGrid
 import cx.aswin.boxlore.feature.settings.components.SettingsPictureTile
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
@@ -26,6 +28,8 @@ internal fun AppearanceNavigationPage(state: AppearanceUiState, actions: Appeara
     TrackScreenView("appearance_navigation")
     val bar = NavigationStyle.fromKey(state.currentNavigationStyle)
     SettingsScaffold(title = stringResource(R.string.settings_page_navigation), onBack = onBack) {
+        // Tablets and unfolded phones use the side rail, which these choices don't change.
+        if (LocalBoxloreWindowLayout.current.usesTabletLayout) SettingsInfoTip(stringResource(R.string.settings_navigation_tablet_note))
         SettingsTileSection(title = stringResource(R.string.settings_navigation_bar_title)) {
             SettingsPictureGrid(NavigationStyle.entries, columns = 2) { style, modifier ->
                 SettingsPictureTile(

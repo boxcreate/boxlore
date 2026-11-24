@@ -6,8 +6,10 @@ import android.graphics.Canvas
 import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -20,6 +22,8 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -30,13 +34,16 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
+import cx.aswin.boxlore.feature.settings.pages.AccountPageScaffold
 import cx.aswin.boxlore.feature.settings.pages.AppearanceActions
 import cx.aswin.boxlore.feature.settings.pages.AppearanceUiState
 import org.junit.Assert.assertEquals
@@ -53,7 +60,7 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [33], application = Application::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class TabletSettingsLayoutTest {
-    @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1280, 1280, false))
+    @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1600, 1600, false))
     private val paneWidth = mutableStateOf(1200)
     private val selected = mutableStateOf(ProfileSettingsDestination.Appearance)
     private var backs = 0
@@ -125,7 +132,7 @@ class TabletSettingsLayoutTest {
         fixture.prepare()
         fixture.setContent {
             BoxLoreTheme(dynamicColor = false) {
-                CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(1280f, 1280f)) {
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(1280f, 800f)) {
                     Box(Modifier.requiredSize(paneWidth.value.dp, 800.dp)) {
                         AdaptiveSettingsLayout(selected.value, SettingsScreenConfig(onBack = { backs++ }, onResetAnalytics = {}), { selected.value = it }) {
                             backVisible = LocalSettingsPaneBackVisible.current
@@ -194,6 +201,132 @@ class TabletSettingsLayoutTest {
         }
     }
 
+    @Test fun `Settings splits only on wide landscape windows, as the rest of the app does`() {
+        val window = mutableStateOf(BoxloreTestWindows.TABLET)
+        renderIn(window)
+        for ((size, split) in listOf(
+            BoxloreTestWindows.TABLET_PORTRAIT to false,
+            BoxloreTestWindows.UPRIGHT_BOOK to false,
+            BoxloreTestWindows.PIXEL_FOLD to true,
+            BoxloreTestWindows.FOLD_FLAT to true,
+            BoxloreTestWindows.TABLET to true,
+        )) {
+            fixture.compose.runOnIdle { window.value = size }
+            settle()
+            val list = fixture.compose.onNodeWithTag("settings_category_pane").fetchSemanticsNode().boundsInRoot.width
+            assertEquals("$size", split, list > 0f)
+        }
+    }
+
+    @Test fun `a page and its draft stay through a fold-to-portrait-tablet resize both ways`() {
+        val window = mutableStateOf(BoxloreTestWindows.PIXEL_FOLD)
+        renderIn(window)
+        fixture.compose.onNodeWithText("draft").performTextReplacement("kept")
+        for (size in listOf(BoxloreTestWindows.TABLET_PORTRAIT, BoxloreTestWindows.PIXEL_FOLD, BoxloreTestWindows.TABLET_PORTRAIT)) {
+            fixture.compose.runOnIdle { window.value = size }
+            settle()
+            fixture.compose.onNodeWithText("kept").assertIsDisplayed()
+            assertEquals(ProfileSettingsDestination.Appearance, selected.value)
+        }
+    }
+
+    @Test fun `Check for updates is a button under the categories, never a picked item, and runs once`() {
+        var checks = 0
+        val window = mutableStateOf(BoxloreTestWindows.TABLET)
+        renderIn(window, onCheckForUpdates = { checks++ })
+        val button = fixture.compose.onNodeWithTag(SETTINGS_CHECK_UPDATES_TAG)
+        assertFalse(button.fetchSemanticsNode().config.contains(androidx.compose.ui.semantics.SemanticsProperties.Selected))
+        button.performClick()
+        assertEquals(1, checks)
+        val height = button.fetchSemanticsNode().boundsInRoot.height
+        assertTrue("one line in a 48dp button ($height)", height < 56f)
+    }
+
+    @Test fun `the tablet list's colour chips use the hub cards' colours`() {
+        val expected = mapOf(
+            ProfileSettingsDestination.SyncAndBackups to SettingsCategoryTone.Primary,
+            ProfileSettingsDestination.Library to SettingsCategoryTone.Secondary,
+            ProfileSettingsDestination.Appearance to SettingsCategoryTone.Primary,
+            ProfileSettingsDestination.Playback to SettingsCategoryTone.Tertiary,
+            ProfileSettingsDestination.Downloads to SettingsCategoryTone.Neutral,
+            ProfileSettingsDestination.WearOs to SettingsCategoryTone.Primary,
+            ProfileSettingsDestination.Privacy to SettingsCategoryTone.Secondary,
+            ProfileSettingsDestination.About to SettingsCategoryTone.Tertiary,
+        )
+        expected.forEach { (destination, tone) -> assertEquals("$destination", tone, settingsCategoryTone(destination)) }
+    }
+
+    @Test fun `beside the list a page starts by the list with a heavier title, and keeps its width between pages`() {
+        val window = mutableStateOf(BoxloreTestWindows.DESKTOP)
+        fixture.prepare()
+        fixture.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                val size = window.value
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides size) {
+                    Box(Modifier.requiredSize(size.widthDp.dp, size.heightDp.dp)) {
+                        AdaptiveSettingsLayout(selected.value, SettingsScreenConfig(onBack = {}, onResetAnalytics = {}), { selected.value = it }) { current ->
+                            // Account & sync has its own frame; the others share SettingsScaffold.
+                            if (current == ProfileSettingsDestination.Account) {
+                                AccountPageScaffold(onBack = {}, isOnboarding = false, scroll = rememberScrollState()) {
+                                    Text("Row 0", modifier = Modifier.fillMaxWidth().testTag("row"))
+                                }
+                            } else {
+                                SettingsScaffold("Page title", {}) { Text("Row 0", modifier = Modifier.fillMaxWidth().testTag("row")) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        fixture.compose.mainClock.autoAdvance = true
+        settle()
+        val list = fixture.compose.onNodeWithTag("settings_category_pane").fetchSemanticsNode().boundsInRoot
+        val row = fixture.compose.onNodeWithTag("row").fetchSemanticsNode().boundsInRoot
+        assertTrue("the page starts by the list (${row.left - 16f} vs ${list.right})", row.left - 16f - list.right <= 41f)
+        val pageTitle = fixture.compose.onNodeWithText("Page title").fetchSemanticsNode().boundsInRoot.height
+        val listTitle = fixture.compose.onNodeWithText("Settings").fetchSemanticsNode().boundsInRoot.height
+        assertTrue("page title ($pageTitle) is larger than the list title ($listTitle)", pageTitle > listTitle)
+        val pageTitleSize = titleFontSize("Page title")
+        fixture.compose.runOnIdle { selected.value = ProfileSettingsDestination.Account }
+        settle()
+        // Sync opens Account & sync: same column, same start and the same title size, so nothing jumps.
+        val accountRow = fixture.compose.onNodeWithTag("row").fetchSemanticsNode().boundsInRoot
+        assertEquals(row.width, accountRow.width, 1f)
+        assertEquals(row.left, accountRow.left, 1f)
+        assertEquals(pageTitleSize, titleFontSize(text(R.string.account_page_title)), 0.01f)
+        for (size in listOf(BoxloreTestWindows.TABLET, BoxloreTestWindows.TABLET_PORTRAIT, BoxloreTestWindows.TABLET)) {
+            fixture.compose.runOnIdle { window.value = size }
+            settle()
+            assertEquals(ProfileSettingsDestination.Account, selected.value)
+        }
+    }
+
+    private fun titleFontSize(title: String): Float {
+        val layouts = mutableListOf<TextLayoutResult>()
+        fixture.compose.onNodeWithText(title, useUnmergedTree = true).fetchSemanticsNode()
+            .config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+        return layouts.last().layoutInput.style.fontSize.value
+    }
+
+    private fun renderIn(window: androidx.compose.runtime.MutableState<BoxloreWindowLayout>, onCheckForUpdates: (() -> Unit)? = null) {
+        fixture.prepare()
+        fixture.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                val size = window.value
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides size) {
+                    Box(Modifier.requiredSize(size.widthDp.dp, size.heightDp.dp)) {
+                        AdaptiveSettingsLayout(selected.value, SettingsScreenConfig(onBack = {}, onResetAnalytics = {}, onCheckForUpdates = onCheckForUpdates), { selected.value = it }) {
+                            var draft by remember { mutableStateOf("draft") }
+                            TextField(draft, { draft = it }, Modifier.fillMaxSize())
+                        }
+                    }
+                }
+            }
+        }
+        fixture.compose.mainClock.autoAdvance = true
+        fixture.compose.waitForIdle()
+    }
+
     private fun settle() {
         Snapshot.sendApplyNotifications()
         fixture.compose.mainClock.advanceTimeByFrame()
@@ -206,7 +339,7 @@ class TabletSettingsLayoutTest {
             BoxLoreTheme(darkTheme = dark, dynamicColor = false) {
                 view = LocalView.current
                 surface = MaterialTheme.colorScheme.surface.toArgb()
-                CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(1280f, 1280f)) {
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(1280f, 800f)) {
                     Box(Modifier.requiredSize(paneWidth.value.dp, 800.dp)) {
                         AdaptiveSettingsLayout(selected.value, SettingsScreenConfig(onBack = { backs++ }, onResetAnalytics = {}, isOnboarding = onboarding), { selected.value = it }) {
                             backVisible = LocalSettingsPaneBackVisible.current

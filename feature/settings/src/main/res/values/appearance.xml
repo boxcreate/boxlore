@@ -117,4 +117,5 @@
     <string name="settings_theme_look_custom">Custom</string>
     <string name="settings_theme_look_custom_description">Choose your colors and background style.</string>
     <string name="settings_theme_section_title">Theme</string>
+    <string name="settings_navigation_tablet_note">The bar style and blur show when boxlore uses the bottom bar, like on a phone\'s cover screen or in a narrow window.</string>
 </resources>

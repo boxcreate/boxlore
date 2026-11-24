@@ -24,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
@@ -43,6 +44,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -79,12 +81,15 @@ internal fun SettingsPictureTile(
             Box(Modifier.fillMaxWidth().clip(PictureShape), contentAlignment = Alignment.Center, content = picture)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (selected) Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                // Narrow tiles keep the whole name: two lines, stepping down in size before it would cut.
+                val labelStyle = MaterialTheme.typography.titleSmall
                 Text(
                     label,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = labelStyle,
                     fontWeight = GoogleSansWeight.bold,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                    autoSize = TextAutoSize.StepBased(minFontSize = TileLabelMinSize, maxFontSize = labelStyle.fontSize),
                 )
             }
             if (description != null) {
@@ -166,8 +171,20 @@ internal fun <T> SettingsPictureRow(
         val width = settingsPictureRowTileWidth(maxWidth)
         val scroll = rememberScrollState()
         val step = with(LocalDensity.current) { (width + TileGap).toPx() }
-        LaunchedEffect(Unit) {
-            if (selectedIndex > 0) scroll.scrollTo((selectedIndex * step).roundToInt())
+        // The step the row was last laid out with, so a resize keeps the same tile at the row's start.
+        val laidOutStep = remember { floatArrayOf(0f) }
+        LaunchedEffect(step) {
+            val previous = laidOutStep[0]
+            laidOutStep[0] = step
+            val target = if (previous > 0f) {
+                settingsPictureRowRescroll(scroll.value.toFloat(), previous, step)
+            } else if (selectedIndex > 0) {
+                (selectedIndex * step).roundToInt()
+            } else {
+                // The first tile is picked: stay where the row is (a restored scroll after recreation).
+                scroll.value
+            }
+            if (target != scroll.value) scroll.scrollTo(target)
         }
         val snap = remember(scroll, step) { TileSnap(scroll, step) }
         Row(
@@ -188,6 +205,10 @@ private class TileSnap(private val scroll: ScrollState, private val step: Float)
     override fun calculateSnapOffset(velocity: Float): Float =
         settingsPictureRowSnapOffset(scroll.value.toFloat(), scroll.maxValue.toFloat(), step, velocity)
 }
+
+/** Where a row scrolled to [position] with tiles [oldStep] apart sits once they are [newStep] apart: the same tile first. */
+internal fun settingsPictureRowRescroll(position: Float, oldStep: Float, newStep: Float): Int =
+    if (oldStep <= 0f) 0 else (round(position / oldStep) * newStep).roundToInt()
 
 /** How far a row at [position] should move to settle on a tile start, given the fling [velocity]. */
 internal fun settingsPictureRowSnapOffset(position: Float, max: Float, step: Float, velocity: Float): Float {
@@ -214,6 +235,7 @@ internal fun settingsPictureRowTileWidth(rowWidth: Dp): Dp {
 }
 
 private val TileGap = 8.dp
+private val TileLabelMinSize = 12.sp
 private const val RowPeek = 0.45f
 private val RowTileMin = 160.dp
 private val RowTileMax = 320.dp
