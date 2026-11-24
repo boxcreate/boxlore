@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import android.animation.ValueAnimator
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -10,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -35,26 +37,33 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -83,6 +92,8 @@ import cx.aswin.boxlore.feature.player.v2.logic.shouldConfirmDismiss
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class MiniPlayerContent(
@@ -423,6 +434,8 @@ private fun MiniPlayerRow(
     // The bar's ring revolves with its own clock while playing; the compact cookie keeps the shared one.
     val barRotation = rememberCompactPlayerRotation(content.episode.id, content.isPlaying && !content.isLoading && controlsEnabled)
     val hidden = if (compactFraction > 0.001f || morph.expansionFraction > 0.001f) Modifier.clearAndSetSemantics {} else Modifier
+    // Kept here, where it outlives the title leaving composition while the bar is compact.
+    val titlePassDoneFor = rememberSaveable { mutableStateOf<String?>(null) }
     Box(modifier = Modifier.fillMaxSize().clipToBounds()) {
         MiniPlayerBarRing(
             progress = progress,
@@ -456,7 +469,7 @@ private fun MiniPlayerRow(
                     .then(hidden),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                MiniPlayerMetadata(content = content, colors = colors.mini, modifier = Modifier.weight(1f))
+                MiniPlayerMetadata(content = content, colors = colors.mini, settled = controlsEnabled, titlePassDoneFor = titlePassDoneFor, modifier = Modifier.weight(1f))
                 if (content.showSeekButtons) {
                     Spacer(modifier = Modifier.width(8.dp))
                     MiniSeekButtons(content = content, colors = colors.mini, actions = actions, enabled = controlsEnabled)
@@ -514,25 +527,96 @@ private fun MiniPlayerArtwork(
 private fun MiniPlayerMetadata(
     content: MiniPlayerContent,
     colors: ArtworkMiniPlayerColors,
+    settled: Boolean,
+    titlePassDoneFor: MutableState<String?>,
     modifier: Modifier = Modifier,
 ) {
+    val motionAllowed = remember { ValueAnimator.areAnimatorsEnabled() }
     Column(modifier = modifier) {
-        Text(
-            text = content.episode.title.replace("+", " "),
-            style =
-            MaterialTheme.typography.titleSmall.copy(
-                fontSize = 15.sp,
-                lineHeight = 20.sp,
-                fontWeight = GoogleSansWeight.semiBold,
-                letterSpacing = (-0.15).sp,
-            ),
+        MiniPlayerTitle(
+            episodeId = content.episode.id,
+            title = content.episode.title.replace("+", " "),
             color = colors.onBar,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            settled = settled,
+            motionAllowed = motionAllowed,
+            passDoneFor = titlePassDoneFor,
         )
         MiniPlayerSubtitle(content, colors, Modifier.fillMaxWidth())
     }
 }
+
+/**
+ * The episode title on one line. When an episode first shows in the bar and its title doesn't fit,
+ * the title glides across once after [MINI_TITLE_PASS_DELAY_MS] so the whole name can be read, then
+ * settles back to ending in '…'. It stays still while the bar is changing shape ([settled] false),
+ * with animations turned off, and for an episode it already passed for ([passDoneFor], which the
+ * caller keeps saveable).
+ */
+@Composable
+@Suppress("LongParameterList") // The title, its colour and the three things that allow its pass.
+internal fun MiniPlayerTitle(
+    episodeId: String,
+    title: String,
+    color: Color,
+    settled: Boolean,
+    motionAllowed: Boolean,
+    passDoneFor: MutableState<String?>,
+    modifier: Modifier = Modifier,
+) {
+    var overflowing by remember(episodeId, title) { mutableStateOf<Boolean?>(null) }
+    var scrolling by remember(episodeId) { mutableStateOf(false) }
+    var travelPx by remember(episodeId) { mutableFloatStateOf(0f) }
+    val velocity = MiniTitlePassVelocity
+    val velocityPx = with(LocalDensity.current) { velocity.toPx() }
+    val eligible = passDoneFor.value != episodeId && motionAllowed && settled
+    LaunchedEffect(episodeId, eligible) {
+        if (!eligible) {
+            scrolling = false
+            return@LaunchedEffect
+        }
+        delay(MINI_TITLE_PASS_DELAY_MS)
+        if (snapshotFlow { overflowing }.filterNotNull().first()) {
+            scrolling = true
+            val distance = snapshotFlow { travelPx }.first { it > 0f }
+            delay((distance / velocityPx * 1_000).toLong() + MINI_TITLE_PASS_SETTLE_MS)
+            scrolling = false
+        }
+        passDoneFor.value = episodeId
+    }
+    var containerPx by remember { mutableIntStateOf(0) }
+    Text(
+        text = title,
+        style =
+        MaterialTheme.typography.titleSmall.copy(
+            fontSize = 15.sp,
+            lineHeight = 20.sp,
+            fontWeight = GoogleSansWeight.semiBold,
+            letterSpacing = (-0.15).sp,
+        ),
+        color = color,
+        maxLines = 1,
+        overflow = if (scrolling) TextOverflow.Clip else TextOverflow.Ellipsis,
+        onTextLayout = { layout ->
+            if (scrolling) {
+                // One pass moves the whole title plus the marquee's default gap (a third of the bar).
+                travelPx = layout.size.width + containerPx / 3f
+            } else if (overflowing == null) {
+                overflowing = layout.hasVisualOverflow || layout.isLineEllipsized(0)
+            }
+        },
+        modifier = modifier
+            .onSizeChanged { containerPx = it.width }
+            .then(if (scrolling) Modifier.basicMarquee(iterations = 1, initialDelayMillis = 0, velocity = velocity) else Modifier)
+            .testTag(if (scrolling) MINI_TITLE_SCROLLING_TAG else MINI_TITLE_TAG),
+    )
+}
+
+/** How long a new title rests before its one pass; longer than the phone golden capture. */
+internal const val MINI_TITLE_PASS_DELAY_MS = 3_000L
+private const val MINI_TITLE_PASS_SETTLE_MS = 300L
+private val MiniTitlePassVelocity = 40.dp
+internal const val MINI_TITLE_TAG = "mini_player_title"
+internal const val MINI_TITLE_SCROLLING_TAG = "mini_player_title_scrolling"
 
 @Composable
 private fun MiniPlayerSubtitle(
