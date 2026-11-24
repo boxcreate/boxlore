@@ -16,11 +16,11 @@
     <string name="library_folder_add_to">Add to folder</string>
     <string name="library_folder_remove_from">Remove from folder</string>
     <string name="library_folder_move_to_another">Move to another folder</string>
-    <string name="library_folder_move_title">Move to Folder</string>
+    <string name="library_folder_move_title">Move to folder</string>
     <string name="library_folder_add_title">Add to Folder</string>
     <string name="library_folder_no_other_folders">No other folders yet</string>
     <!-- %1$s is the folder's name -->
-    <string name="library_folder_add_shows_to">Add Shows to %1$s</string>
+    <string name="library_folder_add_shows_to">Add shows to %1$s</string>
     <!-- %1$s is the show's name -->
     <string name="library_folder_new_with_show">New folder with %1$s</string>
     <!-- Beside a genre folder that already holds the show -->

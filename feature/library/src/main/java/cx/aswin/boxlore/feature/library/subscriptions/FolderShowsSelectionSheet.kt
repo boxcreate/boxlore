@@ -99,7 +99,7 @@ internal fun FolderShowsSelectionSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        // The sheet's own (lower) container, so the search pill and the rows stand out on it.
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         modifier = modifier,
     ) {
@@ -265,7 +265,8 @@ private fun FolderShowCheckboxRow(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        // The sheet's own colour (Material's bottom sheet container).
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = modifier
             .fillMaxWidth()
             .toggleable(value = isChecked, role = Role.Checkbox, onValueChange = { onToggle() }),

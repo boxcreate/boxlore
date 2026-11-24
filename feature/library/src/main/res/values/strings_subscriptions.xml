@@ -13,14 +13,10 @@
     <string name="library_search_subscribed_shows">Search subscribed shows…</string>
     <!-- Search field placeholder -->
     <string name="library_search_your_shows">Search your shows</string>
-    <!-- Screen-reader label -->
-    <string name="library_close_search">Close Search</string>
-    <!-- Screen-reader label -->
-    <string name="library_clear_search">Clear search</string>
     <!-- Screen-reader label for the button that switches to a list -->
-    <string name="library_list_view">List View</string>
+    <string name="library_list_view">List view</string>
     <!-- Screen-reader label for the button that switches to a grid -->
-    <string name="library_grid_view">Grid View</string>
+    <string name="library_grid_view">Grid view</string>
     <!-- Tab -->
     <string name="library_tab_shows">Shows</string>
     <!-- Tab -->
@@ -59,14 +55,6 @@
     <string name="library_sort_manual">Manual</string>
     <!-- Sort choice -->
     <string name="library_sort_chronological">Chronological</string>
-    <!-- Menu item -->
-    <string name="library_sort_smart_sort">Smart Sort</string>
-    <!-- Menu item -->
-    <string name="library_sort_recently_updated_menu">Recently Updated</string>
-    <!-- Menu item: alphabetical -->
-    <string name="library_sort_a_to_z_menu">A-Z</string>
-    <!-- Menu item -->
-    <string name="library_sort_most_listened_menu">Most Listened</string>
     <!-- Sort choice chip -->
     <string name="library_sort_recently_updated">Recently updated</string>
     <!-- Sort choice chip -->
@@ -77,8 +65,6 @@
     <string name="library_sort_same_as_shows">Same as shows</string>
     <!-- Sort choice chip: the order the listener arranged by hand -->
     <string name="library_sort_your_order">Your order</string>
-    <!-- Menu item -->
-    <string name="library_sort_auto_organize_into_folders">Auto-organize into folders</string>
     <!-- Menu item -->
     <string name="library_hide_played_episodes">Hide played episodes</string>
     <!-- Sheet title -->
