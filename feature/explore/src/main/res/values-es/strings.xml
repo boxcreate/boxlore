@@ -111,7 +111,7 @@
     <string name="lore_history_empty_body">Las preguntas que omitas o pongas en cola te esperarán aquí para echarles otro vistazo.</string>
     <string name="lore_history_clear">Borrar historial</string>
     <string name="lore_history_clear_title">¿Borrar el historial de tarjetas?</string>
-    <string name="lore_history_clear_body">Se quitarán del historial las tarjetas que deslizaste y pusiste en cola. No afecta a tu historial de escucha.</string>
+    <string name="lore_history_clear_body">Se quitarán del historial las tarjetas que omitiste y pusiste en cola. No afecta a tu historial de escucha.</string>
     <string name="lore_history_clear_confirm">Borrar</string>
     <string name="lore_history_cancel">Cancelar</string>
     <string name="lore_history_restore">Restaurar tarjeta</string>
@@ -120,13 +120,17 @@
     <!-- History row status: the card's episode was added to the queue. -->
     <string name="lore_history_queued">En cola</string>
     <string name="lore_history_filter_all">Todas</string>
+    <string name="lore_history_filter_skipped">Omitidas</string>
+    <string name="lore_history_none_queued">Aún no hay tarjetas en cola</string>
+    <string name="lore_history_none_skipped">Aún no hay tarjetas omitidas</string>
+    <string name="lore_history_show_all">Ver todas</string>
     <string name="lore_history_today">Hoy</string>
     <string name="lore_history_yesterday">Ayer</string>
     <string name="lore_history_this_week">Esta semana</string>
     <string name="lore_history_earlier">Antes</string>
-    <string name="explore_search_placeholder_shows">Busca por nombre del podcast</string>
-    <string name="explore_search_placeholder_questions">Pregunta por cualquier idea o tema</string>
-    <string name="explore_chart_rank_description">Número %1$d, %2$s</string>
+    <string name="explore_search_placeholder_shows">Nombre del podcast</string>
+    <string name="explore_search_placeholder_questions">Pregunta sobre un tema</string>
+    <string name="explore_chart_rank_description">Número %1$d</string>
     <string name="explore_topic_empty_body">Todavía no hay nada aquí para tu región e idiomas. Prueba otra colección.</string>
     <string name="explore_topic_failed_title">No se pudo cargar esta colección</string>
     <string name="explore_concept_example_dreams">¿Por qué soñamos?</string>

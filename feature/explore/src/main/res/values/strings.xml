@@ -113,7 +113,7 @@
     <string name="lore_history_empty_body">Questions you skip or queue will wait here, ready for another look.</string>
     <string name="lore_history_clear">Clear history</string>
     <string name="lore_history_clear_title">Clear card history?</string>
-    <string name="lore_history_clear_body">This removes your swiped and queued cards from history. It does not affect listening history.</string>
+    <string name="lore_history_clear_body">This removes your skipped and queued cards from history. It does not affect listening history.</string>
     <string name="lore_history_clear_confirm">Clear</string>
     <string name="lore_history_cancel">Cancel</string>
     <string name="lore_history_restore">Restore card</string>
@@ -123,6 +123,14 @@
     <string name="lore_history_queued">Queued</string>
     <!-- Lore history filter: show every card, queued and skipped. -->
     <string name="lore_history_filter_all">All</string>
+    <!-- Lore history filter chip: show only the cards the listener skipped. -->
+    <string name="lore_history_filter_skipped">Skipped</string>
+    <!-- Lore history, under the filters, when the Queued filter matches no cards. -->
+    <string name="lore_history_none_queued">No queued cards yet</string>
+    <!-- Lore history, under the filters, when the Skipped filter matches no cards. -->
+    <string name="lore_history_none_skipped">No skipped cards yet</string>
+    <!-- Button under an empty filter: go back to showing every card. -->
+    <string name="lore_history_show_all">Show all</string>
     <!-- Lore history group heading: cards seen today. -->
     <string name="lore_history_today">Today</string>
     <!-- Lore history group heading: cards seen yesterday. -->
@@ -134,9 +142,9 @@
     <!-- Search box hint in Find a show: type a show's name. -->
     <string name="explore_search_placeholder_shows">Search by show name</string>
     <!-- Search box hint in Ask anything: type a question or topic. -->
-    <string name="explore_search_placeholder_questions">Ask about any idea or topic</string>
-    <!-- Screen reader label for a show's place in Top charts: the number, then the show's name. -->
-    <string name="explore_chart_rank_description">Number %1$d, %2$s</string>
+    <string name="explore_search_placeholder_questions">Ask about any topic</string>
+    <!-- Screen reader label for a show's place in Top charts, read before the show's name. -->
+    <string name="explore_chart_rank_description">Number %1$d</string>
     <!-- Under the empty mood collection title: nothing matched the listener's region and content languages. -->
     <string name="explore_topic_empty_body">Nothing here for your region and languages yet. Try another collection.</string>
     <!-- Mood collection page when its shows couldn't be read. -->

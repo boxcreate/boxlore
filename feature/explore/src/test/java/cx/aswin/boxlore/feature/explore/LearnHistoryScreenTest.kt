@@ -58,14 +58,16 @@ class LearnHistoryScreenTest {
     private var backs = 0
     private lateinit var restoration: StateRestorationTester
 
-    private fun render() {
-        val now = System.currentTimeMillis()
-        val entries = List(6) { index ->
-            LearnHistoryEntry(
-                "card-$index", "Episode $index", "Curious world", null, null, "1", null, 600, null,
-                "Question $index?", null, 8, if (index % 2 == 0) LearnHistoryAction.QUEUE else LearnHistoryAction.DISMISS, now - index * 60_000L,
-            )
-        }
+    private fun entry(index: Int, action: LearnHistoryAction, atMs: Long) = LearnHistoryEntry(
+        "card-$index", "Episode $index", "Curious world", null, null, "1", null, 600, null,
+        "Question $index?", null, 8, action, atMs,
+    )
+
+    private fun render(
+        entries: List<LearnHistoryEntry> = List(6) { index ->
+            entry(index, if (index % 2 == 0) LearnHistoryAction.QUEUE else LearnHistoryAction.DISMISS, System.currentTimeMillis() - index * 60_000L)
+        },
+    ) {
         `when`(viewModel.uiState).thenReturn(MutableStateFlow(LearnHistoryUiState.Success(entries)))
         fixture.prepare()
         fixture.compose.mainClock.autoAdvance = true
@@ -107,7 +109,7 @@ class LearnHistoryScreenTest {
         }
         restoration.emulateSavedInstanceStateRestore()
         assertEquals(queued, shownQuestions())
-        fixture.compose.onNodeWithText(string(R.string.lore_history_dismissed)).performClick()
+        fixture.compose.onNodeWithText(string(R.string.lore_history_filter_skipped)).performClick()
         fixture.compose.waitForIdle()
         assertEquals(listOf("Question 1?", "Question 3?", "Question 5?"), shownQuestions())
     }
@@ -170,6 +172,29 @@ class LearnHistoryScreenTest {
         val october = java.time.LocalDate.of(2025, 10, 2).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
         assertEquals("Oktober", LocaleFormats.date(october, LocaleFormats.DateStyle.MONTH, Locale.GERMANY))
         assertEquals("octobre", LocaleFormats.date(october, LocaleFormats.DateStyle.MONTH, Locale.FRANCE).lowercase(Locale.FRANCE))
+    }
+
+    @Test
+    fun `month headings start with a capital like the other headings`() {
+        val november = java.time.LocalDate.of(2025, 11, 2).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val period = LearnHistoryPeriod.Month(2025, 11, november)
+        assertEquals("Novembre", learnHistoryMonthLabel(period, thisYear = 2025, Locale.FRANCE))
+        assertEquals("Noviembre de 2025", learnHistoryMonthLabel(period, thisYear = 2026, Locale.forLanguageTag("es")))
+        assertEquals("Novembro de 2025", learnHistoryMonthLabel(period, thisYear = 2026, Locale.forLanguageTag("pt-BR")))
+        assertEquals("November", learnHistoryMonthLabel(period, thisYear = 2025, Locale.GERMANY))
+    }
+
+    @Test
+    fun `a filter that matches nothing says so and offers every card again`() {
+        render(List(3) { entry(it, LearnHistoryAction.DISMISS, System.currentTimeMillis() - it * 60_000L) })
+        fixture.compose.onNodeWithText(string(R.string.lore_history_queued)).performClick()
+        fixture.compose.waitForIdle()
+        assertEquals(emptyList<String>(), shownQuestions())
+        fixture.compose.onNodeWithText(string(R.string.lore_history_none_queued)).assertExists()
+        fixture.compose.onNodeWithText(string(R.string.lore_history_show_all)).performClick()
+        fixture.compose.waitForIdle()
+        assertEquals(listOf("Question 0?", "Question 1?", "Question 2?"), shownQuestions())
+        fixture.compose.onNodeWithText(string(R.string.lore_history_none_queued)).assertDoesNotExist()
     }
 
     private companion object {

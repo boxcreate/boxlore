@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.material.icons.Icons
@@ -27,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSearchFieldMaxWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.explore.R
@@ -108,7 +111,11 @@ internal fun ExploreEpisodesSearchIdleState(onExampleClick: (String) -> Unit, mo
 
 @Composable
 private fun ConceptSearchLanding(title: String, subtitle: String, onExampleClick: (String) -> Unit, modifier: Modifier) {
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    // In the search box's column (start-aligned, at most 720dp), so the examples line up under the box they fill in.
+    Column(
+        modifier.fillMaxWidth().wrapContentWidth(Alignment.Start).widthIn(max = BoxloreSearchFieldMaxWidth).fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         ExploreSearchLandingHeader(title, subtitle)
         ConceptQuestionList(onExampleClick)
     }

@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -29,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChip
@@ -38,6 +40,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.text.LocaleFormats
 import java.util.Calendar
+import java.util.Locale
 
 /** Which cards Lore history shows. Only the screen remembers it; history itself is unchanged. */
 internal enum class LearnHistoryFilter { All, Queued, Skipped }
@@ -62,7 +65,7 @@ internal fun LearnHistoryFilterRow(selected: LearnHistoryFilter, onSelect: (Lear
                     when (filter) {
                         LearnHistoryFilter.All -> R.string.lore_history_filter_all
                         LearnHistoryFilter.Queued -> R.string.lore_history_queued
-                        LearnHistoryFilter.Skipped -> R.string.lore_history_dismissed
+                        LearnHistoryFilter.Skipped -> R.string.lore_history_filter_skipped
                     },
                 ),
             )
@@ -79,9 +82,7 @@ internal fun LearnHistoryGroupHeader(period: LearnHistoryPeriod, modifier: Modif
         LearnHistoryPeriod.ThisWeek -> stringResource(R.string.lore_history_this_week)
         LearnHistoryPeriod.Earlier -> stringResource(R.string.lore_history_earlier)
         is LearnHistoryPeriod.Month -> remember(period, locale) {
-            val thisYear = Calendar.getInstance().get(Calendar.YEAR)
-            val style = if (period.year == thisYear) LocaleFormats.DateStyle.MONTH else LocaleFormats.DateStyle.MONTH_YEAR
-            LocaleFormats.date(period.anyMs, style, locale)
+            learnHistoryMonthLabel(period, Calendar.getInstance().get(Calendar.YEAR), locale)
         }
     }
     Text(
@@ -90,6 +91,16 @@ internal fun LearnHistoryGroupHeader(period: LearnHistoryPeriod, modifier: Modif
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier.fillMaxWidth().padding(start = 4.dp, top = 16.dp, bottom = 6.dp).semantics { heading() },
     )
+}
+
+/**
+ * A month group's heading: the month, with the year when it isn't this year. It starts with a
+ * capital like the other headings, also where the language writes months in lower case
+ * ("novembre" becomes "Novembre").
+ */
+internal fun learnHistoryMonthLabel(period: LearnHistoryPeriod.Month, thisYear: Int, locale: Locale): String {
+    val style = if (period.year == thisYear) LocaleFormats.DateStyle.MONTH else LocaleFormats.DateStyle.MONTH_YEAR
+    return LocaleFormats.date(period.anyMs, style, locale).replaceFirstChar { it.titlecase(locale) }
 }
 
 /** Where a row sits in its group, for the connected list's corners. */
@@ -167,5 +178,22 @@ internal fun LearnHistoryRow(
                 Icon(Icons.AutoMirrored.Rounded.Undo, contentDescription = stringResource(R.string.lore_history_restore))
             }
         }
+    }
+}
+
+/** When a filter matches nothing: says so, with a way back to every card. */
+@Composable
+internal fun LearnHistoryFilterEmpty(filter: LearnHistoryFilter, onShowAll: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(vertical = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = stringResource(if (filter == LearnHistoryFilter.Queued) R.string.lore_history_none_queued else R.string.lore_history_none_skipped),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        TextButton(onClick = onShowAll) { Text(stringResource(R.string.lore_history_show_all)) }
     }
 }

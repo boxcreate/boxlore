@@ -229,6 +229,11 @@ private fun LearnHistoryList(
         item(key = "history_filters") {
             LearnHistoryFilterRow(selected = filter, onSelect = onFilter, modifier = Modifier.boxloreReadingColumn(LearnHistoryMaxWidthDp))
         }
+        if (groups.isEmpty() && filter != LearnHistoryFilter.All) {
+            item(key = "history_filter_empty") {
+                LearnHistoryFilterEmpty(filter, onShowAll = { onFilter(LearnHistoryFilter.All) }, modifier = Modifier.boxloreReadingColumn(LearnHistoryMaxWidthDp))
+            }
+        }
         groups.forEach { group ->
             item(key = "history_group_${group.period.key()}") {
                 LearnHistoryGroupHeader(group.period, Modifier.boxloreReadingColumn(LearnHistoryMaxWidthDp))
