@@ -319,13 +319,14 @@ fun LibraryMenuCard(
                     .padding(TitleStartPadding)
                     .widthIn(max = geometry.titleMaxWidth),
             ) {
+                // Measured after the status, so at the largest text the title gives way and the status keeps its line.
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = GoogleSansWeight.bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.testTag(HUB_CARD_TITLE_TAG),
+                    modifier = Modifier.weight(1f, fill = false).testTag(HUB_CARD_TITLE_TAG),
                 )
                 if (status != null) {
                     Text(

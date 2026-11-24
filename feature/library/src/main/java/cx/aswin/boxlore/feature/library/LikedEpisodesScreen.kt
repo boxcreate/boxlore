@@ -29,6 +29,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
@@ -127,6 +128,9 @@ fun LikedEpisodesScreen(
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             when {
+                uiState is LibraryUiState.Error -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.library_error_loading))
+                }
                 uiState !is LibraryUiState.Success -> LibraryLoading { LibraryRowsSkeleton() }
                 liked.isEmpty() -> LibraryEmptyState(
                     content = LibraryEmptyContent(
@@ -156,16 +160,18 @@ private fun LikedList(
     onPlayEpisodes: ((List<Episode>, Podcast) -> Unit)?,
 ) {
     val allTitle = stringResource(R.string.library_hub_liked_episodes)
+    // Finished episodes stay out of the queue, so Play all shows only while one can go in.
+    val playable = remember(liked) { likedPlayAll(liked) }
     LazyColumn(
         state = listState,
         modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize().testTag(LIKED_LIST_TAG),
         // Phones keep room for the floating bar and mini player; tablets end just above the player.
         contentPadding = PaddingValues(bottom = boxloreContentBottomPadding(PHONE_LIST_BOTTOM)),
     ) {
-        if (onPlayEpisodes != null) {
+        if (onPlayEpisodes != null && playable.isNotEmpty()) {
             item(key = PLAY_ALL_KEY) {
                 Button(
-                    onClick = { likedPlayAll(liked).takeIf { it.isNotEmpty() }?.let { onPlayEpisodes(it, Podcast(LIKED_ALL_ID, allTitle, "", "")) } },
+                    onClick = { onPlayEpisodes(playable, Podcast(LIKED_ALL_ID, allTitle, "", "")) },
                     shapes = ButtonDefaults.shapes(),
                     contentPadding = ButtonDefaults.ContentPadding,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).height(56.dp).testTag(LIKED_PLAY_ALL_TAG),

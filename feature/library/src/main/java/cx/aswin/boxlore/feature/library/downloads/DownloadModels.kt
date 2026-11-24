@@ -237,6 +237,19 @@ internal fun MutableList<String>.applyLongPressDownloadSelection(
     return next.active
 }
 
+/**
+ * Drops picks that are no longer listed, once the list has loaded ([loaded]): a restored selection
+ * can name a download removed meanwhile. While loading, the picks are kept.
+ */
+internal fun MutableList<String>.keepListed(loaded: Boolean, listed: Collection<String>) {
+    if (!loaded) return
+    val ids = listed.toSet()
+    retainAll { it in ids }
+}
+
+/** True when every [listed] ID is picked, so Select all clears instead of picking them. */
+internal fun Collection<String>.coversAll(listed: Collection<String>): Boolean = listed.isNotEmpty() && toSet().containsAll(listed)
+
 /** Saves a selection of IDs, so select mode keeps what was ticked across recreation. */
 internal fun selectedIdsSaver(): Saver<SnapshotStateList<String>, Any> = listSaver(
     save = { it.toList() },

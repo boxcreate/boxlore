@@ -170,6 +170,8 @@ fun DownloadedShowEpisodesScreen(
     var isSelectionMode by rememberSaveable { mutableStateOf(false) }
     // Saved state, so a selection or an open question comes back as it was after a restart.
     val selectedEpisodeIds = rememberSaveable(saver = selectedIdsSaver()) { mutableStateListOf<String>() }
+    val episodeIds = remember(showEpisodes) { showEpisodes.map { it.episodeId } }
+    LaunchedEffect(uiState is LibraryUiState.Success, episodeIds) { selectedEpisodeIds.keepListed(uiState is LibraryUiState.Success, episodeIds) }
     var deleteConfirmSelectedDialog by rememberSaveable { mutableStateOf(false) }
     var deleteConfirmShowDialog by rememberSaveable { mutableStateOf(false) }
     var swipeToDeleteEpisodeId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -247,7 +249,7 @@ fun DownloadedShowEpisodesScreen(
                         val selectAllLabel = stringResource(R.string.library_select_all)
                         BoxloreTooltip(selectAllLabel) {
                             IconButton(onClick = {
-                                if (selectedEpisodeIds.size == showEpisodes.size) {
+                                if (selectedEpisodeIds.coversAll(episodeIds)) {
                                     selectedEpisodeIds.clear()
                                 } else {
                                     selectedEpisodeIds.clear()

@@ -148,6 +148,7 @@ internal object LibraryCaptureFixtures {
         `when`(vm.intraFolderSort).thenReturn(MutableStateFlow(FolderIntraSort.Inherit))
         `when`(vm.folders).thenReturn(MutableStateFlow(folders))
         `when`(vm.foldersLoaded).thenReturn(MutableStateFlow(true))
+        `when`(vm.loadedFolders).thenReturn(MutableStateFlow(folders))
         `when`(vm.subscriptionsTabStyle).thenReturn(MutableStateFlow(tabStyle))
         `when`(vm.downloadsSortOrder).thenReturn(MutableStateFlow(DownloadsSortOrder.RECENT))
         `when`(vm.showSortOrder).thenReturn(MutableStateFlow(ShowSortOrder.NEWEST))

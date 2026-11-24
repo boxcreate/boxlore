@@ -15,6 +15,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -44,16 +46,19 @@ class LibraryHubCardsTest {
     private val fixtures = LibraryCaptureFixtures
     private val window = mutableStateOf(BoxloreTestWindows.PHONE)
 
+    /** Which destinations the hub's cards opened, in order. */
+    private val opened = mutableListOf<String>()
+
     private fun showHub(
         state: LibraryUiState.Success,
-        playlists: LibraryPlaylistsCard? = LibraryPlaylistsCard(onClick = {}, count = 0),
+        playlists: LibraryPlaylistsCard? = LibraryPlaylistsCard(onClick = { opened += "playlists" }, count = 0),
         fontScale: Float = 1f,
     ) = compose.setContent {
         val density = LocalDensity.current
         CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value, LocalDensity provides Density(density.density, fontScale)) {
             BoxLoreTheme(dynamicColor = false) {
                 Box(Modifier.size(window.value.widthDp.dp, window.value.heightDp.dp)) {
-                    LibraryContent(state, {}, {}, {}, {}, playlists = playlists)
+                    LibraryContent(state, { opened += "liked" }, { opened += "subscriptions" }, { opened += "downloads" }, { opened += "history" }, playlists = playlists)
                 }
             }
         }
@@ -97,6 +102,33 @@ class LibraryHubCardsTest {
         assertTrue(card.config.contains(SemanticsActions.OnClick))
         assertEquals(120f, card.boundsInRoot.height)
         assertEquals(412f - 32f, card.boundsInRoot.width)
+    }
+
+    @Test
+    fun `each card opens its own page and nothing else`() {
+        showHub(fixtures.loaded())
+        val cards = listOf("Subscriptions" to "subscriptions", "Liked" to "liked", "Downloads" to "downloads", "Listening history" to "history", "Playlists" to "playlists")
+        for ((title, destination) in cards) {
+            opened.clear()
+            compose.onNode(hasText(title, substring = true) and androidx.compose.ui.test.hasClickAction()).performScrollTo().performClick()
+            assertEquals(title, listOf(destination), opened)
+        }
+    }
+
+    @Test
+    fun `at the largest text each card's status stays inside the card`() {
+        window.value = BoxloreTestWindows.PHONE_SMALL
+        showHub(fixtures.loaded(), withArtwork, fontScale = 2f)
+        val statuses = compose.onAllNodesWithTag(HUB_CARD_STATUS_TAG, useUnmergedTree = true).fetchSemanticsNodes()
+        assertTrue("cards with a status on screen: ${statuses.size}", statuses.size >= 2)
+        for (status in statuses) {
+            val card = generateSequence(status.parent) { it.parent }.first { SemanticsActions.OnClick in it.config }
+            // Only cards wholly on screen: the grid clips the one at its bottom edge.
+            if (card.boundsInRoot.height < card.size.height - 0.5f) continue
+            val bottom = status.positionInRoot.y + status.size.height
+            assertTrue("a status has a line of its own (${status.size})", status.size.height > 0)
+            assertTrue("a status ends at $bottom, its card at ${card.boundsInRoot.bottom}", bottom <= card.boundsInRoot.bottom + 0.5f)
+        }
     }
 
     @Test
@@ -144,6 +176,29 @@ class LibraryHubCardsTest {
         assertTrue(texts.toString(), "3 episodes" in texts)
         assertTrue(texts.toString(), "Nothing downloaded yet" in texts)
         assertTrue(texts.toString(), "Played today" in texts)
+    }
+
+    @Test
+    fun `History moves from today to yesterday when midnight passes with the hub open`() {
+        val zone = TimeZone.getDefault()
+        val lateEvening = java.time.LocalDate.of(2026, 3, 9).atTime(23, 50).atZone(zone.toZoneId()).toInstant().toEpochMilli()
+        var clock = lateEvening
+        val played = fixtures.liked(1).map { it.copy(lastPlayedAt = lateEvening - 60_000L) }
+        compose.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value, LocalLibraryClock provides { clock }) {
+                BoxLoreTheme(dynamicColor = false) {
+                    Box(Modifier.size(window.value.widthDp.dp, window.value.heightDp.dp)) {
+                        LibraryContent(LibraryUiState.Success(recentHistory = played), {}, {}, {}, {})
+                    }
+                }
+            }
+        }
+        fun statuses() = compose.onAllNodesWithTag(HUB_CARD_STATUS_TAG, useUnmergedTree = true).fetchSemanticsNodes().map { it.config[SemanticsProperties.Text].joinToString() }
+        assertTrue(statuses().toString(), "Played today" in statuses())
+        clock += 20 * 60_000L
+        compose.mainClock.advanceTimeBy(20 * 60_000L)
+        compose.waitForIdle()
+        assertTrue(statuses().toString(), "Played yesterday" in statuses())
     }
 
     @Test

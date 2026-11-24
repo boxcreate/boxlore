@@ -193,6 +193,7 @@ class SubscriptionsScreensCaptureTest(private val dark: Boolean) {
         `when`(vm.intraFolderSort).thenReturn(MutableStateFlow(FolderIntraSort.Inherit))
         `when`(vm.folders).thenReturn(MutableStateFlow(folders))
         `when`(vm.foldersLoaded).thenReturn(MutableStateFlow(true))
+        `when`(vm.loadedFolders).thenReturn(MutableStateFlow(folders))
         `when`(vm.subscriptionsTabStyle).thenReturn(MutableStateFlow(SubscriptionsTabStyle.TOP))
         render("01-shows") {
             SubscriptionsScreen(viewModel = vm, onBack = {}, onPodcastClick = {}, onExploreClick = {})

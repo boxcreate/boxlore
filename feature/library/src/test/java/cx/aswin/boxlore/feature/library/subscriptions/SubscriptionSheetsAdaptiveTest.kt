@@ -66,6 +66,8 @@ class SubscriptionSheetsAdaptiveTest {
     }
 
     @Test
+    // The sheet lives in its own window, sized by the device: the short sideways viewport itself.
+    @Config(qualifiers = "w915dp-h412dp-mdpi")
     fun `a folder's long-press menu scrolls to Delete folder on a sideways phone`() {
         window.value = BoxloreTestWindows.PHONE_LAND
         val deleted = mutableListOf<SubscriptionFolder>()

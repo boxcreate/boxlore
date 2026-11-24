@@ -33,7 +33,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +60,9 @@ import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.core.model.text.formatTimeOfDay
 import cx.aswin.boxlore.feature.library.R
 
+/** Whether Smart Downloads is open, kept by the Downloads page above its empty and list layouts. */
+internal val LocalSmartDownloadsExpanded = compositionLocalOf<MutableState<Boolean>?> { null }
+
 @Composable
 fun SmartDownloadsDashboardCard(
     userPrefs: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
@@ -71,7 +76,10 @@ fun SmartDownloadsDashboardCard(
     val storageBudget by userPrefs.smartDownloadsStorageBudgetStream.collectAsState(initial = 250L)
     val lastSyncTime by userPrefs.smartDownloadsLastSyncTimeStream.collectAsState(initial = 0L)
 
-    var isExpanded by rememberSaveable { mutableStateOf(false) }
+    // The page's own expansion when it provides one, so the card stays open when it moves between
+    // the empty page and the list (the first download arriving during a sync).
+    val ownExpanded = rememberSaveable { mutableStateOf(false) }
+    var isExpanded by (LocalSmartDownloadsExpanded.current ?: ownExpanded)
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 90f else 0f,
         animationSpec = tween(300, easing = FastOutSlowInEasing),

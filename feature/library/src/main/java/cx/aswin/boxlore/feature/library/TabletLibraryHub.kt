@@ -13,11 +13,20 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Podcasts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
@@ -30,6 +39,7 @@ import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.library.downloads.downloadSummary
 import java.util.TimeZone
+import kotlinx.coroutines.delay
 
 /** The hub's cards in order, keyed so a window change keeps the card in view. */
 internal object LibraryHubKeys {
@@ -55,9 +65,8 @@ internal fun LibraryHubGrid(
     lastSeenEpisodes: Map<String, String> = emptyMap(),
 ) {
     val status = rememberLibraryHubStatus(state, lastSeenEpisodes)
-    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     LazyVerticalGrid(
-        columns = GridCells.Fixed(if (tablet && boxloreContentWidthDp() >= TWO_COLUMNS_FROM_DP) 2 else 1),
+        columns = GridCells.Fixed(libraryHubColumns()),
         state = gridState,
         modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxSize(),
         // Phones keep room for the floating bar and mini player under the last card; tablets reserve only the player.
@@ -127,6 +136,11 @@ internal data class LibraryHubDestinations(
 /** Tablet content this wide or wider shows the hub's cards in two columns. */
 private const val TWO_COLUMNS_FROM_DP = 640f
 
+/** The hub's columns: two on tablets with room for them, one everywhere else. Its loading outline uses the same. */
+@Composable
+internal fun libraryHubColumns(): Int =
+    if (LocalBoxloreWindowLayout.current.usesTabletLayout && boxloreContentWidthDp() >= TWO_COLUMNS_FROM_DP) 2 else 1
+
 /** Phones: room under the last card for the floating bar and mini player. */
 private val PHONE_BOTTOM_PADDING = 180.dp
 
@@ -153,10 +167,9 @@ internal fun rememberLibraryHubStatus(state: LibraryUiState.Success, lastSeenEpi
     val liked = remember(state.likedEpisodes) { LazyListKeyPolicy.deduplicateById(state.likedEpisodes) { it.episodeId }.size }
     val downloaded = remember(state.downloadedEpisodes) { state.downloadedEpisodes.downloadSummary().episodeCount }
     val lastPlayed = remember(state.recentHistory) { state.recentHistory.maxOfOrNull { it.lastPlayedAt }?.takeIf { it > 0L } }
-    val zone = remember { TimeZone.getDefault() }
-    val now = System.currentTimeMillis()
-    val today = localEpochDay(now, zone)
-    val daysAgo = remember(lastPlayed, today) { lastPlayed?.let { today - localEpochDay(it, zone) } }
+    val (today, zone) = rememberLibraryToday()
+    val now = LocalLibraryClock.current()
+    val daysAgo = remember(lastPlayed, today, zone) { lastPlayed?.let { today - localEpochDay(it, zone) } }
     return LibraryHubStatus(
         subscriptions = subscriptions,
         liked = if (liked == 0) stringResource(R.string.library_hub_no_likes) else pluralStringResource(R.plurals.library_hub_episode_count, liked, liked),
@@ -170,6 +183,36 @@ internal fun rememberLibraryHubStatus(state: LibraryUiState.Success, lastSeenEpi
         },
     )
 }
+
+/** The clock the hub reads the day from; tests move it past midnight. */
+internal val LocalLibraryClock = staticCompositionLocalOf<() -> Long> { System::currentTimeMillis }
+
+/**
+ * Today's calendar day and the device's time zone. Moves on at midnight while the hub is shown, and
+ * catches up when the app comes back to the foreground (a day or a zone may have changed meanwhile).
+ */
+@Composable
+internal fun rememberLibraryToday(): Pair<Long, TimeZone> {
+    val now = LocalLibraryClock.current
+    var zone by remember { mutableStateOf(TimeZone.getDefault()) }
+    var today by remember { mutableLongStateOf(localEpochDay(now(), zone)) }
+    val owner = LocalLifecycleOwner.current
+    LaunchedEffect(owner) {
+        owner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                zone = TimeZone.getDefault()
+                val moment = now()
+                today = localEpochDay(moment, zone)
+                val midnight = (today + 1) * DAY_MS - zone.getOffset(moment)
+                delay((midnight - moment).coerceIn(MIN_DAY_CHECK_MS, MAX_DAY_CHECK_MS))
+            }
+        }
+    }
+    return today to zone
+}
+
+private const val MIN_DAY_CHECK_MS = 1_000L
+private const val MAX_DAY_CHECK_MS = 60 * 60 * 1_000L
 
 /** The calendar day [epochMillis] falls on in [zone], counted from 1 January 1970. */
 internal fun localEpochDay(epochMillis: Long, zone: TimeZone): Long = Math.floorDiv(epochMillis + zone.getOffset(epochMillis), DAY_MS)

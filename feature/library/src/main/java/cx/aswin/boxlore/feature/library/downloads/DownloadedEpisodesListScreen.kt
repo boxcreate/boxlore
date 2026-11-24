@@ -2,17 +2,21 @@ package cx.aswin.boxlore.feature.library.downloads
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Checklist
@@ -36,8 +40,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +53,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -150,6 +160,10 @@ fun DownloadedEpisodesScreen(
     var isSelectionMode by rememberSaveable { mutableStateOf(false) }
     // Saved, so select mode never comes back after a restart with nothing selected.
     val selectedPodcastIds = rememberSaveable(saver = selectedIdsSaver()) { mutableStateListOf<String>() }
+    val dashboardExpanded = rememberSaveable { mutableStateOf(false) }
+    var dashboardHeightPx by remember { mutableIntStateOf(0) }
+    val groupIds = remember(sortedGroups) { sortedGroups.map { it.podcastId } }
+    LaunchedEffect(uiState is LibraryUiState.Success, groupIds) { selectedPodcastIds.keepListed(uiState is LibraryUiState.Success, groupIds) }
     var deleteConfirmSelectedDialog by rememberSaveable { mutableStateOf(false) }
 
     val summary = remember(downloads) { downloads.downloadSummary() }
@@ -194,7 +208,7 @@ fun DownloadedEpisodesScreen(
                             val selectAllLabel = stringResource(R.string.library_select_all)
                             BoxloreTooltip(selectAllLabel) {
                                 IconButton(onClick = {
-                                    if (selectedPodcastIds.size == sortedGroups.size) {
+                                    if (selectedPodcastIds.coversAll(groupIds)) {
                                         selectedPodcastIds.clear()
                                     } else {
                                         selectedPodcastIds.clear()
@@ -298,6 +312,7 @@ fun DownloadedEpisodesScreen(
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { innerPadding ->
+      CompositionLocalProvider(LocalSmartDownloadsExpanded provides dashboardExpanded) {
         LibraryPlaybackLayout(modifier = Modifier.padding(innerPadding).boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize(), content = {
             when (uiState) {
                 is LibraryUiState.Loading -> LibraryLoading {
@@ -309,8 +324,16 @@ fun DownloadedEpisodesScreen(
                     }
                 }
                 is LibraryUiState.Success -> if (downloads.isEmpty()) {
-                    // Smart Downloads, then the empty page centred in the space under it (it scrolls in a short window).
-                    Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Episode).padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
+                    // Smart Downloads, then the empty page centred in the space under it. The whole page
+                    // scrolls, so an open dashboard taller than a short window stays reachable.
+                    BoxWithConstraints(Modifier.fillMaxSize()) {
+                    val room = maxHeight - with(LocalDensity.current) { dashboardHeightPx.toDp() } - EmptyPageTopPadding
+                    Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                            .boxloreCardWidth(BoxloreCardFamily.Episode).padding(start = 16.dp, end = 16.dp, top = EmptyPageTopPadding)
+                            .testTag(DOWNLOADS_EMPTY_PAGE_TAG),
+                    ) {
+                        Box(Modifier.onSizeChanged { dashboardHeightPx = it.height }) {
                         SmartDownloadsDashboardCard(
                             userPrefs = userPrefs,
                             downloads = downloads,
@@ -318,6 +341,7 @@ fun DownloadedEpisodesScreen(
                             onSyncNow = onSyncNow,
                             isSyncing = isSyncing
                         )
+                        }
                         LibraryEmptyState(
                             content = LibraryEmptyContent(
                                 title = stringResource(R.string.library_downloads_empty_title),
@@ -329,8 +353,10 @@ fun DownloadedEpisodesScreen(
                             ),
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                             onAction = onExploreClick,
-                            modifier = Modifier.weight(1f),
+                            // The space under the dashboard, and never less than the empty page needs to show.
+                            modifier = Modifier.height(maxOf(room, EmptyPageMinHeight)),
                         )
+                    }
                     }
                 } else {
                     LazyColumn(
@@ -409,6 +435,7 @@ fun DownloadedEpisodesScreen(
                 )
             }
         })
+      }
         // At screen level, so the question stays open when Play All moves between its tablet row and the list.
         if (deleteConfirmSelectedDialog) {
             BoxloreAlertDialog(
@@ -447,3 +474,10 @@ fun DownloadedEpisodesScreen(
         }
     }
 }
+
+/** The empty page's gap above Smart Downloads, and the least height the empty page gets under it. */
+private val EmptyPageTopPadding = 8.dp
+private val EmptyPageMinHeight = 240.dp
+
+/** Test tag on the empty Downloads page's scrolling column. */
+internal const val DOWNLOADS_EMPTY_PAGE_TAG = "downloads_empty_page"

@@ -155,7 +155,8 @@ class LibraryViewModel(
     }
 
     /** The folders, or null until the folder store has answered once. */
-    private val loadedFolders: StateFlow<List<SubscriptionFolder>?> =
+    /** The folders, or null until they have loaded once: one value for the list and its readiness. */
+    val loadedFolders: StateFlow<List<SubscriptionFolder>?> =
         folderRepository?.folders
             ?.stateIn(
                 scope = viewModelScope,

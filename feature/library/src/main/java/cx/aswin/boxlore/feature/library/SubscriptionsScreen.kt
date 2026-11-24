@@ -169,8 +169,10 @@ fun SubscriptionsScreen(
         val folderSort by viewModel.folderSort.collectAsStateWithLifecycle()
         val folderManualOrder by viewModel.folderManualOrder.collectAsStateWithLifecycle()
         val intraFolderSort by viewModel.intraFolderSort.collectAsStateWithLifecycle()
-        val folders by viewModel.folders.collectAsStateWithLifecycle()
-        val foldersLoaded by viewModel.foldersLoaded.collectAsStateWithLifecycle()
+        // The list and whether it has loaded come from one value, so a loaded flag never meets an empty stand-in.
+        val loadedFolders by viewModel.loadedFolders.collectAsStateWithLifecycle()
+        val folders = loadedFolders.orEmpty()
+        val foldersLoaded = loadedFolders != null
         val subscriptionsTabStyle by viewModel.subscriptionsTabStyle.collectAsStateWithLifecycle()
         var showSortSheet by screenState::sortSheetOpen
         val folderPages = rememberFolderPagesState()
@@ -186,9 +188,7 @@ fun SubscriptionsScreen(
         }
         val contextMenuTarget = screenState.contextMenu?.resolve(folders, loadedPodcasts.orEmpty())
         val selectedFolderForShowSelection = screenState.addShowsFolderId?.let { id -> folders.firstOrNull { it.id == id } }
-        val moveShowTarget = screenState.moveShow?.let { move ->
-            loadedPodcasts?.firstOrNull { it.id == move.podcastId }?.let { podcast -> folders.firstOrNull { it.id == move.fromFolderId } to podcast }
-        }
+        val moveShowTarget = screenState.moveTarget(loadedFolders, loadedPodcasts)
         val confirmDeleteFolder = screenState.confirmDeleteFolderId?.let { id -> folders.firstOrNull { it.id == id } }
         val confirmUnsubscribePodcast = screenState.confirmUnsubscribeId?.let { id -> loadedPodcasts?.firstOrNull { it.id == id } }
 

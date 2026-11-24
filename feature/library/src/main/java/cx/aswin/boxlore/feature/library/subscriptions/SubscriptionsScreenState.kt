@@ -91,6 +91,22 @@ internal class SubscriptionsScreenState(
      * folder targets (and a folder's reorder with its unsaved order) wait.
      */
     fun dropMissing(folders: List<SubscriptionFolder>?, podcasts: List<Podcast>) {
+        dropMissingTargets(folders, podcasts)
+    }
+
+    /**
+     * The show being moved and the folder it moves from, or null while there is no move, its show is
+     * gone, or the folders ([folders] null) haven't loaded: without the source folder the sheet
+     * would offer "Add" and a new folder would keep the show in its old one too.
+     */
+    fun moveTarget(folders: List<SubscriptionFolder>?, podcasts: List<Podcast>?): Pair<SubscriptionFolder?, Podcast>? {
+        val move = moveShow ?: return null
+        if (folders == null) return null
+        val podcast = podcasts?.firstOrNull { it.id == move.podcastId } ?: return null
+        return folders.firstOrNull { it.id == move.fromFolderId } to podcast
+    }
+
+    private fun dropMissingTargets(folders: List<SubscriptionFolder>?, podcasts: List<Podcast>) {
         val podcastIds = podcasts.mapTo(HashSet()) { it.id }
         dropMissingShows(podcastIds)
         if (folders == null) return

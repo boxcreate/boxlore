@@ -55,13 +55,27 @@ internal fun LibraryLoading(modifier: Modifier = Modifier, content: @Composable 
 /** The hub's five 120dp cards, where the real cards will be. */
 @Composable
 internal fun LibraryHubSkeleton() {
+    // In the hub's own columns, so the cards land where their outlines were.
+    val columns = libraryHubColumns()
     Column(
-        modifier = Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 8.dp),
+        modifier = Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility).padding(start = 16.dp, end = 16.dp, top = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        repeat(HUB_CARDS) { SkeletonBlock(Modifier.fillMaxWidth().boxloreCardWidth(BoxloreCardFamily.Utility).height(120.dp), shape = RoundedCornerShape(24.dp)) }
+        repeat((HUB_CARDS + columns - 1) / columns) { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                repeat(columns) { column ->
+                    val shown = row * columns + column < HUB_CARDS
+                    Box(Modifier.weight(1f).height(120.dp)) {
+                        if (shown) SkeletonBlock(Modifier.fillMaxSize().testTag(LIBRARY_HUB_SKELETON_CARD_TAG), shape = RoundedCornerShape(24.dp))
+                    }
+                }
+            }
+        }
     }
 }
+
+/** Test tag on each card outline of the hub's loading page. */
+internal const val LIBRARY_HUB_SKELETON_CARD_TAG = "library_hub_skeleton_card"
 
 /** Episode or show rows: artwork beside two text lines, as on Liked and Downloads. */
 @Composable

@@ -8,18 +8,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.`when`
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
@@ -56,6 +60,22 @@ class LibraryStatesTest {
     }
 
     @Test
+    fun `on a tablet the hub's loading outline takes the hub's two columns`() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreTestWindows.TABLET, LocalBoxlorePaneWidth provides BoxloreTestWindows.TABLET.widthDp) {
+                BoxLoreTheme(dynamicColor = false) {
+                    Box(Modifier.size(BoxloreTestWindows.TABLET.widthDp.dp, BoxloreTestWindows.TABLET.heightDp.dp)) { LibraryContent(LibraryUiState.Loading, {}, {}, {}, {}) }
+                }
+            }
+        }
+        compose.mainClock.advanceTimeBy(400)
+        compose.waitForIdle()
+        val lefts = compose.onAllNodesWithTag(LIBRARY_HUB_SKELETON_CARD_TAG, useUnmergedTree = true).fetchSemanticsNodes().map { it.boundsInRoot.left.toInt() }.toSet()
+        assertEquals("two columns of outlines", 2, lefts.size)
+    }
+
+    @Test
     fun `an empty Liked page shows its mark and keeps Find podcasts reachable in short windows`() {
         var explored = 0
         compose.setContent {
@@ -74,5 +94,28 @@ class LibraryStatesTest {
         }
         compose.onNodeWithText("Find podcasts").performClick()
         assertEquals(1, explored)
+    }
+
+    @Test
+    fun `a Liked page that fails to load says so, and Play all shows only while an episode can be queued`() {
+        val state = MutableStateFlow<LibraryUiState>(LibraryUiState.Error("offline"))
+        val vm = fixtures.viewModel(LibraryUiState.Success())
+        `when`(vm.uiState).thenReturn(state)
+        compose.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreTestWindows.PHONE) {
+                BoxLoreTheme(dynamicColor = false) {
+                    LikedEpisodesScreen(vm, {}, {}, { _, _ -> }, onPlayEpisodes = { _, _ -> })
+                }
+            }
+        }
+        compose.onNodeWithText("Error loading library").assertExists()
+        compose.onNodeWithTag(LIBRARY_SKELETON_TAG, useUnmergedTree = true).assertDoesNotExist()
+
+        compose.runOnIdle { state.value = LibraryUiState.Success(likedEpisodes = fixtures.liked(3).map { it.copy(isCompleted = true) }) }
+        compose.waitForIdle()
+        compose.onNodeWithTag(LIKED_PLAY_ALL_TAG).assertDoesNotExist()
+        compose.runOnIdle { state.value = LibraryUiState.Success(likedEpisodes = fixtures.liked(3)) }
+        compose.waitForIdle()
+        compose.onNodeWithTag(LIKED_PLAY_ALL_TAG).assertExists()
     }
 }
