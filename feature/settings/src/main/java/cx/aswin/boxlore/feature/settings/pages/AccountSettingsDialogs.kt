@@ -2,15 +2,16 @@ package cx.aswin.boxlore.feature.settings.pages
 
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -18,8 +19,11 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogConfirmButton
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogDismissButton
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogIcon
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogIconTone
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.model.text.resolve
 import cx.aswin.boxlore.feature.settings.R
@@ -100,35 +104,26 @@ private fun DeleteAccountConfirmationDialog(
     TrackScreenView("delete_account_confirmation")
     BoxloreAlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.account_delete_dialog_title), fontWeight = GoogleSansWeight.bold) },
+        icon = { BoxloreDialogIcon(Icons.Rounded.DeleteForever, tone = BoxloreDialogIconTone.Destructive) },
+        title = { Text(stringResource(R.string.account_delete_dialog_title)) },
         text = {
             Column(Modifier.tabletSheetScroll()) {
                 Text(
                     stringResource(R.string.account_delete_dialog_body),
                 )
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.account_delete_dialog_learn_more),
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = GoogleSansWeight.medium,
-                    modifier = Modifier.clickable(onClick = onOpenAccountDeletionInfo),
-                )
+                Spacer(Modifier.height(4.dp))
+                // A real button with a full touch area, lined up with the text above.
+                TextButton(
+                    onClick = onOpenAccountDeletionInfo,
+                    modifier = Modifier.heightIn(min = 48.dp),
+                    contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp),
+                ) {
+                    Text(stringResource(R.string.account_delete_dialog_learn_more))
+                }
             }
         },
-        confirmButton = {
-            Button(
-                onClick = onConfirmDelete,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-            ) {
-                Text(stringResource(R.string.account_delete_dialog_confirm))
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text(stringResource(R.string.settings_cancel))
-            }
-        },
+        confirmButton = { BoxloreDialogConfirmButton(stringResource(R.string.account_delete_dialog_confirm), onConfirmDelete, destructive = true) },
+        dismissButton = { BoxloreDialogDismissButton(stringResource(R.string.settings_cancel), onDismiss) },
     )
 }
 
@@ -140,7 +135,7 @@ private fun ReauthRequiredDialog(
     TrackScreenView("account_reauthentication_required")
     BoxloreAlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.account_reauth_dialog_title), fontWeight = GoogleSansWeight.bold) },
+        title = { Text(stringResource(R.string.account_reauth_dialog_title)) },
         text = {
             Text(
                 stringResource(R.string.account_reauth_dialog_body),
@@ -151,10 +146,6 @@ private fun ReauthRequiredDialog(
                 Text(stringResource(R.string.account_reauth_dialog_confirm))
             }
         },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text(stringResource(R.string.settings_cancel))
-            }
-        },
+        dismissButton = { BoxloreDialogDismissButton(stringResource(R.string.settings_cancel), onDismiss) },
     )
 }

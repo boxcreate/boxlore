@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -15,7 +16,6 @@ import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.HistoryEdu
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +36,7 @@ import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
+import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
@@ -106,13 +107,7 @@ internal fun AboutSettingsPage(
 
                     Button(
                         onClick = onVisitPodcastIndex,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large,
-                        colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                        ),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.Launch,
@@ -138,12 +133,14 @@ internal fun AboutSettingsPage(
                     SpecRow(label = stringResource(R.string.settings_about_android), value = stringResource(R.string.settings_about_android_version, appInfo.androidRelease, appInfo.sdkInt))
                 }
             }
+            SettingsDivider()
             SettingsNavigationRow(
                 title = stringResource(R.string.settings_about_send_feedback),
                 supportingText = stringResource(R.string.settings_about_send_feedback_description),
                 icon = Icons.Rounded.Feedback,
                 onClick = onSendFeedback,
             )
+            SettingsDivider()
             SettingsNavigationRow(
                 title = stringResource(R.string.settings_about_changelog),
                 supportingText = stringResource(R.string.settings_about_changelog_description),
@@ -151,6 +148,7 @@ internal fun AboutSettingsPage(
                 onClick = onOpenChangelog,
             )
             onCheckForUpdates?.let { check ->
+                SettingsDivider()
                 SettingsNavigationRow(
                     title = stringResource(cx.aswin.boxlore.feature.settings.R.string.settings_check_for_updates),
                     icon = Icons.Rounded.SystemUpdate,

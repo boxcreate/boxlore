@@ -28,7 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -84,7 +86,7 @@ private fun SyncAccountSection(
     syncStatus: CloudSyncUiStatus,
     onAccountClick: () -> Unit,
 ) {
-    SettingsGroup(title = stringResource(R.string.settings_sync_cloud_sync_title)) {
+    SettingsGroup {
         CloudSyncCard(
             accountStatus = accountStatus,
             syncStatus = syncStatus,
@@ -93,38 +95,30 @@ private fun SyncAccountSection(
     }
 }
 
-private data class SyncVisualState(
+internal data class SyncVisualState(
     val icon: ImageVector,
     val iconTint: Color,
     val iconBackground: Color,
 )
 
+/** The card's icon on a solid tile, in the Account page's colours: synced, working or signed out, or a problem. */
 @Composable
-private fun resolveSyncVisual(
+internal fun resolveSyncVisual(
     isSignedIn: Boolean,
     syncStatus: CloudSyncUiStatus,
 ): SyncVisualState {
-    val isSyncError = syncStatus is CloudSyncUiStatus.Error
-    val isSyncing = syncStatus is CloudSyncUiStatus.Syncing
-
+    val colors = MaterialTheme.colorScheme
     return when {
-        !isSignedIn || isSyncing -> SyncVisualState(
-            icon = Icons.Rounded.CloudSync,
-            iconTint = MaterialTheme.colorScheme.primary,
-            iconBackground = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-        )
-        isSyncError -> SyncVisualState(
-            icon = Icons.Rounded.CloudOff,
-            iconTint = MaterialTheme.colorScheme.error,
-            iconBackground = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
-        )
-        else -> SyncVisualState(
-            icon = Icons.Rounded.CloudDone,
-            iconTint = MaterialTheme.colorScheme.primary,
-            iconBackground = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-        )
+        !isSignedIn || syncStatus is CloudSyncUiStatus.Syncing -> SyncVisualState(Icons.Rounded.CloudSync, colors.onPrimaryContainer, colors.primaryContainer)
+        syncStatus is CloudSyncUiStatus.Error -> SyncVisualState(Icons.Rounded.CloudOff, colors.onErrorContainer, colors.errorContainer)
+        else -> SyncVisualState(Icons.Rounded.CloudDone, colors.onTertiaryContainer, colors.tertiaryContainer)
     }
 }
+
+/** The card's title says the state: a call to sign in, or that sync is on. */
+@StringRes
+internal fun resolveCloudSyncTitle(accountStatus: String?): Int =
+    if (accountStatus == null) R.string.account_sign_in_label else R.string.account_sync_on
 
 @StringRes
 internal fun resolveSyncBadgeText(syncStatus: CloudSyncUiStatus): Int = when {
@@ -173,6 +167,12 @@ private fun SyncStatusBadge(
     }
 }
 
+/** Test tag on the Cloud sync card's "Signed in as" line. */
+internal const val CLOUD_SYNC_SUBTITLE_TAG = "cloud_sync_subtitle"
+
+/** Test tag on the Cloud sync card's icon tile. */
+internal const val CLOUD_SYNC_ICON_TAG = "cloud_sync_icon"
+
 @Composable
 private fun CloudSyncCard(
     accountStatus: String?,
@@ -195,7 +195,7 @@ private fun CloudSyncCard(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Surface(
-            modifier = Modifier.size(44.dp),
+            modifier = Modifier.size(44.dp).testTag(CLOUD_SYNC_ICON_TAG),
             shape = MaterialTheme.shapes.medium,
             color = visual.iconBackground,
         ) {
@@ -214,7 +214,7 @@ private fun CloudSyncCard(
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             Text(
-                text = stringResource(R.string.settings_sync_cloud_sync_label),
+                text = stringResource(resolveCloudSyncTitle(accountStatus)),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -222,8 +222,11 @@ private fun CloudSyncCard(
 
             Text(
                 text = resolveCloudSyncSubtitle(accountStatus).asString(),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = if (isSignedIn) 1 else Int.MAX_VALUE,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.testTag(CLOUD_SYNC_SUBTITLE_TAG),
             )
 
             if (isSignedIn) {
@@ -278,7 +281,7 @@ private fun SyncBackupExportGroup(
 private fun SyncBackupImportGroup(
     backupActions: LibraryBackupActions,
 ) {
-    SettingsGroup(title = stringResource(R.string.settings_sync_import_title)) {
+    SettingsGroup(title = stringResource(R.string.settings_sync_import_title), footer = stringResource(R.string.settings_sync_import_footer)) {
         SettingsNavigationRow(
             title = stringResource(R.string.settings_sync_full_backup),
             supportingText = stringResource(R.string.settings_sync_import_full_description),

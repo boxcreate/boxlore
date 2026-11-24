@@ -101,4 +101,5 @@
     <string name="settings_theme_look_custom">Personalizado</string>
     <string name="settings_theme_look_custom_description">Elige tus colores y el estilo del fondo.</string>
     <string name="settings_theme_section_title">Tema</string>
+    <string name="settings_navigation_tablet_note">El estilo de la barra y el desenfoque se ven cuando boxlore usa la barra inferior, como en la pantalla exterior o en una ventana estrecha.</string>
 </resources>

@@ -87,13 +87,11 @@
     <string name="account_delete">Konto löschen</string>
     <string name="account_privacy_policy">Datenschutzerklärung</string>
     <string name="account_how_deletion_works">So funktioniert das Löschen</string>
-    <string name="settings_sync_cloud_sync_title">Cloud-Sync</string>
     <string name="settings_sync_badge_issue">Sync-Problem</string>
     <string name="settings_sync_badge_syncing">Wird synchronisiert…</string>
     <string name="settings_sync_badge_active">Cloud-Sync aktiv</string>
     <string name="settings_sync_signed_in_as">Angemeldet als %1$s</string>
     <string name="settings_sync_sign_in_prompt">Melde dich an, um zu sichern und geräteübergreifend zu synchronisieren</string>
-    <string name="settings_sync_cloud_sync_label">Cloud-Sync</string>
     <string name="settings_sync_open_account">Kontoeinstellungen öffnen</string>
     <string name="settings_sync_full_backup_summary">Abos, Ordner, Playlists, Verlauf, Likes und Einstellungen (JSON)</string>
     <string name="settings_sync_export_title">Exportieren</string>
@@ -102,7 +100,7 @@
     <string name="settings_sync_opml_file">OPML-Datei</string>
     <string name="settings_sync_import_title">Importieren</string>
     <!-- "Missing episodes?" is the name of a per-show option. -->
-    <string name="settings_sync_import_full_description">Stellt „Fehlende Folgen?“-Optionen wieder her und aktualisiert diese Podcasts</string>
+    <string name="settings_sync_import_full_description">Stellt deine Bibliothek und Einstellungen aus der Sicherungsdatei wieder her</string>
     <string name="settings_sync_import_opml_description">Aus einer OPML-Datei importieren</string>
     <string name="account_deleted_toast">Konto gelöscht</string>
     <string name="account_delete_dialog_title">Konto löschen</string>
@@ -169,4 +167,5 @@
     <string name="account_tv_wrong_code">Dieser Code hat nicht funktioniert. Prüfe ihn auf deinem Fernseher oder hol dir dort einen neuen.</string>
     <string name="account_tv_sign_in_first">Bestätige zuerst deine E-Mail-Adresse auf diesem Handy.</string>
     <string name="account_tv_no_connection">boxlore ist nicht erreichbar. Prüfe deine Verbindung und versuche es noch einmal.</string>
+    <string name="settings_sync_import_footer">Podcasts mit eingeschaltetem „Fehlende Folgen?“ werden nach dem Import aktualisiert.</string>
 </resources>

@@ -81,13 +81,11 @@
     <string name="account_delete">Eliminar cuenta</string>
     <string name="account_privacy_policy">Política de privacidad</string>
     <string name="account_how_deletion_works">Cómo funciona la eliminación</string>
-    <string name="settings_sync_cloud_sync_title">Sincronización en la nube</string>
     <string name="settings_sync_badge_issue">Problema de sincronización</string>
     <string name="settings_sync_badge_syncing">Sincronizando…</string>
     <string name="settings_sync_badge_active">Sincronización en la nube activa</string>
     <string name="settings_sync_signed_in_as">Sesión iniciada como %1$s</string>
     <string name="settings_sync_sign_in_prompt">Inicia sesión para hacer copias de seguridad y sincronizar entre dispositivos</string>
-    <string name="settings_sync_cloud_sync_label">Sincronización en la nube</string>
     <string name="settings_sync_open_account">Abrir ajustes de la cuenta</string>
     <string name="settings_sync_full_backup_summary">Podcasts seguidos, carpetas, playlists, historial, me gusta y ajustes (JSON)</string>
     <string name="settings_sync_export_title">Exportar</string>
@@ -95,7 +93,7 @@
     <string name="settings_sync_subscriptions_only">Solo podcasts seguidos</string>
     <string name="settings_sync_opml_file">Archivo OPML</string>
     <string name="settings_sync_import_title">Importar</string>
-    <string name="settings_sync_import_full_description">Restaura lo que activaste en «¿Faltan episodios?» y actualiza esos podcasts</string>
+    <string name="settings_sync_import_full_description">Restaura tu biblioteca y tus ajustes desde el archivo de copia</string>
     <string name="settings_sync_import_opml_description">Importar desde un archivo OPML</string>
     <string name="account_deleted_toast">Cuenta eliminada</string>
     <string name="account_delete_dialog_title">Eliminar cuenta</string>
@@ -158,4 +156,5 @@
     <string name="account_tv_wrong_code">Ese código no ha funcionado. Compruébalo en tu TV o pide uno nuevo allí.</string>
     <string name="account_tv_sign_in_first">Primero verifica tu correo en este teléfono.</string>
     <string name="account_tv_no_connection">No se ha podido conectar con boxlore. Comprueba tu conexión e inténtalo de nuevo.</string>
+    <string name="settings_sync_import_footer">Los podcasts con «¿Faltan episodios?» activado se actualizan después de importar.</string>
 </resources>

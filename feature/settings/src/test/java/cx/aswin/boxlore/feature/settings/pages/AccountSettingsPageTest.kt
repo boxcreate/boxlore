@@ -1,17 +1,51 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.performClick
 import cx.aswin.boxlore.core.auth.RecentLoginRequiredException
+import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.text
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class AccountSettingsPageTest {
+    @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun `Delete account offers a real Learn more button, a quiet Cancel and a red delete, each once`() {
+        val calls = mutableListOf<String>()
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                AccountSettingsDialogs(
+                    showDeleteConfirmation = true,
+                    showReauthRequiredDialog = false,
+                    onDismissDeleteConfirmation = { calls += "cancel" },
+                    onConfirmDelete = { calls += "delete" },
+                    onDismissReauthRequired = {},
+                    onSignOutToReauth = {},
+                    onOpenAccountDeletionInfo = { calls += "learn" },
+                )
+            }
+        }
+        val learn = compose.onNode(hasText(text(R.string.account_delete_dialog_learn_more)) and hasClickAction())
+        assertTrue(learn.fetchSemanticsNode().boundsInRoot.height >= 48f)
+        learn.performClick()
+        compose.onNode(hasText(text(R.string.account_delete_dialog_confirm)) and hasClickAction()).performClick()
+        compose.onNode(hasText(text(R.string.settings_cancel)) and hasClickAction()).performClick()
+        assertEquals(listOf("learn", "delete", "cancel"), calls)
+    }
 
     @Test
     fun resolveAccountDeletionOutcome_success_returnsSuccessOutcome() {
