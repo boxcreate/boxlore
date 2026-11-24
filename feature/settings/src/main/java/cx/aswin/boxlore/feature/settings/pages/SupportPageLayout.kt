@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -52,8 +54,11 @@ internal val SupportSideFixedHeight = 60.dp
 /** Picker, button and mission card beside the stage at 100% text size. */
 internal val SupportSideTextHeight = 340.dp
 
-/** How the page fits the space Settings gives it. The page never scrolls. */
-internal data class SupportPageArrangement(val sideBySide: Boolean, val showMission: Boolean)
+/**
+ * How the page fits the space Settings gives it. It [scrolls] only when even the stacked page
+ * without the mission card is taller than the window (very large text on a short screen).
+ */
+internal data class SupportPageArrangement(val sideBySide: Boolean, val showMission: Boolean, val scrolls: Boolean = false)
 
 /**
  * Windows tall enough keep today's stacked page with its spacing. Wide windows too short for it
@@ -66,7 +71,11 @@ internal fun supportPageArrangement(width: Dp, height: Dp, fontScale: Float): Su
             SupportPageArrangement(sideBySide = false, showMission = true)
         width > height ->
             SupportPageArrangement(sideBySide = true, showMission = height >= SupportSideFixedHeight + SupportSideTextHeight * text)
-        else -> SupportPageArrangement(sideBySide = false, showMission = false)
+        else -> SupportPageArrangement(
+            sideBySide = false,
+            showMission = false,
+            scrolls = height < SupportStackedFixedHeight + (SupportStackedTextHeight - SupportMissionCardHeight) * text,
+        )
     }
 }
 
@@ -102,22 +111,27 @@ internal fun SupportPageBody(
                 }
             }
         } else {
-            Column(
-                modifier = Modifier
-                    .boxloreCardWidth(BoxloreCardFamily.Utility)
-                    .fillMaxSize()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                stage()
-                Spacer(modifier = if (tablet) Modifier.height(20.dp) else Modifier.weight(1f))
-                picker()
-                Spacer(modifier = Modifier.height(14.dp))
-                cta()
-                Spacer(modifier = if (tablet) Modifier.height(20.dp) else Modifier.weight(1f))
-                if (arrangement.showMission) mission()
-                Spacer(modifier = Modifier.height(10.dp))
+            // Tablets centre the stacked page; a page too tall for the window scrolls with fixed gaps.
+            val fixedGaps = tablet || arrangement.scrolls
+            Box(Modifier.fillMaxSize(), contentAlignment = if (tablet) Alignment.Center else Alignment.TopCenter) {
+                Column(
+                    modifier = Modifier
+                        .boxloreCardWidth(BoxloreCardFamily.Utility)
+                        .then(if (fixedGaps) Modifier.fillMaxWidth() else Modifier.fillMaxSize())
+                        .then(if (arrangement.scrolls) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    stage()
+                    Spacer(modifier = if (fixedGaps) Modifier.height(20.dp) else Modifier.weight(1f))
+                    picker()
+                    Spacer(modifier = Modifier.height(14.dp))
+                    cta()
+                    Spacer(modifier = if (fixedGaps) Modifier.height(20.dp) else Modifier.weight(1f))
+                    if (arrangement.showMission) mission()
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
             }
         }
     }
