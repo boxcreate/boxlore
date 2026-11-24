@@ -46,6 +46,14 @@ internal class LibraryImportViewModel(
         return claimed
     }
 
+    /**
+     * Marks the import with [mark] the first time [phase] is reached. The write runs on this view
+     * model's scope, so a recreation of the activity while it waits on storage doesn't cancel it.
+     */
+    fun markPhase(phase: String?, mark: suspend () -> Unit) {
+        if (claimPhaseMark(phase)) viewModelScope.launch { mark() }
+    }
+
     /** Restores a boxlore backup from [uri]. */
     fun importJson(uri: Uri) {
         viewModelScope.launch { runJson(uri) { state = it } }

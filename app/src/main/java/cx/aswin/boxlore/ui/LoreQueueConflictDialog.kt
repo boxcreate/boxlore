@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.ui
 
-import android.util.Log
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -14,7 +13,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -25,8 +23,6 @@ import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
 
 /**
  * The show name and author a Lore episode is queued with when it carries no show of its own. These
@@ -121,26 +117,16 @@ fun LoreQueueConflictDialog(pendingLoreEpisode: Episode, onDismiss: () -> Unit, 
 }
 
 /**
- * Shows "Start a Lore queue?" while [dialogs] holds a pending episode. Start runs
- * [startLore] on this host's scope, which outlives the dialog, so clearing the queue is always
- * followed by starting Lore.
+ * Shows "Start a Lore queue?" while [dialogs] holds a pending episode. Start runs [startLore] on
+ * the holder's scope, which outlives the activity, so clearing the queue is always followed by
+ * starting Lore, even across a recreation.
  */
 @Composable
 internal fun LoreQueueConflictHost(dialogs: ShellPendingDialogs, startLore: suspend (Episode) -> Unit) {
-    val scope = rememberCoroutineScope()
     val episode = dialogs.loreQueueConflictEpisode ?: return
     LoreQueueConflictDialog(
         pendingLoreEpisode = episode,
         onDismiss = { dialogs.loreQueueConflictEpisode = null },
-        onConfirmStart = { pending ->
-            scope.launch {
-                try {
-                    startLore(pending)
-                } catch (e: Exception) {
-                    if (e is CancellationException) throw e
-                    Log.e("MainActivity", "Failed to start Lore queue", e)
-                }
-            }
-        },
+        onConfirmStart = { pending -> dialogs.startLoreQueue(pending, startLore) },
     )
 }

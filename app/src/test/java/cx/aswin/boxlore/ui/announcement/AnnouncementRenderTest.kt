@@ -93,14 +93,21 @@ class AnnouncementRenderTest {
     }
 
     @Test
-    @Config(qualifiers = "w600dp-h900dp-mdpi")
-    fun `crossing the tablet width with the body scrolled keeps the scroll and the card open`() {
+    @Config(qualifiers = "w900dp-h900dp-mdpi")
+    fun `crossing the tablet width and height with the body scrolled keeps the scroll and the card open`() {
         AnalyticsHelper.installRecordingSink(events)
         window.value = BoxloreTestWindows.W599_H900
         render(longAlert())
         compose.onNodeWithText("Absatz 40:", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Absatz 1:", substring = true).assertIsNotDisplayed()
-        listOf(BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900).forEach { next ->
+        // The 600dp width gate both ways, then the 480dp height gate both ways at a tablet width.
+        listOf(
+            BoxloreTestWindows.W600_H900,
+            BoxloreTestWindows.W599_H900,
+            BoxloreTestWindows.W900_H480,
+            BoxloreTestWindows.W900_H479,
+            BoxloreTestWindows.W900_H480,
+        ).forEach { next ->
             compose.runOnIdle { window.value = next }
             compose.waitForIdle()
             compose.onNodeWithTag(ANNOUNCEMENT_PANEL_TAG).assertExists()

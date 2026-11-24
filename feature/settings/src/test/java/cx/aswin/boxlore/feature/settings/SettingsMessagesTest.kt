@@ -43,6 +43,36 @@ class SettingsMessagesTest {
         assertNotNull(ShadowToast.getLatestToast())
     }
 
+    @Test
+    @Config(sdk = [32])
+    fun `the feedback report and the account link confirm their copy before Android 13`() {
+        assertFeedbackAndAccountCopies(expectToast = true)
+    }
+
+    @Test
+    @Config(sdk = [33])
+    fun `from Android 13 the feedback report and the account link leave the confirmation to the system`() {
+        assertFeedbackAndAccountCopies(expectToast = false)
+    }
+
+    private fun assertFeedbackAndAccountCopies(expectToast: Boolean) {
+        cx.aswin.boxlore.feature.settings.feedback.copyFeedbackReport(context, "boxlore diagnostics", "report-1")
+        assertEquals("report-1", clipboardText())
+        assertEquals(expectToast, ShadowToast.getLatestToast() != null)
+        ShadowToast.reset()
+
+        // Neither the link handler nor any app can open the page, so its link is copied instead.
+        val noBrowser = object : android.content.ContextWrapper(context) {
+            override fun startActivity(intent: android.content.Intent?) = throw android.content.ActivityNotFoundException()
+        }
+        val failingLinks = object : androidx.compose.ui.platform.UriHandler {
+            override fun openUri(uri: String) = error("no handler")
+        }
+        cx.aswin.boxlore.feature.settings.pages.openAccountDeletionInfo(noBrowser, failingLinks)
+        assertEquals("https://boxlore.in/account-deletion/", clipboardText())
+        assertEquals(expectToast, ShadowToast.getLatestToast() != null)
+    }
+
     @Test fun `boxlore confirms copies itself only before Android 13`() {
         assertTrue(boxloreShowsOwnCopyConfirmation(sdkInt = 32))
         assertFalse(boxloreShowsOwnCopyConfirmation(sdkInt = 33))

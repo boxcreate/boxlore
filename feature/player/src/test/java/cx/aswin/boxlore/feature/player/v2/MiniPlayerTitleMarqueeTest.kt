@@ -31,6 +31,7 @@ class MiniPlayerTitleMarqueeTest {
     private val title = mutableStateOf(LONG_TITLE)
     private val settled = mutableStateOf(true)
     private val passDone: MutableState<String?> = mutableStateOf(null)
+    private val width = mutableStateOf(220.dp)
     private var passes = 0
 
     private fun render(motionAllowed: Boolean = true) {
@@ -43,7 +44,7 @@ class MiniPlayerTitleMarqueeTest {
                 settled = settled.value,
                 motionAllowed = motionAllowed,
                 passDoneFor = passDone,
-                modifier = Modifier.width(220.dp),
+                modifier = Modifier.width(width.value),
             )
         }
         compose.mainClock.advanceTimeByFrame()
@@ -107,6 +108,17 @@ class MiniPlayerTitleMarqueeTest {
         advance(10_000)
         assertEquals(0, passes)
         compose.onNodeWithTag(MINI_TITLE_TAG).assertExists()
+    }
+
+    @Test fun `a title that fits until the bar narrows before the pause ends still passes once`() {
+        title.value = "The weekly science roundup"
+        width.value = 300.dp
+        render()
+        compose.onNodeWithTag(MINI_TITLE_TAG).assertExists()
+        advance(1_000)
+        compose.runOnIdle { width.value = 90.dp }
+        advance(3_000)
+        assertEquals("The narrowed title is cut, so it passes", 1, passes)
     }
 
     @Test fun `a title that fits never moves`() {

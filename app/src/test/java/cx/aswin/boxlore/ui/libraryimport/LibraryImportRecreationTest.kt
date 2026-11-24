@@ -125,6 +125,25 @@ class LibraryImportRecreationTest {
         assertTrue("A new import is marked again", model.claimPhaseMark("running"))
     }
 
+    @Test
+    fun `a mark still waiting on storage finishes after the activity is recreated`() {
+        val model = showImport()
+        val storage = kotlinx.coroutines.CompletableDeferred<Unit>()
+        var marks = 0
+        model.markPhase("running") {
+            storage.await()
+            marks++
+        }
+        controller.recreate()
+        assertSame(model, showImport())
+        storage.complete(Unit)
+        idle()
+        assertEquals("The write finished on the view model's scope", 1, marks)
+        model.markPhase("running") { marks++ }
+        idle()
+        assertEquals("and the phase is not marked twice", 1, marks)
+    }
+
     private fun back() {
         controller.get().onBackPressedDispatcher.onBackPressed()
         idle()

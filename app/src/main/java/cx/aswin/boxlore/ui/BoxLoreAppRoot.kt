@@ -516,7 +516,7 @@ fun BoxLoreAppRoot(
     // listening history lands before it ends) and again when it succeeds.
     val importPhase = libraryImportPhase(opmlImportState)
     LaunchedEffect(importPhase) {
-        if (importViewModel.claimPhaseMark(importPhase)) userPrefs.markLibraryImported()
+        importViewModel.markPhase(importPhase) { userPrefs.markLibraryImported() }
     }
 
     fun performJsonImport(uri: android.net.Uri) = importViewModel.importJson(uri)

@@ -58,7 +58,8 @@ private fun AccountStateEffects(
     }
 }
 
-private fun openAccountDeletionInfo(context: Context, uriHandler: UriHandler) {
+/** Opens the account deletion page; when no app can, copies its link instead. */
+internal fun openAccountDeletionInfo(context: Context, uriHandler: UriHandler) {
     val opened = runCatching {
         uriHandler.openUri(ACCOUNT_DELETION_URL)
         true

@@ -172,10 +172,7 @@ private fun LogsActionButtons(
     ) {
         OutlinedButton(
             onClick = {
-                val report = diagnosticInfo?.toMarkdownReport(logs) ?: (logs ?: "")
-                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                cm.setPrimaryClip(ClipData.newPlainText(resources.getString(R.string.feedback_logs_clip_label), report))
-                if (boxloreShowsOwnCopyConfirmation()) Toast.makeText(context, R.string.feedback_logs_copied, Toast.LENGTH_SHORT).show()
+                copyFeedbackReport(context, resources.getString(R.string.feedback_logs_clip_label), diagnosticInfo?.toMarkdownReport(logs) ?: (logs ?: ""))
             },
             modifier = Modifier.weight(1f),
             enabled = isActionEnabled,
@@ -207,4 +204,11 @@ private fun LogsActionButtons(
             )
         }
     }
+}
+
+/** Copies the feedback [report]; boxlore says so itself only where the system shows no preview. */
+internal fun copyFeedbackReport(context: Context, label: String, report: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(ClipData.newPlainText(label, report))
+    if (boxloreShowsOwnCopyConfirmation()) Toast.makeText(context, R.string.feedback_logs_copied, Toast.LENGTH_SHORT).show()
 }

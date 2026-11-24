@@ -79,6 +79,9 @@ internal class TurnstilePageHolder(
     private var view: View? = null
     private var cardSize: IntSize? = null
 
+    /** The latest draw asked for; an earlier one finishing says nothing about the page's current size. */
+    private var drawRequest = 0
+
     /** False from the moment the page is moved into a card, or its card changes size, until it has drawn there. */
     var drawn by mutableStateOf(false)
         private set
@@ -99,7 +102,7 @@ internal class TurnstilePageHolder(
             object : View.OnAttachStateChangeListener {
                 override fun onViewAttachedToWindow(attached: View) {
                     attached.removeOnAttachStateChangeListener(this)
-                    whenDrawn(attached) { if (view === attached) drawn = true }
+                    if (view === attached) requestDraw(attached)
                 }
 
                 override fun onViewDetachedFromWindow(detached: View) = Unit
@@ -116,9 +119,17 @@ internal class TurnstilePageHolder(
         val previous = cardSize
         cardSize = size
         val page = view ?: return
-        if (previous == null || previous == size || !drawn) return
+        if (previous == null || previous == size) return
+        // Not in the card's window yet: the attach listener asks for the first draw there.
+        if (!page.isAttachedToWindow) return
+        requestDraw(page)
+    }
+
+    /** Shows the loader until [page] has drawn as it is now; only the latest request may hide it. */
+    private fun requestDraw(page: View) {
+        val request = ++drawRequest
         drawn = false
-        whenDrawn(page) { if (view === page) drawn = true }
+        whenDrawn(page) { if (view === page && request == drawRequest) drawn = true }
     }
 
     fun release() {

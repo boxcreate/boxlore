@@ -600,7 +600,8 @@ internal fun MiniPlayerTitle(
             if (scrolling) {
                 // One pass moves the whole title plus the marquee's default gap (a third of the bar).
                 travelPx = layout.size.width + containerPx / 3f
-            } else if (overflowing == null) {
+            } else {
+                // Every still layout, so a bar that narrows before the pass still finds the title cut.
                 overflowing = layout.hasVisualOverflow || layout.isLineEllipsized(0)
             }
         },

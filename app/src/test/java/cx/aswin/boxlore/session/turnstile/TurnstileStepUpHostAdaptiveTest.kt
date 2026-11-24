@@ -330,6 +330,16 @@ class TurnstileStepUpHostAdaptiveTest {
         assertFalse("a new size shows the loader until the page redraws", holder.drawn)
         compose.runOnIdle { heldDraws.removeAt(0).invoke() }
         assertTrue(holder.drawn)
+
+        // Two sizes before the first redraw reports: only the latest size's draw hides the loader.
+        compose.runOnIdle {
+            holder.cardResized(IntSize(240, 72))
+            holder.cardResized(IntSize(220, 72))
+        }
+        compose.runOnIdle { heldDraws.removeAt(0).invoke() }
+        assertFalse("an earlier size's draw keeps the loader", holder.drawn)
+        compose.runOnIdle { heldDraws.removeAt(0).invoke() }
+        assertTrue(holder.drawn)
         assertEquals(1, built)
         assertTrue(heldDraws.isEmpty())
     }
