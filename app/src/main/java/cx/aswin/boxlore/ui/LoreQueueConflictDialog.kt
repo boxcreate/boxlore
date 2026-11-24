@@ -121,7 +121,7 @@ fun LoreQueueConflictDialog(pendingLoreEpisode: Episode, onDismiss: () -> Unit, 
 }
 
 /**
- * Shows "Replace your queue with Lore?" while [dialogs] holds a pending episode. Start runs
+ * Shows "Start a Lore queue?" while [dialogs] holds a pending episode. Start runs
  * [startLore] on this host's scope, which outlives the dialog, so clearing the queue is always
  * followed by starting Lore.
  */

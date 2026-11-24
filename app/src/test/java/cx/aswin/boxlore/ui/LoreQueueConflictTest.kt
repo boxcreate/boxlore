@@ -21,7 +21,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * "Replace your queue with Lore?" stays open when the activity is recreated, and Start always
+ * "Start a Lore queue?" stays open when the activity is recreated, and Start always
  * finishes: the queue is cleared once and Lore starts once, even though the dialog closes first.
  */
 @RunWith(RobolectricTestRunner::class)

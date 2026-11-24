@@ -12,6 +12,6 @@ import cx.aswin.boxlore.core.model.Episode
  * bundle too large.
  */
 internal class ShellPendingDialogs : ViewModel() {
-    /** The Lore episode waiting on "Replace your queue with Lore?", or null when the question is closed. */
+    /** The Lore episode waiting on "Start a Lore queue?", or null when the question is closed. */
     var loreQueueConflictEpisode by mutableStateOf<Episode?>(null)
 }

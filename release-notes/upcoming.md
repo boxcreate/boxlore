@@ -34,10 +34,10 @@ Announcement title:
 - The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.
 - In Android Auto, a show's page now lists its episodes from newest to oldest. Episodes you've started stay in their place and show the time left.
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
-- On a half-open foldable, pages now use the whole screen, and the sleep timer prompt, playback notices and the connection check stay clear of the fold and fit in their half.
+- On a half-open foldable, pages now use the whole screen, and the sleep timer prompt, playback notices and the connection check stay clear of the fold.
+- The connection check now shows a small loader while its box loads, instead of an empty box, and fits in one half of a half-open foldable without scrolling.
 - On tablets and foldables, the import page now fills the whole screen, so nothing behind it can be tapped by mistake.
 - On tablets, announcements now open as one card over a dimmed screen instead of a card inside a second frame.
-- The connection check now shows a small loader while its box loads, instead of an empty box.
 - The updates page now shows one loading indicator at a time, and its buttons match the rest of boxlore.
 - When a new episode starts, the mini player now shows its whole title once, then settles back to one line.
 - On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.
@@ -47,7 +47,7 @@ Announcement title:
 - Importing an OPML file that lists a show you already follow no longer turns off that show's new-episode notifications and auto-download.
 - Importing an OPML file that lists a show twice now adds every show in the file in one go.
 - A library import or backup restore now keeps going when you change the text or display size, or switch screens on a foldable.
-- Tapping Start in "Replace your queue with Lore?" now always starts Lore, and the question stays open when the screen changes size.
+- Tapping Start Lore queue now always starts your Lore queue, and the "Start a Lore queue?" question stays open when you change the text or display size.
 - When you use boxlore on more than one device, one that was offline or signed out no longer sets your progress or likes back to an older point, and devices that showed different progress now agree.
 - Shows you unfollow on another device or on your watch are now cleared from this phone's saved shows, just as when you unfollow them here.
 - Casting to a TV or speaker no longer leaves your phone on "Connecting…" once the episode is playing there. The device list now shows which one you're casting to.
@@ -57,5 +57,5 @@ Announcement title:
 - Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.
-- In dark theme, boxlore no longer flashes purple as it opens.
+- When your phone is in dark mode, boxlore no longer flashes purple as it opens.
 - On Android 13 and later, copying your privacy ID, a link or your logs no longer shows a second "copied" message on top of Android's own.
