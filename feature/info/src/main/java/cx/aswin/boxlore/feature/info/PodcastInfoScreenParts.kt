@@ -10,9 +10,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -33,6 +31,7 @@ import androidx.compose.ui.unit.lerp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
@@ -68,7 +67,7 @@ internal fun rememberShowPageTitleMotion(listState: LazyListState): ShowPageTitl
     }
     val density = LocalDensity.current
     val scrollFraction = (scrollOffset / with(density) { 150.dp.toPx() }).coerceIn(0f, 1f)
-    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val statusBarHeight = boxlorePaneTopInset()
     val collapsedHeaderHeight = 64.dp + statusBarHeight
     // Don't lerp from Color.Transparent: its RGB is 0,0,0, which flashes black.
     val surfaceColor = MaterialTheme.colorScheme.surfaceContainer

@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,11 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ExpandLess
-import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,9 +26,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.HtmlText
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
@@ -45,6 +46,7 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.ShowNotes
 import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.info.components.EpisodeExpandRow
 import java.util.Locale
 
 @Composable
@@ -53,8 +55,13 @@ internal fun EpisodeDescriptionCard(notes: ShowNotes, modifier: Modifier = Modif
     var expanded by rememberSaveable(notes.plainText) { mutableStateOf(false) }
     var overflows by remember(notes.plainText) { mutableStateOf(false) }
     Surface(modifier.fillMaxWidth().padding(horizontal = 16.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
-        Column(Modifier.padding(20.dp).animateContentSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.episode_info_about), style = MaterialTheme.typography.titleLarge)
+        Column(Modifier.animateContentSize().padding(AboutCardPadding), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                stringResource(R.string.episode_info_about),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = GoogleSansWeight.bold,
+                modifier = Modifier.semantics { heading() },
+            )
             if (expanded) {
                 HtmlText(
                     notes.html,
@@ -83,14 +90,22 @@ internal fun EpisodeDescriptionCard(notes: ShowNotes, modifier: Modifier = Modif
                 )
             }
             if (expanded || overflows) {
-                FilledTonalButton(onClick = { expanded = !expanded }, shape = CircleShape) {
-                Text(stringResource(if (expanded) R.string.episode_info_show_less else R.string.episode_info_read_more))
-                Icon(if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore, null, modifier = Modifier.size(18.dp))
-            }
+                EpisodeExpandRow(
+                    label = stringResource(if (expanded) R.string.episode_info_show_less else R.string.episode_info_read_more),
+                    expanded = expanded,
+                    onClick = { expanded = !expanded },
+                    shape = CircleShape,
+                )
             }
             if (!persons.isNullOrEmpty()) {
                 Text(stringResource(R.string.episode_info_people), style = MaterialTheme.typography.titleSmall)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // The row runs to the card's edges (the size animation clips at the card, not the padding),
+                // so a chip past the end slides under the edge instead of stopping cut off at the text margin.
+                LazyRow(
+                    modifier = Modifier.bleedHorizontally(AboutCardPadding).testTag(EPISODE_PEOPLE_ROW_TAG),
+                    contentPadding = PaddingValues(horizontal = AboutCardPadding),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     items(persons) { person -> PersonChip(person) { person.href?.let { openEpisodeLink(context, it) } } }
                 }
             }
@@ -98,6 +113,19 @@ internal fun EpisodeDescriptionCard(notes: ShowNotes, modifier: Modifier = Modif
             if (details.isNotEmpty()) Text(details.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+private val AboutCardPadding = 20.dp
+
+internal const val EPISODE_PEOPLE_ROW_TAG = "episode_info_people"
+
+/** Widens this content by [amount] on each side, past its parent's padding, keeping its parent's width. */
+private fun Modifier.bleedHorizontally(amount: Dp): Modifier = layout { measurable, constraints ->
+    val extra = (amount * 2).roundToPx()
+    val maxWidth = if (constraints.hasBoundedWidth) constraints.maxWidth + extra else constraints.maxWidth
+    val placeable = measurable.measure(constraints.copy(minWidth = constraints.minWidth + extra, maxWidth = maxWidth))
+    val width = (placeable.width - extra).coerceAtLeast(0)
+    layout(width, placeable.height) { placeable.placeRelative(-extra / 2, 0) }
 }
 
 internal fun formatLicense(licenseCode: String): UiText {

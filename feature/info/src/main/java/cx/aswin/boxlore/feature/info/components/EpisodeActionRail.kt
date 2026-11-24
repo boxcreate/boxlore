@@ -47,6 +47,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltipPosition
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.info.R
@@ -197,6 +199,9 @@ private fun RailAction(active: Boolean, icon: ImageVector, actionLabel: String, 
             pressedShape = RoundedCornerShape(18.dp),
         )
     }
+    // Long-press or hover names the button; above it, so the finger doesn't hide the name.
+    Box(modifier) {
+    BoxloreTooltip(actionLabel, position = BoxloreTooltipPosition.Above) {
     FilledTonalToggleButton(
         checked = active,
         onCheckedChange = { onClick() },
@@ -209,7 +214,7 @@ private fun RailAction(active: Boolean, icon: ImageVector, actionLabel: String, 
             checkedContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
         contentPadding = PaddingValues(0.dp),
-        modifier = modifier.height(56.dp).semantics {
+        modifier = Modifier.fillMaxWidth().height(56.dp).semantics {
             contentDescription = actionLabel
             if (loading) stateDescription = downloading
         },
@@ -219,5 +224,7 @@ private fun RailAction(active: Boolean, icon: ImageVector, actionLabel: String, 
         } else {
             Icon(icon, null, modifier = Modifier.size(23.dp))
         }
+    }
+    }
     }
 }
