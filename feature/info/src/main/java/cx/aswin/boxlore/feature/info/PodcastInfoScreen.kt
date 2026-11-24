@@ -192,8 +192,9 @@ fun PodcastInfoScreen(
     var showPodcastPlaybackSettings by rememberSaveable { mutableStateOf(false) }
     var showPodcastGenreEdit by rememberSaveable { mutableStateOf(false) }
     var showMissingEpisodesConfirm by rememberSaveable { mutableStateOf(false) }
-    // The notifications change waiting on the RSS disclosure; saved, so the question survives a fold.
-    var pendingRssAction by rememberSaveable(podcastId) { mutableStateOf<PendingRssAction?>(null) }
+    // The notifications change waiting on the RSS disclosure and the feed link it showed; saved, so
+    // the question survives a fold and confirming it consents to the link that was disclosed.
+    var pendingRssAction by rememberSaveable(podcastId, stateSaver = PendingRssQuestion.Saver) { mutableStateOf<PendingRssQuestion?>(null) }
     // Selection is saved as episode IDs. The episode pool cannot be saved, so a recreated page
     // looks its selected episodes up again (see the selection restore below).
     var selectedEpisodeIds by rememberSaveable(podcastId, stateSaver = EpisodeIdListSaver) { mutableStateOf(emptyList<String>()) }
@@ -613,9 +614,9 @@ fun PodcastInfoScreen(
                     cx.aswin.boxlore.feature.info.components.RssNotificationDisclosureDialog(
                         onConfirm = {
                             pendingRssAction = null
-                            // Read at confirm time, so a restored question acts on the page as it is now.
-                            val feedUrl = state.podcast.feedUrl
-                            when (val warning = pending.warning) {
+                            // The link disclosed when the question opened: a feed URL that changed since is refused.
+                            val feedUrl = pending.feedUrl
+                            when (val warning = pending.action.warning) {
                                 null -> toggleNotifications(true, feedUrl)
                                 else -> runWarningAction(warning, true, feedUrl)
                             }
@@ -638,7 +639,7 @@ fun PodcastInfoScreen(
                             podcast = state.podcast,
                             onDisclosureRequired = {
                                 notificationPermission.pendingAction = null
-                                pendingRssAction = PendingRssAction.ToggleNotifications
+                                pendingRssAction = PendingRssQuestion(PendingRssAction.ToggleNotifications, state.podcast.feedUrl)
                             },
                             onProceed = toggleNotifications,
                         )
@@ -667,7 +668,7 @@ fun PodcastInfoScreen(
                             podcast = state.podcast,
                             onDisclosureRequired = {
                                 notificationPermission.pendingAction = null
-                                pendingRssAction = PendingRssAction.fromWarning(currentWarning)
+                                pendingRssAction = PendingRssQuestion(PendingRssAction.fromWarning(currentWarning), state.podcast.feedUrl)
                             },
                             onProceed = { accepted, feedUrl -> runWarningAction(currentWarning, accepted, feedUrl) },
                         )
@@ -976,6 +977,24 @@ internal enum class PendingRssAction(val warning: ToolbarWarning?) {
 
     companion object {
         fun fromWarning(warning: ToolbarWarning): PendingRssAction = entries.firstOrNull { it.warning == warning } ?: ToggleNotifications
+    }
+}
+
+/**
+ * The RSS question on screen: what confirming does ([action]) and the feed link it disclosed
+ * ([feedUrl], captured when the question opened). Saved together, so a restored question still
+ * consents only to the link the listener was shown.
+ */
+internal data class PendingRssQuestion(val action: PendingRssAction, val feedUrl: String?) {
+    companion object {
+        val Saver: androidx.compose.runtime.saveable.Saver<PendingRssQuestion?, Any> = androidx.compose.runtime.saveable.Saver(
+            save = { question -> question?.let { arrayListOf(it.action.name, it.feedUrl.orEmpty(), it.feedUrl != null) } ?: false },
+            restore = { saved ->
+                (saved as? List<*>)?.let { parts ->
+                    PendingRssQuestion(PendingRssAction.valueOf(parts[0] as String), (parts[1] as String).takeIf { parts[2] == true })
+                }
+            },
+        )
     }
 }
 
