@@ -261,6 +261,9 @@ class HomeViewModel(
             HomeBecauseYouLikeLogic.candidatePodcastsFromHistory(subs, history)
         }
 
+    /** The show the listener picked for Because you like, or null while it rotates on its own. */
+    val overriddenRecPodcastId: Flow<String?> = userPrefs.overriddenRecPodcastIdStream
+
     fun setOverriddenRecPodcast(podcastId: String?) {
         viewModelScope.launch {
             userPrefs.setOverriddenRecPodcastId(podcastId)

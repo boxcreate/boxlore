@@ -1,7 +1,9 @@
 package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -11,6 +13,9 @@ import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.ThumbUp
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,7 +36,7 @@ import kotlinx.coroutines.launch
  * Milestone review prompt — M3 Expressive bottom sheet.
  * Diverts happy users to Play Store, frustrated users to Feedback.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ReviewPromptSheet(
     completedCount: Int,
@@ -61,7 +66,7 @@ fun ReviewPromptSheet(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialShapes.Cookie9Sided.toShape(),
                 color = MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier.size(56.dp),
             ) {
@@ -102,12 +107,8 @@ fun ReviewPromptSheet(
                 modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                ),
+                    .heightIn(min = 52.dp),
+                shapes = ReviewButtonShapes(),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.ThumbUp,
@@ -128,8 +129,8 @@ fun ReviewPromptSheet(
                 modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .heightIn(min = 52.dp),
+                shapes = ReviewButtonShapes(),
             ) {
                 Text(
                     text = secondaryLabel,
@@ -170,7 +171,7 @@ internal fun reviewPromptCopy(completedCount: Int): ReviewPromptCopy = when {
 /**
  * Shown after the Play Store review flow returns.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PostReviewSheet(
     onDismissRequest: () -> Unit,
@@ -179,23 +180,20 @@ fun PostReviewSheet(
     TrackScreenView("post_review")
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    ModalBottomSheet(
+    // The same sheet as the prompt just before it: handle, padding, and a centred panel on tablets.
+    EngagementBottomSheetScaffold(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
+        centeredDismissAllowed = true,
+        showCloseButton = false,
+        properties = ModalBottomSheetProperties(),
     ) {
         Column(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 36.dp),
+            modifier = Modifier.fillMaxWidth().tabletSheetScroll(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialShapes.Cookie9Sided.toShape(),
                 color = MaterialTheme.colorScheme.tertiaryContainer,
                 modifier = Modifier.size(56.dp),
             ) {
@@ -235,12 +233,8 @@ fun PostReviewSheet(
                 modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                ),
+                    .heightIn(min = 52.dp),
+                shapes = ReviewButtonShapes(),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Lightbulb,
@@ -257,19 +251,13 @@ fun PostReviewSheet(
             OutlinedButton(
                 onClick = {
                     onDismissRequest()
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .trackStoreReviewOpened(method = "store_page", source = "post_review")
-                    val pkgName = context.packageName
-                    context.startFirstAvailable(
-                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=$pkgName")),
-                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=$pkgName")),
-                    )
+                    openPlayStoreFromThanks(context)
                 },
                 modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .heightIn(min = 52.dp),
+                shapes = ReviewButtonShapes(),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Star,
@@ -287,7 +275,8 @@ fun PostReviewSheet(
                 modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .heightIn(min = 48.dp),
+                shapes = ReviewButtonShapes(),
             ) {
                 Text(
                     text = stringResource(R.string.home_post_review_maybe_later),
@@ -605,3 +594,19 @@ fun FeedbackSheet(
 }
 
 private const val FEEDBACK_MAX_LENGTH = 2000
+
+/** The rating sheets' buttons: round pills that squash a little while pressed, as boxlore's other buttons do. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ReviewButtonShapes() = ButtonDefaults.shapes(shape = CircleShape, pressedShape = RoundedCornerShape(18.dp))
+
+/** Rate on Google Play from the thank-you sheet: the store app, or its web page without it. */
+private fun openPlayStoreFromThanks(context: android.content.Context) {
+    cx.aswin.boxlore.core.analytics.AnalyticsHelper
+        .trackStoreReviewOpened(method = "store_page", source = "post_review")
+    val pkgName = context.packageName
+    context.startFirstAvailable(
+        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=$pkgName")),
+        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=$pkgName")),
+    )
+}

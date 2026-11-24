@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.components.TopBarUtilityActions
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 
 private const val TAG = "StylizedLogo"
 
@@ -130,17 +131,20 @@ fun TopControlBar(
                 layout(placeable.width, height) {
                     placeable.place(0, paddingPx)
                 }
-            }.padding(horizontal = 12.dp),
+            }.boxloreHorizontalSafePadding()
+            // The same gutter as Home's cards, so the wordmark and Settings line up with their edges.
+            .padding(horizontal = 16.dp)
+            .testTag("home_top_bar"),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // 1. Left Section (Logo)
         if (overHero) {
             cx.aswin.boxlore.core.designsystem.components
-                .BoxLoreLogo(textColor = onArtwork)
+                .BoxLoreLogo(Modifier.testTag("home_wordmark"), textColor = onArtwork)
         } else {
             cx.aswin.boxlore.core.designsystem.components
-                .BoxLoreLogo()
+                .BoxLoreLogo(Modifier.testTag("home_wordmark"))
         }
 
         if (showUtilityIcons) {

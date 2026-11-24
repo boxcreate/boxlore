@@ -40,6 +40,7 @@ Announcement title:
 - Getting started with boxlore fits more screens: Echo's questions and show cards always show in full, the welcome screen fits the Galaxy Z Fold cover, and it sits beside its picture on sideways phones and tablets.
 - Picking your language now flows straight into the welcome screen.
 - While you get started, search keeps more shows in view on sideways phones, and Shows for you lays its shows out in rows on tablets.
+- On Home, the next top card peeks in as a picture instead of cut-off words, time left is rounded the same way as in the mini player, and the menus, show picker, genre picker and rating sheets match the rest of boxlore.
 
 ## Fixed
 
@@ -58,3 +59,4 @@ Announcement title:
 - The player keeps an open speed or sleep panel when you fold, unfold or turn your phone, and its place on the page when you turn it. A running sleep timer stays highlighted when you open the sleep options again, and an episode you remove from Up next stays removed even if you fold or unfold before Undo goes away.
 - Pick topics instead now keeps the topics you already chose with Echo.
 - If you skip the quick check before similar shows, boxlore now says so instead of asking you to check your connection.
+- On the Galaxy Z Fold cover screen, tablets, split-screen windows and phones turned sideways, Home's top cards keep their title and a whole Play button, Home keeps your place and open menus when the window changes shape, its buttons stay clear of the navigation buttons and camera, and the pin message shows above the bottom bar.

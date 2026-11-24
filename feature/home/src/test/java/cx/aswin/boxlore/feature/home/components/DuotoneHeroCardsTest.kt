@@ -85,7 +85,7 @@ class DuotoneHeroCardsTest {
         composeRule.onNodeWithTag("home_hero_duotone_collection").assertExists()
         composeRule.onNodeWithTag("home_hero_collection_1_title", useUnmergedTree = true).performClick()
         assertEquals(listOf("show-b"), details)
-        composeRule.onNodeWithTag("home_hero_collection_1_artwork").performClick()
+        composeRule.onNodeWithTag("home_hero_collection_1_artwork", useUnmergedTree = true).performClick()
         assertEquals(listOf("show-b"), plays)
     }
 

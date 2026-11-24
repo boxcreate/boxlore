@@ -302,7 +302,7 @@ class HomeDiscoveryFeedSpacingTest {
                         derivedState.copy(hasBecauseYouLike = showRelated.value, hasRecommendations = showRecommendations.value),
                         recommendationLayout.value,
                     )
-                    discoveryGreetingItem(feedState, callbacks)
+                    discoveryGreetingItem(feedState, callbacks, editorialRowsLoading = true, editorialRowCount = 0)
                 }
             }
         }

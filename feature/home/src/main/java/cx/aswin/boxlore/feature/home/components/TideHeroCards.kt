@@ -5,6 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
@@ -45,6 +47,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
@@ -102,54 +105,61 @@ internal fun TideHeroCard(
     val shade = rememberCoverShade(imageUrl)
     val hasEpisode = item.podcast.latestEpisode != null
     val label = heroActionLabel(item, pause, resume = item.type == HeroType.RESUME || current)
+    val cardPeek = heroPeekContent()
     Card(
         onClick = onArrowClick,
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = shade.deep, contentColor = shade.content),
-        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_tide"),
+        modifier = modifier.heroPeekCardLabel(cardPeek, heroTitle(item)).boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_tide"),
     ) {
-        TideCardLayout(
-            cover = {
-                OptimizedImage(
-                    url = imageUrl,
-                    fallbackUrls = heroArtworkSources(item),
-                    proxyWidth = 800,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().testTag("home_hero_artwork"),
-                )
-            },
-            panel = { TidePanel(shade.deep) },
-            copy = { CoverCopy(item, shade, progressState = null, contextEndInset = TideDiscReserve) },
-            disc = {
-                TidePlayDisc(
-                    icon = if (!hasEpisode) {
-                        TideDiscIcon.Details
-                    } else if (pause) {
-                        TideDiscIcon.Pause
-                    } else {
-                        TideDiscIcon.Play
-                    },
-                    label = label,
-                    progress = progressState,
-                    shade = shade,
-                    ground = shade.deep,
-                    onClick = if (hasEpisode) onClick else onArrowClick,
-                )
-            },
-        )
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val short = maxHeight < ShortHeroHeight
+            TideCardLayout(
+                cover = {
+                    OptimizedImage(
+                        url = imageUrl,
+                        fallbackUrls = heroArtworkSources(item),
+                        proxyWidth = 800,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().testTag("home_hero_artwork"),
+                    )
+                },
+                panel = { TidePanel(shade.deep) },
+                copy = { CoverCopy(item, shade, progressState = null, contextEndInset = TideDiscReserve, short = short) },
+                disc = {
+                    TidePlayDisc(
+                        icon = if (!hasEpisode) {
+                            TideDiscIcon.Details
+                        } else if (pause) {
+                            TideDiscIcon.Pause
+                        } else {
+                            TideDiscIcon.Play
+                        },
+                        label = label,
+                        progress = progressState,
+                        shade = shade,
+                        ground = shade.deep,
+                        onClick = if (hasEpisode) onClick else onArrowClick,
+                    )
+                },
+            )
+        }
     }
 }
 
 /**
  * Where the panel's edge sits on a [width] × [height] card (dp) whose words are [copy] tall: far enough
- * up to leave the words [TideCopyGap] below the edge, but always over the cover's lower part, between
- * 65% of the width and 16dp above the cover's bottom.
+ * up to leave the words [TideCopyGap] below the edge, and no lower than 16dp above the cover's bottom.
+ * On tall cards it stays over the cover's lower part, below 65% of the width. On cards that are wide
+ * for their height (wider compact windows, sideways phones) the words would start above that line,
+ * so there the edge rises with them: the words always sit on the panel, clear of the Play disc.
  */
 internal fun tidePanelTop(width: Float, height: Float, copy: Float): Float {
     val highest = width * TidePanelHighest
     val lowest = maxOf(highest, width - TidePanelLowestGap)
-    return (height - TideBottomInset - copy - TideCopyGap).coerceIn(highest, lowest)
+    val needed = height - TideBottomInset - copy - TideCopyGap
+    return if (needed < highest) needed.coerceAtLeast(0f) else needed.coerceAtMost(lowest)
 }
 
 /**
@@ -184,7 +194,9 @@ internal fun TideCardLayout(
             art.placeRelative(0, 0)
             ground.placeRelative(0, panelTop)
             words.placeRelative(inset, height - TideBottomInset.dp.roundToPx() - words.height)
-            play.placeRelative(width - TideDiscEndInset.roundToPx() - discSize, panelTop + TideDiscDrop.roundToPx() - discSize / 2)
+            // The disc sits on the edge, but never past the card's top or foot.
+            val discTop = (panelTop + TideDiscDrop.roundToPx() - discSize / 2).coerceAtMost(height - discSize - TideDiscFoot.roundToPx()).coerceAtLeast(0)
+            play.placeRelative(width - TideDiscEndInset.roundToPx() - discSize, discTop)
         }
     }
 }
@@ -226,7 +238,8 @@ val LocalHeroTideProgress = staticCompositionLocalOf { HeroTideProgress.DEFAULT 
 private fun TidePlayDisc(icon: TideDiscIcon, label: String, progress: HeroProgressState?, shade: ArtworkShade, ground: Color, onClick: () -> Unit) {
     val description = stringResource(R.string.home_hero_listening_progress)
     val animated by animateFloatAsState(progress?.value ?: 0f, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "tideProgress")
-    Box(Modifier.size(TideDiscSize).background(ground, CircleShape), contentAlignment = Alignment.Center) {
+    val peek = heroPeekContent()
+    Box(Modifier.heroPeekFade(peek).size(TideDiscSize).background(ground, CircleShape), contentAlignment = Alignment.Center) {
         if (progress != null) {
             val ring = Modifier.size(76.dp).testTag("home_hero_progress").semantics { contentDescription = description }
             if (HeroTideProgress.sanitize(LocalHeroTideProgress.current) == HeroTideProgress.CIRCLE) {
@@ -258,7 +271,7 @@ private fun TidePlayDisc(icon: TideDiscIcon, label: String, progress: HeroProgre
                     contentDescription = label
                     role = Role.Button
                 }
-                .expressiveClickable(shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick)
+                .expressiveClickable(enabled = peek.shown, shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick)
                 .background(shade.accent, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
@@ -322,9 +335,10 @@ internal fun TideHeroGridCard(
                     TideCoverTile(podcast, resume, showStatus = square, playing[index], onCellClick, onPlaybackClick, "home_hero_collection_$index")
                 }
             },
-            panel = { TidePanel(shade.deep) },
+            // The panel takes the taps that land on it, so nothing under its edge plays or opens.
+            panel = { TidePanel(shade.deep, Modifier.fillMaxSize().testTag("home_hero_tide_panel").pointerInput(Unit) {}) },
             copy = {
-                Column {
+                Column(Modifier.heroPeekFade(heroPeekContent())) {
                     Text(
                         title,
                         style = MaterialTheme.typography.headlineSmall.copy(
@@ -362,7 +376,9 @@ internal fun TideHeroGridCard(
 /**
  * Four covers make a square, two or three a row up to 34% of the card's height; the panel's edge sits
  * 20dp above the square's foot (higher if the heading needs it) or 9dp above the row's, and the words
- * sit at the bottom under a square, or just under the edge above a row's episode list.
+ * sit at the bottom under a square, or just under the edge above a row's episode list. On a short card
+ * (sideways phones, split-screen halves) where the panel would rise over the square's second row, the
+ * four covers sit in one row instead, so none is hidden under the panel.
  */
 @Composable
 private fun TideCollectionLayout(square: Boolean, count: Int, covers: @Composable () -> Unit, panel: @Composable () -> Unit, copy: @Composable () -> Unit) {
@@ -375,33 +391,54 @@ private fun TideCollectionLayout(square: Boolean, count: Int, covers: @Composabl
         val height = constraints.maxHeight
         val inset = TideInset.roundToPx()
         val tiles = measurables.dropLast(2)
-        val columns = if (square) 2 else count.coerceAtLeast(1)
-        val tileWidth = width / columns
-        val tileHeight = if (square) tileWidth else minOf(tileWidth, (height * TideRowCoverShare).roundToInt())
-        val placedTiles = tiles.map { it.measure(Constraints.fixed(tileWidth, tileHeight)) }
-        val coversBottom = if (square) tileHeight * 2 else tileHeight
-        val wordsMax = Constraints(maxWidth = (width - inset * 2).coerceAtLeast(0))
-        val words = measurables.last().measure(
-            if (square) wordsMax else wordsMax.copy(maxHeight = (height - coversBottom).coerceAtLeast(0)),
-        )
         val bottom = TideBottomInset.dp.roundToPx()
+        val wordsMax = Constraints(maxWidth = (width - inset * 2).coerceAtLeast(0))
+        // Under a square the words sit at the card's foot; the panel's edge rises 24dp above them at most.
+        val squareWords = if (square) measurables.last().measure(wordsMax) else null
+        val wordsRoom = squareWords?.let { height - bottom - it.height - 24.dp.roundToPx() } ?: 0
+        val shape = tideCollectionShape(square, count, width, height, wordsRoom, density = this)
+        val tileWidth = width / shape.columns
+        val placedTiles = tiles.map { it.measure(Constraints.fixed(tileWidth, shape.tileHeight)) }
+        val coversBottom = shape.tileHeight * shape.lines
+        val words = squareWords ?: measurables.last().measure(wordsMax.copy(maxHeight = (height - coversBottom).coerceAtLeast(0)))
         val panelTop = if (square) {
-            minOf(coversBottom - 20.dp.roundToPx(), height - bottom - words.height - 24.dp.roundToPx())
+            minOf(coversBottom - 20.dp.roundToPx(), wordsRoom)
         } else {
             coversBottom - 9.dp.roundToPx()
         }.coerceAtLeast(0)
         val ground = measurables[measurables.size - 2].measure(Constraints.fixed(width, (height - panelTop).coerceAtLeast(0)))
         layout(width, height) {
             placedTiles.forEachIndexed { index, tile ->
-                val column = index % columns
-                val row = index / columns
-                tile.placeRelative(column * tileWidth, row * tileHeight)
+                val column = index % shape.columns
+                val row = index / shape.columns
+                tile.placeRelative(column * tileWidth, row * shape.tileHeight)
             }
             ground.placeRelative(0, panelTop)
             val wordsTop = if (square) height - bottom - words.height else panelTop + 22.dp.roundToPx()
             words.placeRelative(inset, wordsTop)
         }
     }
+}
+
+/** How Tide's collection covers are laid out: [columns] a line, [lines] lines, each [tileHeight] tall (px). */
+internal data class TideCollectionShape(val columns: Int, val lines: Int, val tileHeight: Int)
+
+/**
+ * Four covers make a 2×2 square when the panel, which rises to [wordsRoom] at most, leaves the second
+ * row's covers and their Play buttons in sight; otherwise one row of four, as tall as the room above the
+ * words allows. Two or three covers always sit in one row up to 34% of the card's height.
+ */
+internal fun tideCollectionShape(square: Boolean, count: Int, width: Int, height: Int, wordsRoom: Int, density: androidx.compose.ui.unit.Density): TideCollectionShape {
+    if (!square) {
+        val columns = count.coerceAtLeast(1)
+        val tileWidth = width / columns
+        return TideCollectionShape(columns, 1, minOf(tileWidth, (height * TideRowCoverShare).roundToInt()))
+    }
+    val half = width / 2
+    val secondRowShows = with(density) { wordsRoom >= half + maxOf(half / 2, TideSecondRowSight.roundToPx()) }
+    if (secondRowShows) return TideCollectionShape(2, 2, half)
+    val overlap = with(density) { 20.dp.roundToPx() }
+    return TideCollectionShape(4, 1, minOf(width / 4, wordsRoom + overlap).coerceAtLeast(0))
 }
 
 /** "4 episodes · 1h 53m left", or the new episodes' total length; just the count when no lengths are known. */
@@ -435,10 +472,11 @@ private fun TideCoverTile(
     val title = podcast.latestEpisode?.title?.ifEmpty { podcast.title } ?: podcast.title
     val duration = HomeHeroStyle.minutes(podcast, resume)?.let { heroDurationText(it) }
     val progress = HomeHeroStyle.progress(podcast).takeIf { resume && it > 0f }
-    Box(
+    val peek = heroPeekContent()
+    BoxWithConstraints(
         Modifier.background(shade.deep).testTag(tag)
-            .semantics { contentDescription = title }
-            .expressiveClickable { currentOnClick(currentPodcast) },
+            .then(if (peek.shown) Modifier.semantics { contentDescription = title } else Modifier.clearAndSetSemantics {})
+            .expressiveClickable(enabled = peek.shown) { currentOnClick(currentPodcast) },
     ) {
         OptimizedImage(
             url = podcast.imageUrl,
@@ -448,17 +486,20 @@ private fun TideCoverTile(
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
         )
-        if (showStatus && duration != null) {
+        // Four covers in one row (a short card) are too narrow for the time chip beside Play.
+        if (showStatus && duration != null && maxWidth >= TideStatusTileWidth) {
             TideCoverStatus(
                 text = if (resume) stringResource(R.string.home_hero_remaining, duration) else duration,
                 progress = progress,
                 shade = shade,
                 tag = tag,
-                modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
+                modifier = Modifier.align(Alignment.TopStart).heroPeekFade(peek).padding(8.dp),
             )
         }
         if (podcast.latestEpisode != null) {
-            TideCoverPlayback(nowPlaying, shade, Modifier.align(Alignment.TopEnd).testTag("${tag}_play")) { currentOnPlayback(currentPodcast) }
+            TideCoverPlayback(nowPlaying, shade, peek.shown, Modifier.align(Alignment.TopEnd).heroPeekFade(peek).testTag("${tag}_play")) {
+                currentOnPlayback(currentPodcast)
+            }
         }
     }
 }
@@ -502,7 +543,7 @@ private fun TideCoverStatus(text: String, progress: Float?, shade: ArtworkShade,
 
 /** Play or Pause on a cover: a 28dp button in the cover's accent inside a 48dp target. */
 @Composable
-private fun TideCoverPlayback(playing: Boolean, shade: ArtworkShade, modifier: Modifier, onClick: () -> Unit) {
+private fun TideCoverPlayback(playing: Boolean, shade: ArtworkShade, enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val label = stringResource(if (playing) R.string.home_hero_pause else R.string.home_hero_play)
     Box(
         modifier.size(48.dp)
@@ -510,7 +551,7 @@ private fun TideCoverPlayback(playing: Boolean, shade: ArtworkShade, modifier: M
                 contentDescription = label
                 role = Role.Button
             }
-            .expressiveClickable(shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick),
+            .expressiveClickable(enabled = enabled, shape = CircleShape, feedback = ExpressivePressFeedback.Control, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(28.dp).background(shade.accent, CircleShape), contentAlignment = Alignment.Center) {
@@ -538,7 +579,7 @@ private fun TideEpisodeRow(
     val duration = HomeHeroStyle.minutes(podcast, resume)?.let { heroDurationText(it) }
     val progress = HomeHeroStyle.progress(podcast).takeIf { resume && it > 0f }
     Column(
-        Modifier.fillMaxWidth().testTag("${tag}_row").expressiveClickable { currentOnClick(currentPodcast) }.padding(vertical = 10.dp),
+        Modifier.fillMaxWidth().testTag("${tag}_row").expressiveClickable(enabled = heroPeekContent().shown) { currentOnClick(currentPodcast) }.padding(vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
@@ -578,6 +619,9 @@ private val TideDiscSize = 88.dp
 private val TideDiscEndInset = 12.dp
 private val TideDiscDrop = 8.dp
 
+/** The least room the Play disc keeps below it, inside the card. */
+private val TideDiscFoot = 8.dp
+
 /** The disc's width and its end inset, plus a gap: the context line stops short of it. */
 internal val TideDiscReserve = 88.dp
 
@@ -589,3 +633,9 @@ private const val TideCopyGap = 40f
 private const val TidePanelHighest = 0.65f
 private const val TidePanelLowestGap = 16f
 private const val TideRowCoverShare = 0.34f
+
+/** The narrowest cover that shows its time chip beside the Play button. */
+private val TideStatusTileWidth = 136.dp
+
+/** How much of the square's second row must stay above the panel: at least its Play button's 48dp target. */
+private val TideSecondRowSight = 56.dp

@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.home.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -10,9 +11,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,12 +43,16 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.SkeletonBlock
+import cx.aswin.boxlore.core.designsystem.theme.SkeletonTextLines
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
@@ -200,29 +208,126 @@ private fun RowScope.DenseEpisodeDetails(
     rowState: DenseEpisodeRowState,
     isEligibleForNewTag: Boolean,
 ) {
-    val metaStyle = MaterialTheme.typography.bodySmall
-    val metaLineHeight = metaStyle.lineHeight.takeIf { it.isSp } ?: 16.sp
-    val blockHeight = with(LocalDensity.current) { (RowTitleLineHeight * ROW_TITLE_LINES).toDp() + RowMetaGap + metaLineHeight.toDp() }
-    Column(
-        modifier = Modifier.weight(1f).height(blockHeight),
-        verticalArrangement = Arrangement.spacedBy(RowMetaGap, Alignment.CenterVertically),
-    ) {
-        Text(
-            text = episode.title,
-            style =
-            MaterialTheme.typography.titleSmall.copy(
-                fontWeight = GoogleSansWeight.bold,
-                fontSize = RowTitleSize,
-                lineHeight = RowTitleLineHeight,
-            ),
-            maxLines = ROW_TITLE_LINES,
-            overflow = TextOverflow.Ellipsis,
-        )
-        DenseEpisodeMetadataRow(
-            episode = episode,
-            podcast = podcast,
-            rowState = rowState,
-            isEligibleForNewTag = isEligibleForNewTag,
+    val density = LocalDensity.current
+    BoxWithConstraints(Modifier.weight(1f)) {
+        val inProgress = rowState.isInProgress && rowState.progress > 0f
+        // Narrow columns, large text, and a date and time left too long to leave the bar 24dp (long
+        // languages) leave the meta line too full for the bar: it gets its own line.
+        val metaWords = denseMetaWordsWidth(episode, rowState.progress, inProgress)
+        val stackedBar = inProgress && (denseRowStacksProgress(maxWidth, density.fontScale) || metaWords + DenseInlineBarRoom > maxWidth)
+        Column(
+            modifier = Modifier.fillMaxWidth().height(denseRowDetailsHeight(stackedBar)),
+            verticalArrangement = Arrangement.spacedBy(RowMetaGap, Alignment.CenterVertically),
+        ) {
+            Text(
+                text = episode.title,
+                style = denseRowTitleStyle(),
+                maxLines = ROW_TITLE_LINES,
+                overflow = TextOverflow.Ellipsis,
+            )
+            DenseEpisodeMetadataRow(
+                episode = episode,
+                podcast = podcast,
+                rowState = rowState,
+                isEligibleForNewTag = isEligibleForNewTag,
+                inlineBar = !stackedBar,
+            )
+            if (stackedBar) {
+                // A little apart from the bold time left, on a track that shows against the row, so it
+                // reads as progress across the row rather than an underline.
+                DenseProgressBar(
+                    rowState.progress,
+                    Modifier.padding(top = StackedBarExtraGap).fillMaxWidth().testTag("home_dense_row_progress"),
+                    trackColor = MaterialTheme.colorScheme.outlineVariant,
+                )
+            }
+        }
+    }
+}
+
+/** The meta line's date and time left side by side, as [DenseEpisodeMetadataRow] sets them. */
+@Composable
+private fun denseMetaWordsWidth(episode: Episode, progress: Float, inProgress: Boolean): Dp {
+    if (!inProgress) return 0.dp
+    val date = formatRelativeDate(episode.publishedDate)
+    val time = denseDurationText(episode.duration, progress, isInProgress = true).orEmpty()
+    val style = MaterialTheme.typography.bodySmall
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    return remember(date, time, style, density) {
+        val dateWidth = if (date.isEmpty()) 0 else measurer.measure(date, style, maxLines = 1).size.width
+        val timeWidth = measurer.measure(time, style.copy(fontWeight = GoogleSansWeight.bold), maxLines = 1).size.width
+        with(density) { (dateWidth + timeWidth).toDp() }
+    }
+}
+
+/** What the inline bar needs beside the date and time left: its 24dp and the two 6dp gaps. */
+private val DenseInlineBarRoom = 36.dp
+
+/** The stacked bar's extra room above it, so it sits 6dp under the meta line. */
+private val StackedBarExtraGap = 2.dp
+
+@Composable
+private fun denseRowTitleStyle() = MaterialTheme.typography.titleSmall.copy(
+    fontWeight = GoogleSansWeight.bold,
+    fontSize = RowTitleSize,
+    lineHeight = RowTitleLineHeight,
+)
+
+/** The words' block: two title lines and the meta line, plus the progress bar's own line when it stacks. */
+@Composable
+private fun denseRowDetailsHeight(stackedBar: Boolean): Dp {
+    val metaLineHeight = MaterialTheme.typography.bodySmall.lineHeight.takeIf { it.isSp } ?: 16.sp
+    val base = with(LocalDensity.current) { (RowTitleLineHeight * ROW_TITLE_LINES).toDp() + RowMetaGap + metaLineHeight.toDp() }
+    return if (stackedBar) base + RowMetaGap + StackedBarExtraGap + DenseProgressHeight else base
+}
+
+/** Whether an in-progress row's bar moves under its meta line: a column under 260dp, or text above 115%. */
+internal fun denseRowStacksProgress(columnWidth: Dp, fontScale: Float): Boolean = columnWidth < 260.dp || fontScale > 1.15f
+
+@Composable
+private fun DenseProgressBar(progress: Float, modifier: Modifier, trackColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+    val progressLabel = stringResource(R.string.home_hero_listening_progress)
+    LinearProgressIndicator(
+        progress = { progress.coerceIn(0f, 1f) },
+        modifier = modifier.height(DenseProgressHeight).semantics { contentDescription = progressLabel },
+        color = MaterialTheme.colorScheme.primary,
+        trackColor = trackColor,
+        drawStopIndicator = {},
+        gapSize = 2.dp,
+    )
+}
+
+private val DenseProgressHeight = 4.dp
+
+/**
+ * The selected show's rows while they load: [rows] placeholders with each row's cover, two title
+ * lines and the meta line where they will be, then the See all segment, in the same connected
+ * shapes, so the list keeps its height when the episodes arrive.
+ */
+@Composable
+internal fun DenseEpisodeRowSkeleton(rows: Int, modifier: Modifier = Modifier) {
+    val segments = rows + 1
+    Column(modifier.fillMaxWidth().testTag("home_selected_show_loading"), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        repeat(rows) { index ->
+            Row(
+                modifier = Modifier.fillMaxWidth().clip(yourShowsListShape(index, segments)).background(homeMixRestingCardColor())
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SkeletonBlock(Modifier.size(RowArtworkSize), shape = RowArtworkShape)
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
+                    modifier = Modifier.weight(1f).height(denseRowDetailsHeight(stackedBar = false)),
+                    verticalArrangement = Arrangement.spacedBy(RowMetaGap, Alignment.CenterVertically),
+                ) {
+                    SkeletonTextLines(denseRowTitleStyle(), lines = ROW_TITLE_LINES, widths = listOf(0.92f, 0.55f))
+                    SkeletonTextLines(MaterialTheme.typography.bodySmall, lines = 1, widths = listOf(0.4f))
+                }
+            }
+        }
+        Box(
+            Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(yourShowsListShape(rows, segments)).background(MaterialTheme.colorScheme.primaryContainer),
         )
     }
 }
@@ -234,6 +339,7 @@ private fun DenseEpisodeMetadataRow(
     podcast: Podcast,
     rowState: DenseEpisodeRowState,
     isEligibleForNewTag: Boolean,
+    inlineBar: Boolean = true,
 ) {
     val isNew = isEligibleForNewTag && isNewEpisode(episode, podcast, rowState.status)
     val inProgress = rowState.isInProgress && rowState.progress > 0f
@@ -246,23 +352,18 @@ private fun DenseEpisodeMetadataRow(
             DenseNewEpisodeBadge()
         }
         val date = formatRelativeDate(episode.publishedDate)
-        DenseMetaText(date)
-        if (inProgress) {
-            val progressLabel = stringResource(R.string.home_hero_listening_progress)
-            LinearProgressIndicator(
-                progress = { rowState.progress.coerceIn(0f, 1f) },
-                modifier = Modifier.weight(1f).height(4.dp).semantics { contentDescription = progressLabel },
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                drawStopIndicator = {},
-                gapSize = 2.dp,
-            )
+        // Without the bar beside it, the date gives way first, so the time left stays whole.
+        DenseMetaText(date, modifier = (if (inProgress && inlineBar) Modifier else Modifier.weight(1f, fill = false)).testTag("home_dense_row_date"))
+        if (inProgress && inlineBar) {
+            // Never squeezed out of sight: the bar keeps at least 24dp and the words give way.
+            DenseProgressBar(rowState.progress, Modifier.weight(1f).widthIn(min = 24.dp).testTag("home_dense_row_progress"))
         }
         denseDurationText(episode.duration, rowState.progress, inProgress)?.let { duration ->
             DenseMetaText(
                 text = if (inProgress || date.isEmpty()) duration else "• $duration",
                 color = if (inProgress) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 bold = inProgress,
+                modifier = Modifier.testTag("home_dense_row_time"),
             )
         }
     }
@@ -295,6 +396,7 @@ private fun DenseMetaText(
     text: String,
     color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     bold: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     if (text.isEmpty()) return
     Text(
@@ -303,6 +405,7 @@ private fun DenseMetaText(
         color = color,
         fontWeight = if (bold) GoogleSansWeight.bold else FontWeight.Normal,
         maxLines = 1,
-        softWrap = false,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
     )
 }

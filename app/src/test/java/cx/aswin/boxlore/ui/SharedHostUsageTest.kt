@@ -43,8 +43,7 @@ class SharedHostUsageTest {
             skipDesignSystem = false,
             skipFiles = setOf("core/designsystem/src/main/java/cx/aswin/boxlore/core/designsystem/components/BoxloreModalBottomSheet.kt"),
             allowed = mapOf(
-                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/components/ReviewSheet.kt" to 2,
-                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/components/ChangeRecommendationPodcastSheet.kt" to 1,
+                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/components/ReviewSheet.kt" to 1,
             ),
         ),
         Host(
@@ -54,8 +53,6 @@ class SharedHostUsageTest {
             allowed = mapOf(
                 "feature/history/src/main/java/cx/aswin/boxlore/feature/history/HistoryScreen.kt" to 1,
                 "feature/history/src/main/java/cx/aswin/boxlore/feature/history/timeline/TimelineRows.kt" to 1,
-                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/components/LibrarySectionRows.kt" to 1,
-                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/components/LibrarySectionMixtape.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeSelectionToolbar.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/PodcastInfoChrome.kt" to 1,
                 "feature/library/src/main/java/cx/aswin/boxlore/feature/library/SubscriptionsScreen.kt" to 1,
@@ -72,7 +69,6 @@ class SharedHostUsageTest {
             skipDesignSystem = true,
             allowed = mapOf(
                 "feature/history/src/main/java/cx/aswin/boxlore/feature/history/HistoryScreen.kt" to 1,
-                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/HomeScreen.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoScreen.kt" to 1,
                 "feature/library/src/main/java/cx/aswin/boxlore/feature/library/SubscriptionsScreen.kt" to 1,
                 "feature/library/src/main/java/cx/aswin/boxlore/feature/library/playlists/PlaylistsScreen.kt" to 1,

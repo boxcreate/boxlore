@@ -12,16 +12,21 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeContentPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeInsetsDp
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.model.Briefing
@@ -31,6 +36,7 @@ import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing
 import cx.aswin.boxlore.feature.home.components.HomeLoadingHandoffMillis
 import cx.aswin.boxlore.feature.home.components.HomeLoadingReveal
 import cx.aswin.boxlore.feature.home.components.HomeRecommendationLayout
+import cx.aswin.boxlore.feature.home.components.bleed
 import cx.aswin.boxlore.feature.home.logic.shouldAnimateHomeShimmer
 import cx.aswin.boxlore.feature.home.logic.showHomeDiscoveryContent
 import kotlinx.coroutines.delay
@@ -111,8 +117,9 @@ internal fun PodcastFeed(
         LocalBoxloreWindowLayout.current,
         boxloreContentWidthDp(),
     )
+    KeepGridPlaceAcrossColumnChanges(layout.gridState, posterColumns)
     val revealStage = rememberHomeRevealStage(viewportReady = !loadingState.isLoading)
-    val derivedState = rememberPodcastFeedDerivedState(content, feedState, recommendationState, loadingState, revealStage)
+    val derivedState = rememberPodcastFeedDerivedState(content, feedState, recommendationState, loadingState, revealStage, HomeFeedSpacing.exploreItemCount(posterColumns, tablet))
     // Scrolling changes the visible keys often; only a change in the answer recomposes the feed.
     val hasVisibleLoading by remember(
         layout.gridState,
@@ -151,16 +158,19 @@ internal fun PodcastFeed(
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(posterColumns),
             state = layout.gridState,
-            modifier = layout.modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = GridSidePadding, end = GridSidePadding, bottom = 160.dp),
+            modifier = layout.modifier.fillMaxSize().testTag("home_feed_grid"),
+            // The side gutter starts past the camera cutout and side system buttons of a sideways phone.
+            contentPadding = boxloreHorizontalSafeContentPadding(PaddingValues(start = GridSidePadding, end = GridSidePadding, bottom = 160.dp)),
             horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.GridGap),
             verticalItemSpacing = HomeFeedSpacing.GridGap,
         ) {
             smartHeroItem(content, playback, callbacks, derivedState, marqueeTopInset)
             if (tablet && feedState.briefing != null) {
-                item(span = StaggeredGridItemSpan.FullLine, key = "tablet_leading_sections", contentType = "tablet_leading_sections") {
+                val showLibrary = shouldShowYourShows(content, feedState, loadingState)
+                // Keyed like the section it leads with on phones, so the grid keeps its place across the tablet size.
+                item(span = StaggeredGridItemSpan.FullLine, key = if (showLibrary) "your_shows" else "briefing", contentType = "tablet_leading_sections") {
                     TabletHomeLeadingSections(
-                        showLibrary = shouldShowYourShows(content, feedState, loadingState),
+                        showLibrary = showLibrary,
                         library = { YourShowsFeedSection(content, feedState, loadingState, playback, callbacks, derivedState) },
                         briefing = { DailyBriefingFeedCard(feedState, playback, callbacks, context) },
                     )
@@ -170,12 +180,48 @@ internal fun PodcastFeed(
                 dailyBriefingItem(feedState, playback, callbacks, context)
             }
             curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState, HomeRecommendationLayout(posterColumns, tablet))
-            discoveryGreetingItem(feedState, callbacks)
+            discoveryGreetingItem(feedState, callbacks, loadingState.isEditorialRowsLoading, content.editorialRows.list.size)
             editorialFeedItems(content, feedState, loadingState, callbacks)
-            discoverFeedItems(feedState, derivedState, callbacks, posterColumns)
+            discoverFeedItems(feedState, derivedState, callbacks, posterColumns, tablet)
         }
     }
 }
+
+/**
+ * A staggered grid starts again from the top when its column count changes, as it does when a phone
+ * turns sideways (2 poster columns to 5) or a window is resized. Home puts the listener back on the
+ * same content, in both directions: the item they were on (its index can change, as tablets put Your
+ * shows and the Brief in one item), or in Explore the row that now holds the show they had reached.
+ */
+@Composable
+private fun KeepGridPlaceAcrossColumnChanges(state: LazyStaggeredGridState, columns: Int) {
+    val place = remember(state) { GridPlace(columns) }
+    LaunchedEffect(state, columns) {
+        if (place.columns != columns) {
+            val target = place.targetFor(columns)
+            place.columns = columns
+            // Only undo the grid's jump back to the top; a scroll made since stands.
+            withFrameNanos { }
+            val atTop = state.firstVisibleItemIndex == 0 && state.firstVisibleItemScrollOffset == 0
+            if (atTop && target != null) state.scrollTo(target)
+        }
+        snapshotFlow { state.firstVisibleItemIndex to state.firstVisibleItemScrollOffset }.collect { (index, offset) ->
+            val key = state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }?.key
+            place.record(index, offset, key, columns)
+        }
+    }
+}
+
+/** Only items on screen report their keys, so this looks around the old index, then settles on the target. */
+private suspend fun LazyStaggeredGridState.scrollTo(target: GridTarget) {
+    val last = (layoutInfo.totalItemsCount - 1).coerceAtLeast(0)
+    scrollToItem((target.index - GRID_LOOK_BEHIND).coerceIn(0, last))
+    val visible = layoutInfo.visibleItemsInfo.map { it.index to it.key }
+    val found = gridTargetIndex(target, visible)
+    scrollToItem((found ?: target.index).coerceIn(0, last), target.offset)
+}
+
+private const val GRID_LOOK_BEHIND = 2
 
 internal data class PodcastFeedDerivedState(
     val viewportReady: Boolean,
@@ -196,11 +242,12 @@ private fun rememberPodcastFeedDerivedState(
     recommendationState: PodcastFeedRecommendationState,
     loadingState: PodcastFeedLoadingState,
     revealStage: Int,
+    exploreCount: Int = HomeFeedSpacing.ExploreGridCap,
 ): PodcastFeedDerivedState {
     val viewportReady = !loadingState.isLoading
     val discoverItems =
-        remember(content.gridItems.list, feedState.selectedCategory) {
-            content.gridItems.list.distinctBy { it.id }.take(HomeFeedSpacing.ExploreGridCap)
+        remember(content.gridItems.list, feedState.selectedCategory, exploreCount) {
+            content.gridItems.list.distinctBy { it.id }.take(exploreCount)
         }
     val discoveryRevealed = revealStage >= HomeRevealStage.DISCOVERY
     return PodcastFeedDerivedState(
@@ -244,7 +291,9 @@ private fun LazyStaggeredGridScope.smartHeroItem(
         return
     }
     item(span = StaggeredGridItemSpan.FullLine, key = "hero", contentType = "hero") {
-        PinnedGridItemContent(if (marqueeTopInset != null) Modifier.bleed(GridSidePadding) else Modifier) {
+        // Marquee's cover runs past the gutter and the side insets to both screen edges; its words keep clear of them.
+        val (safeStart, safeEnd) = boxloreHorizontalSafeInsetsDp()
+        PinnedGridItemContent(if (marqueeTopInset != null) Modifier.bleed(GridSidePadding + safeStart, GridSidePadding + safeEnd) else Modifier) {
             // The carousel draws its position dots in the 12dp strip under the cards; the skeleton
             // keeps the same strip, so the gap to Your shows never changes.
             HomeLoadingReveal(
@@ -272,16 +321,8 @@ internal fun PinnedGridItemContent(modifier: Modifier = Modifier, content: @Comp
     androidx.compose.foundation.layout.Box(modifier) { content() }
 }
 
-/** The feed's side padding, which Marquee's hero runs past to reach both screen edges. */
-private val GridSidePadding = 16.dp
-
-/** Lays the content out [amount] wider on each side than the item, so it reaches past the grid's padding. */
-private fun Modifier.bleed(amount: androidx.compose.ui.unit.Dp): Modifier = layout { measurable, constraints ->
-    val extra = amount.roundToPx() * 2
-    val width = constraints.maxWidth + extra
-    val placeable = measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
-    layout(constraints.maxWidth, placeable.height) { placeable.placeRelative(-extra / 2, 0) }
-}
+/** The feed's side padding, which Marquee's hero and the side rails run past to reach the screen edges. */
+private val GridSidePadding = HomeFeedSpacing.GridSide
 
 @Composable
 private fun SmartHeroCarousel(
