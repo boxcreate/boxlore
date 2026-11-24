@@ -47,6 +47,39 @@ import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetLayout
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetScaffold
 import cx.aswin.boxlore.navigation.rememberTabletDetailNavigation
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository.Announcement
+import cx.aswin.boxlore.session.turnstile.CHALLENGE_CARD_TAG
+import cx.aswin.boxlore.session.turnstile.TurnstileStepUpSheet
+import cx.aswin.boxlore.ui.announcement.InAppAnnouncementDialog
+import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialog
+import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialogActions
+import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
+import cx.aswin.boxlore.updates.ApkInstallStage
+import cx.aswin.boxlore.updates.ApkInstallState
+import cx.aswin.boxlore.updates.ApkInstaller
+import cx.aswin.boxlore.updates.AppUpdates
+import cx.aswin.boxlore.updates.AppUpdatesPanel
+import cx.aswin.boxlore.updates.MemoryUpdateStore
+import cx.aswin.boxlore.updates.UpdateChecker
+import cx.aswin.boxlore.updates.UpdateLookup
+import cx.aswin.boxlore.updates.UpdateManifest
+import cx.aswin.boxlore.updates.UpdateOffer
+import cx.aswin.boxlore.updates.UpdateSource
+import cx.aswin.boxlore.updates.updateManifest
+import java.io.File
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
+import org.junit.After
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -74,6 +107,7 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
             .copy(latestEpisode = episode.copy(id = "episode-$index", podcastId = "${index + 1}"))
     }
     private val size get() = golden.configuration
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val isRailOnlySize get() = size in RAIL_SIZES
     private val isTablet get() = size.width >= 600 && size.height >= 480
     private val isFold get() = size.posture.startsWith("tabletop") || size.posture == "book"
@@ -108,7 +142,120 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         }
     }
 
-    private fun render(name: String, include: Boolean, content: @Composable () -> Unit) {
+
+    /** The import options over Home: on wide windows Home shows beside the import column today. */
+    @Test fun importSelector() = render("import-selector", include = !isRailOnlySize, rootTag = "import_page") {
+        Box(Modifier.fillMaxSize()) {
+            Home()
+            OpmlImportDialog(OpmlImportState.ShowSelector, OpmlImportDialogActions(onDismissRequest = {}))
+        }
+    }
+
+    /** A finished backup restore with the notifications card, over Home. */
+    @Test fun importDone() = render("import-done", include = !isRailOnlySize, rootTag = "import_notifications") {
+        Box(Modifier.fillMaxSize()) {
+            Home()
+            OpmlImportDialog(
+                OpmlImportState.Success(importedCount = 12, completedCount = 0, isJson = true, hasNotificationsEnabled = true),
+                OpmlImportDialogActions(onDismissRequest = {}),
+            )
+        }
+    }
+
+    /** A first update check with no offer yet. */
+    @Test fun appUpdatesChecking() = renderUpdates("app-updates-checking", UpdateSource { awaitCancellation() })
+
+    /** A direct build with an update to download. */
+    @Test fun appUpdatesOffer() = renderUpdates("app-updates-offer", UpdateSource { UpdateLookup(UpdateOffer(29, "0.0.29", updateManifest().copy(notes = UPDATE_NOTES))) })
+
+    /** Up to date, with the upcoming changes row collapsed. */
+    @Test fun appUpdatesCurrent() = renderUpdates("app-updates-current", UpdateSource { UpdateLookup(upcoming = UPDATE_NOTES) })
+
+    /** A download 40% of the way through. */
+    @Test fun appUpdatesDownloading() = renderUpdates(
+        "app-updates-downloading",
+        UpdateSource { UpdateLookup(UpdateOffer(29, "0.0.29", updateManifest().copy(notes = UPDATE_NOTES))) },
+        download = true,
+    )
+
+    /** The announcement card with a long German title and body. */
+    @Test fun announcementCard() = render("announcement-card", include = !isRailOnlySize, dialog = true) {
+        Home()
+        InAppAnnouncementDialog(germanAnnouncement(), onDismiss = {}, onAction = {})
+    }
+
+    @Test fun announcementFullscreen() = render("announcement-fullscreen", include = !isRailOnlySize, dialog = true) {
+        InAppAnnouncementDialog(germanAnnouncement().copy(presentation = "fullscreen"), onDismiss = {}, onAction = {})
+    }
+
+    /** The connection check with Cloudflare's box still blank, as it is while the page loads. */
+    @Test fun connectionCheck() = render("connection-check", include = !isRailOnlySize, rootTag = CHALLENGE_CARD_TAG) {
+        Home()
+        TurnstileStepUpSheet(onSkip = {}) { Box(Modifier.fillMaxWidth().height(72.dp)) }
+    }
+
+    /**
+     * The platform dialog that phones use never settles under Robolectric with a text field inside
+     * (it keeps relaying out), so this one is captured on windows 600dp and wider only.
+     */
+    @Test fun crossDeviceEmail() = render("cross-device-email", include = !isRailOnlySize && size.width >= 600, dialog = true) {
+        CrossDeviceEmailDialog(onDismiss = {}, onConfirm = {})
+    }
+
+    @Test fun loreConflict() = render("lore-conflict", include = !isRailOnlySize, dialog = true) {
+        Home()
+        LoreQueueConflictDialog(episode, onDismiss = {}, onConfirmStart = {})
+    }
+
+    /**
+     * The mini player appearing with a 90-character title: a still once it has settled, and on
+     * 360x800 and 412x915 a frame every second from the moment it appears.
+     */
+    @Test fun miniPlayerLongTitle() {
+        golden.assumeAuditCapture()
+        assumeTrue("mini-player-long-title isn't captured at $size", !isRailOnlySize)
+        golden.prepare()
+        val longEpisode = episode.copy(id = "long-title", title = LONG_TITLE)
+        val playing = mutableStateOf(false)
+        golden.setContent {
+            BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
+                Surface(Modifier.fillMaxSize().testTag(SHELL_TAG)) { Shell(playing = playing.value, playingEpisode = longEpisode) {} }
+            }
+        }
+        golden.compose.onNodeWithTag(SHELL_TAG).assertExists()
+        if (size.width <= 412 && size.height >= 800 && size.fontScale == 1f && size.posture.isEmpty() && size.locale == PhoneGoldenConfiguration(1, 1, false).locale) {
+            golden.captureSequence("mini-player-long-title", frames = 24, stepMs = 1_000) { playing.value = true }
+            golden.compose.runOnIdle { playing.value = false }
+            golden.captureSequence("mini-player-long-title", frames = 6, stepMs = 1_000, reducedMotion = true) { playing.value = true }
+        } else {
+            golden.compose.runOnIdle { playing.value = true }
+        }
+        golden.compose.mainClock.autoAdvance = true
+        golden.compose.mainClock.advanceTimeBy(30_000)
+        golden.capture("mini-player-long-title", allWindows = true)
+    }
+
+    private fun renderUpdates(name: String, source: UpdateSource, download: Boolean = false) {
+        golden.assumeAuditCapture()
+        assumeTrue("$name isn't captured at $size", !isRailOnlySize)
+        val checker = UpdateChecker(source, MemoryUpdateStore(), 28, 34)
+        val installer = object : ApkInstaller {
+            override suspend fun prepare(manifest: UpdateManifest, onState: (ApkInstallState) -> Unit): File {
+                onState(ApkInstallState(ApkInstallStage.DOWNLOADING, 0.4f))
+                awaitCancellation()
+            }
+            override suspend fun launch(activity: android.app.Activity, manifest: UpdateManifest, file: File): Boolean = false
+        }
+        val updates = AppUpdates(checker, false, installer, scope)
+        updates.open()
+        render(name, include = true, dialog = true, capture = !download) { AppUpdatesPanel(updates, {}, {}) }
+        if (download) {
+            golden.compose.onNodeWithText("Download update").performClick()
+            golden.capture(name, allWindows = true)
+        }
+    }
+
+    private fun render(name: String, include: Boolean, rootTag: String? = null, dialog: Boolean = false, capture: Boolean = true, content: @Composable () -> Unit) {
         golden.assumeAuditCapture()
         assumeTrue("$name isn't captured at $size", include)
         golden.prepare()
@@ -118,17 +265,33 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
             }
         }
         golden.compose.onNodeWithTag(SHELL_TAG).assertExists()
-        golden.capture(name, allWindows = true)
+        rootTag?.let { golden.compose.onNodeWithTag(it, useUnmergedTree = true).assertExists() }
+        if (dialog) golden.compose.onNode(isDialog()).assertExists()
+        if (capture) golden.capture(name, allWindows = true)
     }
+
+    @After fun cancelScope() = scope.cancel()
+
+    private fun germanAnnouncement() = Announcement(
+        title = "Neu in boxlore: Wiedergabelisten, Schlaf-Timer und eine überarbeitete Bibliothek für alle Geräte",
+        body = "Wir haben die Bibliothek von Grund auf überarbeitet, damit deine Sendungen, Downloads und Wiedergabelisten auf Telefon, Tablet und faltbaren Geräten gleich gut aussehen.\n\n" +
+            "Außerdem merkt sich der Schlaf-Timer jetzt deine letzte Einstellung, und neue Folgen erscheinen schneller in deiner Warteschlange. Danke, dass du boxlore nutzt!",
+        route = null,
+        imageUrl = null,
+        actionLabel = null,
+        showActionInApp = false,
+        timestamp = 1L,
+        category = "Neuigkeiten",
+    )
 
     /** The phone root's bar and player sheet, or the tablet shell, around [content]. */
     @Composable
-    private fun Shell(playing: Boolean, content: @Composable () -> Unit) {
+    private fun Shell(playing: Boolean, playingEpisode: Episode = episode, content: @Composable () -> Unit) {
         if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
-            TabletShellCapture("home", episode, podcasts.first(), playing, content)
+            TabletShellCapture("home", playingEpisode, podcasts.first(), playing, content)
             return
         }
-        val dependencies = remember { tabletCapturePlayer(episode, podcasts.first()) }
+        val dependencies = remember { tabletCapturePlayer(playingEpisode, podcasts.first()) }
         val compactProgress = remember { mutableFloatStateOf(0f) }
         val navigation = rememberTabletDetailNavigation(rememberNavController())
         val primary = rememberNavController()
@@ -208,10 +371,17 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         private val RAIL_SIZES = listOf("de", "fr", "en-rXA").flatMap { locale ->
             listOf(1f, 1.3f).map { scale -> PhoneGoldenConfiguration(800, 1_280, false, fontScale = scale, locale = locale) }
         }
+        /** Small phones some shell fixtures add: 360x800 in English and in German with 130% text. */
+        private val PHONE_EXTRA_SIZES = listOf(
+            PhoneGoldenConfiguration(360, 800, false),
+            PhoneGoldenConfiguration(360, 800, false, fontScale = 1.3f, locale = "de"),
+        )
+        private const val LONG_TITLE = "The long way round: how curiosity, patience and a few wrong turns led us to the best stories"
+        private val UPDATE_NOTES = "## Improved\n\n- Smoother playback when you switch between shows.\n- The library keeps your place when you rotate the screen.\n\n## Fixed\n\n- Downloads no longer stall on slow networks."
         private val RAIL_REFERENCE_SIZES = listOf(PhoneGoldenConfiguration(800, 1_280, false), PhoneGoldenConfiguration(932, 650, false, locale = "de"))
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
-        fun configurations(): List<Array<Any>> = PhoneGoldenConfiguration.auditMatrix(extra = RAIL_SIZES)
+        fun configurations(): List<Array<Any>> = PhoneGoldenConfiguration.auditMatrix(extra = RAIL_SIZES + PHONE_EXTRA_SIZES)
     }
 }
