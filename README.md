@@ -84,7 +84,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Picking your language now flows straight into the welcome screen.</li>
 <li>While you get started, search keeps more shows in view on sideways phones, and Shows for you lays its shows out in rows on tablets.</li>
 <li>On Home, the next top card peeks in as a picture instead of cut-off words, time left is rounded the same way as in the mini player, and the menus, show picker, genre picker and rating sheets match the rest of boxlore.</li>
-<li>Episode pages now fit sideways phones, foldables and tablets, with the cover beside the title on wide or short screens, an outline while they load and links listed like chapters. Show pages in a show's own style keep their latest-episode card at a comfortable width on wide screens.</li>
+<li>Episode pages now fit sideways phones, foldables and tablets, with the cover beside the title on wide or short screens and an outline while they load. Show pages in a show's own style keep their latest-episode card at a comfortable width on wide screens.</li>
 <li>Library's cards now say what's inside, Liked episodes has a Play all button, every show's long-press menu in Subscriptions offers Pin to Home and Unsubscribe, and loading or empty Library pages look finished.</li>
 <li>Listening history fits large text and German better, uses two columns of Insights on large tablets, and its menus, loading screens and Clear all confirmation now match the rest of boxlore.</li>
 <li>The monthly story now waits for you when part of a card is off screen, and shows previous, pause and next buttons beside it on tablets.</li>
