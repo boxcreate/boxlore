@@ -54,7 +54,7 @@ import cx.aswin.boxlore.core.designsystem.echo.EchoGaze
 import cx.aswin.boxlore.core.designsystem.echo.EchoIdle
 import cx.aswin.boxlore.core.designsystem.layout.boxloreAvailableHeightDp
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
 
 /** Builds the page view for one run; [onMessage] and [onFailed] report back to the controller. */
 internal fun interface TurnstilePageFactory {
@@ -212,8 +212,9 @@ internal fun TurnstileStepUpSheet(onSkip: () -> Unit, loading: Boolean = false, 
                 )
                 Text(
                     text = stringResource(R.string.session_check_title),
-                    // Echo's own lines in onboarding use this weight.
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
+                    // boxlore's type sets its weight in the font itself, so a heavier title needs its own family.
+                    style = MaterialTheme.typography.titleLarge,
+                    fontFamily = rememberGoogleSansFamily(weight = CHECK_TITLE_WEIGHT, opticalSize = 22f),
                     modifier = Modifier.weight(1f).semantics { heading() },
                 )
                 // Short spaces have no room for a row of its own under the check.
@@ -254,6 +255,9 @@ private fun CheckSkipButton(onSkip: () -> Unit, modifier: Modifier = Modifier) {
 
 /** Below this window height (dp) Echo and the gaps shrink so the check and Skip fit without scrolling. */
 internal const val CHECK_SHORT_WINDOW_DP = 480f
+
+/** The title's font weight: a step above body text, like Echo's lines elsewhere. */
+private const val CHECK_TITLE_WEIGHT = 500
 
 /** Echo's curious asking pose from onboarding, so the check feels like part of the same chat. */
 private const val CHECK_ECHO_SEQUENCE = "onboarding-question"
