@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.LibraryBooks
 import androidx.compose.material.icons.rounded.CloudSync
@@ -29,8 +31,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -47,6 +57,7 @@ import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportEntryImpress
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportEntrySurface
 import cx.aswin.boxlore.feature.settings.settingsCategoryColors
 import cx.aswin.boxlore.feature.settings.settingsCategoryTone
+import kotlin.math.roundToInt
 
 /** What the hub's Cloud Sync card says about the account: [email] is null when signed out. */
 internal data class SettingsHubAccount(val email: String?, val syncStatus: CloudSyncUiStatus)
@@ -61,6 +72,8 @@ private data class HubCard(
     val title: String,
     val description: String,
     val icon: ImageVector,
+    /** A signed-in address can be long; the card keeps it to two lines. */
+    val descriptionMaxLines: Int = 3,
 )
 
 /**
@@ -78,9 +91,11 @@ internal fun SettingsHub(
 ) {
     SupportEntryImpression(SupportEntrySurface.SettingsTopBar)
     val cards = hubCards(showWearOs, account)
+    val scroll = rememberScrollState()
     SettingsScaffold(
         title = stringResource(R.string.settings_page_hub),
         onBack = onBack,
+        scrollState = scroll,
         actions = {
             FilledTonalButton(
                 onClick = { onNavigate(ProfileSettingsDestination.Support) },
@@ -102,13 +117,17 @@ internal fun SettingsHub(
     ) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val twoColumns = !LocalSettingsSplitPane.current && maxWidth >= SETTINGS_HUB_TWO_COLUMN_DP.dp
-            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            val places = remember { HubCardPlaces() }
+            KeepFirstVisibleCard(twoColumns, scroll, places)
+            Column(Modifier.onPlaced { places.column = it }, verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 cards.chunked(if (twoColumns) 2 else 1).forEach { row ->
                     if (row.size == 1) {
-                        HubCategoryCard(row.single(), onNavigate)
+                        HubCategoryCard(row.single(), onNavigate, Modifier.onPlaced { places.cards[row.single().destination] = it })
                     } else {
                         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            row.forEach { card -> HubCategoryCard(card, onNavigate, Modifier.weight(1f).fillMaxHeight()) }
+                            row.forEach { card ->
+                                HubCategoryCard(card, onNavigate, Modifier.weight(1f).fillMaxHeight().onPlaced { places.cards[card.destination] = it })
+                            }
                         }
                     }
                 }
@@ -126,23 +145,64 @@ internal fun SettingsHub(
     }
 }
 
+/** Where the hub's cards sit, so a switch between one and two columns can keep the listener's place. */
+private class HubCardPlaces {
+    var column: LayoutCoordinates? = null
+    val cards = mutableMapOf<ProfileSettingsDestination, LayoutCoordinates>()
+
+    /** Each placed card's top inside the hub column, in pixels, in hub order. */
+    fun tops(): List<Pair<ProfileSettingsDestination, Float>> {
+        val hub = column?.takeIf { it.isAttached } ?: return emptyList()
+        return cards.mapNotNull { (destination, card) -> if (card.isAttached) destination to hub.localPositionOf(card, Offset.Zero).y else null }
+            .sortedBy { it.second }
+    }
+}
+
+/**
+ * When the hub switches between one and two columns (a phone turning sideways, a window resizing),
+ * the first card fully in view before the switch is scrolled back to the top after it, instead of the
+ * old pixel offset landing on another card. At the top of the page nothing moves.
+ */
+@Composable
+private fun KeepFirstVisibleCard(twoColumns: Boolean, scroll: ScrollState, places: HubCardPlaces) {
+    val topGap = with(LocalDensity.current) { SETTINGS_HUB_TOP_GAP.toPx() }
+    // Read while the old columns are still laid out, before the switch reaches the screen.
+    val anchor = remember(twoColumns) {
+        val offset = Snapshot.withoutReadObservation { scroll.value }
+        if (offset == 0) null else places.tops().firstOrNull { (_, top) -> top + topGap >= offset }?.first
+    }
+    LaunchedEffect(twoColumns) {
+        val card = anchor ?: return@LaunchedEffect
+        withFrameNanos { }
+        places.tops().firstOrNull { it.first == card }?.let { (_, top) -> scroll.scrollTo((top + topGap).roundToInt()) }
+    }
+}
+
+/** The page column's top padding above the first card (SettingsScaffold's). */
+private val SETTINGS_HUB_TOP_GAP = 8.dp
+
 @Composable
 private fun HubCategoryCard(card: HubCard, onNavigate: (ProfileSettingsDestination) -> Unit, modifier: Modifier = Modifier) {
-    val (container, content) = settingsCategoryColors(settingsCategoryTone(card.destination))
     SettingsCategoryCard(
         title = card.title,
         description = card.description,
         icon = card.icon,
-        containerColor = container,
-        contentColor = content,
+        colors = settingsCategoryColors(settingsCategoryTone(card.destination)),
         onClick = { onNavigate(card.destination) },
         modifier = modifier.testTag(HUB_CARD_TAG_PREFIX + card.destination.name),
+        descriptionMaxLines = card.descriptionMaxLines,
     )
 }
 
 @Composable
 private fun hubCards(showWearOs: Boolean, account: SettingsHubAccount?): List<HubCard> = listOfNotNull(
-    HubCard(ProfileSettingsDestination.SyncAndBackups, stringResource(R.string.settings_page_sync), hubSyncDescription(account), Icons.Rounded.CloudSync),
+    HubCard(
+        ProfileSettingsDestination.SyncAndBackups,
+        stringResource(R.string.settings_page_sync),
+        hubSyncDescription(account),
+        Icons.Rounded.CloudSync,
+        descriptionMaxLines = if (account?.email != null) 2 else 3,
+    ),
     HubCard(ProfileSettingsDestination.Library, stringResource(R.string.settings_page_library), stringResource(R.string.settings_hub_library_description), Icons.AutoMirrored.Rounded.LibraryBooks),
     HubCard(ProfileSettingsDestination.Appearance, stringResource(R.string.settings_page_appearance), stringResource(R.string.settings_hub_appearance_description), Icons.Rounded.Palette),
     HubCard(ProfileSettingsDestination.Playback, stringResource(R.string.settings_page_playback), stringResource(R.string.settings_hub_playback_description), Icons.Rounded.Tune),

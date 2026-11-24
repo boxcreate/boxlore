@@ -41,7 +41,6 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -72,14 +71,15 @@ internal fun SettingsCategoryCard(
     title: String,
     description: String,
     icon: ImageVector,
-    containerColor: Color,
-    contentColor: Color,
+    /** The card's container colour, then the colour of its text and icon. */
+    colors: Pair<Color, Color>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    descriptionMaxLines: Int = 3,
 ) {
+    val (containerColor, contentColor) = colors
     val shape = MaterialTheme.shapes.extraLarge
-    // Large text lets the title and description take more lines, and the card grows to hold them.
-    val largeText = LocalDensity.current.fontScale >= LARGE_TEXT_SCALE
+    // Long names and large text take more lines, and the card grows to hold them.
     Card(
         modifier =
         modifier
@@ -113,7 +113,8 @@ internal fun SettingsCategoryCard(
                     fontFamily = rememberSectionHeaderFontFamily(),
                     fontWeight = FontWeight.Normal,
                     color = contentColor,
-                    maxLines = if (largeText) 2 else 1,
+                    // Two lines at any size: on two-column rows a longer language's name needs them.
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(2.dp))
@@ -121,7 +122,8 @@ internal fun SettingsCategoryCard(
                     text = description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = contentColor.copy(alpha = 0.78f),
-                    maxLines = if (largeText) 3 else 2,
+                    // Three lines at any size by default: two-column cards and longer languages need the room.
+                    maxLines = descriptionMaxLines,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -598,9 +600,6 @@ private fun Modifier.switchRowSemantics(checked: Boolean): Modifier = semantics 
     role = Role.Switch
     toggleableState = ToggleableState(checked)
 }
-
-/** At this text scale and above, hub cards give their title and description one more line. */
-private const val LARGE_TEXT_SCALE = 1.3f
 
 @Composable
 internal fun SettingsIconContainer(

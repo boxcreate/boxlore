@@ -11,6 +11,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -18,10 +20,12 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -76,7 +80,8 @@ class SettingsHubLayoutTest {
 
     private fun overflows(label: String): Boolean {
         val layouts = mutableListOf<TextLayoutResult>()
-        compose.onNode(hasText(label)).performScrollTo().fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+        // The card merges its title and description; read the one text asked for.
+        compose.onNode(hasText(label), useUnmergedTree = true).performScrollTo().fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
         // Robolectric can flag fitting text as overflowing; a cut line is what listeners see.
         val layout = layouts.last()
         return (0 until layout.lineCount).any(layout::isLineEllipsized)
@@ -111,7 +116,9 @@ class SettingsHubLayoutTest {
         }
     }
 
-    @Test fun `paired cards share a height at large German-length text`() {
+    @Config(qualifiers = "de-w1400dp-h1400dp-mdpi")
+    @Test
+    fun `paired cards share a height at large German text`() {
         window = BoxloreTestWindows.PHONE_LAND
         fontScale = 1.3f
         account = SettingsHubAccount("a.listener.with.a.very.long.address@example.test", CloudSyncUiStatus.Syncing)
@@ -148,15 +155,70 @@ class SettingsHubLayoutTest {
         assertTrue(layouts.last().lineCount <= 2)
     }
 
-    @Test fun `the hub keeps its scroll position when a phone turns sideways and back`() {
+    // Regression: switching between one and two columns reused the old scroll offset, landing on another card.
+    @Test fun `the hub keeps the first card in view when a phone turns sideways and back`() {
         render()
-        compose.onNodeWithText(text(R.string.settings_category_about)).performScrollTo()
-        compose.waitForIdle()
-        for (size in listOf(BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE)) {
-            compose.runOnIdle { window = size }
+        val scroller = compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange))
+        // The header slims as the page scrolls, so scroll until Appearance sits at the top.
+        repeat(3) {
+            val appearance = compose.onNode(hasTestTag(HUB_CARD_TAG_PREFIX + ProfileSettingsDestination.Appearance.name)).fetchSemanticsNode().boundsInRoot
+            val delta = appearance.top - scroller.fetchSemanticsNode().boundsInRoot.top
+            if (delta != 0f) scroller.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, delta) }
             compose.waitForIdle()
         }
-        val about = cardBounds(R.string.settings_category_about)
-        assertTrue("About stays on screen (${about.top})", about.top < BoxloreTestWindows.PHONE.heightDp && about.bottom > 0f)
+        assertEquals(ProfileSettingsDestination.Appearance, firstVisibleCard())
+        for (size in listOf(BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND)) {
+            compose.runOnIdle { window = size }
+            compose.waitForIdle()
+            assertEquals("first card in view at $size", ProfileSettingsDestination.Appearance, firstVisibleCard())
+        }
+    }
+
+    // Regression: on wide windows two cards share a row, and one title line or two description lines
+    // cut longer languages.
+    @Config(qualifiers = "es-w1400dp-h1400dp-mdpi")
+    @Test
+    fun `in Spanish no title or description is cut on sideways phones and portrait tablets`() = assertNoDescriptionCut()
+
+    @Config(qualifiers = "de-w1400dp-h1400dp-mdpi")
+    @Test
+    fun `in German no title or description is cut on sideways phones, portrait tablets and small phones`() = assertNoDescriptionCut()
+
+    private fun assertNoDescriptionCut() {
+        render()
+        for (size in listOf(BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.TABLET_PORTRAIT, BoxloreWindowLayout(360f, 800f))) {
+            compose.runOnIdle { window = size }
+            compose.waitForIdle()
+            (HUB_TITLES + HUB_DESCRIPTIONS).forEach { assertFalse("${text(it)} at $size", overflows(text(it))) }
+        }
+    }
+
+    /** The card nearest the top of the scrolled page that is fully in view (the leftmost on a shared row). */
+    private fun firstVisibleCard(): ProfileSettingsDestination {
+        val top = compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).fetchSemanticsNode().boundsInRoot.top
+        return ProfileSettingsDestination.entries.mapNotNull { destination ->
+            compose.onAllNodes(hasTestTag(HUB_CARD_TAG_PREFIX + destination.name)).fetchSemanticsNodes().firstOrNull()?.let { destination to it.boundsInRoot }
+        }.filter { it.second.top >= top - 1f }.minWith(compareBy({ it.second.top }, { it.second.left })).first
+    }
+
+    private companion object {
+        val HUB_TITLES = listOf(
+            R.string.settings_page_sync,
+            R.string.settings_page_library,
+            R.string.settings_page_appearance,
+            R.string.settings_page_playback,
+            R.string.settings_page_downloads,
+            R.string.settings_privacy_title,
+            R.string.settings_category_about,
+        )
+        val HUB_DESCRIPTIONS = listOf(
+            R.string.settings_hub_sync_description,
+            R.string.settings_hub_library_description,
+            R.string.settings_hub_appearance_description,
+            R.string.settings_hub_playback_description,
+            R.string.settings_hub_downloads_description,
+            R.string.settings_hub_privacy_description,
+            R.string.settings_hub_about_description,
+        )
     }
 }
