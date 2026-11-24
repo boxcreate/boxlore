@@ -69,7 +69,7 @@ internal fun YourShowsModuleFrame(sidebar: Boolean, selectorCount: Int, backgrou
         val pickerWidthPx = (paddingPx * 2 + tilePx * preferredColumns + tileGapPx * (preferredColumns - 1))
             .coerceAtLeast(with(density) { 168.dp.roundToPx() }).coerceAtMost(halfWidthPx)
             .let { if (sideBySide) it else with(density) { maxWidth.roundToPx() } }
-        val columns = ((pickerWidthPx - paddingPx * 2 + tileGapPx) / (tilePx + tileGapPx)).coerceAtLeast(1)
+        val columns = sidebarPickerColumns(((pickerWidthPx - paddingPx * 2 + tileGapPx) / (tilePx + tileGapPx)).coerceAtLeast(1), selectorCount)
         val rows = ((selectorCount + columns - 1) / columns).coerceAtMost(YourShowsSidebarMaxRows)
         val pickerHeightPx = if (selectorCount > 1) paddingPx * 2 + tilePx * rows + tileGapPx * (rows - 1) else 0
         val pickerHeight = with(density) { pickerHeightPx.toDp() }
@@ -106,6 +106,16 @@ internal fun YourShowsModuleFrame(sidebar: Boolean, selectorCount: Int, backgrou
             }
         }
     }
+}
+
+/**
+ * The sidebar picker's columns: as many as [fit] the picker, or one fewer when that would leave a
+ * single cover alone on the last row (mix + 8 shows in 4 columns made 4+4+1; 3 columns make 3+3+3).
+ * Tiles keep their size; only how many share a row changes.
+ */
+internal fun sidebarPickerColumns(fit: Int, count: Int): Int {
+    if (fit <= 2 || count <= fit) return fit.coerceAtLeast(1)
+    return listOf(fit, fit - 1).firstOrNull { count % it != 1 } ?: fit
 }
 
 @Composable

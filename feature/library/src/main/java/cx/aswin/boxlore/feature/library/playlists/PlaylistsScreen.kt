@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.library.playlists
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,11 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalButton
@@ -37,7 +38,6 @@ import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
@@ -45,37 +45,54 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
+import cx.aswin.boxlore.core.designsystem.components.BoxloreMenuState
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
 import cx.aswin.boxlore.core.designsystem.components.PlaylistCopy
 import cx.aswin.boxlore.core.designsystem.components.PlaylistCover
+import cx.aswin.boxlore.core.designsystem.components.rememberBoxloreMenuState
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.boxloreCombinedClickable
 import cx.aswin.boxlore.core.model.Playlist
 import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.text.resolve
-import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
+import cx.aswin.boxlore.feature.library.LibraryBlockSkeleton
+import cx.aswin.boxlore.feature.library.LibraryEmptyContent
+import cx.aswin.boxlore.feature.library.LibraryEmptyState
+import cx.aswin.boxlore.feature.library.LibraryGridSkeleton
+import cx.aswin.boxlore.feature.library.LibraryLargeTitle
+import cx.aswin.boxlore.feature.library.LibraryLoading
 import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.library.libraryGridWidthDp
+import cx.aswin.boxlore.feature.library.libraryHeaderScrolledColor
+import cx.aswin.boxlore.feature.library.playlistsCardContainer
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderScrollBehavior
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderState
 import kotlinx.coroutines.launch
 
 /** The Playlists page's wording, from the module's resources. */
@@ -180,64 +197,79 @@ internal fun PlaylistsContent(
     bottomPadding: androidx.compose.ui.unit.Dp = 96.dp,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
-        fraction = scrollBehavior.state.collapsedFraction,
-    )
-    Scaffold(
-        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.surface,
-        // Above the mini player and floating navigation, as the grid's own bottom padding is.
-        snackbarHost = { SnackbarHost(snackbarHostState, Modifier.padding(bottom = boxloreContentBottomPadding(bottomPadding))) },
-        topBar = {
-            LargeTopAppBar(
-                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
-                title = { Text(PlaylistsCopy.TITLE, style = titleStyle) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = PlaylistsCopy.BACK) }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
-            )
-        },
-    ) { innerPadding ->
-        Box(Modifier.fillMaxSize().padding(innerPadding)) {
-            when {
-                playlists == null -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                playlists.isEmpty() -> Box(Modifier.boxloreCardWidth(BoxloreCardFamily.Utility)) {
-                    ExpressiveSolarSystemEmptyState(
-                        title = PlaylistsCopy.EMPTY_TITLE,
-                        description = PlaylistsCopy.EMPTY_BODY,
-                        icon = Icons.AutoMirrored.Rounded.PlaylistPlay,
-                        actionText = stringResource(PlaylistCopy.NEW_PLAYLIST),
-                        onExploreClick = state::openCreate,
+    val gridState = rememberLazyGridState()
+    val wideGrid = isPlaylistWideGrid((libraryGridWidthDp() - PlaylistGridSidePadding).dp)
+    val header = rememberLibraryHeaderState()
+    val listAtTop = { gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0 }
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior(listAtTop)
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+            containerColor = MaterialTheme.colorScheme.surface,
+            topBar = {
+                LargeTopAppBar(
+                    modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Grid),
+                    title = { LibraryLargeTitle(PlaylistsCopy.TITLE, scrollBehavior.state.collapsedFraction, header) },
+                    expandedHeight = header.expandedHeight(),
+                    navigationIcon = {
+                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = PlaylistsCopy.BACK) }
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        scrolledContainerColor = libraryHeaderScrolledColor(listAtTop),
+                    ),
+                )
+            },
+        ) { innerPadding ->
+            Box(Modifier.fillMaxSize().padding(innerPadding)) {
+                when {
+                    playlists == null -> LibraryLoading {
+                        LibraryGridSkeleton(columns = PLAYLIST_SKELETON_COLUMNS, top = { LibraryBlockSkeleton(height = 56.dp, corner = 28.dp) })
+                    }
+                    playlists.isEmpty() -> LibraryEmptyState(
+                        content = LibraryEmptyContent(
+                            title = PlaylistsCopy.EMPTY_TITLE,
+                            body = PlaylistsCopy.EMPTY_BODY,
+                            icon = Icons.AutoMirrored.Rounded.PlaylistPlay,
+                            shape = ExpressiveShapes.Cookie4,
+                            actionText = stringResource(PlaylistCopy.NEW_PLAYLIST),
+                        ),
+                        containerColor = MaterialTheme.colorScheme.playlistsCardContainer(),
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        onAction = state::openCreate,
+                        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
+                        bottomPadding = boxloreContentBottomPadding(bottomPadding),
                     )
-                }
-                else -> LazyVerticalGrid(
-                    columns = PlaylistGridCells,
-                    modifier = Modifier.fillMaxSize().testTag(PLAYLISTS_GRID_TAG),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = boxloreContentBottomPadding(bottomPadding)),
-                    horizontalArrangement = Arrangement.spacedBy(PlaylistGridSpacing),
-                    verticalArrangement = Arrangement.spacedBy(PlaylistGridSpacing),
-                ) {
-                    item(key = "new_playlist", span = { GridItemSpan(maxLineSpan) }) { NewPlaylistButton(onClick = state::openCreate) }
-                    items(playlists, key = { it.id }) { playlist ->
-                        PlaylistCard(
-                            playlist = playlist,
-                            onClick = { actions.open(playlist.id) },
-                            onPlay = { actions.play(playlist.id) },
-                            onRename = { state.openRename(playlist.id, playlist.name) },
-                            onDelete = { state.openDelete(playlist.id) },
-                        )
+                    else -> LazyVerticalGrid(
+                        columns = PlaylistGridCells,
+                        state = gridState,
+                        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Grid).fillMaxSize().testTag(PLAYLISTS_GRID_TAG),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = boxloreContentBottomPadding(bottomPadding)),
+                        horizontalArrangement = Arrangement.spacedBy(PlaylistGridSpacing),
+                        verticalArrangement = Arrangement.spacedBy(PlaylistGridSpacing),
+                    ) {
+                        // Wide grids show New playlist as the first card, the size of a playlist; narrower ones keep the bar.
+                    if (wideGrid) {
+                        item(key = "new_playlist") { NewPlaylistCell(onClick = state::openCreate) }
+                    } else {
+                        item(key = "new_playlist", span = { GridItemSpan(maxLineSpan) }) { NewPlaylistButton(onClick = state::openCreate) }
+                    }
+                        items(playlists, key = { it.id }) { playlist ->
+                            PlaylistCard(
+                                playlist = playlist,
+                                onClick = { actions.open(playlist.id) },
+                                onPlay = { actions.play(playlist.id) },
+                                onRename = { state.openRename(playlist.id, playlist.name) },
+                                onDelete = { state.openDelete(playlist.id) },
+                            )
+                        }
                     }
                 }
             }
         }
+        // boxlore's notice, just above the bar and mini player.
+        BoxloreSnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
     }
     PlaylistEditorDialogs(state, playlists.orEmpty(), actions, pickSource)
 }
@@ -245,7 +277,19 @@ internal fun PlaylistsContent(
 /** A playlist as a small card, three across on a phone: its cover with a Play button on it, then its name and show count. */
 @Composable
 private fun PlaylistCard(playlist: Playlist, onClick: () -> Unit, onPlay: () -> Unit, onRename: () -> Unit, onDelete: () -> Unit) {
-    Surface(onClick = onClick, color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+    // Keyed by playlist, so the open menu stays open when the screen is recreated.
+    val menu = rememberBoxloreMenuState(key = playlist.id)
+    val shape = RoundedCornerShape(20.dp)
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = shape,
+        // Tap opens the playlist; long-press (or right-click) opens its menu, like folders.
+        modifier = Modifier.fillMaxWidth().clip(shape).boxloreCombinedClickable(
+            onLongClickLabel = PlaylistsCopy.moreFor(playlist.name),
+            onLongClick = menu::open,
+            onClick = onClick,
+        ),
+    ) {
         Column(Modifier.padding(6.dp)) {
             BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1f)) {
                 PlaylistCover(playlist.coverUrls, size = maxWidth, iconKey = playlist.iconKey, corner = 14.dp)
@@ -268,8 +312,41 @@ private fun PlaylistCard(playlist: Playlist, onClick: () -> Unit, onPlay: () -> 
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                PlaylistMenu(playlist.name, onRename, onDelete, compact = true)
+                PlaylistMenu(playlist.name, onRename, onDelete, compact = true, state = menu)
             }
+        }
+    }
+}
+
+/**
+ * New playlist as the grid's first card on wide grids: the size of a playlist card, with a medallion
+ * in the playlists' cookie shape over the label.
+ */
+@Composable
+private fun NewPlaylistCell(onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth().testTag(NEW_PLAYLIST_TILE_TAG),
+    ) {
+        Column(Modifier.padding(6.dp)) {
+            Box(Modifier.fillMaxWidth().aspectRatio(1f), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.size(56.dp).clip(ExpressiveShapes.Cookie4).background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Rounded.Add, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+            }
+            Text(
+                stringResource(PlaylistCopy.NEW_PLAYLIST),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = GoogleSansWeight.bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.heightIn(min = CardTextHeight).padding(start = 4.dp, top = 6.dp),
+            )
         }
     }
 }
@@ -286,23 +363,32 @@ private fun NewPlaylistButton(onClick: () -> Unit) {
     }
 }
 
+/**
+ * A playlist's menu: Rename, and Delete in red in a group of its own. It opens beside its button in
+ * the half of a folded screen that holds it, and [state] (keyed by playlist) keeps it open across a
+ * restart of the screen.
+ */
 @Composable
-internal fun PlaylistMenu(name: String, onRename: () -> Unit, onDelete: () -> Unit, deleteLabel: String = PlaylistsCopy.DELETE, compact: Boolean = false) {
-    var expanded by remember { mutableStateOf(false) }
+internal fun PlaylistMenu(
+    name: String,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
+    deleteLabel: String = PlaylistsCopy.DELETE,
+    compact: Boolean = false,
+    state: BoxloreMenuState = rememberBoxloreMenuState(key = name),
+) {
+    val moreLabel = PlaylistsCopy.moreFor(name)
+    val rename = PlaylistsCopy.RENAME
     Box {
-        // The compact button keeps a 48dp touch target; only the drawn size shrinks.
-        IconButton(onClick = { expanded = true }, modifier = if (compact) Modifier.size(28.dp) else Modifier) {
-            Icon(Icons.Rounded.MoreVert, contentDescription = PlaylistsCopy.moreFor(name), modifier = if (compact) Modifier.size(18.dp) else Modifier)
+        BoxloreTooltip(moreLabel) {
+            // The compact button keeps a 48dp touch target; only the drawn size shrinks.
+            IconButton(onClick = state::open, modifier = if (compact) Modifier.size(28.dp) else Modifier) {
+                Icon(Icons.Rounded.MoreVert, contentDescription = moreLabel, modifier = if (compact) Modifier.size(18.dp) else Modifier)
+            }
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(text = { Text(PlaylistsCopy.RENAME) }, onClick = {
-                expanded = false
-                onRename()
-            })
-            DropdownMenuItem(text = { Text(deleteLabel) }, onClick = {
-                expanded = false
-                onDelete()
-            })
+        BoxloreDropdownMenu(state) {
+            item(rename, onRename, Icons.Rounded.Edit)
+            item(deleteLabel, onDelete, Icons.Rounded.DeleteOutline, destructive = true)
         }
     }
 }
@@ -383,19 +469,27 @@ internal fun PlaylistEditorDialogs(
 }
 
 /**
- * The Playlists grid's columns: small cards, three across on any phone, and roomier cards once the
- * grid is tablet-wide (tablets, unfolded foldables, phones in landscape), so cards never shrink to stamps.
+ * The Playlists grid's columns: three across on every phone, the Galaxy Z Fold 8 cover and split
+ * halves (cards grow with the window), and roomier cards once the grid is tablet-wide (tablets,
+ * unfolded foldables, phones in landscape), so cards never shrink to stamps as the window grows.
  */
 internal object PlaylistGridCells : GridCells {
     override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
-        val minWidth = if (availableSize.toDp() < PlaylistWideGrid) PlaylistCardMinWidth else PlaylistCardWideMinWidth
-        return with(GridCells.Adaptive(minWidth)) { calculateCrossAxisCellSizes(availableSize, spacing) }
+        val cells = if (isPlaylistWideGrid(availableSize.toDp())) GridCells.Adaptive(PlaylistCardWideMinWidth) else GridCells.Fixed(PHONE_COLUMNS)
+        return with(cells) { calculateCrossAxisCellSizes(availableSize, spacing) }
     }
 }
 
-private val PlaylistCardMinWidth = 100.dp
+/** From this grid width Playlists uses wide cards, and New playlist becomes the grid's first card. */
+internal fun isPlaylistWideGrid(gridWidth: Dp): Boolean = gridWidth >= PlaylistWideGrid
+
+private const val PHONE_COLUMNS = 3
+private const val PLAYLIST_SKELETON_COLUMNS = 3
 private val PlaylistCardWideMinWidth = 152.dp
 private val PlaylistWideGrid = 568.dp
+
+/** The Playlists grid's 16dp sides, which come off its width before cards are counted. */
+private const val PlaylistGridSidePadding = 32f
 internal val PlaylistGridSpacing = 10.dp
 
 /** The name and summary area under a card's cover, so cards in a row line up. */

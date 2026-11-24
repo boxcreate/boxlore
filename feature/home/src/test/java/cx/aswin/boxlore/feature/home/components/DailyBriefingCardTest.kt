@@ -7,18 +7,28 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,6 +43,8 @@ class DailyBriefingCardTest {
     @get:Rule val compose = createComposeRule()
     private val dark = mutableStateOf(false)
     private val large = mutableStateOf(false)
+    private val fontScale = mutableStateOf<Float?>(null)
+    private val window = mutableStateOf<BoxloreWindowLayout?>(null)
     private var play = 0
     private var open = 0
     private var hide = 0
@@ -43,7 +55,11 @@ class DailyBriefingCardTest {
     private fun render(stories: List<Chapter> = chapters) {
         compose.setContent {
             val density = LocalDensity.current
-            CompositionLocalProvider(LocalDensity provides Density(density.density, if (large.value) 2f else 1f), LocalLayoutDirection provides if (large.value) LayoutDirection.Rtl else LayoutDirection.Ltr) {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density.density, fontScale.value ?: if (large.value) 2f else 1f),
+                LocalLayoutDirection provides if (large.value) LayoutDirection.Rtl else LayoutDirection.Ltr,
+                LocalBoxloreWindowLayout provides (window.value ?: LocalBoxloreWindowLayout.current),
+            ) {
                 BoxLoreTheme(darkTheme = dark.value) {
                     Box(Modifier.width(320.dp)) {
                         DailyBriefingCard(briefing, stories, false, { play++ }, { open++ }, { hide++ }, onDismissForever = { hideAll++ })
@@ -63,7 +79,7 @@ class DailyBriefingCardTest {
         compose.onNodeWithText("Listen").performClick()
         assertEquals(1, play)
         assertEquals(0, open)
-        compose.onNodeWithText("Open brief").performClick()
+        compose.onNodeWithText("Open the Brief").performClick()
         assertEquals(1, open)
         compose.onNodeWithText("The third story").assertIsDisplayed()
         compose.onNodeWithText("The fourth story").assertDoesNotExist()
@@ -83,12 +99,12 @@ class DailyBriefingCardTest {
         compose.onNodeWithContentDescription("The boxlore brief", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithText("Listen").assertIsDisplayed().performClick()
         assertEquals(1, play)
-        compose.onNodeWithText("Open brief").assertIsDisplayed()
+        compose.onNodeWithText("Open the Brief").assertIsDisplayed()
         val number = compose.onNodeWithText("01", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         val headline = compose.onNodeWithText(chapters.first().title, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         assertEquals(number.center.y, headline.center.y, 1f)
-        compose.onNodeWithContentDescription("Hide briefing").performClick()
-        compose.onNodeWithText("Hide today’s brief?").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Hide the Brief").performClick()
+        compose.onNodeWithText("Hide today’s Brief?").assertIsDisplayed()
         assertEquals(0, hide)
         compose.onNodeWithText("Always hide the Brief").performClick()
         compose.onNodeWithText("Always hide the Brief?").assertIsDisplayed()
@@ -96,5 +112,52 @@ class DailyBriefingCardTest {
         assertEquals(1, hideAll)
         assertEquals(0, hide)
         assertEquals(0, open)
+    }
+
+    @Test fun `hide steps use full-width paired buttons that grow together and count each choice once`() {
+        val events = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = AnalyticsHelper.installRecordingSink(events)
+        try {
+            fontScale.value = 1.3f
+            render()
+            compose.onNodeWithContentDescription("Hide briefing").performClick()
+            assertPairFillsCard("hide today")
+            compose.onNodeWithTag("home_brief_always_hide", useUnmergedTree = true).performClick()
+            assertPairFillsCard("always hide")
+            compose.onNodeWithTag("home_brief_confirm_always_hide", useUnmergedTree = true).performClick()
+            assertEquals(1, hideAll)
+            val actions = events.mapNotNull { (_, properties) -> properties["action"] as? String }
+            assertEquals(listOf("dismiss_initiated", "dismiss_forever_initiated", "dismissed_forever"), actions.filter { it.startsWith("dismiss") })
+        } finally {
+            restore()
+        }
+    }
+
+    @Test fun `the story list toggle reads as a button`() {
+        render()
+        compose.onNodeWithContentDescription("Show all 4 stories").assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+    }
+
+    @Test fun `on a sideways phone the cover is cropped to half the window, and keeps its ratio upright`() {
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        val upright = compose.onNodeWithTag("home_brief_cover", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals("Upright cover ratio", 1.6f, upright.width / upright.height, 0.02f)
+        window.value = BoxloreTestWindows.PHONE_LAND
+        compose.waitForIdle()
+        assertEquals(206f, briefCoverCap(BoxloreTestWindows.PHONE_LAND)!!.value, 0.5f)
+        assertEquals(null, briefCoverCap(BoxloreTestWindows.PHONE))
+        assertEquals(null, briefCoverCap(BoxloreTestWindows.TABLET))
+    }
+
+    private fun assertPairFillsCard(step: String) {
+        compose.waitForIdle()
+        val pair = compose.onNodeWithTag("home_brief_confirm_pair", useUnmergedTree = true).fetchSemanticsNode()
+        val buttons = pair.children
+        assertEquals("$step: two buttons", 2, buttons.size)
+        val (first, second) = buttons.map { it.boundsInRoot }
+        assertEquals("$step: equal heights", first.height, second.height, 0.5f)
+        assertTrue("$step: buttons at least 48dp", first.height >= 48f - 0.5f)
+        assertEquals("$step: the pair spans the card", pair.boundsInRoot.width, second.right - first.left, 1f)
     }
 }

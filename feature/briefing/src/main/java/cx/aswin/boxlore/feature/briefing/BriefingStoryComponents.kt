@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -15,10 +14,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -61,6 +60,9 @@ internal fun getDomainName(url: String): String = try {
     url
 }
 
+/** A related episode tile's test tag. */
+internal const val RELATED_EPISODE_TILE_TAG = "briefing_related_episode"
+
 @Composable
 internal fun CompactEpisodeChip(
     episode: Episode,
@@ -69,13 +71,15 @@ internal fun CompactEpisodeChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // A raised tile, so it has an edge against its story card.
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = modifier
             .width(260.dp)
+            .testTag(RELATED_EPISODE_TILE_TAG)
             .expressiveClickable(
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
                 onClick = onClick
             )
     ) {
@@ -104,7 +108,7 @@ private fun CompactEpisodeImage(episode: Episode) {
         contentScale = ContentScale.Crop,
         modifier = Modifier
             .size(52.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(MaterialTheme.shapes.small)
     )
 }
 
@@ -161,7 +165,7 @@ private fun CompactEpisodePodcastTitle(
             fontSize = 12.sp,
             fontWeight = GoogleSansWeight.medium
         ),
-        color = if (isActiveCard) accentColor.copy(alpha = 0.85f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+        color = if (isActiveCard) accentColor else MaterialTheme.colorScheme.primary,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
     )

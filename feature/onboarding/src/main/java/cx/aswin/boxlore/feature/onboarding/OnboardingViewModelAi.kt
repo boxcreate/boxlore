@@ -47,7 +47,8 @@ internal fun OnboardingViewModel.toggleAiOption(option: String) {
 internal fun OnboardingViewModel.switchToLegacyOnboarding() {
     cancelEchoRequests()
     didSwitchFromAi = true
-    _uiState.update { it.copy(currentStep = OnboardingStep.GENRES, onboardingError = null) }
+    // The topics picked with Echo come along, unless the picker already has its own picks.
+    _uiState.update { it.copy(currentStep = OnboardingStep.GENRES, onboardingError = null, selectedGenres = it.selectedGenres.ifEmpty { EchoInitialTopic.genres(it) }) }
     currentStepStartMs = System.currentTimeMillis()
 }
 

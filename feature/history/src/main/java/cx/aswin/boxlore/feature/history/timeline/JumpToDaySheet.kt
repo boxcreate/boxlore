@@ -2,13 +2,14 @@ package cx.aswin.boxlore.feature.history.timeline
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -146,7 +147,7 @@ fun JumpToDayContent(state: JumpToDayState, onJump: (LocalDate) -> Unit, onDismi
             Text(stringResource(R.string.history_jump_title), style = TimelineType.month, color = colors.onSurface)
             Text(
                 stringResource(R.string.history_jump_body),
-                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.3.sp),
+                style = MaterialTheme.typography.bodyMedium.copy(letterSpacing = 0.3.sp),
                 color = colors.onSurfaceVariant,
             )
         }
@@ -164,7 +165,8 @@ fun JumpToDayContent(state: JumpToDayState, onJump: (LocalDate) -> Unit, onDismi
             onDismiss()
         }
         CalendarLegend()
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // The quick jumps wrap to a second line when they don't fit (German, large text, narrow windows).
+        FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             QuickJumpChip(stringResource(R.string.history_jump_week_ago)) {
                 onJump(state.today.minusWeeks(1))
                 onDismiss()
@@ -248,10 +250,10 @@ private fun CalendarDay(date: LocalDate, state: JumpToDayState, onPick: (LocalDa
         modifier =
         Modifier
             .size(44.dp)
-            .clip(CircleShape)
-            .background(background)
-            .then(if (isToday) Modifier.border(2.dp, colors.onSurface, CircleShape) else Modifier)
+            // The press layer wraps the colour and today's ring, so the day shrinks as one piece.
             .expressiveClickable(shape = CircleShape, feedback = ExpressivePressFeedback.Control) { onPick(date) }
+            .background(background, CircleShape)
+            .then(if (isToday) Modifier.border(2.dp, colors.onSurface, CircleShape) else Modifier)
             .semantics {
                 contentDescription = label
                 role = Role.Button
@@ -278,6 +280,9 @@ private fun CalendarLegend() {
     }
 }
 
+/** Test tag on each quick-jump chip. */
+const val QUICK_JUMP_CHIP_TAG = "history_quick_jump_chip"
+
 @Composable
 private fun QuickJumpChip(text: String, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
@@ -285,14 +290,16 @@ private fun QuickJumpChip(text: String, onClick: () -> Unit) {
     Box(
         modifier =
         Modifier
-            .height(48.dp)
-            .clip(shape)
-            .background(colors.surfaceContainerHighest)
+            // 48dp for one line; a label that wraps (long words at large text) grows the chip instead.
+            .heightIn(min = 48.dp)
             .expressiveClickable(shape = shape, feedback = ExpressivePressFeedback.Control, onClick = onClick)
+            .background(colors.surfaceContainerHighest, shape)
             .semantics { role = Role.Button }
-            .padding(horizontal = 18.dp),
+            // Narrow enough that the three English quick jumps share one line on a regular phone.
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .testTag(QUICK_JUMP_CHIP_TAG),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, style = TimelineType.label.copy(fontWeight = GoogleSansWeight.semiBold), color = colors.onSurface)
+        Text(text, style = TimelineType.label.copy(fontWeight = GoogleSansWeight.semiBold), color = colors.onSurface, textAlign = TextAlign.Center)
     }
 }

@@ -38,9 +38,9 @@
         <item quantity="other">%1$d nuevos</item>
     </plurals>
     <plurals name="library_folder_new_episodes_badge">
-        <item quantity="one">%1$d EPISODIO NUEVO</item>
-        <item quantity="many">%1$d EPISODIOS NUEVOS</item>
-        <item quantity="other">%1$d EPISODIOS NUEVOS</item>
+        <item quantity="one">%1$d NUEVO</item>
+        <item quantity="many">%1$d NUEVOS</item>
+        <item quantity="other">%1$d NUEVOS</item>
     </plurals>
     <string name="library_folder_empty_tap_to_add">Carpeta vacía • Toca para añadir podcasts</string>
     <string name="library_folder_empty_title">No hay podcasts en esta carpeta</string>
@@ -107,7 +107,6 @@
     <string name="library_auto_organize">Organizar automáticamente</string>
     <string name="library_auto_organize_is_on">Organización automática activada</string>
     <string name="library_auto_organize_turn_on">Activar organización automática</string>
-    <string name="library_auto_organize_turn_off">Desactivar organización automática</string>
     <string name="library_auto_organize_turn_off_title">¿Desactivar la organización automática?</string>
     <string name="library_auto_organize_turn_off_body">boxlore dejará de crear carpetas de género nuevas. Las carpetas de género que tienes se quedan, y los podcasts nuevos de su género se siguen añadiendo.</string>
     <string name="library_auto_organize_turn_off_hint">Para quitar una, elimina la carpeta. Sus podcasts se quedan en tu biblioteca.</string>

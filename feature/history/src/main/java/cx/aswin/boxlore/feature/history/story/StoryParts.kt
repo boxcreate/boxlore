@@ -46,6 +46,9 @@ import cx.aswin.boxlore.feature.history.insights.PartShare
 import cx.aswin.boxlore.feature.history.insights.partName
 import kotlin.math.sqrt
 
+/** The smallest size, in frame units, of the story's informational text (dates, hints, share labels). */
+internal const val STORY_MIN_INFO_SP = 13f
+
 /** The story boards' type: sizes in frame units (the frame scales as a whole, so text never reflows). */
 internal object StoryType {
     @Composable

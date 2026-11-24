@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
@@ -30,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -39,15 +42,18 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.echo.EchoAccents
 import cx.aswin.boxlore.core.designsystem.echo.EchoCharacter
 import cx.aswin.boxlore.core.designsystem.echo.rememberEchoCharacterSpec
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.history.R
+import cx.aswin.boxlore.feature.history.timeline.TimelineTime
 import cx.aswin.boxlore.feature.history.timeline.TimelineType
 import cx.aswin.boxlore.feature.history.timeline.currentLocale
 import cx.aswin.boxlore.feature.history.timeline.durationText
+import java.time.LocalDate
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
@@ -66,7 +72,8 @@ internal fun StoryEntryCard(month: StoryMonth, isNew: Boolean, onOpen: () -> Uni
     BoxWithConstraints(
         modifier
             .fillMaxWidth()
-            .height(214.dp)
+            // 214dp, taller only when large text needs it.
+            .heightIn(min = ENTRY_HEIGHT)
             .clip(shape)
             .background(palette.primary)
             .expressiveClickable(shape = shape, onClick = onOpen)
@@ -88,29 +95,40 @@ internal fun StoryEntryCard(month: StoryMonth, isNew: Boolean, onOpen: () -> Uni
                 StoryCover(url, StoryCoverSpot(0f, 0f, spot.size, spot.size * 0.26f, shadow = 6f))
             }
         }
-        // The title stops short of the covers fanned at the top right, wrapping to a second line instead of running under them.
-        val titleEnd = StoryEntryLayout.titleEnd(covers)
-        Column(Modifier.padding(start = 20.dp, top = 18.dp, end = titleEnd.dp).widthIn(max = 200.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (isNew) {
-                    Box(Modifier.height(22.dp).clip(RoundedCornerShape(11.dp)).background(palette.onPrimary).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
-                        Text(stringResource(R.string.history_story_new), style = StoryType.of(11f, 14f, GoogleSansWeight.bold), color = palette.onContainer)
+        // The title at the top and the total at the bottom; with large text the card grows rather than overlapping them.
+        Column(Modifier.fillMaxWidth().heightIn(min = ENTRY_HEIGHT), verticalArrangement = Arrangement.SpaceBetween) {
+            // The title stops short of the covers fanned at the top right, wrapping to a second line instead of running under them.
+            val titleEnd = StoryEntryLayout.titleEnd(covers)
+            Column(Modifier.padding(start = 20.dp, top = 18.dp, end = titleEnd.dp).widthIn(max = 200.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (isNew) {
+                        Box(Modifier.height(22.dp).clip(RoundedCornerShape(11.dp)).background(palette.onPrimary).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+                            Text(stringResource(R.string.history_story_new), style = StoryType.of(11f, 14f, GoogleSansWeight.bold), color = palette.onContainer)
+                        }
                     }
+                    Text(pluralStringResource(R.plurals.history_story_entry_meta, month.cards, month.cards), style = StoryType.of(12f, 16f, GoogleSansWeight.semiBold), color = palette.onPrimary)
                 }
-                Text(pluralStringResource(R.plurals.history_story_entry_meta, month.cards, month.cards), style = StoryType.of(12f, 16f, GoogleSansWeight.semiBold), color = palette.onPrimary)
+                Text(
+                    stringResource(R.string.history_story_entry_title, name),
+                    style = StoryType.of(22f, 28f, GoogleSansWeight.semiBold),
+                    color = palette.onPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-            Text(
-                stringResource(R.string.history_story_entry_title, name),
-                style = StoryType.of(22f, 28f, GoogleSansWeight.semiBold),
-                color = palette.onPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Column(Modifier.align(Alignment.BottomStart).padding(start = 20.dp, bottom = 18.dp, end = 150.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(durationText(month.totalMs), style = StoryType.of(36f, 40f, GoogleSansWeight.semiBold, -0.4f), color = palette.onPrimary, maxLines = 1)
-            month.topShowName?.let { show ->
-                Text(stringResource(R.string.history_story_entry_top, show), style = StoryType.of(14f, 19f), color = palette.onPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Column(Modifier.padding(start = 20.dp, top = 12.dp, bottom = 18.dp, end = 150.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                // One line: a long total or large text shrinks a step instead of being cut off.
+                Text(
+                    durationText(month.totalMs),
+                    style = StoryType.of(36f, 40f, GoogleSansWeight.semiBold, -0.4f),
+                    color = palette.onPrimary,
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 36.sp),
+                    modifier = Modifier.testTag(STORY_ENTRY_TOTAL_TAG),
+                )
+                month.topShowName?.let { show ->
+                    Text(stringResource(R.string.history_story_entry_top, show), style = StoryType.of(14f, 19f), color = palette.onPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
         }
         EntryEcho(palette, Modifier.align(Alignment.BottomEnd).padding(end = 70.dp).offset(y = 6.dp))
@@ -119,6 +137,10 @@ internal fun StoryEntryCard(month: StoryMonth, isNew: Boolean, onOpen: () -> Uni
         }
     }
 }
+
+/** The story card's usual height, and its total's test tag. */
+private val ENTRY_HEIGHT = 214.dp
+const val STORY_ENTRY_TOTAL_TAG = "story_entry_total"
 
 /** A small Echo at rest, 104dp tall: the hello pose's outline plus the boards' 3% margin. A still, so it draws once. */
 @Composable
@@ -190,20 +212,20 @@ private const val ENTRY_ECHO_HEIGHT = 104f
  * Two rows show until [expanded]; a button under them shows the rest or folds them away again.
  * Each row is its own list item, so only rows on screen are composed.
  */
-internal fun LazyListScope.earlierStories(months: List<StoryMonth>, expanded: Boolean, onExpand: (Boolean) -> Unit, onOpen: (StoryMonth) -> Unit) {
+internal fun LazyListScope.earlierStories(months: List<StoryMonth>, today: LocalDate, expanded: Boolean, tilesPerRow: Int, onExpand: (Boolean) -> Unit, onOpen: (StoryMonth) -> Unit) {
     if (months.isEmpty()) return
     item(key = "earlier-stories") {
         Text(stringResource(R.string.history_story_earlier), style = TimelineType.header, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp))
     }
-    EarlierStories.shown(months, expanded).chunked(EarlierStories.TILES_PER_ROW).forEach { row ->
+    EarlierStories.shown(months, expanded, tilesPerRow).chunked(tilesPerRow).forEach { row ->
         item(key = "earlier-stories-${row.first().month}") {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                row.forEach { month -> StoryTile(month, Modifier.weight(1f)) { onOpen(month) } }
-                repeat(EarlierStories.TILES_PER_ROW - row.size) { Box(Modifier.weight(1f)) }
+                row.forEach { month -> StoryTile(month, today, Modifier.weight(1f)) { onOpen(month) } }
+                repeat(tilesPerRow - row.size) { Box(Modifier.weight(1f)) }
             }
         }
     }
-    if (EarlierStories.folds(months)) {
+    if (EarlierStories.folds(months, tilesPerRow)) {
         item(key = "earlier-stories-more") {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 TextButton(onClick = { onExpand(!expanded) }) {
@@ -221,26 +243,36 @@ internal fun LazyListScope.earlierStories(months: List<StoryMonth>, expanded: Bo
     }
 }
 
-/** How many earlier stories show: two rows of three until the listener asks for the rest. */
+/**
+ * How many earlier stories show: two rows until the listener asks for the rest. Rows hold three
+ * tiles, or on large tablets as many as fit (up to five).
+ */
 internal object EarlierStories {
     const val TILES_PER_ROW = 3
     private const val ROWS_FOLDED = 2
+    private const val MOST_TILES = 5
+    private const val TILE_MIN_DP = 180f
+    private const val TILE_GAP_DP = 10f
+
+    /** Tiles a row of [widthDp] fits: three, or more on wide grids. */
+    fun tilesPerRow(widthDp: Float): Int = kotlin.math.floor((widthDp + TILE_GAP_DP) / (TILE_MIN_DP + TILE_GAP_DP)).toInt().coerceIn(TILES_PER_ROW, MOST_TILES)
 
     /** Whether there are more than two rows, so the list folds and gets its button. */
-    fun folds(months: List<StoryMonth>): Boolean = months.size > TILES_PER_ROW * ROWS_FOLDED
+    fun folds(months: List<StoryMonth>, perRow: Int = TILES_PER_ROW): Boolean = months.size > perRow * ROWS_FOLDED
 
-    fun shown(months: List<StoryMonth>, expanded: Boolean): List<StoryMonth> = if (expanded) months else months.take(TILES_PER_ROW * ROWS_FOLDED)
+    fun shown(months: List<StoryMonth>, expanded: Boolean, perRow: Int = TILES_PER_ROW): List<StoryMonth> = if (expanded) months else months.take(perRow * ROWS_FOLDED)
 }
 
 private const val ENTRY_SEQUENCE = "story-hello-still"
 private const val ENTRY_POSE = "t1-rest"
 
 @Composable
-private fun StoryTile(month: StoryMonth, modifier: Modifier, onOpen: () -> Unit) {
+private fun StoryTile(month: StoryMonth, today: LocalDate, modifier: Modifier, onOpen: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val palette = rememberStoryPalette()
-    val name = StoryText.monthTitle(month.month, currentLocale())
-    val label = stringResource(R.string.history_story_watch, StoryText.monthName(month.month, currentLocale()))
+    // A month from another year carries its year, so two Novembers never look the same.
+    val name = TimelineTime.monthTitle(month.month, today, currentLocale())
+    val label = stringResource(R.string.history_story_watch, name)
     val shape = RoundedCornerShape(22.dp)
     val spec = rememberEchoCharacterSpec()
     val sequence = StoryLogic.tileSequence(month.outfit)
@@ -267,7 +299,14 @@ private fun StoryTile(month: StoryMonth, modifier: Modifier, onOpen: () -> Unit)
             CenteredEcho(sequence, square.side, square.top, square.left, palette.echoOwn)
         }
         Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 12.dp, vertical = 10.dp)) {
-            Text(name, style = StoryType.of(14f, 18f, GoogleSansWeight.semiBold), color = colors.onSurface, maxLines = 1)
+            Text(
+                name,
+                style = StoryType.of(14f, 18f, GoogleSansWeight.semiBold),
+                color = colors.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = 14.sp),
+            )
             Text(durationText(month.totalMs), style = TimelineType.meta, color = colors.onSurfaceVariant, maxLines = 1)
         }
     }

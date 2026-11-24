@@ -182,6 +182,7 @@ internal class PlaybackMediaControllerBridge(
                             isPlaying = false,
                             position = 0,
                             sleepTimerEnd = null,
+                            sleepTimerPresetMinutes = null,
                             sleepAtEndOfEpisode = false,
                         )
                     return
@@ -295,6 +296,7 @@ internal class PlaybackMediaControllerBridge(
                 playerStateFlow.value.copy(
                     isPlaying = false,
                     sleepTimerEnd = null,
+                    sleepTimerPresetMinutes = null,
                     sleepAtEndOfEpisode = false,
                 )
             // Completion persistence and timer-holder clearing are service-owned.

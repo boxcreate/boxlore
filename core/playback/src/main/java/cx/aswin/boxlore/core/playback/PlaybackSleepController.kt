@@ -86,6 +86,7 @@ internal class PlaybackSleepController(
             playerStateFlow.value.copy(
                 sleepTimerEnd = null,
                 sleepAtEndOfEpisode = false,
+                sleepTimerPresetMinutes = null,
                 showLateNightNudge = !dismissNudge && playerStateFlow.value.showLateNightNudge,
             )
     }
@@ -98,6 +99,7 @@ internal class PlaybackSleepController(
             playerStateFlow.value.copy(
                 sleepAtEndOfEpisode = true,
                 sleepTimerEnd = null,
+                sleepTimerPresetMinutes = null,
                 showLateNightNudge = !dismissNudge && playerStateFlow.value.showLateNightNudge,
             )
 
@@ -124,6 +126,7 @@ internal class PlaybackSleepController(
             playerStateFlow.value.copy(
                 sleepTimerEnd = endTime,
                 sleepAtEndOfEpisode = false,
+                sleepTimerPresetMinutes = durationMinutes,
                 showLateNightNudge = !dismissNudge && playerStateFlow.value.showLateNightNudge,
             )
 
@@ -142,6 +145,7 @@ internal class PlaybackSleepController(
                         playerStateFlow.value =
                             playerStateFlow.value.copy(
                                 sleepTimerEnd = null,
+                                sleepTimerPresetMinutes = null,
                                 isPlaying = false,
                                 showLateNightNudge = false,
                             )

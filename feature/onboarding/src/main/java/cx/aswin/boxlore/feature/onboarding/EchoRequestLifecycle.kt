@@ -61,6 +61,10 @@ internal object EchoRequestPolicy {
      * off, or today's AI allowance is used), so a retry can't succeed.
      */
     fun picksTopicsAfter(apiErrorCode: String?): Boolean = apiErrorCode in ApiErrorCodes.AI_UNAVAILABLE
+
+    /** The cause a failed request names: only the API's own verification answer means the check didn't pass. */
+    fun errorKind(apiErrorCode: String?): OnboardingErrorKind =
+        if (apiErrorCode == ApiErrorCodes.VERIFICATION_REQUIRED) OnboardingErrorKind.VerificationSkipped else OnboardingErrorKind.Network
 }
 
 /** Transient question fields only; catalog results and account preferences stay live. */

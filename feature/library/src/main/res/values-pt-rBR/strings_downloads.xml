@@ -10,10 +10,10 @@
     <string name="library_downloads_offline_title">Modo off-line</string>
     <string name="library_downloads_offline_body">Sem conexão com a internet. Tocando episódios baixados.</string>
     <!-- Playful empty-state title; a light pun is welcome -->
-    <string name="library_downloads_empty_title">Um vazio bem zen</string>
+    <string name="library_downloads_empty_title">Nenhum download ainda</string>
     <string name="library_downloads_empty_offline_body">Nenhum episódio baixado. Ligue o Wi-Fi e o carregador para sincronizar seus downloads inteligentes!</string>
     <!-- Smart Downloads is a feature name -->
-    <string name="library_downloads_empty_body">Nenhum episódio baixado ainda. Ative os Downloads inteligentes acima ou encontre podcasts para baixar manualmente.</string>
+    <string name="library_downloads_empty_body">Ative os Downloads inteligentes ou baixe episódios na página de um podcast.</string>
     <string name="library_downloads_delete_title">Excluir downloads?</string>
     <plurals name="library_downloads_delete_podcasts_body">
         <item quantity="one">Tem certeza de que quer excluir todos os episódios baixados de %1$d podcast selecionado?</item>

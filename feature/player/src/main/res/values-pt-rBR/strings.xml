@@ -26,7 +26,7 @@
 
     <!-- Transcript -->
     <!-- Toggle that keeps the transcript scrolled to the spoken line -->
-    <string name="player_transcript_sync_scroll">Rolagem sincronizada</string>
+    <string name="player_transcript_sync_scroll">Acompanhar o áudio</string>
     <!-- Phone inline transcript; the tablet pane uses player_open_fullscreen_transcript -->
     <string name="player_inline_open_fullscreen_transcript">Abrir transcrição em tela cheia</string>
 
@@ -120,6 +120,7 @@
     <!-- Cast -->
     <string name="player_cast">Transmitir</string>
     <string name="player_change_cast_device">Trocar dispositivo de transmissão</string>
+    <string name="player_cast_volume">Volume do dispositivo de transmissão</string>
     <string name="player_show_cast_controls">Mostrar controles de transmissão</string>
     <!-- Section header; shown in capitals -->
     <string name="player_cast_available_devices">Dispositivos disponíveis</string>

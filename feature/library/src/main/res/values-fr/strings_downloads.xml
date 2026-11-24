@@ -10,10 +10,10 @@
     <string name="library_downloads_offline_title">Mode hors ligne</string>
     <string name="library_downloads_offline_body">Pas de connexion Internet. Lecture des épisodes téléchargés.</string>
     <!-- Playful empty-state title; a light pun is welcome -->
-    <string name="library_downloads_empty_title">Le vide, version zen</string>
+    <string name="library_downloads_empty_title">Aucun téléchargement pour l’instant</string>
     <string name="library_downloads_empty_offline_body">Aucun épisode téléchargé. Activez le Wi-Fi et branchez le chargeur pour synchroniser automatiquement vos téléchargements intelligents !</string>
     <!-- Smart Downloads is a feature name -->
-    <string name="library_downloads_empty_body">Aucun épisode téléchargé pour l’instant. Activez les Téléchargements intelligents ci-dessus ou trouvez des podcasts à télécharger vous-même.</string>
+    <string name="library_downloads_empty_body">Activez les Téléchargements intelligents ou téléchargez des épisodes depuis la page d’un podcast.</string>
     <string name="library_downloads_delete_title">Supprimer les téléchargements ?</string>
     <plurals name="library_downloads_delete_podcasts_body">
         <item quantity="one">Voulez-vous vraiment supprimer tous les épisodes téléchargés du podcast sélectionné (%1$d) ?</item>

@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,7 +30,6 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -38,7 +38,6 @@ import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
@@ -47,6 +46,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -66,7 +66,6 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -74,14 +73,19 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.PlaylistCopy
 import cx.aswin.boxlore.core.designsystem.components.PlaylistCover
+import cx.aswin.boxlore.core.designsystem.components.rememberBoxloreMenuState
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreMiniPlayerVisible
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
+import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Playlist
@@ -90,8 +94,17 @@ import cx.aswin.boxlore.core.model.PlaylistShow
 import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.model.text.resolve
-import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
+import cx.aswin.boxlore.feature.library.LibraryBlockSkeleton
+import cx.aswin.boxlore.feature.library.LibraryEmptyContent
+import cx.aswin.boxlore.feature.library.LibraryEmptyState
+import cx.aswin.boxlore.feature.library.LibraryLargeTitle
+import cx.aswin.boxlore.feature.library.LibraryLoading
+import cx.aswin.boxlore.feature.library.LibraryRowsSkeleton
 import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.library.libraryHeaderScrolledColor
+import cx.aswin.boxlore.feature.library.playlistsCardContainer
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderScrollBehavior
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderState
 import kotlinx.coroutines.launch
 
 /** A playlist page's wording. */
@@ -193,62 +206,88 @@ internal fun PlaylistDetailContent(
 ) {
     val ready = detail as? PlaylistDetailState.Ready
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val titleStyle = lerp(
-        start = MaterialTheme.typography.headlineLarge.copy(fontWeight = GoogleSansWeight.bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
-        fraction = scrollBehavior.state.collapsedFraction,
-    )
-    Scaffold(
-        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.surface,
-        // Above the mini player and floating navigation, as the list's own bottom padding is.
-        snackbarHost = { SnackbarHost(snackbarHostState, Modifier.padding(bottom = playlistChromeBottom(isPlayerActive))) },
-        topBar = {
-            LargeTopAppBar(
-                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
-                title = { Text(ready?.playlist?.name.orEmpty(), style = titleStyle, maxLines = 2, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = PlaylistsCopy.BACK) }
-                },
-                actions = {
-                    ready?.playlist?.let { playlist ->
-                        PlaylistMenu(playlist.name, { state.openRename(playlist.id, playlist.name) }, { state.openDelete(playlist.id) }, PlaylistDetailCopy.DELETE_PLAYLIST)
+    val listState = rememberLazyListState()
+    val header = rememberLibraryHeaderState()
+    val listAtTop = { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior(listAtTop)
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+            containerColor = MaterialTheme.colorScheme.surface,
+            topBar = {
+                LargeTopAppBar(
+                    modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
+                    title = {
+                        LibraryLargeTitle(
+                            title = ready?.playlist?.name.orEmpty(),
+                            collapsedFraction = scrollBehavior.state.collapsedFraction,
+                            header = header,
+                            largeStyle = MaterialTheme.typography.headlineLarge,
+                        )
+                    },
+                    expandedHeight = header.expandedHeight(),
+                    navigationIcon = {
+                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = PlaylistsCopy.BACK) }
+                    },
+                    actions = {
+                        ready?.playlist?.let { playlist ->
+                            PlaylistMenu(
+                                playlist.name,
+                                { state.openRename(playlist.id, playlist.name) },
+                                { state.openDelete(playlist.id) },
+                                PlaylistDetailCopy.DELETE_PLAYLIST,
+                                state = rememberBoxloreMenuState(key = playlist.id),
+                            )
+                        }
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        scrolledContainerColor = libraryHeaderScrolledColor(listAtTop),
+                    ),
+                )
+            },
+        ) { innerPadding ->
+            Box(Modifier.fillMaxSize().padding(innerPadding)) {
+                when {
+                    ready == null -> LibraryLoading {
+                        LibraryRowsSkeleton(artwork = 52.dp, leading = { LibraryBlockSkeleton(height = 200.dp, corner = 28.dp) })
                     }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
-            )
-        },
-    ) { innerPadding ->
-        Box(Modifier.fillMaxSize().padding(innerPadding)) {
-            when {
-                ready == null -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                ready.shows.isEmpty() -> Box(Modifier.boxloreCardWidth(BoxloreCardFamily.Utility)) {
-                    ExpressiveSolarSystemEmptyState(
-                        title = PlaylistDetailCopy.EMPTY_TITLE,
-                        description = PlaylistDetailCopy.EMPTY_BODY,
-                        icon = Icons.AutoMirrored.Rounded.PlaylistPlay,
-                        actionText = PlaylistDetailCopy.ADD_SHOWS,
-                        onExploreClick = { state.openAddShows(ready.playlist.id) },
+                    ready.shows.isEmpty() -> LibraryEmptyState(
+                        content = LibraryEmptyContent(
+                            title = PlaylistDetailCopy.EMPTY_TITLE,
+                            body = PlaylistDetailCopy.EMPTY_BODY,
+                            icon = Icons.AutoMirrored.Rounded.PlaylistPlay,
+                            shape = ExpressiveShapes.Cookie4,
+                            actionText = PlaylistDetailCopy.ADD_SHOWS,
+                        ),
+                        containerColor = MaterialTheme.colorScheme.playlistsCardContainer(),
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        onAction = { state.openAddShows(ready.playlist.id) },
+                        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
+                        bottomPadding = playlistChromeBottom(isPlayerActive),
                     )
-                }
-                else -> BoxWithConstraints(Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxSize()) {
-                    // The list's 16dp sides and the rows' 4dp sides.
-                    val columns = playlistShowColumns(maxWidth - 40.dp)
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize().testTag(PLAYLIST_DETAIL_TAG),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = playlistChromeBottom(isPlayerActive)),
-                    ) {
-                        item(key = "header", contentType = "header") { PlaylistHeader(ready, actions, onOpenSettings = { settingsOpen = true }) }
-                        comingUp(ready.comingUp)
-                        shows(ready, columns, onAdd = { state.openAddShows(ready.playlist.id) }, onRemove = actions::removeShow)
+                    else -> BoxWithConstraints(Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxSize()) {
+                        // The list's 16dp sides and the rows' 4dp sides.
+                        val columns = playlistShowColumns(maxWidth - 40.dp)
+                        val tileSize = playlistShowTileSize(maxWidth - 40.dp, boxloreContentWidthDp())
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize().testTag(PLAYLIST_DETAIL_TAG),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = playlistChromeBottom(isPlayerActive)),
+                        ) {
+                            item(key = "header", contentType = "header") { PlaylistHeader(ready, actions, onOpenSettings = { settingsOpen = true }) }
+                            comingUp(ready.comingUp)
+                            shows(ready, columns, tileSize, onAdd = { state.openAddShows(ready.playlist.id) }, onRemove = actions::removeShow)
+                        }
                     }
                 }
             }
+        }
+        // boxlore's notice, just above the bar and mini player.
+        // The screen knows the mini player shows even where the shell hasn't said so.
+        CompositionLocalProvider(LocalBoxloreMiniPlayerVisible provides (LocalBoxloreMiniPlayerVisible.current || isPlayerActive)) {
+            BoxloreSnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
         }
     }
     if (settingsOpen && ready != null) {
@@ -378,7 +417,7 @@ private fun episodeLine(episode: Episode): String {
     return if (show.isBlank()) length else "$show · $length"
 }
 
-private fun LazyListScope.shows(ready: PlaylistDetailState.Ready, columns: Int, onAdd: () -> Unit, onRemove: (PlaylistShow) -> Unit) {
+private fun LazyListScope.shows(ready: PlaylistDetailState.Ready, columns: Int, tileSize: Dp, onAdd: () -> Unit, onRemove: (PlaylistShow) -> Unit) {
     item(key = "shows", contentType = "section") {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { Section(PlaylistDetailCopy.SHOWS) }
@@ -391,18 +430,18 @@ private fun LazyListScope.shows(ready: PlaylistDetailState.Ready, columns: Int, 
     // One lazy row of covers per item, so a playlist with many shows only builds the rows on screen.
     items(ready.shows.chunked(columns), key = { row -> "show_row:${row.first().podcastId}" }, contentType = { "show_row" }) { row ->
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 7.dp), horizontalArrangement = Arrangement.spacedBy(ShowTileGap)) {
-            row.forEach { show -> key(show.podcastId) { ShowTile(show, onRemove = { onRemove(show) }) } }
+            row.forEach { show -> key(show.podcastId) { ShowTile(show, tileSize, onRemove = { onRemove(show) }) } }
         }
     }
 }
 
 /** A show in the playlist: its cover with a remove button, its title, and why it's skipped when it is. */
 @Composable
-private fun ShowTile(show: PlaylistShow, onRemove: () -> Unit) {
+private fun ShowTile(show: PlaylistShow, size: Dp, onRemove: () -> Unit) {
     val skipped = PlaylistDetailCopy.skipped(show)
-    Column(Modifier.width(ShowTileSize), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Box(Modifier.size(ShowTileSize)) {
-            Box(Modifier.alpha(if (skipped != null) SKIPPED_ALPHA else 1f)) { Artwork(show.imageUrl, fallback = null, size = ShowTileSize, corner = 20.dp) }
+    Column(Modifier.width(size), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.size(size)) {
+            Box(Modifier.alpha(if (skipped != null) SKIPPED_ALPHA else 1f)) { Artwork(show.imageUrl, fallback = null, size = size, corner = 20.dp) }
             Surface(
                 onClick = onRemove,
                 shape = CircleShape,
@@ -437,11 +476,6 @@ private fun Artwork(url: String?, fallback: String?, size: androidx.compose.ui.u
 }
 
 private const val SKIPPED_ALPHA = 0.5f
-private val ShowTileSize = 100.dp
-private val ShowTileGap = 12.dp
-
-/** How many show covers fit across [width] on a playlist's page (at least one). */
-internal fun playlistShowColumns(width: Dp): Int = ((width + ShowTileGap) / (ShowTileSize + ShowTileGap)).toInt().coerceAtLeast(1)
 
 /** The playback chrome under a playlist page (mini player, floating navigation), which its list and snackbars stay above. */
 @Composable

@@ -10,10 +10,10 @@
     <string name="library_downloads_offline_title">Offlinemodus</string>
     <string name="library_downloads_offline_body">Keine Internetverbindung. Heruntergeladene Folgen werden abgespielt.</string>
     <!-- Playful empty-state title; a light pun is welcome -->
-    <string name="library_downloads_empty_title">Hätte, hätte, Fahrradkette</string>
+    <string name="library_downloads_empty_title">Noch keine Downloads</string>
     <string name="library_downloads_empty_offline_body">Keine heruntergeladenen Folgen gefunden. Schalte WLAN ein und lade dein Handy, damit deine smarten Downloads automatisch synchronisiert werden!</string>
     <!-- Smart Downloads is a feature name -->
-    <string name="library_downloads_empty_body">Noch keine heruntergeladenen Folgen. Schalte oben Smarte Downloads ein oder such dir Podcasts zum manuellen Herunterladen.</string>
+    <string name="library_downloads_empty_body">Schalte Smarte Downloads ein oder lade Folgen auf der Seite eines Podcasts herunter.</string>
     <string name="library_downloads_delete_title">Downloads löschen?</string>
     <plurals name="library_downloads_delete_podcasts_body">
         <item quantity="one">Möchtest du wirklich alle heruntergeladenen Folgen des ausgewählten Podcasts löschen?</item>

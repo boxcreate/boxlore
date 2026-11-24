@@ -70,6 +70,32 @@ class QueueManagerPlaybackTest {
     }
 
     @Test
+    fun `a plain list such as Liked's Play all is queued in order without New Episodes' tag`() = runTest(testDispatcher) {
+        val manager = QueueManager(queueRepository, playbackRepository)
+        val podcast = Podcast("show-1", "Liked show", "Host", "art")
+        val episodes = listOf(
+            Episode("liked-1", "First liked", "", "https://example.com/1.mp3", podcastId = "show-1"),
+            Episode("liked-2", "Second liked", "", "https://example.com/2.mp3", podcastId = "show-2"),
+        )
+        manager.playEpisodes(episodes, podcast)
+        advanceUntilIdle()
+
+        @Suppress("UNCHECKED_CAST")
+        val queueCaptor = ArgumentCaptor.forClass(List::class.java) as ArgumentCaptor<List<Episode>>
+        verify(queueRepository).replaceQueue(safeCapture(queueCaptor, emptyList()))
+        assertEquals(listOf("liked-1", "liked-2"), queueCaptor.value.map { it.id })
+        assertTrue(queueCaptor.value.none { it.contextSourceId == PlaybackQueueContext.NEW_EPISODES })
+        verify(queueCoordinator).playQueue(
+            safeEq(episodes),
+            safeEq(podcast),
+            safeEq(0),
+            safeEq(PlaybackEntryPoint.GENERIC),
+            safeEq(null),
+            safeEq(null),
+        )
+    }
+
+    @Test
     fun `playing a playlist replaces the queue with a tagged copy in playlist order`() = runTest(testDispatcher) {
         val manager = QueueManager(queueRepository, playbackRepository)
         val podcast = Podcast("show-1", "First show", "Host", "art")

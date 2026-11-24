@@ -21,9 +21,9 @@ class MixTimeTest {
     }
 
     @Test
-    fun `ordinary remainders retain whole minute formatting`() {
+    fun `a partial minute counts as a whole one, as on the hero and mini player`() {
         assertEquals(30, remainingMixMinutes(3600, 0.5f))
-        assertEquals(9, remainingMixMinutes(1200, 0.51f))
+        assertEquals(10, remainingMixMinutes(1200, 0.51f))
     }
 
     @Test

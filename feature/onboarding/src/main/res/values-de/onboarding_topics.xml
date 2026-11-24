@@ -9,7 +9,7 @@
     <string name="onboarding_pick_at_least_one">Mindestens 1 wählen</string>
     <string name="onboarding_select_at_least_one">Mindestens 1 auswählen</string>
     <string name="onboarding_select_all_that_apply">Alles Zutreffende auswählen</string>
-    <string name="onboarding_target_genres">Ziel-Genres (zum Umschalten tippen):</string>
+    <string name="onboarding_target_genres">Genres dafür</string>
 
     <string name="onboarding_genres_title">Dürfen wir dich besser kennenlernen?</string>
     <string name="onboarding_genres_body">Wähle die Themen, die dich interessieren</string>
@@ -151,7 +151,7 @@
     <!-- Listening moments. -->
     <string name="onboarding_activity_commuting">Pendeln</string>
     <string name="onboarding_activity_working">Arbeiten</string>
-    <string name="onboarding_activity_meditating">Meditieren / Entspannen</string>
+    <string name="onboarding_activity_meditating">Entspannen</string>
     <string name="onboarding_activity_winding_down">Abschalten</string>
     <string name="onboarding_activity_working_out">Training</string>
     <string name="onboarding_activity_chores">Hausarbeit</string>

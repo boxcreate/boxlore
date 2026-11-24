@@ -52,6 +52,9 @@ data class SystemInsets(
         /** A sideways phone with 3-button navigation at the end and the camera cutout at the start. */
         val SIDEWAYS_3_BUTTON = SystemInsets(statusTop = 24, navEnd = 48, cutoutStart = 32)
 
+        /** A portrait phone with its status bar and gesture navigation bar. */
+        val PHONE_BARS = SystemInsets(statusTop = 24, navBottom = 24)
+
         /** A foldable in tabletop: only the status bar. */
         val TABLETOP_STATUS = SystemInsets(statusTop = 24)
     }

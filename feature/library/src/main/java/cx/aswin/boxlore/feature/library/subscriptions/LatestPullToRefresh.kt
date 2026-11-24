@@ -9,11 +9,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 
 /** Pull down on New Episodes to check for new episodes now; plain content when there is no refresh. */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun LatestPullToRefresh(
     isRefreshing: Boolean,
@@ -24,10 +28,20 @@ internal fun LatestPullToRefresh(
         content()
         return
     }
+    // boxlore's shape-shifting indicator, as on the show page; it shows under the top bar and tabs.
+    val state = rememberPullToRefreshState()
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
+        state = state,
         modifier = Modifier.fillMaxSize(),
+        indicator = {
+            PullToRefreshDefaults.LoadingIndicator(
+                state = state,
+                isRefreshing = isRefreshing,
+                modifier = Modifier.align(Alignment.TopCenter).testTag(LATEST_REFRESH_INDICATOR_TAG),
+            )
+        },
     ) {
         content()
     }
@@ -53,3 +67,6 @@ internal fun PullableEmptyState(content: @Composable () -> Unit) {
         }
     }
 }
+
+/** New Episodes' refresh indicator, for tests. */
+internal const val LATEST_REFRESH_INDICATOR_TAG = "latest_refresh_indicator"

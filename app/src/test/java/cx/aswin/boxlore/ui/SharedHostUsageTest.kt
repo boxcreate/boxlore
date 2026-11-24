@@ -43,8 +43,7 @@ class SharedHostUsageTest {
             skipDesignSystem = false,
             skipFiles = setOf("core/designsystem/src/main/java/cx/aswin/boxlore/core/designsystem/components/BoxloreModalBottomSheet.kt"),
             allowed = mapOf(
-                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/components/ReviewSheet.kt" to 2,
-                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/components/ChangeRecommendationPodcastSheet.kt" to 1,
+                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/components/ReviewSheet.kt" to 1,
             ),
         ),
         Host(
@@ -52,16 +51,8 @@ class SharedHostUsageTest {
             replacement = "the shared menu in :core:designsystem",
             skipDesignSystem = true,
             allowed = mapOf(
-                "feature/history/src/main/java/cx/aswin/boxlore/feature/history/HistoryScreen.kt" to 1,
-                "feature/history/src/main/java/cx/aswin/boxlore/feature/history/timeline/TimelineRows.kt" to 1,
-                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/components/LibrarySectionRows.kt" to 1,
-                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/components/LibrarySectionMixtape.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeSelectionToolbar.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/PodcastInfoChrome.kt" to 1,
-                "feature/library/src/main/java/cx/aswin/boxlore/feature/library/SubscriptionsScreen.kt" to 1,
-                "feature/library/src/main/java/cx/aswin/boxlore/feature/library/playlists/PlaylistsScreen.kt" to 1,
-                "feature/library/src/main/java/cx/aswin/boxlore/feature/library/downloads/DownloadedShowEpisodesScreen.kt" to 1,
-                "feature/onboarding/src/main/java/cx/aswin/boxlore/feature/onboarding/EchoTopBar.kt" to 1,
                 "feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/pages/supportworlds/SupportWorldDebugMenu.kt" to 1,
             ),
         ),
@@ -70,14 +61,7 @@ class SharedHostUsageTest {
             replacement = "the shared snackbar host in :core:designsystem",
             skipDesignSystem = true,
             allowed = mapOf(
-                "feature/history/src/main/java/cx/aswin/boxlore/feature/history/HistoryScreen.kt" to 1,
-                "feature/home/src/main/java/cx/aswin/boxlore/feature/home/HomeScreen.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoScreen.kt" to 1,
-                "feature/library/src/main/java/cx/aswin/boxlore/feature/library/SubscriptionsScreen.kt" to 1,
-                "feature/library/src/main/java/cx/aswin/boxlore/feature/library/playlists/PlaylistsScreen.kt" to 1,
-                "feature/library/src/main/java/cx/aswin/boxlore/feature/library/playlists/PlaylistDetailScreen.kt" to 1,
-                "feature/player/src/main/java/cx/aswin/boxlore/feature/player/v2/TabletPlayerBody.kt" to 1,
-                "feature/player/src/main/java/cx/aswin/boxlore/feature/player/v2/FullPlayerV2.kt" to 2,
             ),
         ),
     )

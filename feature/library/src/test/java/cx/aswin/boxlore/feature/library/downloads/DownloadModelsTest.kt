@@ -5,7 +5,9 @@ import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.library.R
 import java.util.Locale
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class DownloadModelsTest {
@@ -134,5 +136,19 @@ class DownloadModelsTest {
             )
         assertEquals(true, active)
         assertEquals(setOf("ep-1", "ep-3"), selected.toSet())
+    }
+
+    @Test
+    fun aRestoredSelectionKeepsOnlyListedDownloadsOnceLoadedAndSelectAllComparesMembers() {
+        // A was picked, then removed before the restart; B is now the only download.
+        val selected = mutableListOf("A")
+        selected.keepListed(loaded = false, listed = emptyList())
+        assertEquals(listOf("A"), selected, "Kept while loading")
+        assertFalse(selected.coversAll(listOf("B")), "Same size, other member")
+        selected.keepListed(loaded = true, listed = listOf("B"))
+        assertEquals(emptyList<String>(), selected)
+        selected += "B"
+        assertTrue(selected.coversAll(listOf("B")))
+        assertFalse(emptyList<String>().coversAll(emptyList()))
     }
 }

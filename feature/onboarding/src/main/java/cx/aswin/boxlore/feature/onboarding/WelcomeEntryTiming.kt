@@ -19,6 +19,9 @@ internal object WelcomeEntryTiming {
     /** Material 3 emphasized decelerate: copy glides in and settles softly. */
     private val LineEasing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
 
+    /** The same glide, for parts that enter on their own animation. */
+    val Easing: CubicBezierEasing get() = LineEasing
+
     /** Eased 0..1 entry progress for a line that starts at [delayMillis]. */
     fun lineProgress(elapsedMillis: Long, delayMillis: Long): Float =
         LineEasing.transform(((elapsedMillis - delayMillis).toFloat() / LineDurationMillis).coerceIn(0f, 1f))

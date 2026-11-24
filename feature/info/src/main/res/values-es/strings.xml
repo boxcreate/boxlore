@@ -64,6 +64,8 @@
     <string name="episode_info_more_like_this">Prueba estos episodios</string>
     <string name="episode_info_more_from">Más de %1$s</string>
     <string name="episode_info_more_from_label">Más de</string>
+    <string name="episode_info_see_all">Ver todo</string>
+    <string name="episode_info_number_short">Ep.</string>
     <string name="episode_info_explore_podcast">Explorar podcast</string>
     <string name="episode_info_no_more">No hay más episodios disponibles</string>
     <string name="episode_info_people">Personas en este episodio</string>
@@ -112,6 +114,7 @@
     <string name="genre_edit_placeholder">Toca para poner una etiqueta personalizada</string>
     <string name="episode_info_episode_from_show">%1$s, de %2$s</string>
     <string name="podcast_info_load_error">No se pudo cargar este podcast</string>
+    <string name="info_load_error_body">Comprueba tu conexión a internet y vuelve a intentarlo.</string>
     <string name="podcast_info_retry">Reintentar</string>
     <string name="podcast_info_more_episodes_failed">No se pudieron cargar más episodios</string>
     <string name="podcast_info_episodes_failed">No se pudieron cargar los episodios</string>

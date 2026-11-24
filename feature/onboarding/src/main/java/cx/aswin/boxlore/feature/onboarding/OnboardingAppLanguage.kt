@@ -14,6 +14,34 @@ data class AppLanguageQuestion(val suggested: AppLanguage) {
     val all: List<AppLanguage> get() = listOf(suggested) + others
 }
 
+/**
+ * How the language question's panel stood when a language was picked, so Welcome can take over from
+ * it: its height as a share of the window, or the side panel's share of the width when [twoPane].
+ * Held by the view model across the recreation the language change causes; never saved beyond it.
+ *
+ * [greeting] is what the greeting showed at the tap, which need not be the picked [language]'s, and
+ * [scrolledFraction] how far the question had scrolled (a share of the window's height), so Welcome
+ * starts exactly where the question left off.
+ */
+data class OpeningHandoff(
+    val panelFraction: Float,
+    val twoPane: Boolean,
+    val language: AppLanguage,
+    val greeting: HandoffGreetingFrame = HandoffGreetingFrame(language),
+    val scrolledFraction: Float = 0f,
+)
+
+/**
+ * The greeting as it stood at the tap: its [language], how far it had faded in ([alpha]), how far it
+ * still had to rise ([shift], a share of its height) and the panel's foot under it ([footDp]).
+ */
+data class HandoffGreetingFrame(
+    val language: AppLanguage,
+    val alpha: Float = 1f,
+    val shift: Float = 0f,
+    val footDp: Float = 30f,
+)
+
 /** Where onboarding starts and how the language question moves on, as pure state changes. */
 internal object OnboardingAppLanguage {
     /** Analytics step name for the question (`onboarding_step_viewed`, `onboarding_abandoned`). */
@@ -32,8 +60,15 @@ internal object OnboardingAppLanguage {
         return OnboardingUiState(currentStep = OnboardingStep.APP_LANGUAGE, appLanguageQuestion = AppLanguageQuestion(suggested))
     }
 
-    /** After a pick onboarding continues on Welcome, and the question never comes back. */
-    fun answered(state: OnboardingUiState): OnboardingUiState = state.copy(currentStep = OnboardingStep.WELCOME, appLanguageQuestion = null)
+    /**
+     * After a pick onboarding continues on Welcome, and the question never comes back. [handoff] lets
+     * Welcome's panel take over from the question's.
+     */
+    fun answered(state: OnboardingUiState, handoff: OpeningHandoff? = null): OnboardingUiState =
+        state.copy(currentStep = OnboardingStep.WELCOME, appLanguageQuestion = null, openingHandoff = handoff)
+
+    /** Welcome has taken over: later visits show it as usual. */
+    fun handoffDone(state: OnboardingUiState): OnboardingUiState = state.copy(openingHandoff = null)
 
     /** The analytics value for a pick: its tag, or "system" for the phone's language. */
     fun analyticsValue(language: AppLanguage): String = language.tag.ifEmpty { "system" }

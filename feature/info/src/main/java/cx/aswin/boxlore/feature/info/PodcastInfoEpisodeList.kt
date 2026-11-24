@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
@@ -30,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -393,7 +396,12 @@ private fun LazyListScope.brandedSpotlightItem(
                 },
                 onLongPress = { callbacks.onLongPressSelection(episode) },
             )
-            brandedPage.Spotlight(spotlight, Modifier.animateItem())
+            // Every spotlight stops at a comfortable width on wide pages: a 480dp card and its 16dp sides,
+            // centred as a card, or on the page's start edge when it is drawn open on the page.
+            val alignment = if (brandedPage.spotlightIsCard) Alignment.CenterHorizontally else Alignment.Start
+            Box(Modifier.animateItem().fillMaxWidth().wrapContentWidth(alignment).widthIn(max = BrandedSpotlightMaxWidth)) {
+                brandedPage.Spotlight(spotlight, Modifier.testTag(PODCAST_INFO_BRANDED_SPOTLIGHT_TAG))
+            }
         }
     }
 }
@@ -460,3 +468,7 @@ private fun LazyListScope.episodesSection(
         }
     }
 }
+
+private val BrandedSpotlightMaxWidth = 512.dp
+
+internal const val PODCAST_INFO_BRANDED_SPOTLIGHT_TAG = "podcast_info_branded_spotlight"

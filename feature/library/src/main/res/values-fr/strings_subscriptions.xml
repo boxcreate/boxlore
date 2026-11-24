@@ -13,10 +13,6 @@
     <string name="library_search_subscribed_shows">Rechercher dans vos abonnements…</string>
     <!-- Search field placeholder -->
     <string name="library_search_your_shows">Rechercher dans vos podcasts</string>
-    <!-- Screen-reader label -->
-    <string name="library_close_search">Fermer la recherche</string>
-    <!-- Screen-reader label -->
-    <string name="library_clear_search">Effacer la recherche</string>
     <!-- Screen-reader label for the button that switches to a list -->
     <string name="library_list_view">Vue en liste</string>
     <!-- Screen-reader label for the button that switches to a grid -->
@@ -59,14 +55,6 @@
     <string name="library_sort_manual">Manuel</string>
     <!-- Sort choice -->
     <string name="library_sort_chronological">Chronologique</string>
-    <!-- Menu item -->
-    <string name="library_sort_smart_sort">Tri intelligent</string>
-    <!-- Menu item -->
-    <string name="library_sort_recently_updated_menu">Mis à jour récemment</string>
-    <!-- Menu item: alphabetical -->
-    <string name="library_sort_a_to_z_menu">A-Z</string>
-    <!-- Menu item -->
-    <string name="library_sort_most_listened_menu">Les plus écoutés</string>
     <!-- Sort choice chip -->
     <string name="library_sort_recently_updated">Mis à jour récemment</string>
     <!-- Sort choice chip -->
@@ -77,8 +65,6 @@
     <string name="library_sort_same_as_shows">Comme les podcasts</string>
     <!-- Sort choice chip: the order the listener arranged by hand -->
     <string name="library_sort_your_order">Votre ordre</string>
-    <!-- Menu item -->
-    <string name="library_sort_auto_organize_into_folders">Ranger automatiquement en dossiers</string>
     <!-- Menu item -->
     <string name="library_hide_played_episodes">Masquer les épisodes écoutés</string>
     <!-- Sheet title -->
@@ -134,4 +120,7 @@
     <string name="library_genre_full_religion">Religion et spiritualité</string>
     <string name="library_genre_full_family">Enfants et famille</string>
     <string name="library_genre_full_govt">Politique</string>
+    <string name="library_pin_home">Épingler sur l’accueil</string>
+    <string name="library_unpin_home">Retirer de l’accueil</string>
+    <string name="library_pin_capacity">Vous pouvez épingler jusqu’à %1$d podcasts sur l’accueil</string>
 </resources>

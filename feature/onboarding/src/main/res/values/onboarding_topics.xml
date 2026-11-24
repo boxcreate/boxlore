@@ -14,7 +14,7 @@
     <string name="onboarding_select_at_least_one">Select at least 1</string>
     <string name="onboarding_select_all_that_apply">Select all that apply</string>
     <!-- Above the genre chips under a picked listening moment or length; tapping a chip assigns or removes that genre. -->
-    <string name="onboarding_target_genres">Target Genres (tap to toggle):</string>
+    <string name="onboarding_target_genres">Genres for this</string>
 
     <string name="onboarding_genres_title">Can we get to know you better?</string>
     <string name="onboarding_genres_body">Pick the topics you enjoy</string>
@@ -162,10 +162,10 @@
     <!-- Listening moments. -->
     <string name="onboarding_activity_commuting">Commuting</string>
     <string name="onboarding_activity_working">Working</string>
-    <string name="onboarding_activity_meditating">Meditating / Chilling</string>
-    <string name="onboarding_activity_winding_down">Winding Down</string>
-    <string name="onboarding_activity_working_out">Working Out</string>
-    <string name="onboarding_activity_chores">Doing Chores</string>
+    <string name="onboarding_activity_meditating">Relaxing</string>
+    <string name="onboarding_activity_winding_down">Winding down</string>
+    <string name="onboarding_activity_working_out">Working out</string>
+    <string name="onboarding_activity_chores">Doing chores</string>
 
     <!-- Episode lengths, each with its range. -->
     <string name="onboarding_length_short">Short</string>

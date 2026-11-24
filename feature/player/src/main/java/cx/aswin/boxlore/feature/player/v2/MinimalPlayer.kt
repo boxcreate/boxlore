@@ -6,16 +6,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.TextAutoSize
@@ -62,6 +58,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.components.LocalWatchPlayOffer
 import cx.aswin.boxlore.core.designsystem.components.PlayingOnPill
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneBottomInset
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.core.designsystem.layout.boxloreVisibleWindowSize
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
@@ -88,8 +87,10 @@ internal fun MinimalPlayerContent(
     section: MinimalPlayerSection = MinimalPlayerSection.Full,
 ) {
     val colors = display.colorScheme
-    val statusInset = if (section == MinimalPlayerSection.Full) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
-    val navInset = if (section == MinimalPlayerSection.Full) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 0.dp
+    val paneTop = boxlorePaneTopInset()
+    val paneBottom = boxlorePaneBottomInset()
+    val statusInset = if (section == MinimalPlayerSection.Full) paneTop else 0.dp
+    val navInset = if (section == MinimalPlayerSection.Full) paneBottom else 0.dp
     val queueGesture = rememberMinimalQueueGesture(display.isExpanded, actions.onQueue)
     val context = LocalContext.current
     val typography = remember(context) { buildBoxLoreTypography(context, FontRoundness.AXIS_CRISP) }
@@ -102,6 +103,7 @@ internal fun MinimalPlayerContent(
             BoxWithConstraints(
                 modifier.heightIn(max = windowHeight).fillMaxSize().background(colors.surface)
                     .padding(top = statusInset, bottom = navInset)
+                    .let { if (section == MinimalPlayerSection.Full) it.boxloreHorizontalSafePadding() else it }
                     .nestedScroll(display.sheetNestedScrollConnection).nestedScroll(queueGesture),
             ) {
                 MinimalPlayerLayout(

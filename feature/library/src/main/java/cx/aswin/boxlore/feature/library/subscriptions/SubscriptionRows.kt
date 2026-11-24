@@ -11,9 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -45,7 +43,6 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.components.NewEpisodeBadge
@@ -66,6 +63,7 @@ import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.core.model.text.LocaleFormats.DateStyle
 import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.library.LibraryEpisodeRow
 import cx.aswin.boxlore.feature.library.R
 import java.util.Calendar
 import java.util.Locale
@@ -302,82 +300,53 @@ internal fun LatestEpisodeRow(
         formatRelativeUpdateLabel(episode.publishedDate, locale)
     }?.asString()
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        EpisodeRowArtwork(
-            episode = episode,
-            podcast = podcast,
-            isCompleted = isCompleted,
-            isInProgress = isInProgress,
-            progress = progress
-        )
-
-        Spacer(modifier = Modifier.width(14.dp))
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = episode.title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = GoogleSansWeight.semiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+    // The shared Library episode row, with New Episodes' date and length line and its play button.
+    LibraryEpisodeRow(
+        title = episode.title,
+        artwork = {
+            EpisodeRowArtwork(
+                episode = episode,
+                podcast = podcast,
+                isCompleted = isCompleted,
+                isInProgress = isInProgress,
+                progress = progress
             )
-            Spacer(modifier = Modifier.height(3.dp))
-            Text(
-                text = podcast.title,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                if (relativePublished != null) {
-                    Text(
-                        text = relativePublished.replaceFirstChar {
-                            if (it.isLowerCase()) it.titlecase(locale) else it.toString()
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        maxLines = 1
-                    )
-                }
-                if (episode.duration > 0) {
-                    val displayText = episodeMetaDurationLabel(episode, isInProgress, progress, locale).asString()
-                    Text(
-                        text = if (relativePublished != null) "· $displayText" else displayText,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (isInProgress) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        },
-                        fontWeight = if (isInProgress) GoogleSansWeight.medium else GoogleSansWeight.regular
-                    )
-                }
+        },
+        onClick = onClick,
+        modifier = modifier,
+        subtitle = podcast.title,
+        meta = {
+            if (relativePublished != null) {
+                Text(
+                    text = relativePublished.replaceFirstChar {
+                        if (it.isLowerCase()) it.titlecase(locale) else it.toString()
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    maxLines = 1
+                )
             }
-        }
-
-        if (onPlay != null) {
-            Spacer(modifier = Modifier.width(10.dp))
-            LatestEpisodePlayButton(onPlay = onPlay)
-        }
-    }
+            if (episode.duration > 0) {
+                val displayText = episodeMetaDurationLabel(episode, isInProgress, progress, locale).asString()
+                Text(
+                    text = if (relativePublished != null) "· $displayText" else displayText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isInProgress) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    },
+                    fontWeight = if (isInProgress) GoogleSansWeight.medium else GoogleSansWeight.regular
+                )
+            }
+        },
+        trailing = onPlay?.let { play -> { LatestEpisodePlayButton(onPlay = play) } },
+    )
 }
 
+/** The round play button at the end of a Library episode row. */
 @Composable
-private fun LatestEpisodePlayButton(onPlay: () -> Unit) {
+internal fun LatestEpisodePlayButton(onPlay: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val btnColor by animateColorAsState(

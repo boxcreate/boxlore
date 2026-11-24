@@ -117,6 +117,7 @@ class ScreenViewCoverageTest {
                 "library:feature/library/subscriptions/SubscriptionFolderPages.kt#OpenFolderPage" to WRAPPER,
                 "library:feature/library/subscriptions/SubscriptionFolderPages.kt#FolderEditorPage" to WRAPPER,
                 "library:feature/library/subscriptions/SubscriptionFolderPages.kt#EditorDialog" to WRAPPER,
+                "library:feature/library/subscriptions/LatestSortSheet.kt#LatestSortSheet" to "New Episodes' sort; the menu it replaces sent no page view and its sort changes are tracked",
                 "app:ui/libraryimport/OpmlImportDialog.kt#OpmlImportDialog" to WRAPPER,
                 "app:ui/libraryimport/ImportPage.kt#ImportPage" to WRAPPER,
                 "onboarding:feature/onboarding/WelcomeScreen.kt#WelcomeScreen" to ONBOARDING_STEP,
@@ -132,6 +133,7 @@ class ScreenViewCoverageTest {
                 "player:feature/player/v2/ControlDeck.kt#SleepSheet" to SHEET_CONTENT,
                 "settings:feature/settings/pages/SupportDevelopmentPage.kt#SupportPageScreen" to SHEET_CONTENT,
                 "history:feature/history/timeline/TimelineTab.kt#TimelineTab" to SHEET_CONTENT,
+                "history:feature/history/insights/InsightsTab.kt#InsightsTab" to SHEET_CONTENT,
             )
     }
 }

@@ -30,6 +30,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -43,6 +45,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
@@ -330,7 +334,7 @@ private fun MorphingPlayButton(
     }
 }
 
-private enum class QuickControlMode { ACTIONS, SPEED, SLEEP }
+internal enum class QuickControlMode { ACTIONS, SPEED, SLEEP }
 
 internal data class QuickControlShapes(
     val topStart: androidx.compose.ui.graphics.Shape,
@@ -344,7 +348,9 @@ data class SecondaryPlaybackState(
     val playbackSpeed: Float,
     val sleepTimerEnd: Long?,
     val sleepAtEndOfEpisode: Boolean,
-    val audio: PlayerSpeedAudio = PlayerSpeedAudio()
+    val audio: PlayerSpeedAudio = PlayerSpeedAudio(),
+    /** The length the listener picked for a running fixed timer, so its tile stays selected. */
+    val sleepTimerPresetMinutes: Int? = null
 )
 
 data class SecondaryAvailabilityState(
@@ -395,77 +401,26 @@ fun SecondaryRail(
     clickActions: SecondaryClickActions,
     modifier: Modifier = Modifier
 ) {
-    var controlMode by rememberSaveable { mutableStateOf(QuickControlMode.ACTIONS) }
-    val groupTrayShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 32.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 32.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 32.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 32.dp,
-        smoothnessAsPercentBR = 60
-    )
-    val groupTopStartShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 24.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 9.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 9.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 9.dp,
-        smoothnessAsPercentBR = 60
-    )
-    val groupMiddleShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 9.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 9.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 9.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 9.dp,
-        smoothnessAsPercentBR = 60
-    )
-    val groupTopEndShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 9.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 24.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 9.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 9.dp,
-        smoothnessAsPercentBR = 60
-    )
-    val groupBottomStartShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 9.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 9.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 24.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 9.dp,
-        smoothnessAsPercentBR = 60
-    )
-    val groupBottomEndShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 9.dp,
-        smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 9.dp,
-        smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 9.dp,
-        smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 24.dp,
-        smoothnessAsPercentBR = 60
-    )
-    val selectorShapes = QuickControlShapes(
-        topStart = groupTopStartShape,
-        topEnd = groupTopEndShape,
-        middle = groupMiddleShape,
-        bottomStart = groupBottomStartShape,
-        bottomEnd = groupBottomEndShape
-    )
+    val controlMode = rememberSaveable { mutableStateOf(QuickControlMode.ACTIONS) }
+    Box(modifier) { SecondaryRail(playback, availability, library, colorScheme, selectionActions, clickActions, controlMode) }
+}
 
+/** [SecondaryRail] with its open panel held by the caller, so it survives a layout change. */
+@Composable
+internal fun SecondaryRail(
+    playback: SecondaryPlaybackState,
+    availability: SecondaryAvailabilityState,
+    library: SecondaryLibraryState,
+    colorScheme: ColorScheme,
+    selectionActions: SecondarySelectionActions,
+    clickActions: SecondaryClickActions,
+    controlModeState: MutableState<QuickControlMode>
+) {
+    var controlMode by controlModeState
+    val onControlModeChange: (QuickControlMode) -> Unit = { controlMode = it }
+    val (groupTrayShape, selectorShapes) = quickControlTrayShapes()
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .clip(groupTrayShape)
             .background(colorScheme.primary.copy(alpha = 0.12f))
@@ -511,8 +466,8 @@ fun SecondaryRail(
                     colorScheme = colorScheme,
                     shapes = selectorShapes,
                     navigation = QuickControlNavigation(
-                        onSpeedClick = { controlMode = QuickControlMode.SPEED },
-                        onSleepClick = { controlMode = QuickControlMode.SLEEP }
+                        onSpeedClick = { onControlModeChange(QuickControlMode.SPEED) },
+                        onSleepClick = { onControlModeChange(QuickControlMode.SLEEP) }
                     ),
                     clickActions = clickActions
                 )
@@ -521,7 +476,7 @@ fun SecondaryRail(
                     currentSpeed = playback.playbackSpeed,
                     colorScheme = colorScheme,
                     shapes = selectorShapes,
-                    onBack = { controlMode = QuickControlMode.ACTIONS },
+                    onBack = { onControlModeChange(QuickControlMode.ACTIONS) },
                     onSpeedSelected = selectionActions.onSpeedSelected,
                     audio = InlineSpeedAudio(
                         state = playback.audio,
@@ -533,9 +488,10 @@ fun SecondaryRail(
                 QuickControlMode.SLEEP -> InlineSleepSelector(
                     sleepTimerEnd = playback.sleepTimerEnd,
                     sleepAtEndOfEpisode = playback.sleepAtEndOfEpisode,
+                    presetMinutes = playback.sleepTimerPresetMinutes,
                     colorScheme = colorScheme,
                     shapes = selectorShapes,
-                    onBack = { controlMode = QuickControlMode.ACTIONS },
+                    onBack = { onControlModeChange(QuickControlMode.ACTIONS) },
                     onDurationSelected = selectionActions.onSleepTimerSelected
                 )
             }
@@ -612,10 +568,13 @@ fun SleepSheet(
     sleepTimerEnd: Long?,
     colorScheme: ColorScheme,
     onDurationSelected: (Int) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    /** The length the listener picked for the running timer, so it stays selected while it counts down. */
+    presetMinutes: Int? = null,
+    sleepAtEndOfEpisode: Boolean = false
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val timerActive = sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis()
+    val timerActive = sleepAtEndOfEpisode || (sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis())
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -639,15 +598,20 @@ fun SleepSheet(
             val options = listOf(0 to stringResource(R.string.player_off)) +
                 listOf(15, 30, 45, 60, 120).map { minutes -> minutes to LocaleFormats.duration(minutes * 60L, locale) } +
                 (SleepTimerConstants.END_OF_EPISODE_MINUTES to stringResource(R.string.player_sleep_end_of_episode))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(modifier = Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(options) { (minutes, label) ->
-                    val selected = minutes == 0 && !timerActive
+                    // The same rule as the tray: Off only with no timer, otherwise the length that runs.
+                    val selected = when (minutes) {
+                        0 -> !timerActive
+                        SleepTimerConstants.END_OF_EPISODE_MINUTES -> sleepAtEndOfEpisode
+                        else -> timerActive && !sleepAtEndOfEpisode && presetMinutes == minutes
+                    }
                     Box(
                         modifier = Modifier
                             .height(44.dp)
                             .clip(CircleShape)
                             .background(if (selected) colorScheme.primary else colorScheme.surfaceContainerHigh)
-                            .clickable { onDurationSelected(minutes) }
+                            .selectable(selected = selected, role = Role.RadioButton) { onDurationSelected(minutes) }
                             .padding(horizontal = 18.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -662,4 +626,76 @@ fun SleepSheet(
             }
         }
     }
+}
+
+/** The tray's outer shape and its tiles' corner shapes (rounder at the tray's outer corners). */
+private fun quickControlTrayShapes(): Pair<AbsoluteSmoothCornerShape, QuickControlShapes> {
+    val groupTrayShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 32.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 32.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 32.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 32.dp,
+        smoothnessAsPercentBR = 60
+    )
+    val groupTopStartShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 24.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 9.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 9.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 9.dp,
+        smoothnessAsPercentBR = 60
+    )
+    val groupMiddleShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 9.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 9.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 9.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 9.dp,
+        smoothnessAsPercentBR = 60
+    )
+    val groupTopEndShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 9.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 24.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 9.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 9.dp,
+        smoothnessAsPercentBR = 60
+    )
+    val groupBottomStartShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 9.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 9.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 24.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 9.dp,
+        smoothnessAsPercentBR = 60
+    )
+    val groupBottomEndShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 9.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 9.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 9.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 24.dp,
+        smoothnessAsPercentBR = 60
+    )
+    val selectorShapes = QuickControlShapes(
+        topStart = groupTopStartShape,
+        topEnd = groupTopEndShape,
+        middle = groupMiddleShape,
+        bottomStart = groupBottomStartShape,
+        bottomEnd = groupBottomEndShape
+    )
+    return groupTrayShape to selectorShapes
 }

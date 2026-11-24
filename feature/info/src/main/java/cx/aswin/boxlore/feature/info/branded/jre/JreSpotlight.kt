@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -79,9 +78,6 @@ private val PictureShape = RoundedCornerShape(11.dp)
 /** The episode pictures are 1500 square with the template's strip in the top 270: the rest is shown. */
 private const val PICTURE_ASPECT = 1500f / 1230f
 
-/** On a wide window the poster keeps a phone's proportions, centred under the badge. */
-private val MaxCardWidth = 480.dp
-
 /** The picture's width on the design board, which the no-picture type is sized against. */
 private val BoardPictureWidth = 321.dp
 
@@ -97,7 +93,7 @@ internal fun JreSpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
     val episode = spotlight.episode
     val selectLabel = stringResource(R.string.podcast_episode_select)
     val details = latestDetails(spotlight)
-    Box(modifier.fillMaxWidth().padding(horizontal = 16.dp).wrapContentWidth().widthIn(max = MaxCardWidth)) {
+    Box(modifier.fillMaxWidth().padding(horizontal = 16.dp).wrapContentWidth()) {
         Column(
             Modifier
                 .fillMaxWidth()
