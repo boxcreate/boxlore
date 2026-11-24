@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - The release contract gate (`verify_release_contracts.py --module wear|tv`) checks the Wear OS and TV apps' optimized APKs and bundles in the Release dry run and before publication. ([#1316](https://github.com/boxcreate/boxlore/pull/1316)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+### Changed
+- Gradle resolves Maven Central artifacts through Google's Maven Central mirror (`MavenCentralMirror` in `settings.gradle.kts` and the root `buildscript`), with Maven Central or the Plugin Portal as fallback, and JitPack only for `com.github.racra`. `ArchitectureGuardTest` keeps the mirror ahead of every `mavenCentral()`. ([#1317](https://github.com/boxcreate/boxlore/pull/1317)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ## [v0.0.33] - 2026-11-24
 
 ### Added
