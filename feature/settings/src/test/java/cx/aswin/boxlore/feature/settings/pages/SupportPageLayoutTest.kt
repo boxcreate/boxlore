@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
@@ -17,6 +18,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -81,6 +83,17 @@ class SupportPageLayoutTest {
             compose.waitForIdle()
             val cta = compose.onNodeWithText(text(next.ctaVerb, next.tiers[2].title), substring = true)
             cta.performScrollTo().assertIsDisplayed().assertHasClickAction()
+            // The price on the button shows whole; a long name shortens instead.
+            val button = cta.fetchSemanticsNode().boundsInRoot
+            val cost = next.tiers[2].cost
+            val prices = compose.onAllNodesWithText(cost, useUnmergedTree = true).fetchSemanticsNodes()
+                .filter { button.contains(it.boundsInRoot.center) }
+            assertTrue("${next.world}: a price on the button", prices.isNotEmpty())
+            prices.forEach { node ->
+                val layouts = mutableListOf<TextLayoutResult>()
+                node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+                assertEquals("${next.world}: price $cost cut", cost.length, layouts.last().getLineEnd(0))
+            }
         }
     }
 
