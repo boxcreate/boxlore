@@ -62,6 +62,17 @@ internal object TurnstileWebViewPage : TurnstilePageFactory {
         return webView
     }
 
+    /** The page has drawn when WebView reports its current content as visible on screen. */
+    override fun whenDrawn(page: View, onDrawn: () -> Unit) {
+        val webView = page as? WebView ?: return super.whenDrawn(page, onDrawn)
+        webView.postVisualStateCallback(
+            0L,
+            object : WebView.VisualStateCallback() {
+                override fun onComplete(requestId: Long) = onDrawn()
+            },
+        )
+    }
+
     fun destroy(view: View) {
         (view as? WebView)?.apply {
             stopLoading()

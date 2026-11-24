@@ -3,6 +3,8 @@ package cx.aswin.boxlore.session.turnstile
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,8 +25,10 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -45,11 +49,19 @@ import cx.aswin.boxlore.core.designsystem.echo.EchoCharacter
 import cx.aswin.boxlore.core.designsystem.echo.EchoFace
 import cx.aswin.boxlore.core.designsystem.echo.EchoGaze
 import cx.aswin.boxlore.core.designsystem.echo.EchoIdle
-import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.layout.boxloreAvailableHeightDp
+import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 /** Builds the page view for one run; [onMessage] and [onFailed] report back to the controller. */
 internal fun interface TurnstilePageFactory {
     fun create(context: Context, pageUrl: String, onMessage: (String?) -> Unit, onFailed: (String) -> Unit): View
+
+    /** Calls [onDrawn] once [page] has drawn what it shows now; by default on its next turn of the main thread. */
+    fun whenDrawn(page: View, onDrawn: () -> Unit) {
+        page.post(onDrawn)
+    }
 }
 
 /**
@@ -57,12 +69,38 @@ internal fun interface TurnstilePageFactory {
  * the centered dialog (resizes, folds and rotation can move it between them). The same view is
  * moved, so Turnstile's state survives.
  */
-internal class TurnstilePageHolder(private val create: (Context) -> View, private val destroy: (View) -> Unit) {
+internal class TurnstilePageHolder(
+    private val create: (Context) -> View,
+    private val destroy: (View) -> Unit,
+    private val whenDrawn: (View, () -> Unit) -> Unit = { page, onDrawn -> page.post(onDrawn) },
+) {
     private var view: View? = null
+
+    /** False from the moment the page is moved into a card until it has drawn there. */
+    var drawn by mutableStateOf(false)
+        private set
 
     fun attach(context: Context): View {
         val page = view ?: create(context).also { view = it }
         (page.parent as? ViewGroup)?.removeView(page)
+        return page
+    }
+
+    /** [attach], then watches for the page to draw in its new place (a card shows a loader until then). */
+    fun attachToCard(context: Context): View {
+        val page = attach(context)
+        drawn = false
+        // Asked once the page is in the card's window: WebView reports drawing only while attached.
+        page.addOnAttachStateChangeListener(
+            object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(attached: View) {
+                    attached.removeOnAttachStateChangeListener(this)
+                    whenDrawn(attached) { if (view === attached) drawn = true }
+                }
+
+                override fun onViewDetachedFromWindow(detached: View) = Unit
+            },
+        )
         return page
     }
 
@@ -103,6 +141,7 @@ internal fun TurnstileStepUpHost(
                 )
             },
             destroy = { currentDestroy(it) },
+            whenDrawn = pageFactory::whenDrawn,
         )
     }
     DisposableEffect(holder) { onDispose { holder.release() } }
@@ -114,8 +153,8 @@ internal fun TurnstileStepUpHost(
             AndroidView(factory = holder::attach, modifier = Modifier.requiredSize(300.dp, 65.dp).alpha(0f).testTag(INVISIBLE_PAGE_TAG))
         }
     } else {
-        TurnstileStepUpSheet(onSkip = { controller.cancel(attempt) }) {
-            AndroidView(factory = holder::attach, modifier = Modifier.fillMaxWidth().height(72.dp).testTag(CHALLENGE_PAGE_TAG))
+        TurnstileStepUpSheet(onSkip = { controller.cancel(attempt) }, loading = !holder.drawn) {
+            AndroidView(factory = holder::attachToCard, modifier = Modifier.fillMaxWidth().height(72.dp).testTag(CHALLENGE_PAGE_TAG))
         }
     }
 }
@@ -125,22 +164,24 @@ internal fun TurnstileStepUpHost(
  * Echo stands on its stage beside its line and glances down at the check now and then; the check
  * (drawn by Cloudflare) sits in a card so it reads as part of the sheet.
  *
- * The phone sheet opens fully rather than half way, Echo shrinks on windows under
- * [CHECK_SHORT_WINDOW_DP] tall (landscape phones, short resizable windows), and the content scrolls
- * when it still doesn't fit, so the check and Skip are always reachable.
+ * The phone sheet opens fully rather than half way, Echo shrinks when the space the check has (the
+ * window, or one half of a half-open fold) is under [CHECK_SHORT_WINDOW_DP] tall (landscape phones,
+ * short resizable windows, a tabletop half), and the content scrolls when it still doesn't fit, so
+ * the check and Skip are always reachable. While [loading], a small loader sits in the card behind
+ * the not-yet-drawn check.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun TurnstileStepUpSheet(onSkip: () -> Unit, challenge: @Composable () -> Unit) {
+internal fun TurnstileStepUpSheet(onSkip: () -> Unit, loading: Boolean = false, challenge: @Composable () -> Unit) {
     TrackScreenView("connection_check")
-    val short = LocalBoxloreWindowLayout.current.heightDp < CHECK_SHORT_WINDOW_DP
+    val short = boxloreAvailableHeightDp() < CHECK_SHORT_WINDOW_DP
     BoxloreModalBottomSheet(onDismissRequest = onSkip, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(if (short) 12.dp else 16.dp),
+                .padding(start = 24.dp, end = 24.dp, bottom = if (short) 8.dp else 16.dp),
+            verticalArrangement = Arrangement.spacedBy(if (short) 8.dp else 16.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 EchoCharacter(
@@ -152,6 +193,7 @@ internal fun TurnstileStepUpSheet(onSkip: () -> Unit, challenge: @Composable () 
                 Text(
                     text = stringResource(R.string.session_check_title),
                     style = MaterialTheme.typography.titleLarge,
+                    fontWeight = GoogleSansWeight.semiBold,
                     modifier = Modifier.weight(1f).semantics { heading() },
                 )
             }
@@ -165,7 +207,16 @@ internal fun TurnstileStepUpSheet(onSkip: () -> Unit, challenge: @Composable () 
                 shape = MaterialTheme.shapes.large,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
             ) {
-                Box(Modifier.padding(8.dp), contentAlignment = Alignment.Center) { challenge() }
+                Box(Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
+                    androidx.compose.animation.AnimatedVisibility(visible = loading, enter = EnterTransition.None, exit = fadeOut(ExpressiveMotion.SleekFadeSpec)) {
+                        BoxLoreLoader.CircularWavy(
+                            size = 24.dp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.testTag(CHALLENGE_LOADER_TAG),
+                        )
+                    }
+                    challenge()
+                }
             }
             TextButton(onClick = onSkip, modifier = Modifier.align(Alignment.End)) {
                 Text(stringResource(R.string.session_check_skip))
@@ -194,3 +245,4 @@ internal const val INVISIBLE_PAGE_TAG = "turnstile_invisible_page"
 internal const val CHALLENGE_PAGE_TAG = "turnstile_challenge_page"
 internal const val CHALLENGE_CARD_TAG = "turnstile_challenge_card"
 internal const val CHECK_ECHO_TAG = "turnstile_check_echo"
+internal const val CHALLENGE_LOADER_TAG = "turnstile_challenge_loader"

@@ -1,7 +1,9 @@
 package cx.aswin.boxlore.session.turnstile
 
 import android.app.Application
+import android.content.Context
 import android.view.View
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
@@ -85,6 +87,20 @@ class TurnstileStepUpHostAdaptiveTest {
         BoxloreWindowLayout(360f, 740f),
     )
 
+    /** Set to hold back the page's "drawn" report, as a real check does while Cloudflare loads. */
+    private var holdDrawing = false
+    private val heldDraws = mutableListOf<() -> Unit>()
+    private val pages = object : TurnstilePageFactory {
+        override fun create(context: Context, pageUrl: String, onMessage: (String?) -> Unit, onFailed: (String) -> Unit): View {
+            urls += pageUrl
+            return View(context).also { created += it }
+        }
+
+        override fun whenDrawn(page: View, onDrawn: () -> Unit) {
+            if (holdDrawing) heldDraws += onDrawn else super.whenDrawn(page, onDrawn)
+        }
+    }
+
     @After
     fun tearDown() = scope.cancel()
 
@@ -98,10 +114,7 @@ class TurnstileStepUpHostAdaptiveTest {
                         TurnstileStepUpHost(
                             controller = controller,
                             apiBaseUrl = "https://api.boxlore.example/",
-                            pageFactory = { context, url, _, _ ->
-                                urls += url
-                                View(context).also { created += it }
-                            },
+                            pageFactory = pages,
                             destroyPage = { destroyed += it },
                         )
                     }
@@ -233,6 +246,54 @@ class TurnstileStepUpHostAdaptiveTest {
         compose.waitForIdle()
         compose.onNodeWithText(TITLE).assertDoesNotExist()
         assertEquals(1, destroyed.size)
+    }
+
+    @Test
+    fun `Echo shrinks to fit a tabletop half and grows back when the fold opens flat or the window gets taller`() {
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        val result = start()
+        val page = created.single()
+        askForInteraction()
+        val steps = listOf(
+            BoxloreTestWindows.FOLD_FLAT to 96f,
+            BoxloreTestWindows.FOLD_TABLETOP to 56f,
+            BoxloreTestWindows.FOLD_FLAT to 96f,
+            BoxloreTestWindows.W900_H479 to 56f,
+            BoxloreTestWindows.W900_H480 to 96f,
+            BoxloreTestWindows.W900_H479 to 56f,
+            BoxloreTestWindows.PHONE to 96f,
+        )
+        steps.forEach { (next, echoSize) ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            val echo = compose.onNodeWithTag(CHECK_ECHO_TAG).getUnclippedBoundsInRoot()
+            assertEquals("Echo at $next", echoSize, (echo.right - echo.left).value, 0.5f)
+            compose.onNodeWithText("Skip").assertIsDisplayed()
+            assertSame("the same page at $next", page, created.single())
+            assertFalse("$next: a window change is not a skip", result.isCompleted)
+        }
+    }
+
+    @Test
+    fun `the card shows a loader until the check has drawn, and a resize never rebuilds the page`() {
+        holdDrawing = true
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        start()
+        compose.mainClock.autoAdvance = false // The loader spins until the page draws.
+        askForInteraction()
+        compose.mainClock.advanceTimeBy(100)
+        compose.onNodeWithTag(CHALLENGE_LOADER_TAG).assertExists()
+
+        compose.runOnIdle { heldDraws.removeAt(0).invoke() }
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onNodeWithTag(CHALLENGE_LOADER_TAG).assertDoesNotExist()
+
+        compose.runOnIdle { window.value = BoxloreTestWindows.COVER_443 }
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onNodeWithTag(CHALLENGE_LOADER_TAG).assertDoesNotExist()
+        assertEquals(1, created.size)
     }
 
     private companion object {

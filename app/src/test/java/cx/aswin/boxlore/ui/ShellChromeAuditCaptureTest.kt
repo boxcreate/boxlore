@@ -191,7 +191,7 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     /** The connection check with Cloudflare's box still blank, as it is while the page loads. */
     @Test fun connectionCheck() = render("connection-check", include = !isRailOnlySize, rootTag = CHALLENGE_CARD_TAG) {
         Home()
-        TurnstileStepUpSheet(onSkip = {}) { Box(Modifier.fillMaxWidth().height(72.dp)) }
+        TurnstileStepUpSheet(onSkip = {}, loading = true) { Box(Modifier.fillMaxWidth().height(72.dp)) }
     }
 
     /**
