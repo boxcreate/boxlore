@@ -475,6 +475,15 @@ class PodcastRepositoryV2DiscoveryTest {
         answers["/v2/trending"] = { json("""{"status":"true","feeds":[]}""") }
         assertTrue(repository.getTrendingPodcasts(country = "us", limit = 10, offset = 50).isEmpty())
         assertTrue(seen.none { it.path.startsWith("/trending") })
+
+        // A mood collection likewise: the last good list, else null for Explore's Try again, while
+        // Home's empty-list reading stays as it was.
+        answers["/v2/curated/vibe"] = { fixture("fixtures/v2/vibe.json") }
+        val vibe = repository.getCuratedPodcasts("morning_news", "us", listOf("en"))
+        answers["/v2/curated/vibe"] = { MockResponse().setResponseCode(503) }
+        assertEquals(vibe, repository.getCuratedPodcastsOrNull("morning_news", "us", listOf("en")))
+        assertEquals(null, repository.getCuratedPodcastsOrNull("calm", "us", listOf("en")))
+        assertTrue(repository.getCuratedPodcasts("calm", "us", listOf("en")).isEmpty())
     }
 
     @Test

@@ -229,7 +229,8 @@ class ExploreViewModel(
     // Telemetry State
     private var sessionStartTime = System.currentTimeMillis()
     private var categoriesClickedCount = 0
-    private var vibesClickedCount = 0
+    internal var vibesClickedCount = 0
+        private set
     private var searchesPerformedCount = 0
     private var podcastsClickedCount = 0
     private var maxScrollDepth = 0
@@ -535,14 +536,15 @@ class ExploreViewModel(
                 // Uses same curated endpoint as HomeScreen!
                 val region = userPrefs.regionStream.first()
                 val languages = userPrefs.contentLanguagesStream.first()
-                val results = podcastRepository.getCuratedPodcasts(
+                val results = podcastRepository.getCuratedPodcastsOrNull(
                     vibeId = vibeId,
                     country = region,
                     languages = languages,
                 )
                 if (searchJob == myJob) {
-                    _searchResults.value = results
-                    results.forEach { _seenPodcasts[it.id] = it }
+                    _searchResults.value = results.orEmpty()
+                    results?.forEach { _seenPodcasts[it.id] = it }
+                    if (results == null) _failures.update { it.copy(topic = true) }
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
@@ -606,7 +608,7 @@ class ExploreViewModel(
         loadNextTopChartPage()
     }
 
-    /** Try again after a failed show search, Top chart or chart page. */
+    /** Try again after a failed show search, Top chart, chart page or collection. */
     fun retry(target: ExploreRetry) {
         when (target) {
             ExploreRetry.SHOW_SEARCH -> _searchQuery.value.takeIf { it.isNotBlank() }?.let(::performSearch)

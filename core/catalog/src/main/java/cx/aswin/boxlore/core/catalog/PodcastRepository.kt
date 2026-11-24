@@ -175,7 +175,11 @@ class PodcastRepository(
     suspend fun getTrendingPodcastsOrNull(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0,): List<Podcast>? =
         withContext(Dispatchers.IO) { trendingPodcastsOrNull(country, limit, category, offset) }
 
-    suspend fun getCuratedPodcasts(vibeId: String, country: String? = null, languages: List<String>? = null,): List<Podcast> = withContext(Dispatchers.IO) {
+    suspend fun getCuratedPodcasts(vibeId: String, country: String? = null, languages: List<String>? = null,): List<Podcast> =
+        getCuratedPodcastsOrNull(vibeId, country, languages).orEmpty()
+
+    /** One collection's shows, or null when they couldn't be read (with no last good copy), so a failed read isn't shown as an empty collection. */
+    suspend fun getCuratedPodcastsOrNull(vibeId: String, country: String? = null, languages: List<String>? = null,): List<Podcast>? = withContext(Dispatchers.IO) {
         try {
             val resolvedCountry =
                 country?.let {
@@ -185,7 +189,7 @@ class PodcastRepository(
             val queryLanguages =
                 resolveContentLanguagesForQuery(languages, resolvedCountry ?: "us")
                     .joinToString(",")
-            if (usesV2Discovery()) return@withContext v2CuratedPodcasts(vibeId, resolvedCountry, queryLanguages).orEmpty()
+            if (usesV2Discovery()) return@withContext v2CuratedPodcasts(vibeId, resolvedCountry, queryLanguages)
             val response =
                 api
                     .getCuratedVibe(
@@ -194,16 +198,15 @@ class PodcastRepository(
                         resolvedCountry,
                         queryLanguages,
                     ).execute()
-            if (response.isSuccessful && response.body() != null) {
-                mapFeedsToPodcasts(response.body()!!.feeds)
-            } else {
-                emptyList()
-            }
+            val body = response.body()
+            if (response.isSuccessful && body != null) mapFeedsToPodcasts(body.feeds) else null
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             android.util.Log.e("BoxCastRepo", "Curated Vibe Error: $vibeId", e)
-            emptyList()
+            null
         }
-    }.let { withoutHiddenPodcasts(it) }
+    }?.let { withoutHiddenPodcasts(it) }
 
     fun getTrendingPodcastsStream(
         country: String = "us",
