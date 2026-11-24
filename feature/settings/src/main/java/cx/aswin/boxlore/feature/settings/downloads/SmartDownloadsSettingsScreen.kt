@@ -179,7 +179,7 @@ internal fun SmartDownloadsSettingsContent(
     }
 
     if (askBeforeOff) SmartDownloadsOffDialog(onConfirm = actions::confirmDisable, onDismiss = actions::dismissDisable)
-    if (showHelp) SmartDownloadsHelp(onDismiss = { showHelp = false })
+    if (showHelp) SmartDownloadsHelp(backgroundAllowed = isIgnoringBatteryOptimizations, onDismiss = { showHelp = false })
 
     // Refresh the battery optimization state when boxlore comes back to the foreground.
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -212,7 +212,8 @@ private fun SmartDownloadsSummary(enabled: Boolean) {
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = GoogleSansWeight.semiBold,
                 )
-                Text(stringResource(R.string.settings_smart_downloads_description), style = MaterialTheme.typography.bodyMedium)
+                // One line here, as on the Downloads page; the full explanation is in About Smart Downloads.
+                Text(stringResource(R.string.settings_downloads_smart_description), style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
@@ -354,7 +355,7 @@ private fun SmartDownloadsOffDialog(onConfirm: () -> Unit, onDismiss: () -> Unit
 }
 
 @Composable
-private fun SmartDownloadsHelp(onDismiss: () -> Unit) {
+private fun SmartDownloadsHelp(backgroundAllowed: Boolean, onDismiss: () -> Unit) {
     BoxloreAlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.AutoAwesome, contentDescription = null) },
@@ -362,7 +363,9 @@ private fun SmartDownloadsHelp(onDismiss: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(stringResource(R.string.settings_smart_downloads_description), style = MaterialTheme.typography.bodyMedium)
-                Text(stringResource(R.string.settings_smart_downloads_background_blocked), style = MaterialTheme.typography.bodyMedium)
+                // Says what is true now: background downloads already allowed, or how a phone may block them.
+                val background = if (backgroundAllowed) R.string.settings_smart_downloads_background_allowed else R.string.settings_smart_downloads_background_blocked
+                Text(stringResource(background), style = MaterialTheme.typography.bodyMedium)
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_got_it)) } },

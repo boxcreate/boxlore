@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.settings.downloads
 
 import android.app.Application
+import android.os.PowerManager
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -10,13 +11,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
+import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -34,6 +39,7 @@ import org.junit.runner.RunWith
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -154,6 +160,21 @@ class SmartDownloadsSettingsScreenTest {
             compose.waitForIdle()
             assertEquals(1, compose.onAllNodes(isDialog()).fetchSemanticsNodes().size)
         }
+        // The page says it in one line; the help holds the full explanation once, and the background
+        // note matches this phone (not yet allowed here).
+        assertEquals(1, compose.onAllNodesWithText(text(R.string.settings_smart_downloads_description)).fetchSemanticsNodes().size)
+        compose.onNodeWithText(text(R.string.settings_downloads_smart_description)).assertExists()
+        compose.onNode(hasText(text(R.string.settings_smart_downloads_background_blocked)) and hasAnyAncestor(isDialog())).assertExists()
+    }
+
+    @Test fun `once background downloads are allowed the help says so instead of warning`() {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        shadowOf(app.getSystemService(PowerManager::class.java)).setIgnoringBatteryOptimizations(app.packageName, true)
+        render()
+        compose.onNode(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(text(R.string.settings_smart_downloads_about)))).performClick()
+        compose.waitForIdle()
+        compose.onNode(hasText(text(R.string.settings_smart_downloads_background_allowed)) and hasAnyAncestor(isDialog())).assertExists()
+        compose.onNode(hasText(text(R.string.settings_smart_downloads_background_blocked)) and hasAnyAncestor(isDialog())).assertDoesNotExist()
     }
 
     @Test fun `on a sideways phone the cards sit in the 720dp reading column`() {
