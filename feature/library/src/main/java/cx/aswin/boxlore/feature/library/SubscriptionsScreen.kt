@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -388,7 +389,10 @@ fun SubscriptionsScreen(
                 },
                 containerColor = MaterialTheme.colorScheme.surface
             ) { innerPadding ->
-                Box(modifier = Modifier.padding(innerPadding).imePadding()) {
+                // With the short header tucked away, the list still starts under the status bar.
+                val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+                val contentTop = if (shortPane) maxOf(innerPadding.calculateTopPadding(), statusBarTop) else innerPadding.calculateTopPadding()
+                Box(modifier = Modifier.padding(innerPadding).padding(top = contentTop - innerPadding.calculateTopPadding()).imePadding()) {
                     when (uiState) {
                         is LibraryUiState.Loading -> LibraryLoading {
                             if (isGridView && pagerState.currentPage == 0) {
@@ -948,7 +952,12 @@ private suspend fun handleLatestSwipe(
 private fun Modifier.collapseWith(state: TopAppBarState, start: ShortHeaderStart): Modifier = clipToBounds().layout { measurable, constraints ->
     val placeable = measurable.measure(constraints)
     val limit = -placeable.height.toFloat()
-    if (state.heightOffsetLimit != limit) state.heightOffsetLimit = limit
+    if (state.heightOffsetLimit != limit) {
+        // A header that was fully tucked away stays so when its height changes (system bars arriving, a turn).
+        val wasTucked = state.heightOffsetLimit > -Float.MAX_VALUE && state.heightOffset <= state.heightOffsetLimit + 0.5f
+        state.heightOffsetLimit = limit
+        if (wasTucked) state.heightOffset = limit
+    }
     if (start.tucked) {
         // Once the header's height is known: start fully tucked away.
         state.heightOffset = limit
