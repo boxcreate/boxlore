@@ -85,6 +85,11 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>While you get started, search keeps more shows in view on sideways phones, and Shows for you lays its shows out in rows on tablets.</li>
 <li>On Home, the next top card peeks in as a picture instead of cut-off words, time left is rounded the same way as in the mini player, and the menus, show picker, genre picker and rating sheets match the rest of boxlore.</li>
 <li>Episode pages now fit sideways phones, foldables and tablets, with the cover beside the title on wide or short screens, an outline while they load and links listed like chapters. Show pages in a show's own style keep their latest-episode card at a comfortable width on wide screens.</li>
+<li>Library's cards now say what's inside, Liked episodes has a Play all button, every show's long-press menu in Subscriptions offers Pin to Home and Unsubscribe, and loading or empty Library pages look finished.</li>
+<li>Listening history fits large text and German better, uses two columns of Insights on large tablets, and its menus, loading screens and Clear all confirmation now match the rest of boxlore.</li>
+<li>The monthly story now waits for you when part of a card is off screen, and shows previous, pause and next buttons beside it on tablets.</li>
+<li>On tablets and unfolded foldables, the Brief now shows every story beside the edition, and on a tablet held upright it lists the stories one after another.</li>
+<li>The Brief's back button is now at the top left, its edition menu marks the edition you're on, and each story's play button is smaller so Listen stands out.</li>
 </ul>
 <b>🐛 Fixed:</b>
 <ul align="left">
@@ -105,6 +110,9 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>If you skip the quick check before similar shows, boxlore now says so instead of asking you to check your connection.</li>
 <li>On the Galaxy Z Fold cover screen, tablets, split-screen windows and phones turned sideways, Home's top cards keep their title and a whole Play button, Home keeps your place and open menus when the window changes shape, its buttons stay clear of the navigation buttons and camera, and the pin message shows above the bottom bar.</li>
 <li>Episode and show pages that don't load now offer Try again and Back, and on an episode page the date no longer scrolls sideways and an open Share sheet stays open when the screen changes size.</li>
+<li>Library now fits sideways phones, foldables and tablets, long titles in other languages fit, and lists, selections and open menus stay as you left them when you fold, unfold or resize boxlore.</li>
+<li>Undo after removing an episode from Listening history now shows above the bottom bar, where you can tap it.</li>
+<li>On sideways phones and the Galaxy Z Fold cover, Listening history and the Brief keep their buttons clear of the system buttons and the bottom bar, and the Brief's error page scrolls to Try again.</li>
 </ul>
 <!-- release-upcoming:end -->
 
