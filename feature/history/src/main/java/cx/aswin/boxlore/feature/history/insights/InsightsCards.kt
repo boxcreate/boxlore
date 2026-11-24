@@ -43,12 +43,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -302,6 +304,9 @@ private fun PartLegendRow(share: PartShare, index: Int, rankColor: (Int) -> Colo
 }
 
 private val WHEN_STACK_WIDTH = 300.dp
+
+/** The clock's margin outside its dashed ring (16 of its 180 units), as a share of its size. */
+private const val RING_MARGIN = 16f / 180f
 private val WIDE_CLOCK = 180.dp
 private val NARROW_CLOCK = 160.dp
 
@@ -320,9 +325,14 @@ private fun ListeningClock(parts: List<PartShare>, rankColor: (Int) -> Color, cl
         parts.map { stringResource(R.string.history_ins_part_share, partName(it.part), InsightsWording.percent(it.share)) }.joinToString()
     val labels = listOf(R.string.history_clock_12am, R.string.history_clock_6am, R.string.history_clock_12pm, R.string.history_clock_6pm).map { stringResource(it) }
     val labelStyle = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp)
-    Box(modifier = modifier.size(clockSize).clearAndSetSemantics { contentDescription = description }) {
+    // "6 am" and "6 pm" sit outside the dashed ring, 4dp clear of it: the clock widens by what they need
+    // beyond the ring's own margin, so they never run into the wedges.
+    val measurer = rememberTextMeasurer()
+    val sideLabel = with(LocalDensity.current) { maxOf(measurer.measure(labels[1], labelStyle).size.width, measurer.measure(labels[3], labelStyle).size.width).toDp() }
+    val overflow = (sideLabel + 4.dp - clockSize * RING_MARGIN).coerceAtLeast(0.dp)
+    Box(modifier = modifier.width(clockSize + overflow * 2).height(clockSize).clearAndSetSemantics { contentDescription = description }) {
         val largest = parts.maxOf { it.share }.coerceAtLeast(0.0001f)
-        Canvas(modifier = Modifier.size(clockSize)) {
+        Canvas(modifier = Modifier.size(clockSize).align(Alignment.Center)) {
             val center = Offset(size.width / 2, size.height / 2)
             val unit = size.width / 180f
             drawCircle(colors.surfaceContainerHigh, radius = 74 * unit, center = center)

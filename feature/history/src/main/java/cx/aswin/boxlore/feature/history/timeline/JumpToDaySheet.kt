@@ -290,7 +290,8 @@ private fun QuickJumpChip(text: String, onClick: () -> Unit) {
             .expressiveClickable(shape = shape, feedback = ExpressivePressFeedback.Control, onClick = onClick)
             .background(colors.surfaceContainerHighest, shape)
             .semantics { role = Role.Button }
-            .padding(horizontal = 18.dp),
+            // Narrow enough that the three English quick jumps share one line on a regular phone.
+            .padding(horizontal = 14.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(text, style = TimelineType.label.copy(fontWeight = GoogleSansWeight.semiBold), color = colors.onSurface)
