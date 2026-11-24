@@ -488,7 +488,8 @@ internal fun PodcastInfoMetadataChipsRow(
 }
 
 /** The show's chips in order: how it is published, its genre, people, a trailer, its kind, Support. */
-@Suppress("LongParameterList")
+// One builder for the whole row, fed by the header that owns these values.
+@Suppress("LongParameterList", "kotlin:S107")
 private fun podcastInfoChips(
     podcast: Podcast,
     sortedPersons: List<Person>,

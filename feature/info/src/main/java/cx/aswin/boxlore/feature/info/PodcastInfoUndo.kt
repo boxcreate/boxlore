@@ -76,7 +76,8 @@ internal fun rememberPendingUndo(podcastId: String): MutableState<PendingUndo?> 
     val context = LocalContext.current
     val saver = remember(context) {
         Saver<PendingUndo?, Any>(
-            save = { undo -> if (savingForRecreation(context)) with(PendingUndo.Saver) { save(undo) } else false },
+            // Nothing saved when the page isn't being recreated, so a restore starts with no Undo.
+            save = { undo -> if (savingForRecreation(context)) with(PendingUndo.Saver) { save(undo) } else null },
             restore = { saved -> PendingUndo.Saver.restore(saved) },
         )
     }
