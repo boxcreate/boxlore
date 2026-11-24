@@ -109,7 +109,7 @@ class LibraryTabletAuditCaptureTest(private val scene: String, configuration: Ph
                 onNavigateToSubscriptions = {},
                 onNavigateToDownloads = {},
                 onNavigateToHistory = {},
-                playlists = LibraryPlaylistsCard(coverUrls = if (scene == "hub") List(3) { ART } else emptyList(), onClick = {}),
+                playlists = LibraryPlaylistsCard(coverUrls = if (scene == "hub") List(3) { ART } else emptyList(), onClick = {}, count = if (scene == "hub") fixtures.playlists.size else 0),
             )
             "liked", "liked-empty", "liked-loading" -> LikedEpisodesScreen(
                 viewModel = fixtures.viewModel(
@@ -122,6 +122,7 @@ class LibraryTabletAuditCaptureTest(private val scene: String, configuration: Ph
                 onBack = {},
                 onExploreClick = {},
                 onEpisodeClick = { _, _ -> },
+                onPlayEpisodes = { _, _ -> },
             )
             "downloads", "downloads-selecting", "downloads-empty", "downloads-loading" -> DownloadedEpisodesScreen(
                 viewModel = fixtures.viewModel(
