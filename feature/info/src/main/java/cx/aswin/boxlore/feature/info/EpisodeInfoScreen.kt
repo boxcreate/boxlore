@@ -534,7 +534,7 @@ private fun LazyListScope.episodeSections(
             )
         }
     }
-    episodeLinks(state, blockCap)
+    episodeLinks(state)
     if (moreLikeThisOn && (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty())) {
         item(key = "more_like_this") {
             // A carousel: it keeps the page's full width.
@@ -580,13 +580,12 @@ private fun LazyListScope.episodeAbout(
     }
 }
 
-private fun LazyListScope.episodeLinks(state: EpisodeInfoUiState.Success, blockCap: Modifier) {
+/** The link pills keep the page's full width, like the More like this carousel, so they run off its edge. */
+private fun LazyListScope.episodeLinks(state: EpisodeInfoUiState.Success) {
     val notes = state.showNotes ?: return
     if (notes.links.isEmpty()) return
     item(key = "links") {
-        Box(blockCap) {
-            EpisodeLinksSection(notes.links, EpisodeShowTitle.displayName(state.podcastTitle, stringResource(R.string.episode_info_show_placeholder)))
-        }
+        EpisodeLinksSection(notes.links, EpisodeShowTitle.displayName(state.podcastTitle, stringResource(R.string.episode_info_show_placeholder)))
     }
 }
 

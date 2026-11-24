@@ -41,7 +41,7 @@ Announcement title:
 - Picking your language now flows straight into the welcome screen.
 - While you get started, search keeps more shows in view on sideways phones, and Shows for you lays its shows out in rows on tablets.
 - On Home, the next top card peeks in as a picture instead of cut-off words, time left is rounded the same way as in the mini player, and the menus, show picker, genre picker and rating sheets match the rest of boxlore.
-- Episode pages now fit sideways phones, foldables and tablets, with the cover beside the title on wide or short screens, an outline while they load and links listed like chapters. Show pages in a show's own style keep their latest-episode card at a comfortable width on wide screens.
+- Episode pages now fit sideways phones, foldables and tablets, with the cover beside the title on wide or short screens and an outline while they load. Show pages in a show's own style keep their latest-episode card at a comfortable width on wide screens.
 - Library's cards now say what's inside, Liked episodes has a Play all button, every show's long-press menu in Subscriptions offers Pin to Home and Unsubscribe, and loading or empty Library pages look finished.
 - Listening history fits large text and German better, uses two columns of Insights on large tablets, and its menus, loading screens and Clear all confirmation now match the rest of boxlore.
 - The monthly story now waits for you when part of a card is off screen, and shows previous, pause and next buttons beside it on tablets.

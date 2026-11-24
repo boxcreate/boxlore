@@ -22,8 +22,6 @@
     <string name="episode_info_read_more">Ler mais</string>
     <string name="episode_info_about">Sobre este episódio</string>
     <string name="episode_info_links">Links do episódio</string>
-    <string name="episode_info_all_links">Mostrar todos os links</string>
-    <string name="episode_info_fewer_links">Mostrar menos links</string>
     <string name="episode_info_bonus">Bônus</string>
     <string name="episode_info_trailer">Trailer</string>
     <string name="episode_info_video">Vídeo</string>

@@ -43,7 +43,7 @@ Used by `:app` navigation:
 - **Shared lookup.** More from and Try these episodes share one show-details request (`logic/SharedLookup.kt`): it runs once on first await; failures give every caller `null`.
 - **Try these episodes.** `logic/SimilarEpisodesLoader.kt` loads only while More like this is on (`EpisodeInfoViewModel.moreLikeThisOn`), in the listener's languages and region. Turning it off cancels it; replies for another episode are dropped.
 - **More from.** `logic/MoreFromEpisodeSelection.kt` picks the latest distinct episodes of the show, excluding the current one.
-- **Links.** `EpisodeLinkRows` lists the episode's pages, media, then show profiles, branded first; `EpisodeLinkBrandIcon` and `EpisodeLinkPalette` tint them. Brands match by domain, so lookalike hosts get none.
+- **Links.** `EpisodeLinkRows` splits links into two scrolling rows of pills, branded first; `EpisodeLinkBrandIcon` and `EpisodeLinkPalette` tint them. Brands match by domain, so lookalike hosts get none.
 - **Seeking.** `EpisodeInfoSeekLogic` saves progress when seeking an episode the player isn't on.
 
 ## Showcase pages

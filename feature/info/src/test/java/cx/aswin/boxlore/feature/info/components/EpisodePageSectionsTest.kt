@@ -9,19 +9,25 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -37,6 +43,7 @@ import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.core.testing.walkWindows
+import cx.aswin.boxlore.feature.info.EPISODE_LINK_PILLS_TAG
 import cx.aswin.boxlore.feature.info.EpisodeInfoScreen
 import cx.aswin.boxlore.feature.info.EpisodeInfoTags
 import cx.aswin.boxlore.feature.info.EpisodeInfoUiState
@@ -102,25 +109,26 @@ class EpisodePageSectionsTest {
     }
 
     @Test
-    fun `links show four rows until opened, sit in two columns on wide pages, and open once per tap`() {
+    fun `links are two rows of pills as wide as their names that run off the page and open once per tap`() {
         render()
         val list = fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST)
-        list.performScrollToKey("links")
-        assertEquals(0, fixture.compose.onAllNodesWithText("Further reading 4").fetchSemanticsNodes().size)
-        fixture.compose.onNodeWithText("Show all links").performClick()
-        fixture.compose.waitForIdle()
-        fixture.compose.walkWindows(window, BoxloreTestWindows.W599_H900, BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900) { size ->
+        val pills = hasClickAction() and hasAnyAncestor(hasTestTag(EPISODE_LINK_PILLS_TAG))
+        fixture.compose.walkWindows(window, BoxloreTestWindows.UPRIGHT_BOOK, BoxloreTestWindows.TABLET, BoxloreTestWindows.PHONE) { size ->
             list.performScrollToKey("links")
-            assertTrue("still open at $size", fixture.compose.onAllNodesWithText("Show fewer links").fetchSemanticsNodes().isNotEmpty())
+            // Whole bounds: a pill scrolled out of view still has its place in its row.
+            val bounds = fixture.compose.onAllNodes(pills).fetchSemanticsNodes().map { androidx.compose.ui.geometry.Rect(it.positionInRoot, it.size.toSize()) }
+            // Pills in a row share its centre line; a taller pill starts a little higher.
+            assertEquals("two rows at $size", 2, bounds.map { it.center.y.toInt() }.toSet().size)
+            assertTrue("pills sized to their names at $size", bounds.map { it.width.toInt() }.toSet().size > 1)
+            // The rows reach the page's edge and scroll on past it.
+            val row = fixture.compose.onNodeWithTag(EPISODE_LINK_PILLS_TAG).fetchSemanticsNode()
+            val page = fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).fetchSemanticsNode().boundsInRoot
+            assertEquals("the pills span the page at $size", page.width, row.boundsInRoot.width, 1f)
+            if (size == BoxloreTestWindows.PHONE) {
+                assertTrue("the pills run off a phone's edge", row.config[SemanticsProperties.HorizontalScrollAxisRange].maxValue() > 0f)
+            }
         }
-        fixture.compose.runOnIdle { window.value = BoxloreTestWindows.UPRIGHT_BOOK }
-        list.performScrollToKey("links")
-        // The episode's own page leads; a two-line name beside a one-line one keeps the row even.
-        val first = fixture.compose.onNodeWithText(WEBSITE_TITLE).getBoundsInRoot()
-        val second = fixture.compose.onNodeWithText("Further reading 1").getBoundsInRoot()
-        assertEquals("two columns side by side", first.top.value, second.top.value, 1f)
-        assertEquals("cells in a row share one height", first.bottom.value - first.top.value, second.bottom.value - second.top.value, 1f)
-        fixture.compose.onNodeWithText("Further reading 1").performClick()
+        fixture.compose.onNode(hasText("Further reading 1", substring = true) and pills).performScrollTo().performClick()
         fixture.compose.waitForIdle()
         val opened = org.robolectric.Shadows.shadowOf(fixture.compose.activity.application).nextStartedActivity
         assertEquals("https://site1.example.org", opened.data.toString())
