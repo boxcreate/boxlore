@@ -348,6 +348,8 @@ class LibraryTabletAuditCaptureTest(private val sceneName: String, configuration
             "auto-organize-one-look",
             "playlist-detail-snackbar",
         )
+        private val HEADER_SCENES = setOf("subs-search", "subs-sort-tooltip")
+        private const val SHORT_HEIGHT = 480
         private val STATE_SIZES = setOf("360x800", "412x915", "915x412-insets", "475x695-de", "932x650-book", "932x650-tabletop", "1280x800")
 
         /** The hub and Playlists' empty page in a brand theme and in Pure black. */
@@ -379,7 +381,8 @@ class LibraryTabletAuditCaptureTest(private val sceneName: String, configuration
                 val stateSizes = sizes.filter { it.auditKey in STATE_SIZES }
                 val themeSizes = sizes.filter { it.auditKey in THEME_SIZES && !it.dark }
                 return AUDIT_SCENES.flatMap { scene -> sizes.map { arrayOf<Any>(scene, it) } } +
-                    STATE_SCENES.flatMap { scene -> stateSizes.map { arrayOf<Any>(scene, it) } } +
+                    // Short windows tuck Subscriptions' header (and its search and sort buttons) away at first.
+                    STATE_SCENES.flatMap { scene -> stateSizes.filter { scene !in HEADER_SCENES || it.height >= SHORT_HEIGHT }.map { arrayOf<Any>(scene, it) } } +
                     THEME_SCENES.flatMap { scene -> themeSizes.map { arrayOf<Any>(scene, it) } }
             }
             return listOf("liked", "liked-empty", "downloads", "downloaded-show").flatMap { scene ->
