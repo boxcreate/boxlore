@@ -23,6 +23,7 @@ Announcement title:
 ## Highlights
 
 - boxlore now has an Android TV app: browse charts and your shows, pick up where you left off, and keep listening as one episode leads to the next.
+- boxlore now fits almost every screen: phones turned sideways, foldables, tablets and split screen. The new layouts are in beta, so if anything looks off, tell us with Send feedback.
 
 ## New
 
