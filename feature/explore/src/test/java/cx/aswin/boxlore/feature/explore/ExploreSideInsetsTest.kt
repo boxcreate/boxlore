@@ -9,13 +9,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.COVER_475
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.COVER_LAND
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.PHONE
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows.PHONE_LAND
@@ -89,7 +94,36 @@ class ExploreSideInsetsTest {
         assertEquals("the active card is still the first", true, fixture.compose.onAllNodesWithText("Why do familiar places feel different when we return? (0)", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
     }
 
-    private fun renderExplore() {
+    @Test
+    fun `search results scroll clear of the keyboard and browsing ignores it`() {
+        val search = ExploreUiState.Success(searchQuery = "space", isSearching = true, searchResults = shows)
+        renderExplore(search)
+        for (size in listOf(COVER_475, PHONE_LAND)) {
+            fixture.compose.runOnIdle { window.value = size }
+            sendInsets(SystemInsets(statusTop = 24, imeBottom = 300))
+            assertTrue("$size: the last result clears a 300dp keyboard", lastBottomAboveRootBottom("explore_feed_1", "Curious world 14") >= 300f - 0.5f)
+        }
+        // Browsing has no keyboard open, so a stale keyboard inset doesn't lift the grid.
+        fixture.compose.runOnIdle { state.value = ExploreUiState.Success(trending = shows, selectedTab = 0) }
+        fixture.compose.waitForIdle()
+        assertTrue("browse ignores the keyboard inset", lastBottomAboveRootBottom("explore_feed_0", "Curious world 14") < 300f)
+    }
+
+    /** How far above the window's bottom edge [title] ends once [grid] is scrolled to its end. */
+    private fun lastBottomAboveRootBottom(grid: String, title: String): Float {
+        val node = fixture.compose.onNodeWithTag(grid)
+        node.performScrollToNode(hasText(title))
+        repeat(3) { node.performTouchInput { swipeUp() } }
+        fixture.compose.waitForIdle()
+        val root = bounds(fixture.compose.onNodeWithTag(ROOT).fetchSemanticsNode().boundsInRoot)
+        val last = bounds(fixture.compose.onAllNodesWithText(title).fetchSemanticsNodes().first().boundsInRoot)
+        return root.bottom - last.bottom
+    }
+
+    private val state = mutableStateOf(ExploreUiState.Success(trending = shows, selectedTab = 0))
+
+    private fun renderExplore(initial: ExploreUiState.Success = ExploreUiState.Success(trending = shows, selectedTab = 0)) {
+        state.value = initial
         fixture.prepare()
         fixture.compose.mainClock.autoAdvance = true
         fixture.compose.setContent {
@@ -98,7 +132,7 @@ class ExploreSideInsetsTest {
                 BoxLoreTheme(dynamicColor = false) {
                     Box(Modifier.requiredSize(size.widthDp.dp, size.heightDp.dp).testTag(ROOT)) {
                         ExploreContent(
-                            ExploreUiState.Success(trending = shows, selectedTab = 0),
+                            state.value,
                             onSearchQueryChanged = {},
                             onCategorySelected = {},
                             onPodcastClick = { _, _, _, _ -> },
