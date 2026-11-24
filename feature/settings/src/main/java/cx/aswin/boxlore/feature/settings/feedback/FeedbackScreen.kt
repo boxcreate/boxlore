@@ -30,9 +30,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Notes
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,16 +51,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
+import cx.aswin.boxlore.core.designsystem.components.rememberBoxloreMenuState
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.support.SupportRepository
@@ -213,10 +222,12 @@ internal fun FeedbackComposeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .boxloreHorizontalSafePadding()
                 .feedbackBottomSpace(chrome = bottomContentPadding, extra = systemBar, imeBottom = imeBottom),
             contentAlignment = Alignment.TopCenter,
         ) {
-            Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
+            // Sideways phones keep the form in the same centred reading column as the rest of Settings.
+            Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility).boxloreReadingColumn()) {
                 if (typing) TypingHeader(state, actions) else TopRow(state, actions)
                 ComposeFields(state, actions, typing, scroll, onMessageFocused = { messageFocused = it }, onAddPhoto = pickPhotos)
                 if (typing) {
@@ -344,13 +355,24 @@ private fun Intro(state: FeedbackUiState) {
 }
 
 @Composable
-private fun TypingHeader(state: FeedbackUiState, actions: FeedbackComposeActions) {
+internal fun TypingHeader(state: FeedbackUiState, actions: FeedbackComposeActions) {
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp).testTag(FEEDBACK_TYPING_HEADER_TAG),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_navigate_back), actions.onBack)
-        Text(stringResource(R.string.feedback_form_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+        // One row above the keyboard: the title shortens, and on a narrow row it gives way to the type pill.
+        BoxWithConstraints(Modifier.weight(1f)) {
+            val title = stringResource(R.string.feedback_form_title)
+            val style = MaterialTheme.typography.titleLarge
+            val measurer = rememberTextMeasurer()
+            val fits = remember(title, style, constraints.maxWidth) {
+                !measurer.measure(title, style, maxLines = 1, softWrap = false).let { it.size.width > constraints.maxWidth }
+            }
+            if (fits || maxWidth >= FEEDBACK_TYPING_TITLE_ROOM) {
+                Text(title, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
         Box(Modifier.padding(end = 8.dp)) {
             FeedbackTypeMenuPill(choices = state.choices, selected = state.choice, enabled = !state.isSubmitting, onSelect = actions.onCategorySelected)
         }
@@ -361,7 +383,7 @@ private fun TypingHeader(state: FeedbackUiState, actions: FeedbackComposeActions
 private fun TopRow(state: FeedbackUiState, actions: FeedbackComposeActions) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    var menuOpen by remember { mutableStateOf(false) }
+    val menu = rememberBoxloreMenuState()
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -369,31 +391,30 @@ private fun TopRow(state: FeedbackUiState, actions: FeedbackComposeActions) {
     ) {
         FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_navigate_back), actions.onBack)
         Box {
-            FeedbackIconButton(Icons.Rounded.MoreVert, stringResource(R.string.feedback_more_options), { menuOpen = true })
-            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                DropdownMenuItem(text = { Text(stringResource(R.string.feedback_preview_diagnostics)) }, onClick = {
-                    menuOpen = false
-                    actions.onPreviewDiagnostics()
-                })
-                DropdownMenuItem(text = { Text(stringResource(R.string.feedback_rate_on_play)) }, onClick = {
-                    menuOpen = false
-                    AnalyticsHelper.trackStoreReviewOpened(method = "store_page", source = "feedback_screen")
-                    openPlayStorePage(context)
-                })
-                DropdownMenuItem(text = { Text(stringResource(R.string.feedback_report_on_github)) }, onClick = {
-                    menuOpen = false
-                    uriHandler.openUri(buildFeedbackGitHubIssueUrl(state))
-                })
-                if (state.message.isNotBlank()) {
-                    DropdownMenuItem(text = { Text(stringResource(R.string.feedback_discard_draft)) }, onClick = {
-                        menuOpen = false
-                        actions.onDiscardDraft()
-                    })
+            FeedbackIconButton(Icons.Rounded.MoreVert, stringResource(R.string.feedback_more_options), menu::open)
+            val preview = stringResource(R.string.feedback_preview_diagnostics)
+            val rate = stringResource(R.string.feedback_rate_on_play)
+            val github = stringResource(R.string.feedback_report_on_github)
+            val discard = stringResource(R.string.feedback_discard_draft)
+            BoxloreDropdownMenu(menu) {
+                group {
+                    item(preview, onClick = actions.onPreviewDiagnostics, leadingIcon = Icons.AutoMirrored.Rounded.Notes)
+                    item(rate, onClick = {
+                        AnalyticsHelper.trackStoreReviewOpened(method = "store_page", source = "feedback_screen")
+                        openPlayStorePage(context)
+                    }, leadingIcon = Icons.Rounded.Star)
+                    item(github, onClick = { uriHandler.openUri(buildFeedbackGitHubIssueUrl(state)) }, leadingIcon = Icons.AutoMirrored.Rounded.OpenInNew)
                 }
+                if (state.message.isNotBlank()) item(discard, onClick = actions.onDiscardDraft, leadingIcon = Icons.Rounded.Delete, destructive = true)
             }
         }
     }
 }
+
+internal const val FEEDBACK_TYPING_HEADER_TAG = "feedback_typing_header"
+
+/** Below this header width a title that would be cut is left out; the type pill and the page already say what it is. */
+private val FEEDBACK_TYPING_TITLE_ROOM = 400.dp
 
 /** The app's Play listing: the store app when there is one, else the web page. */
 internal fun openPlayStorePage(context: android.content.Context) {
