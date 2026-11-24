@@ -57,7 +57,7 @@ Owns boxlore's shared Compose visuals: theme, type, shapes, motion, press feedba
 - `BoxloreTextField`, `BoxloreSearchField`: the text field and search box; hints stay on one line.
 - `ContentLanguagesSheet`: English can be switched off only when `ContentRegions.canSwitchEnglishOff` allows it.
 - `BoxloreDialog`, `BoxloreModalBottomSheet`, `BoxloreAlertDialog`, `EngagementBottomSheetScaffold`: phone dialogs and sheets that become bounded, fold-safe dialogs on tablets; `BoxloreDialogConfirmButton` (error-coloured when destructive), `BoxloreDialogDismissButton` and `BoxloreDialogIcon` give dialogs one look.
-- `BoxloreSnackbarHost`, `BoxloreScrollableCenteredColumn`: snackbars above bottom chrome; centred panels that scroll when short.
+- `BoxloreSnackbarHost`, `boxloreShowsOwnCopyConfirmation`, `BoxloreScrollableCenteredColumn`: snackbars above bottom chrome; whether boxlore confirms a clipboard copy itself (only before Android 13, which shows its own preview); centred panels that scroll when short.
 - `RemoveDownloadConfirmationDialog`, `PrivacyConsentDialog`, `RepairProgressPopup`: caller-shown confirmation, consent and repair status; `fromWatch` words the first for a copy on the watch.
 - `AddToPlaylistSheet` (draft in `AddToPlaylistSheetState`), `PlaylistNameDialog`, `DeletePlaylistDialog`, `PlaylistCover`: stateless playlist UI; `PlaylistCopy` and `AddToPlaylistCopy` hold its resources.
 - `SendToWatchIcon`, `WatchEpisodeActions`, `LocalWatchEpisodeActions`: Send to watch for one episode and its state there (`WatchEpisodeCopy`); a null local (no linked watch) hides the icon.

@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.components.boxloreShowsOwnCopyConfirmation
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.settings.R
 
@@ -174,7 +175,7 @@ private fun LogsActionButtons(
                 val report = diagnosticInfo?.toMarkdownReport(logs) ?: (logs ?: "")
                 val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 cm.setPrimaryClip(ClipData.newPlainText(resources.getString(R.string.feedback_logs_clip_label), report))
-                Toast.makeText(context, R.string.feedback_logs_copied, Toast.LENGTH_SHORT).show()
+                if (boxloreShowsOwnCopyConfirmation()) Toast.makeText(context, R.string.feedback_logs_copied, Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier.weight(1f),
             enabled = isActionEnabled,
