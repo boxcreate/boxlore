@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -67,6 +68,7 @@ import cx.aswin.boxlore.updates.ApkInstaller
 import cx.aswin.boxlore.updates.AppUpdates
 import cx.aswin.boxlore.updates.AppUpdatesPanel
 import cx.aswin.boxlore.updates.MemoryUpdateStore
+import cx.aswin.boxlore.updates.UPDATES_UPCOMING_ROW_TAG
 import cx.aswin.boxlore.updates.UpdateChecker
 import cx.aswin.boxlore.updates.UpdateLookup
 import cx.aswin.boxlore.updates.UpdateManifest
@@ -177,6 +179,22 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         download = true,
     )
 
+    /** The upcoming changes row opening, frame by frame and with reduced motion, then open at every size. */
+    @Test fun appUpdatesUpcomingOpen() {
+        renderUpdates("app-updates-upcoming-open", UpdateSource { UpdateLookup(upcoming = UPDATE_NOTES) }, capture = false)
+        val row = golden.compose.onNodeWithTag(UPDATES_UPCOMING_ROW_TAG).fetchSemanticsNode()
+        val toggle = { row.config[SemanticsActions.OnClick].action?.invoke() }
+        if (size in SEQUENCE_SIZES) {
+            golden.captureSequence("app-updates-upcoming-open", frames = 8, stepMs = 60, allWindows = true) { toggle() }
+            golden.compose.runOnUiThread { toggle() }
+            golden.captureSequence("app-updates-upcoming-open", frames = 3, stepMs = 60, reducedMotion = true, allWindows = true) { toggle() }
+            golden.compose.mainClock.autoAdvance = true
+        } else {
+            golden.compose.runOnUiThread { toggle() }
+        }
+        golden.capture("app-updates-upcoming-open", allWindows = true)
+    }
+
     /** The announcement card with a long German title and body. */
     @Test fun announcementCard() = render("announcement-card", include = !isRailOnlySize, dialog = true) {
         Home()
@@ -191,6 +209,18 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     @Test fun connectionCheck() = render("connection-check", include = !isRailOnlySize, rootTag = CHALLENGE_CARD_TAG) {
         Home()
         TurnstileStepUpSheet(onSkip = {}, loading = true) { Box(Modifier.fillMaxWidth().height(72.dp)) }
+    }
+
+    /** The connection check's loader fading out once the page has drawn, with and without motion. */
+    @Test fun connectionCheckDrawn() {
+        val loading = mutableStateOf(true)
+        render("connection-check-drawn", include = size in SEQUENCE_SIZES, rootTag = CHALLENGE_CARD_TAG, capture = false) {
+            Home()
+            TurnstileStepUpSheet(onSkip = {}, loading = loading.value) { Box(Modifier.fillMaxWidth().height(72.dp)) }
+        }
+        golden.captureSequence("connection-check-drawn", frames = 6, stepMs = 100, allWindows = true) { loading.value = false }
+        golden.compose.runOnIdle { loading.value = true }
+        golden.captureSequence("connection-check-drawn", frames = 3, stepMs = 100, reducedMotion = true, allWindows = true) { loading.value = false }
     }
 
     /**
@@ -212,7 +242,7 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
      */
     @Test fun miniPlayerLongTitle() {
         golden.assumeAuditCapture()
-        assumeTrue("mini-player-long-title isn't captured at $size", !isRailOnlySize)
+        assumeTrue("mini-player-long-title isn't captured at $size", !isRailOnlySize && !size.dark)
         golden.prepare()
         val longEpisode = episode.copy(id = "long-title", title = LONG_TITLE)
         val playing = mutableStateOf(false)
@@ -235,7 +265,7 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         golden.capture("mini-player-long-title", allWindows = true)
     }
 
-    private fun renderUpdates(name: String, source: UpdateSource, download: Boolean = false) {
+    private fun renderUpdates(name: String, source: UpdateSource, download: Boolean = false, capture: Boolean = !download) {
         golden.assumeAuditCapture()
         assumeTrue("$name isn't captured at $size", !isRailOnlySize)
         val checker = UpdateChecker(source, MemoryUpdateStore(), 28, 34)
@@ -248,7 +278,7 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         }
         val updates = AppUpdates(checker, false, installer, scope)
         updates.open()
-        render(name, include = true, dialog = true, capture = !download) { AppUpdatesPanel(updates, {}, {}) }
+        render(name, include = true, dialog = true, capture = capture) { AppUpdatesPanel(updates, {}, {}) }
         if (download) {
             golden.compose.onNodeWithText(golden.compose.activity.getString(cx.aswin.boxlore.R.string.updates_download)).performClick()
             golden.capture(name, allWindows = true)
@@ -257,7 +287,7 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
 
     private fun render(name: String, include: Boolean, rootTag: String? = null, dialog: Boolean = false, capture: Boolean = true, content: @Composable () -> Unit) {
         golden.assumeAuditCapture()
-        assumeTrue("$name isn't captured at $size", include)
+        assumeTrue("$name isn't captured at $size", include && (!size.dark || DARK_SCREENS.any { name.startsWith(it) }))
         golden.prepare()
         golden.setContent {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
@@ -377,12 +407,18 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
             PhoneGoldenConfiguration(360, 800, false),
             PhoneGoldenConfiguration(360, 800, false, fontScale = 1.3f, locale = "de"),
         )
+        /** Dark captures of the screens whose colours changed, on a phone and a tablet. */
+        private val DARK_SIZES = listOf(PhoneGoldenConfiguration(412, 915, true), PhoneGoldenConfiguration(1_280, 800, true))
+        private val DARK_SCREENS = listOf("announcement-card", "app-updates", "cross-device-email", "import-done", "connection-check")
+
+        /** Where motion sequences are captured: a phone and a tabletop half. */
+        private val SEQUENCE_SIZES = listOf(PhoneGoldenConfiguration(412, 915, false), PhoneGoldenConfiguration(932, 650, false, posture = "tabletop"))
         private const val LONG_TITLE = "The long way round: how curiosity, patience and a few wrong turns led us to the best stories"
         private const val UPDATE_NOTES = "## Improved\n\n- Smoother playback when you switch between shows.\n- The library keeps your place when you rotate the screen.\n\n## Fixed\n\n- Downloads no longer stall on slow networks."
         private val RAIL_REFERENCE_SIZES = listOf(PhoneGoldenConfiguration(800, 1_280, false), PhoneGoldenConfiguration(932, 650, false, locale = "de"))
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
-        fun configurations(): List<Array<Any>> = PhoneGoldenConfiguration.auditMatrix(extra = RAIL_SIZES + PHONE_EXTRA_SIZES)
+        fun configurations(): List<Array<Any>> = PhoneGoldenConfiguration.auditMatrix(extra = RAIL_SIZES + PHONE_EXTRA_SIZES + DARK_SIZES)
     }
 }
