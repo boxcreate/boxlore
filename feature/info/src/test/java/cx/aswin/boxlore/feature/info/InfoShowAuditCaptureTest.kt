@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.info
 
 import android.app.Application
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Surface
@@ -165,7 +166,8 @@ class InfoShowAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
                 val window = size.value
                 CompositionLocalProvider(LocalBoxloreWindowLayout provides window, LocalBoxlorePaneWidth provides window.widthDp) {
-                    Surface(Modifier.size(window.widthDp.dp, window.heightDp.dp)) { page(model(success())) }
+                    // The capture keeps its size while the page inside it resizes.
+                    Box(Modifier.fillMaxSize()) { Surface(Modifier.size(window.widthDp.dp, window.heightDp.dp)) { page(model(success())) } }
                 }
             }
         }
