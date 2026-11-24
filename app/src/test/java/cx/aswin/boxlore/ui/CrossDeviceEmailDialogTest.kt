@@ -10,6 +10,7 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -55,6 +56,30 @@ class CrossDeviceEmailDialogTest {
     }
 
     @Test
+    fun `a typed email survives the dialog moving between the phone dialog and the tablet panel`() {
+        val window = mutableStateOf(BoxloreTestWindows.W599_H900)
+        var dismissed = 0
+        // The phone dialog's focused field keeps Compose busy, so the clock is stepped by hand.
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            BoxLoreTheme(darkTheme = false, dynamicColor = false) {
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                    CrossDeviceEmailDialog(onDismiss = { dismissed++ }, onConfirm = {})
+                }
+            }
+        }
+        compose.mainClock.advanceTimeBy(FRAME_STEP_MS)
+        compose.onNode(hasSetTextAction()).performTextReplacement("listener@boxlore.example")
+        listOf(BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900).forEach { next ->
+            compose.runOnUiThread { window.value = next }
+            compose.mainClock.advanceTimeBy(FRAME_STEP_MS)
+            compose.onNode(hasSetTextAction()).assertTextContains("listener@boxlore.example")
+            compose.onNodeWithText("Sign In").assertExists()
+        }
+        assertEquals(0, dismissed)
+    }
+
+    @Test
     fun isValidAuthEmail_validEmails_returnsTrue() {
         assertTrue(isValidAuthEmail("listener@boxlore.example"))
         assertTrue(isValidAuthEmail("user.name+tag@subdomain.domain.org"))
@@ -69,5 +94,9 @@ class CrossDeviceEmailDialogTest {
         assertFalse(isValidAuthEmail("@missinguser.com"))
         assertFalse(isValidAuthEmail("user@"))
         assertFalse(isValidAuthEmail("user@domain"))
+    }
+
+    private companion object {
+        const val FRAME_STEP_MS = 500L
     }
 }

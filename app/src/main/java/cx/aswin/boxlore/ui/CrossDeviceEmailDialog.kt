@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -126,10 +127,14 @@ fun CrossDeviceEmailDialog(
             BoxloreDialogConfirmButton(text = stringResource(R.string.app_cross_device_email_sign_in), onClick = { submit() })
         },
         dismissButton = {
-            // Outlined like the Account dialogs this leads to; the default shape is boxlore's pill.
-            OutlinedButton(onClick = onDismiss) {
+            // Outlined like the Account dialogs this leads to; the default shape is boxlore's pill,
+            // as tall as Sign in beside it.
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.heightIn(min = DialogButtonHeight)) {
                 Text(stringResource(R.string.app_cross_device_email_cancel))
             }
         },
     )
 }
+
+/** The height of boxlore's filled dialog action, so Cancel's outlined pill matches it. */
+private val DialogButtonHeight = 48.dp
