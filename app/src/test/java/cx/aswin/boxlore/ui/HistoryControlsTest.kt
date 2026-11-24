@@ -5,6 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
@@ -21,6 +23,7 @@ import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -32,10 +35,12 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.walkWindows
+import cx.aswin.boxlore.feature.history.HISTORY_EMPTY_TAG
 import cx.aswin.boxlore.feature.history.HistoryTab
 import cx.aswin.boxlore.feature.history.InsightsUiState
 import cx.aswin.boxlore.feature.history.insights.INSIGHTS_LIST_TAG
@@ -116,9 +121,28 @@ class HistoryControlsTest {
         assertTrue(history.opens.isEmpty())
     }
 
-    @Test fun `Insights while timing fills in has no period selector`() {
-        history.render(BoardHistory(empty = false, timedDays = 2), tab = HistoryTab.INSIGHTS)
+    @Test fun `Insights while timing fills in has no period selector and counts one finished episode in the singular`() {
+        history.render(BoardHistory(empty = false, timedDays = 2, finished = 1), tab = HistoryTab.INSIGHTS)
         compose.onNode(hasText("30d")).assertDoesNotExist()
+        compose.onNodeWithText("episode finished").assertExists()
+    }
+
+    @Test fun `clearing the history from Insights counts as one visit to Insights`() {
+        val sent = mutableListOf<Pair<String, Map<String, Any>>>()
+        val uninstall = AnalyticsHelper.installRecordingSink(sent)
+        try {
+            val board = BoardHistory(empty = false, timedDays = 2)
+            history.render(board, tab = HistoryTab.INSIGHTS)
+            compose.onNode(hasContentDescription("More options")).performClick()
+            compose.onNodeWithText("Clear all").performClick()
+            compose.onNode(hasText("Clear") and hasClickAction()).performClick()
+            history.waitUntil { board.clears == 1 }
+            history.waitUntil { compose.onAllNodesWithTag(HISTORY_EMPTY_TAG).fetchSemanticsNodes().isNotEmpty() }
+            val views = sent.count { (event, properties) -> event == "screen_viewed" && properties["screen"] == "history_insights" }
+            assertEquals(1, views)
+        } finally {
+            uninstall()
+        }
     }
 
     @Test fun `on a small phone with large text the story total stays on one line and the clock stacks`() {
@@ -140,19 +164,28 @@ class HistoryControlsTest {
         compose.onNodeWithTag(WHEN_STACKED_TAG).assertDoesNotExist()
     }
 
-    @Test fun `Jump to a day's quick jumps wrap on the cover with large text and still jump`() {
+    @Test fun `Jump to a day's quick jumps share a line on a phone, wrap on the cover with large text, and still jump`() {
         val jumps = mutableListOf<LocalDate>()
         val today = HistoryTabletAuditCaptureTest.TODAY
+        val width = mutableStateOf(412.dp)
+        val fontScale = mutableFloatStateOf(1f)
         compose.setContent {
             val density = LocalDensity.current
-            CompositionLocalProvider(LocalDensity provides Density(density.density, 1.3f)) {
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale.floatValue)) {
                 BoxLoreTheme(dynamicColor = false) {
-                    Box(Modifier.requiredSize(443.dp, 1_200.dp)) {
+                    Box(Modifier.requiredSize(width.value, 1_200.dp)) {
                         JumpToDayContent(JumpToDayState(HistoryTabletAuditCaptureTest.BOARD_CALENDAR, HistoryTabletAuditCaptureTest.BOARD_CALENDAR.keys, LocalDate.of(2026, 3, 9), today), { jumps += it }, {})
                     }
                 }
             }
         }
+        val labels = listOf("A week ago", "A month ago", "first listen")
+        val tops = labels.map { compose.onNode(hasText(it, substring = true)).fetchSemanticsNode().boundsInRoot.top }
+        assertTrue("On a phone the quick jumps share one line: $tops", tops.distinct().size == 1)
+
+        width.value = 443.dp
+        fontScale.floatValue = 1.3f
+        compose.waitForIdle()
         listOf("A week ago", "A month ago").forEach { label ->
             val chip = compose.onNode(hasText(label, substring = true)).fetchSemanticsNode().boundsInRoot
             assertTrue("$label ends at ${chip.right}", chip.right <= 443f - 20f + 0.5f)

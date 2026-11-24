@@ -48,6 +48,7 @@ internal class HistoryHarness(private val compose: AndroidComposeTestRule<Activi
         port: BoardHistory = BoardHistory(empty = false),
         tab: HistoryTab = HistoryTab.TIMELINE,
         miniPlayer: Boolean = false,
+        waitForTab: Boolean = true,
     ): HistoryViewModel {
         viewModel = HistoryViewModel(port, zoneId = { ZoneId.systemDefault() }, now = { HistoryTabletAuditCaptureTest.TODAY })
         compose.setContent {
@@ -72,7 +73,7 @@ internal class HistoryHarness(private val compose: AndroidComposeTestRule<Activi
                 }
             }
         }
-        select(tab)
+        if (waitForTab) select(tab) else viewModel.selectTab(tab)
         return viewModel
     }
 

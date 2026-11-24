@@ -26,8 +26,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +44,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.feature.history.R
@@ -80,12 +82,12 @@ internal fun InsightsTab(
     listState: LazyListState = rememberLazyListState(),
     stories: InsightsStorySlots = InsightsStorySlots(),
     columns: Int = 1,
+    place: InsightsPlace = remember { InsightsPlace() },
 ) {
-    TrackScreenView("history_insights")
     val cards = fullInsightCards(content, period, today, callbacks)
     val rows = InsightsLayout.rows(cards.map { it.first }, columns)
     // The story card (when there is one) and the period selector come before the cards.
-    KeepFirstCardInView(listState, rows, columns, leading = stories.headerItems + 1)
+    KeepFirstCardInView(listState, rows, columns, leading = stories.headerItems + 1, place)
     LazyColumn(
         state = listState,
         contentPadding = contentPadding,
@@ -121,23 +123,44 @@ internal fun InsightsTab(
 const val INSIGHTS_PAIR_TAG = "insights_pair"
 
 /**
- * When the number of columns changes, a card that was first in view and now shares a row (or no
- * longer does) is scrolled back to the top, so the listener keeps their place.
+ * Where the listener is among the Insights cards: the card at the top of the list ([anchor]) and the
+ * columns it was laid out in. Held by the screen and saved, so a window change while Timeline is
+ * open, or the activity being recreated, still brings the listener back to the same card.
+ */
+internal class InsightsPlace(anchor: String? = null, var columns: Int = 0) {
+    var anchor: String? = anchor
+
+    companion object {
+        val Saver: Saver<InsightsPlace, Any> = listSaver(
+            save = { listOf(it.anchor.orEmpty(), it.columns) },
+            restore = { InsightsPlace((it[0] as String).ifEmpty { null }, it[1] as Int) },
+        )
+    }
+}
+
+/**
+ * Keeps the listener on their card when the number of columns changes: the card at the top (kept
+ * while it shares a row with another, so going back to one column returns to it, not its partner)
+ * is brought back to the top in the new layout.
  */
 @Composable
-private fun KeepFirstCardInView(listState: LazyListState, rows: List<List<String>>, columns: Int, leading: Int) {
-    val firstKey = remember { mutableStateOf<String?>(null) }
-    // A plain holder, not state: it only remembers the last layout between compositions.
-    val lastColumns = remember { intArrayOf(columns) }
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key as? String }.collect { firstKey.value = it }
+private fun KeepFirstCardInView(listState: LazyListState, rows: List<List<String>>, columns: Int, leading: Int, place: InsightsPlace) {
+    val currentRows by rememberUpdatedState(rows)
+    LaunchedEffect(listState, place) {
+        // The first card below the list's top padding: one peeking into the padding isn't the listener's.
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.firstOrNull { it.offset + it.size > 0 }?.key as? String }.collect { key ->
+            if (key == null) return@collect
+            val row = currentRows.getOrNull(InsightsLayout.rowOf(currentRows, key))
+            val anchor = place.anchor
+            place.anchor = if (anchor != null && row != null && anchor in row) anchor else key
+        }
     }
     // While composing the new layout, before the list measures it: ask it to open at the row holding the card.
-    if (lastColumns[0] != columns) {
-        lastColumns[0] = columns
-        val key = firstKey.value
-        val row = key?.let { InsightsLayout.rowOf(rows, it) } ?: -1
-        if (row >= 0 && rows[row].first() != key) listState.requestScrollToItem(leading + row)
+    if (place.columns != columns) {
+        val changed = place.columns != 0
+        place.columns = columns
+        val row = place.anchor?.let { InsightsLayout.rowOf(rows, it) } ?: -1
+        if (changed && row >= 0) listState.requestScrollToItem(leading + row)
     }
 }
 

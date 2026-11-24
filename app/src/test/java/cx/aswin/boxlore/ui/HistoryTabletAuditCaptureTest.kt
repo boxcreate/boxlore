@@ -57,10 +57,12 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -275,8 +277,10 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
         fun configurations(): List<Array<Any>> {
             if (System.getProperty("boxlore.tabletCaptures") == "audit") {
                 val sizes = PhoneGoldenConfiguration.auditConfigurations(extra = listOf(PhoneGoldenConfiguration(360, 800, false)))
+                // Dark checks for the menus' and the red confirm's colours.
+                val dark = listOf("timeline-menu", "clear-dialog").flatMap { view -> listOf(412 to 915, 1_280 to 800).map { (width, height) -> arrayOf<Any>(view, PhoneGoldenConfiguration(width, height, true)) } }
                 return AUDIT_VIEWS.flatMap { view -> sizes.map { arrayOf<Any>(view, it) } } +
-                    sizes.filter { it.auditKey in SEQUENCE_SIZES }.map { arrayOf<Any>("story-hello-sequence", it) }
+                    sizes.filter { it.auditKey in SEQUENCE_SIZES }.map { arrayOf<Any>("story-hello-sequence", it) } + dark
             }
             return listOf("days", "shows", "jump", "empty", "insights", "insights-early").flatMap { view ->
                 listOf(400 to (if (view == "insights") 3_600 else 1_640), 400 to 890, 1280 to 800, 840 to 1280).flatMap { (width, height) ->
@@ -291,7 +295,14 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
 }
 
 /** The boards' history: Oct 26 to Oct 30, 2026, with their shows, times and progress. */
-internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE, private val loading: Boolean = false) : ListeningHistoryPort {
+internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE, loading: Boolean = false, finished: Int = Int.MAX_VALUE) : ListeningHistoryPort {
+    /** True while the board holds every answer back, as a slow database would; [finishLoading] lets them through. */
+    private val loading = MutableStateFlow(loading)
+
+    fun finishLoading() {
+        loading.value = false
+    }
+
     private val history =
         if (empty) {
             emptyList()
@@ -305,8 +316,15 @@ internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE, priv
                 row("ai", "Inside the early days of the AI revolution", "The Vergecast", "vc", 27, 21, 10, completed = true),
                 row("sign", "The Sign of Four: Part One", "Sherlock Holmes Short Stories", "sh", 27, 7, 30, progress = 18, duration = 30),
                 row("molasses", "The Great Molasses Flood", "Stuff You Missed in History Class", "hc", 26, 18, 45, completed = true),
-            )
+            ).let { rows ->
+                // At most [finished] of them finished: the rest are dropped.
+                var kept = 0
+                rows.filter { !it.isCompleted || kept++ < finished }
+            }
         }
+
+    /** True once Clear all reached the history: every list then answers empty. */
+    private val cleared = MutableStateFlow(false)
 
     /** September (12 h 15 min, 2 h 05 min less than October), August (mostly history) and July (mostly science). */
     private val earlierMonths: List<ListeningDayEpisode> =
@@ -337,16 +355,19 @@ internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE, priv
     /** A month's story from this history, as of [today]. */
     fun story(month: YearMonth, today: LocalDate) = StoryLogic.build(month, history, listening, played, today, ZoneId.systemDefault())
 
-    /** [value] now, or never while the board is [loading]. */
-    private fun <T> answer(value: T): Flow<T> = if (loading) flow { awaitCancellation() } else flowOf(value)
+    /** [value] now ([whenCleared] after Clear all), or never while the board is [loading]. */
+    private fun <T> answer(value: T, whenCleared: T = value): Flow<T> = flow {
+        loading.first { !it }
+        emitAll(cleared.map { if (it) whenCleared else value })
+    }
 
-    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = answer(history)
+    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = answer(history, emptyList())
 
-    override fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>> = answer(history)
+    override fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>> = answer(history, emptyList())
 
-    override fun observeListeningByDay(): Flow<List<ListeningDayEpisode>> = answer(listening)
+    override fun observeListeningByDay(): Flow<List<ListeningDayEpisode>> = answer(listening, emptyList())
 
-    override fun observePlayedShows(): Flow<List<ListeningPlayedShow>> = answer(played)
+    override fun observePlayedShows(): Flow<List<ListeningPlayedShow>> = answer(played, emptyList())
 
     override fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary> = answer(
         ListeningInsightSummary(
@@ -386,6 +407,7 @@ internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE, priv
 
     override suspend fun clearHistory() {
         clears++
+        cleared.value = true
     }
 
     override suspend fun maintainListeningAnalytics() = Unit

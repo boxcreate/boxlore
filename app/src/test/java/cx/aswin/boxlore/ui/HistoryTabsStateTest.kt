@@ -2,13 +2,14 @@ package cx.aswin.boxlore.ui
 
 import android.app.Application
 import androidx.activity.ComponentActivity
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
@@ -33,6 +34,8 @@ import cx.aswin.boxlore.core.testing.SystemInsets
 import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import cx.aswin.boxlore.core.testing.walkWindows
 import cx.aswin.boxlore.feature.history.HISTORY_EMPTY_TAG
+import cx.aswin.boxlore.feature.history.HISTORY_INSIGHTS_LOADING_TAG
+import cx.aswin.boxlore.feature.history.HISTORY_TOP_BAR_TAG
 import cx.aswin.boxlore.feature.history.HistoryTab
 import cx.aswin.boxlore.feature.history.insights.INSIGHTS_LIST_TAG
 import cx.aswin.boxlore.feature.history.insights.INSIGHTS_PAIR_TAG
@@ -173,6 +176,38 @@ class HistoryTabsStateTest {
         assertEquals(HistoryTab.INSIGHTS, history.viewModel.selectedTab.value)
     }
 
+    @Test fun `in short windows the empty page shows Explore above the switcher without scrolling`() {
+        history.window.value = BoxloreTestWindows.PHONE_LAND
+        history.render(BoardHistory(empty = true), tab = HistoryTab.INSIGHTS)
+        compose.walkWindows(history.window, BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.SPLIT_HALF, BoxloreTestWindows.COVER_LAND) { window ->
+            for (tab in listOf(HistoryTab.INSIGHTS, HistoryTab.TIMELINE)) {
+                history.select(tab)
+                frames()
+                val explore = compose.onNodeWithText("Explore podcasts").bounds()
+                assertTrue("$tab at $window: Explore ends at ${explore.bottom}, the switcher starts at ${history.switcher().top}", explore.bottom <= history.switcher().top)
+            }
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun `opened straight into a short window the title starts slim on Insights, loading and loaded`() {
+        val board = BoardHistory(empty = false, loading = true)
+        history.window.value = BoxloreTestWindows.PHONE_LAND
+        history.render(board, tab = HistoryTab.INSIGHTS, waitForTab = false)
+        frames()
+        val collapsed = TopAppBarDefaults.LargeAppBarCollapsedHeight.value
+        assertEquals("Loading: the title should start slim", collapsed, compose.onNodeWithTag(HISTORY_TOP_BAR_TAG).bounds().height, 1f)
+        // Loading shows the tab's skeleton, with the switcher where it stays once the tab loads.
+        compose.onNodeWithTag(HISTORY_INSIGHTS_LOADING_TAG).assertExists()
+        val loadingSwitcher = history.switcher().top
+        board.finishLoading()
+        history.select(HistoryTab.INSIGHTS)
+        frames()
+        assertEquals("Loaded: the title should stay slim", collapsed, compose.onNodeWithTag(HISTORY_TOP_BAR_TAG).bounds().height, 1f)
+        assertEquals(loadingSwitcher, history.switcher().top, 0.5f)
+    }
+
     @Test fun `on a sideways phone row menus and the switcher clear the cutout and side buttons`() {
         history.window.value = BoxloreTestWindows.PHONE_LAND
         history.render()
@@ -189,7 +224,7 @@ class HistoryTabsStateTest {
         assertEquals((32f + width - 48f) / 2f, switcher.center.x, 1f)
     }
 
-    @Test fun `on large tablets Insights pairs its cards and keeps its place as the window changes`() {
+    @Test fun `on large tablets Insights pairs its cards, its title follows the grid, and the listener keeps their card`() {
         // On the cover the list is long enough to bring When you listen to the top.
         history.window.value = BoxloreTestWindows.COVER_443
         history.render(tab = HistoryTab.INSIGHTS)
@@ -198,11 +233,53 @@ class HistoryTabsStateTest {
         compose.walkWindows(history.window, BoxloreTestWindows.DESKTOP, BoxloreTestWindows.TABLET_PORTRAIT, BoxloreTestWindows.DESKTOP, BoxloreTestWindows.FOLD_FLAT, BoxloreTestWindows.COVER_443) { window ->
             compose.waitForIdle()
             val pairs = compose.onAllNodesWithTag(INSIGHTS_PAIR_TAG).fetchSemanticsNodes().size
-            if (window == BoxloreTestWindows.DESKTOP) assertTrue("$window should pair cards", pairs > 0) else assertEquals("$window keeps one column", 0, pairs)
-            // The listener keeps their place among the cards: the list doesn't jump back to its top.
-            compose.onNode(hasText("30d")).assertIsNotDisplayed()
+            if (window == BoxloreTestWindows.DESKTOP) {
+                assertTrue("$window should pair cards", pairs > 0)
+                // The title and its buttons line up with the grid of cards, not a narrower reading column.
+                val bar = compose.onNodeWithTag(HISTORY_TOP_BAR_TAG).bounds()
+                val list = compose.onNodeWithTag(INSIGHTS_LIST_TAG).bounds()
+                assertEquals(list.left, bar.left, 1f)
+                assertEquals(list.right, bar.right, 1f)
+            } else {
+                assertEquals("$window keeps one column", 0, pairs)
+            }
+            assertCardAtTop("When you listen", window.toString())
         }
+        // The window changes while Timeline is open: back on Insights, the same card is at the top.
+        history.window.value = BoxloreTestWindows.DESKTOP
+        compose.waitForIdle()
+        history.select(HistoryTab.TIMELINE)
+        history.window.value = BoxloreTestWindows.COVER_443
+        compose.waitForIdle()
+        history.select(HistoryTab.INSIGHTS)
+        frames()
+        assertCardAtTop("When you listen", "back from Timeline")
         assertEquals(HistoryTab.INSIGHTS, history.viewModel.selectedTab.value)
+    }
+
+    @Test fun `Records stays at the top across the column change and back`() {
+        history.window.value = BoxloreTestWindows.DESKTOP
+        history.render(tab = HistoryTab.INSIGHTS)
+        compose.onNodeWithTag(INSIGHTS_LIST_TAG).performScrollToKey("records")
+        compose.walkWindows(history.window, BoxloreTestWindows.TABLET_PORTRAIT, BoxloreTestWindows.COVER_443, BoxloreTestWindows.TABLET_PORTRAIT, BoxloreTestWindows.DESKTOP) { window ->
+            compose.waitForIdle()
+            assertCardAtTop("Records", window.toString())
+        }
+        // Each pair of record tiles ends at the same height, whichever has the longer text.
+        fun tile(label: String) = hasText(label) and hasAnyAncestor(hasTestTag(INSIGHTS_LIST_TAG))
+        val pairs = listOf("Biggest day" to "Longest run", "Longest sitting" to "Most in one day")
+            .filter { (first, second) -> listOf(first, second).all { compose.onAllNodes(tile(it)).fetchSemanticsNodes().isNotEmpty() } }
+        assertTrue("The board has a pair of record tiles", pairs.isNotEmpty())
+        pairs.forEach { (first, second) ->
+            assertEquals("$first and $second", compose.onNode(tile(first)).bounds().height, compose.onNode(tile(second)).bounds().height, 0.5f)
+        }
+    }
+
+    /** [heading]'s card is the one at the top of the Insights list. */
+    private fun assertCardAtTop(heading: String, where: String) {
+        val list = compose.onNodeWithTag(INSIGHTS_LIST_TAG).bounds()
+        val card = compose.onNode(hasText(heading) and hasAnyAncestor(hasTestTag(INSIGHTS_LIST_TAG)), useUnmergedTree = true).bounds()
+        assertTrue("$where: $heading starts at ${card.top - list.top}dp into the list", card.top - list.top in 0f..80f)
     }
 
     @Test fun `the month's days stop at 56dp on big screens and keep their size on phones`() {
