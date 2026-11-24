@@ -132,4 +132,11 @@ class EchoRequestLifecycleTest {
         assertFalse(EchoRequestPolicy.picksTopicsAfter("session_expired"))
         assertFalse(EchoRequestPolicy.picksTopicsAfter("Unauthorized"))
     }
+
+    @Test fun `only the API's verification answer is named as a skipped check, everything else as the connection`() {
+        assertEquals(OnboardingErrorKind.VerificationSkipped, EchoRequestPolicy.errorKind("verification_required"))
+        assertEquals(OnboardingErrorKind.Network, EchoRequestPolicy.errorKind(null))
+        assertEquals(OnboardingErrorKind.Network, EchoRequestPolicy.errorKind("daily_ai_limit"))
+        assertEquals(OnboardingErrorKind.Network, EchoRequestPolicy.errorKind("session_expired"))
+    }
 }

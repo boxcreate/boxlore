@@ -42,6 +42,7 @@ private const val TABLET_CAPTURES_PROPERTY = "boxlore.tabletCaptures"
 private const val AUDIT_SIZES_PROPERTY = "boxlore.auditSizes"
 private const val INSETS_POSTURE = "insets"
 private const val TABLETOP_INSETS_POSTURE = "tabletop-insets"
+private const val BARS_POSTURE = "bars"
 private const val AUDIT_CAPTURES = "audit"
 private const val AUDIT_FONT_SCALE = 1.3f
 private const val DEFAULT_CAPTURE_LOCALE = "en-rUS"
@@ -68,14 +69,15 @@ data class PhoneGoldenConfiguration(
         get() = when (posture) {
             INSETS_POSTURE -> SystemInsets.SIDEWAYS_3_BUTTON
             TABLETOP_INSETS_POSTURE -> SystemInsets.TABLETOP_STATUS
+            BARS_POSTURE -> SystemInsets.PHONE_BARS
             else -> null
         }
 
     /** The hinge posture without the insets suffix: `tabletop`, `book` or empty. */
-    internal val foldPosture: String get() = if (posture == INSETS_POSTURE) "" else posture.removeSuffix("-$INSETS_POSTURE")
+    internal val foldPosture: String get() = if (posture == INSETS_POSTURE || posture == BARS_POSTURE) "" else posture.removeSuffix("-$INSETS_POSTURE")
 
     companion object {
-        private val FOLD_POSTURES = listOf(TABLETOP_INSETS_POSTURE, "tabletop", "book", INSETS_POSTURE)
+        private val FOLD_POSTURES = listOf(TABLETOP_INSETS_POSTURE, "tabletop", "book", INSETS_POSTURE, BARS_POSTURE)
         private val AUDIT_KEY = Regex("""(\d+)x(\d+)(.*)""")
         private val FONT_SCALE_TOKEN = Regex("""-fs(\d+)(.*)""")
 
@@ -151,6 +153,17 @@ data class PhoneGoldenConfiguration(
                 locale = rest.removePrefix("-").ifEmpty { DEFAULT_CAPTURE_LOCALE },
             )
         }
+
+        /**
+         * Portrait phones and the Galaxy Z Fold 8 cover with a status bar and a gesture bar (`bars`),
+         * as listeners see them. Suites that fit content to the height pass these as extra audit sizes.
+         */
+        val PHONE_BARS_CONFIGURATIONS = listOf(
+            PhoneGoldenConfiguration(412, 915, false, BARS_POSTURE),
+            PhoneGoldenConfiguration(360, 800, false, BARS_POSTURE),
+            PhoneGoldenConfiguration(443, 649, false, BARS_POSTURE),
+            PhoneGoldenConfiguration(475, 695, false, BARS_POSTURE),
+        )
 
         /** [auditConfigurations] as test parameters. */
         fun auditMatrix(extra: List<PhoneGoldenConfiguration> = emptyList()): List<Array<Any>> =

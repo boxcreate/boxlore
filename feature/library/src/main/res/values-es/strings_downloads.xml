@@ -6,9 +6,9 @@
     <string name="library_downloads_select_episodes">Seleccionar episodios</string>
     <string name="library_downloads_offline_title">Modo sin conexión</string>
     <string name="library_downloads_offline_body">Sin conexión a internet. Reproduciendo episodios descargados.</string>
-    <string name="library_downloads_empty_title">Un vacío de lo más zen</string>
+    <string name="library_downloads_empty_title">Aún no hay descargas</string>
     <string name="library_downloads_empty_offline_body">No hay episodios descargados. ¡Activa el Wi-Fi y pon a cargar el teléfono para sincronizar tus descargas inteligentes!</string>
-    <string name="library_downloads_empty_body">Aún no hay episodios descargados. Activa Descargas inteligentes arriba o busca podcasts para descargarlos a mano.</string>
+    <string name="library_downloads_empty_body">Activa Descargas inteligentes o descarga episodios desde la página de un podcast.</string>
     <string name="library_downloads_delete_title">¿Eliminar descargas?</string>
     <plurals name="library_downloads_delete_podcasts_body">
         <item quantity="one">¿Seguro que quieres eliminar todos los episodios descargados de %1$d podcast seleccionado?</item>

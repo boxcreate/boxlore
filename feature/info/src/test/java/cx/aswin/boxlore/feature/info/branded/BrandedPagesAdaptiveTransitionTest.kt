@@ -14,8 +14,12 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
@@ -23,6 +27,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
@@ -32,15 +37,25 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldState
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneSpec
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import cx.aswin.boxlore.core.testing.SystemInsets
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
+import cx.aswin.boxlore.core.testing.walkWindows
+import cx.aswin.boxlore.feature.info.PODCAST_INFO_BRANDED_SPOTLIGHT_TAG
 import cx.aswin.boxlore.feature.info.PodcastInfoScreen
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
+import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyPage
+import cx.aswin.boxlore.feature.info.branded.rottenmango.RottenMangoPage
+import cx.aswin.boxlore.feature.info.branded.sherlock.SherlockPage
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformPage
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
 import cx.aswin.boxlore.feature.info.stubArchive
@@ -48,6 +63,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -69,6 +85,7 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
     @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1_280, 800, false))
 
     private val window = mutableStateOf(COMPACT)
+    private val pane = mutableStateOf<BoxloreLayoutBounds?>(null)
     private val podcast = TestFixtures.podcast(id = page.ids.podcastIndexId, title = "Showcase", imageUrl = PhoneGoldenRule.ARTWORK_URL)
         .copy(description = DESCRIPTION)
     private val episodes = List(12) { index ->
@@ -154,6 +171,124 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         pressBackOnPopup()
         fixture.compose.onNodeWithText(SEAL_TITLE).assertDoesNotExist()
         fixture.compose.onNodeWithContentDescription(SEAL_LABEL).assertExists()
+    }
+
+    @Test
+    fun `in tabletop the header starts at the top of the lower half, and flat keeps the status bar`() {
+        render()
+        fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets.TABLETOP_STATUS) }
+        fixture.compose.onNodeWithText(DESCRIPTION).performClick()
+        fixture.compose.waitForIdle()
+        val lowerHalf = BoxloreLayoutBounds(0f, 431f, FOLD_FLAT.widthDp, FOLD_FLAT.heightDp)
+        val tops = listOf(FOLD_FLAT to null, FOLD_TABLETOP to lowerHalf, FOLD_FLAT to null).map { (size, bounds) ->
+            fixture.compose.runOnIdle {
+                pane.value = bounds
+                window.value = size
+            }
+            fixture.compose.waitForIdle()
+            // Robolectric sends the window's own (empty) insets again when a page sets the status
+            // bar's icon colour, which a device never does; send the fake status bar again.
+            fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets.TABLETOP_STATUS) }
+            fixture.compose.waitForIdle()
+            assertTrue("The description stays open at $size", descriptionOpen())
+            fixture.compose.onNodeWithContentDescription("Copyright information").getBoundsInRoot().top.value
+        }
+        if (page == ConspiracyPage || page == SherlockPage) {
+            // These headers also shrink to half of the short lower half, so their foot rises further.
+            assertTrue("No status-bar band in the lower half", tops[0] - tops[1] >= SystemInsets.TABLETOP_STATUS.statusTop - 0.5f)
+        } else {
+            assertEquals("No status-bar band in the lower half", SystemInsets.TABLETOP_STATUS.statusTop.toFloat(), tops[0] - tops[1], 0.5f)
+        }
+        assertEquals("Flat again matches flat before", tops[0], tops[2], 0.5f)
+    }
+
+    @Test
+    fun `the board and the Strand take half of a short pane and their phone size again on a phone`() {
+        assumeTrue("Only these two headers have a short-pane height", page == ConspiracyPage || page == SherlockPage)
+        assertEquals(1f, brandedHeaderHeightFit(299f, 915f, shortPane = false))
+        assertEquals(0.5f, brandedHeaderHeightFit(300f, 300f, shortPane = true))
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        fixture.compose.onNodeWithText(DESCRIPTION).performClick()
+        fixture.compose.waitForIdle()
+        val bottoms = mutableListOf<Float>()
+        fixture.compose.walkWindows(window, BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_SMALL, BoxloreTestWindows.PHONE) { size ->
+            fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(0)
+            val copyright = fixture.compose.onNodeWithContentDescription("Copyright information").getBoundsInRoot()
+            bottoms += copyright.bottom.value
+            if (size.heightDp < 480f) assertTrue("The header takes about half the pane at $size, ends at ${copyright.bottom}", copyright.bottom.value <= size.heightDp * 0.5f + 24f)
+            assertTrue("The description stays open at $size", descriptionOpen())
+        }
+        assertEquals("A phone's header is its design size again", bottoms[1], bottoms[3], 0.5f)
+        assertTrue("The short pane's header is smaller", bottoms[0] < bottoms[1] - 40f)
+    }
+
+    @Test
+    fun `Rotten Mango keeps a phone-sized photo on the Fold 8 cover and keeps the open description`() {
+        assumeTrue("Only Rotten Mango's photo grows with the width", page == RottenMangoPage)
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        fixture.compose.onNodeWithText(DESCRIPTION).performClick()
+        fixture.compose.waitForIdle()
+        val heights = mutableMapOf<BoxloreWindowLayout, Float>()
+        // A 500dp-wide phone window just under and at the 760dp height gate, both ways.
+        val shortWide = BoxloreWindowLayout(500f, 759f)
+        val tallWide = BoxloreWindowLayout(500f, 760f)
+        fixture.compose.walkWindows(
+            window,
+            BoxloreTestWindows.COVER_475,
+            BoxloreWindowLayout(600f, 960f),
+            BoxloreTestWindows.COVER_475,
+            shortWide,
+            tallWide,
+            shortWide,
+            BoxloreTestWindows.PHONE,
+        ) { size ->
+            val heading = fixture.compose.onNode(hasContentDescription(podcast.title) and isHeading()).getBoundsInRoot()
+            heights[size] = heading.bottom.value - heading.top.value
+            assertTrue("The description stays open at $size", descriptionOpen())
+        }
+        val phone = requireNotNull(heights[BoxloreTestWindows.PHONE])
+        assertEquals("The cover's photo is a phone's", phone, requireNotNull(heights[BoxloreTestWindows.COVER_475]), 1f)
+        assertEquals("Under 760dp a wide phone keeps a phone's photo", phone, requireNotNull(heights[shortWide]), 1f)
+        assertTrue("From 760dp a wide phone gets the larger photo", requireNotNull(heights[tallWide]) > phone + 1f)
+        assertTrue("A tablet still gets the larger photo", requireNotNull(heights[BoxloreWindowLayout(600f, 960f)]) > phone + 1f)
+    }
+
+    @Test
+    fun `the spotlight stops at a comfortable width on wide pages and keeps its episode`() {
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        fixture.compose.walkWindows(
+            window,
+            BoxloreTestWindows.UPRIGHT_BOOK,
+            BoxloreWindowLayout(600f, 960f),
+            BoxloreTestWindows.PHONE,
+        ) { size ->
+            fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasTestTag(PODCAST_INFO_BRANDED_SPOTLIGHT_TAG))
+            val spotlight = fixture.compose.onNodeWithTag(PODCAST_INFO_BRANDED_SPOTLIGHT_TAG).getBoundsInRoot()
+            val width = spotlight.right.value - spotlight.left.value
+            if (size == BoxloreTestWindows.PHONE) {
+                // Some spotlights keep their own 16dp sides inside the tagged card.
+                assertTrue("A phone's spotlight spans the page, was $width", width >= size.widthDp - 32.5f)
+            } else {
+                assertTrue("At most 512dp at $size, was $width", width <= 512.5f)
+                val list = fixture.compose.onNodeWithTag(LIST_TAG).getBoundsInRoot()
+                val leftGap = spotlight.left.value - list.left.value
+                val rightGap = list.right.value - spotlight.right.value
+                if (page.spotlightIsCard) {
+                    assertEquals("A card sits in the middle at $size", leftGap, rightGap, 1f)
+                } else {
+                    // An open spotlight keeps the page's start edge, lined up with the list above and below.
+                    assertTrue("An open spotlight starts at the page edge at $size, was $leftGap in", leftGap <= 16.5f)
+                }
+            }
+            // The spotlight on screen holds the newest episode, and the list never repeats it.
+            fixture.compose
+                .onNode(hasText("Episode 0") and hasAnyAncestor(hasTestTag(PODCAST_INFO_BRANDED_SPOTLIGHT_TAG)), useUnmergedTree = true)
+                .assertExists("The spotlight shows Episode 0 at $size")
+            spotlightOnce()
+        }
     }
 
     private fun descriptionOpen(): Boolean {
@@ -251,8 +386,13 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         restoration = StateRestorationTester(fixture.compose)
         restoration.setContent {
             val size = window.value
-            CompositionLocalProvider(LocalBoxloreWindowLayout provides size, LocalBoxlorePaneWidth provides size.widthDp) {
-                Box(Modifier.width(size.widthDp.dp).height(size.heightDp.dp)) {
+            val bounds = pane.value
+            CompositionLocalProvider(
+                LocalBoxloreWindowLayout provides size,
+                LocalBoxlorePaneWidth provides (bounds?.width ?: size.widthDp),
+                LocalBoxlorePaneBounds provides bounds,
+            ) {
+                Box(Modifier.width((bounds?.width ?: size.widthDp).dp).height((bounds?.height ?: size.heightDp).dp)) {
                     BoxLoreTheme(dynamicColor = false) {
                         Surface { PodcastInfoScreen(podcast.id, model, {}, { _, _, _ -> }, {}, {}) }
                     }
@@ -315,7 +455,42 @@ class DarkOnlyPageStatusBarTest {
 
     @Test
     fun `a dark-only page keeps white status bar icons in light mode and restores them when it leaves`() {
-        val shown = mutableStateOf(true)
+        render()
+        assertFalse("White icons over the dark page", lightStatusBarIcons())
+
+        fixture.compose.runOnIdle { shown.value = false }
+        fixture.compose.waitForIdle()
+        assertTrue("The light theme's dark icons return", lightStatusBarIcons())
+    }
+
+    @Test
+    fun `white icons only while the dark page fills the top of the screen`() {
+        val tabletSpec = boxlorePaneSpec(BoxloreTestWindows.TABLET, contextOpen = true)
+        val tabletopSpec = boxlorePaneSpec(BoxloreTestWindows.FOLD_TABLETOP, contextOpen = true)
+        window.value = BoxloreTestWindows.TABLET
+        pane.value = tabletSpec.context
+        render()
+        listOf(
+            Triple(BoxloreTestWindows.TABLET, tabletSpec.context, true),
+            Triple(BoxloreWindowLayout(599f, 800f), null, false),
+            Triple(BoxloreTestWindows.TABLET, tabletSpec.context, true),
+            Triple(BoxloreTestWindows.FOLD_TABLETOP, tabletopSpec.primary, true),
+            Triple(BoxloreTestWindows.FOLD_FLAT, null, false),
+        ).forEach { (size, bounds, lightIcons) ->
+            fixture.compose.runOnIdle {
+                window.value = size
+                pane.value = bounds
+            }
+            fixture.compose.waitForIdle()
+            assertEquals("Light-theme icons at $size in $bounds", lightIcons, lightStatusBarIcons())
+        }
+    }
+
+    private val shown = mutableStateOf(true)
+    private val window = mutableStateOf(BoxloreWindowLayout.Unspecified)
+    private val pane = mutableStateOf<BoxloreLayoutBounds?>(null)
+
+    private fun render() {
         val podcast = TestFixtures.podcast(id = WaveformPage.ids.podcastIndexId, title = "Waveform", imageUrl = PhoneGoldenRule.ARTWORK_URL)
         val model = mock(PodcastInfoViewModel::class.java)
         `when`(model.uiState).thenReturn(MutableStateFlow<PodcastInfoUiState>(PodcastInfoUiState.Success(podcast, emptyList(), isSubscribed = false)))
@@ -340,16 +515,13 @@ class DarkOnlyPageStatusBarTest {
         fixture.prepare()
         fixture.compose.mainClock.autoAdvance = true
         fixture.compose.setContent {
-            BoxLoreTheme(darkTheme = false, dynamicColor = false) {
-                if (shown.value) Surface { PodcastInfoScreen(podcast.id, model, {}, { _, _, _ -> }, {}, {}) }
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value, LocalBoxlorePaneBounds provides pane.value) {
+                BoxLoreTheme(darkTheme = false, dynamicColor = false) {
+                    if (shown.value) Surface { PodcastInfoScreen(podcast.id, model, {}, { _, _, _ -> }, {}, {}) }
+                }
             }
         }
         fixture.compose.waitForIdle()
-        assertFalse("White icons over the dark page", lightStatusBarIcons())
-
-        fixture.compose.runOnIdle { shown.value = false }
-        fixture.compose.waitForIdle()
-        assertTrue("The light theme's dark icons return", lightStatusBarIcons())
     }
 
     private fun lightStatusBarIcons(): Boolean {

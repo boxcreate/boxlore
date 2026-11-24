@@ -77,6 +77,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
             cx.aswin.boxlore.feature.library.LibraryPlaylistsCard(
                 coverUrls = playlists.mapNotNull { it.coverUrls.firstOrNull() },
                 onClick = { w.navigate(NavRoutes.LIBRARY_PLAYLISTS) },
+                count = playlists.size,
             ),
             onNavigateToLiked = { w.navigate("library/liked") },
             onNavigateToSubscriptions = { w.navigate(NavRoutes.LIBRARY_SUBSCRIPTIONS) },
@@ -180,6 +181,8 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
         cx.aswin.boxlore.feature.library.LikedEpisodesScreen(
             viewModel = viewModel,
             onBack = { navController.popBackStack() },
+            // A plain queue: New Episodes' context tag would report these plays as New Episodes.
+            onPlayEpisodes = { episodes, fallbackPodcast -> queueManager.playEpisodes(episodes, fallbackPodcast) },
             onEpisodeClick = { episode, podcast ->
                 fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
                 w.navigate(

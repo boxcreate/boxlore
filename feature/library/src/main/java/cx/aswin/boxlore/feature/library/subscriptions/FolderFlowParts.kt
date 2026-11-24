@@ -23,7 +23,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,6 +39,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTextField
 import cx.aswin.boxlore.core.designsystem.icon.GenreIconItem
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -167,14 +167,12 @@ internal fun FolderNameField(
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
-        OutlinedTextField(
+        BoxloreTextField(
             value = name,
             onValueChange = onNameChange,
-            label = { Text(text = stringResource(R.string.library_folder_name)) },
-            singleLine = true,
-            supportingText = helper?.let { { Text(text = it) } },
+            label = stringResource(R.string.library_folder_name),
+            supportingText = helper,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-            shape = RoundedCornerShape(16.dp),
             modifier = Modifier.weight(1f),
         )
     }

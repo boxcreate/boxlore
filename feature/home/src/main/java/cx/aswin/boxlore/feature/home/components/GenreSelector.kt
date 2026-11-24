@@ -8,11 +8,8 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.AutoStories
@@ -21,7 +18,6 @@ import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Gavel
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Newspaper
@@ -35,12 +31,7 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Weekend
 import androidx.compose.material.icons.rounded.Whatshot
 import androidx.compose.material.icons.rounded.Work
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -49,15 +40,23 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.AdaptiveOverflowRow
+import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChip
+import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChipDefaults
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.components.BoxloreMoreChip
+import cx.aswin.boxlore.core.designsystem.components.rememberAdaptiveOverflowState
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.home.R
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -67,8 +66,9 @@ fun GenreSelector(
     onCategorySelected: (String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var showSheet by remember { mutableStateOf(false) }
-    var overflowGenres by remember { mutableStateOf<List<GenreItem>>(emptyList()) }
+    // Saved, so the More sheet stays open when the window changes size or the activity is recreated.
+    var showSheet by rememberSaveable { mutableStateOf(false) }
+    val overflow = rememberAdaptiveOverflowState()
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
 
     val displayGenres =
@@ -96,11 +96,9 @@ fun GenreSelector(
         AdaptiveOverflowRow(
             itemCount = GENRES.size + 1,
             selectedIndex = GENRES.indexOfFirst { it.value == selectedCategory }.takeIf { it >= 0 }?.plus(1),
-            onOverflow = { indices ->
-                overflowGenres = indices.map { GENRES[it - 1] }
-                showSheet = true
-            },
+            onOverflow = { showSheet = true },
             modifier = modifier,
+            state = overflow,
             item = { index ->
                 if (index == 0) {
                     HomeGenreFilterChip(stringResource(R.string.home_genres_top), selectedCategory == null, { onCategorySelected(null) }, Icons.Rounded.Whatshot)
@@ -109,7 +107,6 @@ fun GenreSelector(
                     HomeGenreFilterChip(stringResource(genre.label), selectedCategory == genre.value, { onCategorySelected(genre.value) }, genre.icon)
                 }
             },
-            onWidthChanged = { showSheet = false },
             more = { onClick -> HomeMoreGenresChip(onClick) },
         )
     } else {
@@ -117,7 +114,10 @@ fun GenreSelector(
             modifier =
             modifier
                 .fillMaxWidth()
-                .horizontalScroll(scrollState),
+                // Runs to the screen edge, with the gutter inside the scroll, so chips slide off the edge.
+                .bleed(HomeFeedSpacing.GridSide)
+                .horizontalScroll(scrollState)
+                .padding(horizontal = HomeFeedSpacing.GridSide),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             HomeGenreFilterChip(
@@ -136,15 +136,7 @@ fun GenreSelector(
                 )
             }
 
-            AssistChip(
-                onClick = { showSheet = true },
-                label = { Text(stringResource(R.string.home_genres_more)) },
-                trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
-                modifier = Modifier.heightIn(min = 48.dp),
-                shape = CircleShape,
-                border = null,
-                colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            )
+            HomeMoreGenresChip { showSheet = true }
         }
     }
 
@@ -154,7 +146,11 @@ fun GenreSelector(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         ) {
-            HomeGenreSheetContent(selectedCategory, if (tablet) overflowGenres else GENRES, !tablet) { category ->
+            // Behind More on a wide row: the genres the row couldn't fit, following the row as the
+            // window changes. On phones, or once everything fits, every genre with Top.
+            val remaining = overflow.remaining
+            val sheetGenres = if (tablet && remaining.isNotEmpty()) remaining.map { GENRES[it - 1] } else GENRES
+            HomeGenreSheetContent(selectedCategory, sheetGenres, includeTop = !tablet || remaining.isEmpty()) { category ->
                 onCategorySelected(category)
                 showSheet = false
             }
@@ -164,15 +160,7 @@ fun GenreSelector(
 
 @Composable
 private fun HomeMoreGenresChip(onClick: () -> Unit) {
-    AssistChip(
-        onClick = onClick,
-        label = { Text(stringResource(R.string.home_genres_more)) },
-        trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
-        modifier = Modifier.heightIn(min = 48.dp),
-        shape = CircleShape,
-        border = null,
-        colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-    )
+    BoxloreMoreChip(onClick = onClick, label = stringResource(R.string.home_genres_more), modifier = Modifier.testTag("home_genres_more"))
 }
 
 @Composable
@@ -181,12 +169,14 @@ private fun HomeGenreSheetContent(selectedCategory: String?, genres: List<GenreI
         modifier =
         Modifier
             .fillMaxWidth().tabletSheetScroll()
+            .testTag("home_genres_sheet")
             .padding(horizontal = 24.dp)
             .padding(bottom = 48.dp),
     ) {
         Text(
             text = stringResource(R.string.home_browse_genres),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = GoogleSansWeight.bold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 16.dp),
         )
@@ -198,12 +188,11 @@ private fun HomeGenreSheetContent(selectedCategory: String?, genres: List<GenreI
         ) {
             if (includeTop) {
                 HomeGenreFilterChip(
-                label = stringResource(R.string.home_genres_top),
-                selected = selectedCategory == null,
-                onClick = {
-                    onCategorySelected(null)
-                },
-                icon = Icons.Rounded.Whatshot,
+                    label = stringResource(R.string.home_genres_top),
+                    selected = selectedCategory == null,
+                    onClick = { onCategorySelected(null) },
+                    icon = Icons.Rounded.Whatshot,
+                    container = BoxloreFilterChipDefaults.SheetContainer,
                 )
             }
 
@@ -211,39 +200,31 @@ private fun HomeGenreSheetContent(selectedCategory: String?, genres: List<GenreI
                 HomeGenreFilterChip(
                     label = stringResource(genre.label),
                     selected = selectedCategory == genre.value,
-                    onClick = {
-                        onCategorySelected(genre.value)
-                    },
+                    onClick = { onCategorySelected(genre.value) },
                     icon = genre.icon,
+                    container = BoxloreFilterChipDefaults.SheetContainer,
                 )
             }
         }
     }
 }
 
+/** A genre chip: on Home's row in the page's container, in the More sheet in the sheet's. */
 @Composable
 private fun HomeGenreFilterChip(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
     icon: ImageVector,
+    container: Color = BoxloreFilterChipDefaults.PageContainer,
 ) {
-    FilterChip(
+    BoxloreFilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text(label) },
-        leadingIcon = { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
-        modifier = Modifier.heightIn(min = 48.dp),
-        shape = CircleShape,
-        border = null,
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
+        label = label,
+        leadingIcon = icon,
+        container = container,
+        modifier = Modifier.testTag("home_genre_chip"),
     )
 }
 

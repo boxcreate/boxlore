@@ -46,8 +46,8 @@
     </plurals>
     <!-- Small badge on a folder; all capitals where the language uses them -->
     <plurals name="library_folder_new_episodes_badge">
-        <item quantity="one">%1$d NEUE FOLGE</item>
-        <item quantity="other">%1$d NEUE FOLGEN</item>
+        <item quantity="one">%1$d NEU</item>
+        <item quantity="other">%1$d NEU</item>
     </plurals>
     <string name="library_folder_empty_tap_to_add">Ordner ist leer • Tippe, um Podcasts hinzuzufügen</string>
     <string name="library_folder_empty_title">Keine Podcasts in diesem Ordner</string>
@@ -132,7 +132,6 @@
     <string name="library_auto_organize">Automatisch ordnen</string>
     <string name="library_auto_organize_is_on">Automatisch ordnen ist an</string>
     <string name="library_auto_organize_turn_on">Automatisch ordnen einschalten</string>
-    <string name="library_auto_organize_turn_off">Automatisch ordnen ausschalten</string>
     <string name="library_auto_organize_turn_off_title">Automatisch ordnen ausschalten?</string>
     <string name="library_auto_organize_turn_off_body">boxlore legt keine neuen Genre-Ordner mehr an. Deine bestehenden Genre-Ordner bleiben, und neue Podcasts ihres Genres kommen weiterhin hinein.</string>
     <string name="library_auto_organize_turn_off_hint">Um einen loszuwerden, lösch den Ordner. Seine Podcasts bleiben in deiner Bibliothek.</string>

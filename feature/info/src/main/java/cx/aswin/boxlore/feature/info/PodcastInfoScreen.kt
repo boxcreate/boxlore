@@ -317,7 +317,7 @@ fun PodcastInfoScreen(
             }
 
             is PodcastInfoUiState.Error -> {
-                PodcastInfoLoadError(onRetry = viewModel::retryLoad)
+                PodcastInfoLoadError(onRetry = viewModel::retryLoad, onBack = onBack)
             }
 
             is PodcastInfoUiState.Success -> {

@@ -74,6 +74,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneOwnsStatusBar
 import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
@@ -764,10 +765,13 @@ internal fun openAppNotificationSettings(context: android.content.Context) {
 
 /**
  * Light status bar icons while a branded page's dark header is under the status bar in a light
- * theme ([lightIcons]); the theme's own icons once the bar fills, and again when the page leaves.
+ * theme ([lightIcons]); the theme's own icons once the bar fills, and again when the page leaves or
+ * stops filling the top of the screen (beside another pane, below a tabletop hinge).
  */
 @Composable
 internal fun BrandedHeaderStatusBar(lightIcons: Boolean) {
+    // Leaving composition runs the restore below.
+    if (!boxlorePaneOwnsStatusBar()) return
     val view = LocalView.current
     val window = (view.context as? Activity)?.window ?: return
     val controller = WindowCompat.getInsetsController(window, view)

@@ -155,6 +155,40 @@ class OnboardingSuggestionsPresentationTest {
     }
 
     @Test
+    fun `no lane repeats an earlier lane or the top of the charts, and the charts stay whole`() {
+        val twoRows = listOf(
+            OnboardingCurriculumRowDto(rowTitle = "Trending in your Genres", podcasts = (1L..5L).map { OnboardingCurriculumPodcastDto(id = it, title = "Show $it") }),
+            OnboardingCurriculumRowDto(rowTitle = "Cold cases", podcasts = listOf(2L, 6L, 7L, 8L, 9L).map { OnboardingCurriculumPodcastDto(id = it, title = "Show $it") }),
+        )
+        val charts = (1..5).map { show("$it") }
+        val lanes = OnboardingSuggestionsPresentation.lanes(OnboardingUiState(aiCurriculumRows = twoRows, genreChartsPodcasts = charts))
+        // The genre lane is the top of the charts again: hidden. The other keeps its shows, in order.
+        assertEquals(listOf("curriculum_1", OnboardingSuggestionsLanes.CHARTS_LANE_ID), lanes.map { it.id })
+        assertEquals(listOf("2", "6", "7", "8", "9"), lanes[0].podcasts.map { it.id })
+        assertEquals(listOf("1", "2", "3", "4", "5"), lanes[1].podcasts.map { it.id })
+        // A lane leaves out the shows a lane above it already offers.
+        val repeated = listOf(
+            OnboardingCurriculumRowDto(rowTitle = "Cold cases", podcasts = (11L..15L).map { OnboardingCurriculumPodcastDto(id = it, title = "Show $it") }),
+            OnboardingCurriculumRowDto(rowTitle = "Long drives", podcasts = listOf(11L, 16L, 17L, 18L).map { OnboardingCurriculumPodcastDto(id = it, title = "Show $it") }),
+        )
+        assertEquals(listOf("16", "17", "18"), OnboardingSuggestionsPresentation.lanes(OnboardingUiState(aiCurriculumRows = repeated))[1].podcasts.map { it.id })
+        // A short lane that repeats nothing still shows.
+        assertEquals(listOf("1", "2"), OnboardingSuggestionsPresentation.lanes(OnboardingUiState(aiCurriculumRows = rows(1, 2)))[0].podcasts.map { it.id })
+    }
+
+    @Test
+    fun `Echo's own lane stays whole when it shares popular shows with the charts`() {
+        // Four of the lane's six shows are also in Popular now, but not as the top of the charts.
+        val echoLane = listOf(
+            OnboardingCurriculumRowDto(rowTitle = "Cold cases worth the drive", podcasts = listOf(21L, 3L, 22L, 5L, 7L, 9L).map { OnboardingCurriculumPodcastDto(id = it, title = "Show $it") }),
+        )
+        val charts = listOf("30", "31", "32", "33", "3", "5", "7", "9", "34").map { show(it) }
+        val lanes = OnboardingSuggestionsPresentation.lanes(OnboardingUiState(aiCurriculumRows = echoLane, genreChartsPodcasts = charts))
+        assertEquals(listOf("curriculum_0", OnboardingSuggestionsLanes.CHARTS_LANE_ID), lanes.map { it.id })
+        assertEquals(listOf("21", "3", "22", "5", "7", "9"), lanes[0].podcasts.map { it.id })
+    }
+
+    @Test
     fun `a chat pick removed from Your picks can be found again to add it back`() {
         val state = OnboardingUiState(aiPicks = listOf(show("7")))
         assertEquals("7", OnboardingSuggestionsPresentation.findShow(state, "7")?.id)

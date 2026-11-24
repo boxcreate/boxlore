@@ -96,7 +96,7 @@ fun dockedPlayerCoversPane(pane: BoxloreLayoutBounds?, dock: BoxloreLayoutBounds
 @Composable
 fun dockedPlayerCoversPane(): Boolean = dockedPlayerCoversPane(LocalBoxlorePaneBounds.current, LocalBoxloreDockedPlayerBounds.current)
 
-private const val RAIL_WIDTH_DP = 80f
+internal const val RAIL_WIDTH_DP = 80f
 private const val TABLETOP_CONTEXT_MIN_HEIGHT_DP = 240f
 private const val HINGE_SPLIT_MIN_PRIMARY_DP = 280f
 private const val PLAYER_CONTEXT_MIN_PRIMARY_DP = 440f

@@ -55,6 +55,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltipPosition
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.info.R
 
@@ -75,7 +77,13 @@ internal data class PodcastEpisodeActionsCallbacks(
 )
 
 @Composable
-internal fun PodcastEpisodeActions(state: PodcastEpisodeActionsState, callbacks: PodcastEpisodeActionsCallbacks, accentColor: Color, playBorder: BorderStroke? = null) {
+internal fun PodcastEpisodeActions(
+    state: PodcastEpisodeActionsState,
+    callbacks: PodcastEpisodeActionsCallbacks,
+    accentColor: Color,
+    playBorder: BorderStroke? = null,
+    tooltips: Boolean = false,
+) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
         Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             PodcastEpisodeToggle(
@@ -84,6 +92,7 @@ internal fun PodcastEpisodeActions(state: PodcastEpisodeActionsState, callbacks:
                 label = stringResource(if (state.isLiked) R.string.episode_info_unlike else R.string.episode_info_like),
                 onClick = callbacks.onLike,
                 leading = true,
+                tooltip = tooltips,
             )
             PodcastEpisodeToggle(
                 active = state.isDownloaded,
@@ -91,12 +100,14 @@ internal fun PodcastEpisodeActions(state: PodcastEpisodeActionsState, callbacks:
                 label = stringResource(if (state.isDownloaded) R.string.episode_info_remove_download else R.string.episode_info_download),
                 onClick = callbacks.onDownload,
                 loading = state.isDownloading,
+                tooltip = tooltips,
             )
             PodcastEpisodeToggle(
                 active = state.isQueued,
                 icon = if (state.isQueued) Icons.AutoMirrored.Rounded.PlaylistAddCheck else Icons.AutoMirrored.Rounded.PlaylistAdd,
                 label = stringResource(if (state.isQueued) R.string.episode_info_remove_queue else R.string.episode_info_add_queue),
                 onClick = callbacks.onQueue,
+                tooltip = tooltips,
             )
         }
         PodcastEpisodePlayButton(state, callbacks.onPlay, accentColor, playBorder, Modifier.weight(1f))
@@ -105,7 +116,7 @@ internal fun PodcastEpisodeActions(state: PodcastEpisodeActionsState, callbacks:
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun PodcastEpisodeToggle(active: Boolean, icon: ImageVector, label: String, onClick: () -> Unit, leading: Boolean = false, loading: Boolean = false) {
+private fun PodcastEpisodeToggle(active: Boolean, icon: ImageVector, label: String, onClick: () -> Unit, leading: Boolean = false, loading: Boolean = false, tooltip: Boolean = false) {
     val shapes = if (leading) {
         ButtonGroupDefaults.connectedLeadingButtonShapes(
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 8.dp, bottomStart = 24.dp),
@@ -119,30 +130,34 @@ private fun PodcastEpisodeToggle(active: Boolean, icon: ImageVector, label: Stri
     }
     val downloading = stringResource(R.string.episode_info_downloading)
     val debouncedClick = rememberPodcastEpisodeControlClick(onClick)
-    FilledTonalToggleButton(
-        checked = active,
-        onCheckedChange = { debouncedClick() },
-        enabled = !loading,
-        shapes = shapes,
-        colors = FilledTonalToggleButtonDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            checkedContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-        ),
-        contentPadding = PaddingValues(0.dp),
-        modifier = Modifier.size(48.dp).semantics {
-            contentDescription = label
-            if (loading) stateDescription = downloading
-        },
-    ) {
-        if (loading) {
-            BoxLoreLoader.CircularWavy(size = 20.dp, color = MaterialTheme.colorScheme.primary)
-        } else {
-            Icon(icon, null, Modifier.size(20.dp))
+    val button: @Composable () -> Unit = {
+        FilledTonalToggleButton(
+            checked = active,
+            onCheckedChange = { debouncedClick() },
+            enabled = !loading,
+            shapes = shapes,
+            colors = FilledTonalToggleButtonDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                checkedContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            ),
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier.size(48.dp).semantics {
+                contentDescription = label
+                if (loading) stateDescription = downloading
+            },
+        ) {
+            if (loading) {
+                BoxLoreLoader.CircularWavy(size = 20.dp, color = MaterialTheme.colorScheme.primary)
+            } else {
+                Icon(icon, null, Modifier.size(20.dp))
+            }
         }
     }
+    // A Showcase spotlight names its icon-only buttons on long-press or hover, above the row.
+    if (tooltip) BoxloreTooltip(label, position = BoxloreTooltipPosition.Above, content = button) else button()
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

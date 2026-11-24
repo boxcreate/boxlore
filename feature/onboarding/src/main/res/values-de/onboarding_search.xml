@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="onboarding_search_placeholder">Titel, Hosts oder Themen suchen…</string>
+    <string name="onboarding_search_placeholder">Titel, Hosts, Themen…</string>
     <string name="onboarding_search_clear">Leeren</string>
     <string name="onboarding_search_trending">Im Trend</string>
     <string name="onboarding_search_trending_shows">Podcasts im Trend</string>
@@ -11,8 +11,8 @@
     <string name="onboarding_search_matches">Treffer</string>
     <string name="onboarding_search_also_found">Auch gefunden</string>
     <plurals name="onboarding_search_selected_shows">
-        <item quantity="one">Ausgewählte Podcasts (%d)</item>
-        <item quantity="other">Ausgewählte Podcasts (%d)</item>
+        <item quantity="one">Deine Auswahl (%d)</item>
+        <item quantity="other">Deine Auswahl (%d)</item>
     </plurals>
     <string name="onboarding_search_remove">Entfernen</string>
     <string name="onboarding_search_selected">Ausgewählt</string>

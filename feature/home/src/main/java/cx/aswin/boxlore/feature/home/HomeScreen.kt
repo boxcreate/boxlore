@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,8 +18,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
@@ -37,6 +38,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.Episode
@@ -103,6 +105,8 @@ data class HomeSheetUi(
     val showPostReview: Boolean = false,
     val showFeedback: Boolean = false,
     val candidatePodcasts: List<Podcast> = emptyList(),
+    /** The show the listener picked for Because you like; null while boxlore picks for them. */
+    val pickedPodcastId: String? = null,
 )
 
 @androidx.compose.runtime.Stable
@@ -275,6 +279,7 @@ fun HomeRoute(
     val showFeedback by viewModel.showFeedback.collectAsState()
 
     val candidatePodcasts by viewModel.candidatePodcasts.collectAsState(initial = emptyList())
+    val pickedPodcastId by viewModel.overriddenRecPodcastId.collectAsState(initial = null)
 
     val downloadedEpisodeIds by viewModel.downloadedEpisodeIds.collectAsState(initial = emptySet())
     val completedDownloadItems by viewModel.completedDownloadItems.collectAsState(initial = emptyList())
@@ -379,6 +384,7 @@ fun HomeRoute(
                 showPostReview = showPostReview,
                 showFeedback = showFeedback,
                 candidatePodcasts = candidatePodcasts,
+                pickedPodcastId = pickedPodcastId,
             ),
             callbacks = callbacks,
             snackbarHostState = snackbarHostState,
@@ -530,6 +536,8 @@ private fun HomeScreenBottomSheets(
     if (showChangePodcastSheet) {
         ChangeRecommendationPodcastSheet(
             candidatePodcasts = sheets.candidatePodcasts,
+            // The listener's own pick, not the show boxlore rotated in for them.
+            selectedPodcastId = sheets.pickedPodcastId,
             onDismissRequest = onDismissChangePodcastSheet,
             onPodcastSelect = { podcast ->
                 onDismissChangePodcastSheet()
@@ -593,7 +601,10 @@ fun HomeScreen(
     TrackScreenView("home", send = {}) // visits are app opens and Home tab taps
     // Track scroll state for collapsing top bar
     val gridState = rememberLazyStaggeredGridState()
-    var showChangePodcastSheet by remember { androidx.compose.runtime.mutableStateOf(false) }
+    // Your shows' and the Brief's places live above the grid, which swaps items at the tablet size.
+    val sections = LocalHomeSectionsUiState.current ?: rememberHomeSectionsUiState()
+    // Saved, so the show picker stays open when the activity is recreated (a density or size change).
+    var showChangePodcastSheet by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
 
     val collapseThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
     val scrollFraction by remember(gridState, collapseThresholdPx) {
@@ -609,19 +620,20 @@ fun HomeScreen(
                 onChangePodcastClick = { showChangePodcastSheet = true },
                 discoverySections = LocalHomeDiscoverySections.current,
             )
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
         }
     }
+    CompositionLocalProvider(LocalHomeSectionsUiState provides sections) {
+    // One feed moves between the Marquee layout (phones) and the plain column (tablets), so folding or
+    // unfolding keeps Your shows, the Brief and the rest as they were instead of building them again.
+    val currentFeed by rememberUpdatedState(feed)
+    val movableFeed = remember { movableContentOf { currentFeed() } }
     Box(modifier = modifier.fillMaxSize()) {
         if (HeroCardStyle.sanitize(LocalHeroCardStyle.current) == HeroCardStyle.MARQUEE) {
             MarqueeHomeLayout(
                 gridState = gridState,
                 // Keep the expanded height: the bar shrinks as Home scrolls, the hero must not.
                 barExpanded = { scrollFraction == 0f },
-                feed = feed,
+                feed = movableFeed,
                 topBar = { overArtwork, tone, barModifier ->
                     HomeTopBar(
                         scrollFractionProvider = { scrollFraction },
@@ -636,9 +648,15 @@ fun HomeScreen(
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
                 HomeTopBar({ scrollFraction }, showTopBarShortcuts, callbacks)
-                feed()
+                movableFeed()
             }
         }
+        // Over the whole screen, so it sits above the bottom bar and mini player in either layout.
+        BoxloreSnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
     }
 
     HomeScreenBottomSheets(

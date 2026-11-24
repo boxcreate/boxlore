@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,12 +13,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.DriveFileMove
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.rounded.AddCircleOutline
 import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.FolderOff
+import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.RemoveCircleOutline
 import androidx.compose.material.icons.rounded.Reorder
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,7 +33,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
@@ -45,6 +45,7 @@ import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as 
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
+import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.artworkUrls
@@ -72,7 +73,21 @@ internal data class SubscriptionContextMenuActions(
     val onReorderFolderShows: (SubscriptionFolder) -> Unit = {},
     val onUnsubscribePodcast: (Podcast) -> Unit = {},
     val onReorderRootShows: () -> Unit = {},
+    /** Pins the show to Home, or unpins it. */
+    val onTogglePin: (Podcast) -> Unit = {},
 )
+
+/** The actions a long-press on a show offers, in order; the same for every show apart from Remove from folder. */
+internal enum class ShowContextAction { TogglePin, AddOrMoveToFolder, RemoveFromFolder, Reorder, Unsubscribe }
+
+/** Every show gets Pin or Unpin, Add to or Move to folder, Reorder and, last, Unsubscribe; a show in a folder can also leave it. */
+internal fun showContextActions(inFolder: Boolean): List<ShowContextAction> = buildList {
+    add(ShowContextAction.TogglePin)
+    add(ShowContextAction.AddOrMoveToFolder)
+    if (inFolder) add(ShowContextAction.RemoveFromFolder)
+    add(ShowContextAction.Reorder)
+    add(ShowContextAction.Unsubscribe)
+}
 
 /**
  * Modal bottom sheet displaying contextual options when long-pressing folders,
@@ -85,6 +100,7 @@ internal fun SubscriptionContextMenuSheet(
     actions: SubscriptionContextMenuActions,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
+    pinnedPodcastIds: Set<String> = emptySet(),
 ) {
     TrackScreenView("subscription_context_menu")
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -112,19 +128,13 @@ internal fun SubscriptionContextMenuSheet(
                 }
 
                 is ContextMenuTarget.FolderPodcast -> {
-                    FolderPodcastContextActions(
-                        target = target,
-                        actions = actions,
-                        onDismissRequest = onDismissRequest,
-                    )
+                    PodcastContextMenuHeader(podcast = target.podcast, folderName = target.folder.name)
+                    ShowContextActions(target.podcast, target.folder, target.podcast.id in pinnedPodcastIds, actions, onDismissRequest)
                 }
 
                 is ContextMenuTarget.RootPodcast -> {
-                    RootPodcastContextActions(
-                        podcast = target.podcast,
-                        actions = actions,
-                        onDismissRequest = onDismissRequest,
-                    )
+                    PodcastContextMenuHeader(podcast = target.podcast)
+                    ShowContextActions(target.podcast, null, target.podcast.id in pinnedPodcastIds, actions, onDismissRequest)
                 }
             }
         }
@@ -138,10 +148,7 @@ private fun FolderContextActions(
     onDismissRequest: () -> Unit,
 ) {
     FolderContextMenuHeader(folder = folder)
-    HorizontalDivider(
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-        thickness = 0.5.dp,
-    )
+    MenuDivider()
     Spacer(modifier = Modifier.height(8.dp))
 
     ContextMenuActionRow(
@@ -170,11 +177,7 @@ private fun FolderContextActions(
     )
 
     Spacer(modifier = Modifier.height(4.dp))
-    HorizontalDivider(
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
-        thickness = 0.5.dp,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-    )
+    MenuDivider(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
 
     ContextMenuActionRow(
         icon = Icons.Rounded.DeleteOutline,
@@ -187,94 +190,65 @@ private fun FolderContextActions(
     )
 }
 
+/** A show's actions ([showContextActions]): [folder] is the folder it was long-pressed in, or null. */
 @Composable
-private fun FolderPodcastContextActions(
-    target: ContextMenuTarget.FolderPodcast,
+@Suppress("CyclomaticComplexMethod") // One branch per action, each with its pinned or in-folder wording.
+private fun ShowContextActions(
+    podcast: Podcast,
+    folder: SubscriptionFolder?,
+    pinned: Boolean,
     actions: SubscriptionContextMenuActions,
     onDismissRequest: () -> Unit,
 ) {
-    PodcastContextMenuHeader(
-        podcast = target.podcast,
-        folderName = target.folder.name,
-    )
-    HorizontalDivider(
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-        thickness = 0.5.dp,
-    )
+    MenuDivider()
     Spacer(modifier = Modifier.height(8.dp))
-
-    ContextMenuActionRow(
-        icon = Icons.Rounded.FolderOff,
-        label = stringResource(R.string.library_folder_remove_from),
-        onClick = {
+    showContextActions(inFolder = folder != null).forEach { action ->
+        val run: (() -> Unit) -> () -> Unit = { block ->
+            {
             onDismissRequest()
-            actions.onRemoveFromFolder(target.folder, target.podcast)
-        },
-    )
-    ContextMenuActionRow(
-        icon = Icons.AutoMirrored.Rounded.DriveFileMove,
-        label = stringResource(R.string.library_folder_move_to_another),
-        onClick = {
-            onDismissRequest()
-            actions.onMoveToAnotherFolder(target.folder, target.podcast)
-        },
-    )
-    ContextMenuActionRow(
-        icon = Icons.Rounded.Reorder,
-        label = stringResource(R.string.library_reorder_shows_in_folder),
-        onClick = {
-            onDismissRequest()
-            actions.onReorderFolderShows(target.folder)
-        },
-    )
-
-    Spacer(modifier = Modifier.height(4.dp))
-    HorizontalDivider(
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
-        thickness = 0.5.dp,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-    )
-
-    ContextMenuActionRow(
-        icon = Icons.Rounded.RemoveCircleOutline,
-        label = stringResource(R.string.library_unsubscribe),
-        isDestructive = true,
-        onClick = {
-            onDismissRequest()
-            actions.onUnsubscribePodcast(target.podcast)
-        },
-    )
+            block()
+        }
+        }
+        when (action) {
+            ShowContextAction.TogglePin -> ContextMenuActionRow(
+                icon = if (pinned) Icons.Rounded.PushPin else Icons.Outlined.PushPin,
+                label = stringResource(if (pinned) R.string.library_unpin_home else R.string.library_pin_home),
+                onClick = run { actions.onTogglePin(podcast) },
+            )
+            ShowContextAction.AddOrMoveToFolder -> ContextMenuActionRow(
+                icon = if (folder == null) Icons.Rounded.CreateNewFolder else Icons.AutoMirrored.Rounded.DriveFileMove,
+                label = stringResource(if (folder == null) R.string.library_folder_add_to else R.string.library_folder_move_to_another),
+                onClick = run { actions.onMoveToAnotherFolder(folder, podcast) },
+            )
+            ShowContextAction.RemoveFromFolder -> ContextMenuActionRow(
+                icon = Icons.Rounded.FolderOff,
+                label = stringResource(R.string.library_folder_remove_from),
+                onClick = run { folder?.let { actions.onRemoveFromFolder(it, podcast) } },
+            )
+            ShowContextAction.Reorder -> ContextMenuActionRow(
+                icon = Icons.Rounded.Reorder,
+                label = stringResource(if (folder == null) R.string.library_reorder_shows else R.string.library_reorder_shows_in_folder),
+                onClick = run { if (folder == null) actions.onReorderRootShows() else actions.onReorderFolderShows(folder) },
+            )
+            ShowContextAction.Unsubscribe -> {
+                Spacer(modifier = Modifier.height(4.dp))
+                MenuDivider(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                // Still asks first.
+                ContextMenuActionRow(
+                    icon = Icons.Rounded.RemoveCircleOutline,
+                    label = stringResource(R.string.library_unsubscribe),
+                    isDestructive = true,
+                    onClick = run { actions.onUnsubscribePodcast(podcast) },
+                )
+            }
+        }
+    }
 }
 
+/** A solid hairline between the header and the actions, and before the red action. */
 @Composable
-private fun RootPodcastContextActions(
-    podcast: Podcast,
-    actions: SubscriptionContextMenuActions,
-    onDismissRequest: () -> Unit,
-) {
-    PodcastContextMenuHeader(podcast = podcast)
-    HorizontalDivider(
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-        thickness = 0.5.dp,
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-
-    ContextMenuActionRow(
-        icon = Icons.Rounded.CreateNewFolder,
-        label = stringResource(R.string.library_folder_add_to),
-        onClick = {
-            onDismissRequest()
-            actions.onMoveToAnotherFolder(null, podcast)
-        },
-    )
-    ContextMenuActionRow(
-        icon = Icons.Rounded.Reorder,
-        label = stringResource(R.string.library_reorder_shows),
-        onClick = {
-            onDismissRequest()
-            actions.onReorderRootShows()
-        },
-    )
+private fun MenuDivider(modifier: Modifier = Modifier) {
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp, modifier = modifier)
 }
 
 @Composable
@@ -291,14 +265,14 @@ private fun FolderContextMenuHeader(
     ) {
         Surface(
             shape = RoundedCornerShape(14.dp),
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.primaryContainer,
             modifier = Modifier.size(48.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = folderIcon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(26.dp),
                 )
             }
@@ -408,8 +382,7 @@ private fun ContextMenuActionRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
+            .expressiveClickable(shape = RoundedCornerShape(12.dp), onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

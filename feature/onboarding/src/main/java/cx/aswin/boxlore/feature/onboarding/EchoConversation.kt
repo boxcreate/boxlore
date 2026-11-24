@@ -50,6 +50,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
@@ -68,7 +69,26 @@ import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
  * What Echo says: a reaction, the opening line, or a slow-request line with its countdown. On a
  * show card it is the card's question, in bold, standing in for the question headline.
  */
-private data class EchoSpeech(val line: String, val detail: String?, val emphasis: Boolean = false)
+private data class EchoSpeech(val line: String, val detail: String?, val emphasis: Boolean = false, val error: Boolean = false)
+
+/** What Echo says in its bubble this turn, if anything. */
+@Composable
+private fun rememberEchoSpeech(state: OnboardingUiState, kind: EchoScreenKind): EchoSpeech? {
+    val waitKey = if (kind == EchoScreenKind.Waiting && !state.isSynthesizing) "turn:${state.aiHistory.size}" else null
+    val wait = rememberEchoWaitCopy(EchoWaitStep.NextQuestion, waitKey)
+    val intro = stringResource(R.string.echo_intro)
+    val errorTitle = stringResource(R.string.echo_error_title)
+    val errorBody = stringResource(R.string.echo_error_body)
+    return when (kind) {
+        EchoScreenKind.Asking, EchoScreenKind.Writing, EchoScreenKind.Recovery ->
+            (if (EchoScreenModel.isOpeningTurn(state)) intro else state.aiGuidedTurn?.response)?.takeIf { it.isNotBlank() }?.let { EchoSpeech(it, null) }
+        EchoScreenKind.Waiting -> wait?.let { EchoSpeech(it.line, it.detail) }
+        EchoScreenKind.Deck -> state.aiDeck.current?.let { EchoSpeech(it.question, null, emphasis = true) }
+        // A failed turn is Echo's to say, in its own bubble, like every other line.
+        EchoScreenKind.Error -> EchoSpeech(errorTitle, errorBody, error = true)
+        else -> null
+    }
+}
 
 /**
  * Echo centred like a messaging profile, with its speech bubble underneath and a small tail
@@ -78,17 +98,7 @@ private data class EchoSpeech(val line: String, val detail: String?, val emphasi
  */
 @Composable
 internal fun EchoHeader(state: OnboardingUiState, kind: EchoScreenKind, metrics: EchoLayoutMetrics, paused: Boolean = false) {
-    val opening = EchoScreenModel.isOpeningTurn(state)
-    val waitKey = if (kind == EchoScreenKind.Waiting && !state.isSynthesizing) "turn:${state.aiHistory.size}" else null
-    val wait = rememberEchoWaitCopy(EchoWaitStep.NextQuestion, waitKey)
-    val intro = stringResource(R.string.echo_intro)
-    val speech = when (kind) {
-        EchoScreenKind.Asking, EchoScreenKind.Writing, EchoScreenKind.Recovery ->
-            (if (opening) intro else state.aiGuidedTurn?.response)?.takeIf { it.isNotBlank() }?.let { EchoSpeech(it, null) }
-        EchoScreenKind.Waiting -> wait?.let { EchoSpeech(it.line, it.detail) }
-        EchoScreenKind.Deck -> state.aiDeck.current?.let { EchoSpeech(it.question, null, emphasis = true) }
-        else -> null
-    }
+    val speech = rememberEchoSpeech(state, kind)
     if (kind == EchoScreenKind.Deck) {
         Row(
             Modifier.fillMaxWidth(),
@@ -121,7 +131,15 @@ internal fun EchoHeader(state: OnboardingUiState, kind: EchoScreenKind, metrics:
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                 if (line != null) {
                     val current = speech?.takeIf { it.line == line }
-                    EchoBubble(line, current?.detail, metrics.bubbleLines, emphasis = current?.emphasis == true)
+                    val bubble = @Composable { EchoBubble(line, current?.detail, metrics.bubbleLines, emphasis = current?.emphasis == true) }
+                    // An error is announced as it appears, by this bubble only while Echo is shown: a header
+                    // leaving as Echo folds away hands the announcement to the error in the question's place.
+                    if (current?.error == true) {
+                        val announce = if (metrics.showEcho) Modifier.semantics { liveRegion = LiveRegionMode.Polite } else Modifier
+                        Box(Modifier.testTag("echo_error").then(announce)) { bubble() }
+                    } else {
+                        bubble()
+                    }
                 }
             }
         }
@@ -322,7 +340,7 @@ private fun EchoBubble(line: String, detail: String?, maxLines: Int, emphasis: B
             Text(
                 line,
                 Modifier.then(if (emphasis) Modifier.semantics { heading() }.testTag("echo_deck_question") else Modifier),
-                style = base.let { if (emphasis) it.copy(fontWeight = GoogleSansWeight.bold) else it },
+                style = base.copy(lineBreak = LineBreak.Heading).let { if (emphasis) it.copy(fontWeight = GoogleSansWeight.bold) else it },
                 textAlign = if (beside) TextAlign.Start else TextAlign.Center,
                 maxLines = maxLines,
                 overflow = TextOverflow.Ellipsis,
@@ -347,21 +365,25 @@ internal fun EchoQuestionArea(
     val question = EchoScreenModel.question(state)
     val key = when (kind) {
         EchoScreenKind.Waiting -> "waiting"
-        EchoScreenKind.Error -> "error"
+        // With Echo shown the error rides in its bubble; with Echo folded away it takes this slot.
+        EchoScreenKind.Error -> if (metrics.showEcho) "error" else "error:plain"
         // The card's question rides in Echo's bubble; with Echo folded away it takes this slot instead.
         EchoScreenKind.Deck -> if (metrics.showEcho) "deck" else "deck:${state.aiDeck.current?.id}"
         else -> "question:${state.aiCurrentTurn}:${question.orEmpty()}"
     }
+    // Questions are announced as they change; an error announces itself, once, from wherever it stands.
+    val announce = if (kind == EchoScreenKind.Error) Modifier else Modifier.semantics { liveRegion = LiveRegionMode.Polite }
     AnimatedContent(
         targetState = key,
-        modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+        modifier = modifier.fillMaxWidth().then(announce),
         transitionSpec = EchoMotion.handoff(),
         contentAlignment = Alignment.TopStart,
         label = "echoQuestion",
     ) { target ->
         when {
             target == "waiting" -> EchoWaiting()
-            target == "error" -> EchoErrorPanel()
+            target == "error" -> Box(Modifier.fillMaxWidth())
+            target == "error:plain" -> EchoErrorText(announce = !metrics.showEcho)
             target == "deck" -> Box(Modifier.fillMaxWidth())
             target.startsWith("deck:") -> EchoDeckQuestion(state.aiDeck.current?.question.orEmpty(), metrics)
             else -> EchoQuestion(state, kind, question, metrics, onSearchSuggestion)
@@ -376,7 +398,7 @@ private fun EchoQuestion(state: OnboardingUiState, kind: EchoScreenKind, questio
         Text(
             question ?: stringResource(R.string.echo_initial_question),
             Modifier.fillMaxWidth().weight(1f, fill = false).testTag("echo_question").semantics { heading() },
-            style = MaterialTheme.typography.headlineMedium.copy(lineHeight = 1.15.em),
+            style = MaterialTheme.typography.headlineMedium.copy(lineHeight = 1.15.em, lineBreak = LineBreak.Heading),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             autoSize = TextAutoSize.StepBased(minFontSize = metrics.questionMin, maxFontSize = metrics.questionMax, stepSize = 1.sp),
@@ -400,7 +422,7 @@ private fun EchoDeckQuestion(question: String, metrics: EchoLayoutMetrics) {
     Text(
         question,
         Modifier.fillMaxWidth().testTag("echo_deck_question").semantics { heading() },
-        style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold, lineBreak = LineBreak.Heading),
         color = MaterialTheme.colorScheme.onSurface,
         textAlign = TextAlign.Center,
         autoSize = TextAutoSize.StepBased(minFontSize = metrics.questionMin, maxFontSize = MaterialTheme.typography.titleLarge.fontSize, stepSize = 1.sp),
@@ -428,28 +450,26 @@ internal fun EchoSkeleton(modifier: Modifier, shape: androidx.compose.ui.graphic
     Box(modifier.m3Shimmer(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.surfaceContainerHighest, shape))
 }
 
+/** The error on its own, centred, when Echo is folded away on the smallest windows; it [announce]s itself only then. */
 @Composable
-private fun EchoErrorPanel() {
-    Surface(
-        Modifier.fillMaxWidth().testTag("echo_error"),
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+private fun EchoErrorText(announce: Boolean) {
+    Column(
+        Modifier.fillMaxWidth().testTag("echo_error").then(if (announce) Modifier.semantics { liveRegion = LiveRegionMode.Polite } else Modifier),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(Modifier.padding(20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Icon(Icons.Rounded.CloudOff, null, tint = MaterialTheme.colorScheme.primary)
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    stringResource(R.string.echo_error_title),
-                    Modifier.semantics { heading() },
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    stringResource(R.string.echo_error_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        Icon(Icons.Rounded.CloudOff, null, tint = MaterialTheme.colorScheme.primary)
+        Text(
+            stringResource(R.string.echo_error_title),
+            Modifier.semantics { heading() },
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            stringResource(R.string.echo_error_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
     }
 }

@@ -66,6 +66,8 @@
     <string name="episode_info_more_from">Mehr von %1$s</string>
     <!-- Small label above the show name in the show row that heads the More from list. -->
     <string name="episode_info_more_from_label">Mehr von</string>
+    <string name="episode_info_see_all">Alle ansehen</string>
+    <string name="episode_info_number_short">Folge</string>
     <string name="episode_info_explore_podcast">Podcast entdecken</string>
     <string name="episode_info_no_more">Keine weiteren Folgen verfügbar</string>
     <string name="episode_info_people">Personen in dieser Folge</string>
@@ -116,6 +118,7 @@
     <string name="genre_edit_placeholder">Tippen, um eigenen Tag festzulegen</string>
     <string name="episode_info_episode_from_show">%1$s, aus %2$s</string>
     <string name="podcast_info_load_error">Dieser Podcast konnte nicht geladen werden</string>
+    <string name="info_load_error_body">Prüfe deine Internetverbindung und versuche es dann noch einmal.</string>
     <string name="podcast_info_retry">Noch mal versuchen</string>
     <!-- End of a show's episode list when its next page couldn't load; Try again (podcast_info_retry) sits under it. -->
     <string name="podcast_info_more_episodes_failed">Weitere Folgen konnten nicht geladen werden</string>

@@ -2,27 +2,32 @@ package cx.aswin.boxlore.feature.library.downloads
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,8 +40,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,28 +53,40 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.lerp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
+import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.DownloadsSortOrder
-import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
+import cx.aswin.boxlore.feature.library.LibraryBlockSkeleton
+import cx.aswin.boxlore.feature.library.LibraryEmptyContent
+import cx.aswin.boxlore.feature.library.LibraryEmptyState
+import cx.aswin.boxlore.feature.library.LibraryLargeTitle
+import cx.aswin.boxlore.feature.library.LibraryLoading
 import cx.aswin.boxlore.feature.library.LibraryPlaybackLayout
+import cx.aswin.boxlore.feature.library.LibraryRowsSkeleton
 import cx.aswin.boxlore.feature.library.LibraryUiState
 import cx.aswin.boxlore.feature.library.LibraryViewModel
 import cx.aswin.boxlore.feature.library.PlayAllFab
 import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.library.libraryHeaderScrolledColor
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderScrollBehavior
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,12 +104,10 @@ fun DownloadedEpisodesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
-        fraction = scrollBehavior.state.collapsedFraction,
-    )
+    val listState = rememberLazyListState()
+    val header = rememberLibraryHeaderState()
+    val listAtTop = { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior(listAtTop)
 
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
@@ -140,7 +158,12 @@ fun DownloadedEpisodesScreen(
     }
 
     var isSelectionMode by rememberSaveable { mutableStateOf(false) }
-    val selectedPodcastIds = remember { mutableStateListOf<String>() }
+    // Saved, so select mode never comes back after a restart with nothing selected.
+    val selectedPodcastIds = rememberSaveable(saver = selectedIdsSaver()) { mutableStateListOf<String>() }
+    val dashboardExpanded = rememberSaveable { mutableStateOf(false) }
+    var dashboardHeightPx by remember { mutableIntStateOf(0) }
+    val groupIds = remember(sortedGroups) { sortedGroups.map { it.podcastId } }
+    LaunchedEffect(uiState is LibraryUiState.Success, groupIds) { selectedPodcastIds.keepListed(uiState is LibraryUiState.Success, groupIds) }
     var deleteConfirmSelectedDialog by rememberSaveable { mutableStateOf(false) }
 
     val summary = remember(downloads) { downloads.downloadSummary() }
@@ -160,7 +183,9 @@ fun DownloadedEpisodesScreen(
         topBar = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 if (isSelectionMode) {
+                    // The same width as the list and its normal header, so Close and Delete don't jump to the window edge.
                     TopAppBar(
+                        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                         title = {
                             Text(
                                 text = pluralStringResource(R.plurals.library_selected_count_title, selectedPodcastIds.size, selectedPodcastIds.size),
@@ -169,31 +194,39 @@ fun DownloadedEpisodesScreen(
                             )
                         },
                         navigationIcon = {
-                            IconButton(onClick = {
-                                isSelectionMode = false
-                                selectedPodcastIds.clear()
-                            }) {
-                                Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.library_cancel_selection))
+                            val cancelLabel = stringResource(R.string.library_cancel_selection)
+                            BoxloreTooltip(cancelLabel) {
+                                IconButton(onClick = {
+                                    isSelectionMode = false
+                                    selectedPodcastIds.clear()
+                                }) {
+                                    Icon(Icons.Rounded.Close, contentDescription = cancelLabel)
+                                }
                             }
                         },
                         actions = {
-                            IconButton(onClick = {
-                                if (selectedPodcastIds.size == sortedGroups.size) {
-                                    selectedPodcastIds.clear()
-                                } else {
-                                    selectedPodcastIds.clear()
-                                    selectedPodcastIds.addAll(sortedGroups.map { it.podcastId })
+                            val selectAllLabel = stringResource(R.string.library_select_all)
+                            BoxloreTooltip(selectAllLabel) {
+                                IconButton(onClick = {
+                                    if (selectedPodcastIds.coversAll(groupIds)) {
+                                        selectedPodcastIds.clear()
+                                    } else {
+                                        selectedPodcastIds.clear()
+                                        selectedPodcastIds.addAll(sortedGroups.map { it.podcastId })
+                                    }
+                                }) {
+                                    Icon(Icons.Rounded.SelectAll, contentDescription = selectAllLabel)
                                 }
-                            }) {
-                                Icon(Icons.Rounded.SelectAll, contentDescription = stringResource(R.string.library_select_all))
                             }
+                            val deleteLabel = stringResource(R.string.library_delete_selected)
+                            BoxloreTooltip(deleteLabel) {
                             IconButton(
                                 onClick = { deleteConfirmSelectedDialog = true },
                                 enabled = selectedPodcastIds.isNotEmpty()
                             ) {
                                 Icon(
                                     Icons.Rounded.Delete,
-                                    contentDescription = stringResource(R.string.library_delete_selected),
+                                    contentDescription = deleteLabel,
                                     tint = if (selectedPodcastIds.isNotEmpty()) {
                                         MaterialTheme.colorScheme.error
                                     } else {
@@ -201,30 +234,25 @@ fun DownloadedEpisodesScreen(
                                     }
                                 )
                             }
+                            }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.surface,
-                            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            scrolledContainerColor = libraryHeaderScrolledColor(listAtTop),
                         ),
                     )
                 } else {
                     LargeTopAppBar(
                 modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                         title = {
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.library_hub_downloads),
-                                    style = titleStyle,
-                                )
-                                if (downloads.isNotEmpty() && scrollBehavior.state.collapsedFraction < 0.4f) {
-                                    Text(
-                                        text = summary.countLine(DownloadSizeWording.Used, currentLocale()).asString(),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
+                            LibraryLargeTitle(
+                                title = stringResource(R.string.library_hub_downloads),
+                                collapsedFraction = scrollBehavior.state.collapsedFraction,
+                                header = header,
+                                subtitle = if (downloads.isNotEmpty()) summary.countLine(DownloadSizeWording.Used, currentLocale()).asString() else null,
+                            )
                         },
+                        expandedHeight = header.expandedHeight(),
                         navigationIcon = {
                             IconButton(onClick = onBack) {
                                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.library_back))
@@ -240,7 +268,7 @@ fun DownloadedEpisodesScreen(
                         scrollBehavior = scrollBehavior,
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.surface,
-                            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            scrolledContainerColor = libraryHeaderScrolledColor(listAtTop),
                         ),
                     )
                 }
@@ -284,20 +312,55 @@ fun DownloadedEpisodesScreen(
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { innerPadding ->
+      CompositionLocalProvider(LocalSmartDownloadsExpanded provides dashboardExpanded) {
         LibraryPlaybackLayout(modifier = Modifier.padding(innerPadding).boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize(), content = {
             when (uiState) {
-                is LibraryUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                is LibraryUiState.Loading -> LibraryLoading {
+                    LibraryRowsSkeleton(artwork = 56.dp, rows = 3, leading = { LibraryBlockSkeleton(height = 80.dp) })
                 }
                 is LibraryUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(stringResource(R.string.library_downloads_error_loading))
                     }
                 }
-                is LibraryUiState.Success -> {
+                is LibraryUiState.Success -> if (downloads.isEmpty()) {
+                    // Smart Downloads, then the empty page centred in the space under it. The whole page
+                    // scrolls, so an open dashboard taller than a short window stays reachable.
+                    BoxWithConstraints(Modifier.fillMaxSize()) {
+                    val room = maxHeight - with(LocalDensity.current) { dashboardHeightPx.toDp() } - EmptyPageTopPadding
+                    Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                            .boxloreCardWidth(BoxloreCardFamily.Episode).padding(start = 16.dp, end = 16.dp, top = EmptyPageTopPadding)
+                            .testTag(DOWNLOADS_EMPTY_PAGE_TAG),
+                    ) {
+                        Box(Modifier.onSizeChanged { dashboardHeightPx = it.height }) {
+                        SmartDownloadsDashboardCard(
+                            userPrefs = userPrefs,
+                            downloads = downloads,
+                            onSettingsClick = onSettingsClick,
+                            onSyncNow = onSyncNow,
+                            isSyncing = isSyncing
+                        )
+                        }
+                        LibraryEmptyState(
+                            content = LibraryEmptyContent(
+                                title = stringResource(R.string.library_downloads_empty_title),
+                                body = stringResource(if (isOffline) R.string.library_downloads_empty_offline_body else R.string.library_downloads_empty_body),
+                                icon = if (isOffline) Icons.Rounded.CloudOff else Icons.Rounded.DownloadDone,
+                                shape = ExpressiveShapes.Hexagon,
+                                actionText = if (isOffline) null else stringResource(R.string.library_find_podcasts),
+                                secondaryAction = true,
+                            ),
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            onAction = onExploreClick,
+                            // The space under the dashboard, and never less than the empty page needs to show.
+                            modifier = Modifier.height(maxOf(room, EmptyPageMinHeight)),
+                        )
+                    }
+                    }
+                } else {
                     LazyColumn(
+                        state = listState,
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = if (LocalBoxloreWindowLayout.current.usesTabletLayout) 24.dp else listBottomPadding, top = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize()
@@ -313,59 +376,40 @@ fun DownloadedEpisodesScreen(
                             )
                         }
 
-                        if (downloads.isEmpty()) {
-                            item {
-                                val emptyTitle = stringResource(R.string.library_downloads_empty_title)
-                                val emptyDescription = if (isOffline) {
-                                    stringResource(R.string.library_downloads_empty_offline_body)
-                                } else {
-                                    stringResource(R.string.library_downloads_empty_body)
-                                }
-                                ExpressiveSolarSystemEmptyState(
-                                    title = emptyTitle,
-                                    description = emptyDescription,
-                                    icon = Icons.Rounded.CloudOff,
-                                    actionText = if (isOffline) null else stringResource(R.string.library_find_podcasts),
-                                    modifier = Modifier,
-                                    onExploreClick = onExploreClick
-                                )
-                            }
-                        } else {
-                            items(items = sortedGroups, key = { it.podcastId }) { group ->
-                                val isSelected = group.podcastId in selectedPodcastIds
-                                PodcastListShowCard(
-                                    group = group,
-                                    onClick = {
-                                        onPodcastShowClick(group.podcastId, group.podcastName)
-                                    },
-                                    onPlayClick = {
-                                        // A failed download has no audio, so playing skips it.
-                                        val playable = group.episodes.playableDownloads()
-                                        if (playable.isNotEmpty()) {
-                                            viewModel.playQueue(playable.map { it.toEpisode() }, playable.first().toPodcast())
+                        items(items = sortedGroups, key = { it.podcastId }) { group ->
+                            val isSelected = group.podcastId in selectedPodcastIds
+                            PodcastListShowCard(
+                                group = group,
+                                onClick = {
+                                    onPodcastShowClick(group.podcastId, group.podcastName)
+                                },
+                                onPlayClick = {
+                                    // A failed download has no audio, so playing skips it.
+                                    val playable = group.episodes.playableDownloads()
+                                    if (playable.isNotEmpty()) {
+                                        viewModel.playQueue(playable.map { it.toEpisode() }, playable.first().toPodcast())
+                                    }
+                                },
+                                selection =
+                                DownloadShowCardSelection(
+                                    active = isSelectionMode,
+                                    selected = isSelected,
+                                    onSelectedChange = { selected ->
+                                        if (selected) {
+                                            selectedPodcastIds.add(group.podcastId)
+                                        } else {
+                                            selectedPodcastIds.remove(group.podcastId)
                                         }
                                     },
-                                    selection =
-                                    DownloadShowCardSelection(
-                                        active = isSelectionMode,
-                                        selected = isSelected,
-                                        onSelectedChange = { selected ->
-                                            if (selected) {
-                                                selectedPodcastIds.add(group.podcastId)
-                                            } else {
-                                                selectedPodcastIds.remove(group.podcastId)
-                                            }
-                                        },
-                                        onLongClick = {
-                                            isSelectionMode =
-                                                selectedPodcastIds.applyLongPressDownloadSelection(
-                                                    isSelectionMode,
-                                                    group.podcastId,
-                                                )
-                                        },
-                                    ),
-                                )
-                            }
+                                    onLongClick = {
+                                        isSelectionMode =
+                                            selectedPodcastIds.applyLongPressDownloadSelection(
+                                                isSelectionMode,
+                                                group.podcastId,
+                                            )
+                                    },
+                                ),
+                            )
                         }
                     }
                 }
@@ -390,42 +434,50 @@ fun DownloadedEpisodesScreen(
                     }
                 )
             }
-
-            if (deleteConfirmSelectedDialog) {
-                BoxloreAlertDialog(
-                    onDismissRequest = { deleteConfirmSelectedDialog = false },
-                    title = { Text(stringResource(R.string.library_downloads_delete_title)) },
-                    text = {
-                        val selectedCount = selectedPodcastIds.size
-                        Text(pluralStringResource(R.plurals.library_downloads_delete_podcasts_body, selectedCount, selectedCount))
-                    },
-                    confirmButton = {
-                        Button(
-                            onClick = {
-                                val epsToDelete = sortedGroups
-                                    .filter { it.podcastId in selectedPodcastIds }
-                                    .flatMap { it.episodes }
-                                    .map { it.episodeId }
-                                viewModel.removeMultipleDownloads(epsToDelete)
-                                isSelectionMode = false
-                                selectedPodcastIds.clear()
-                                deleteConfirmSelectedDialog = false
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError
-                            )
-                        ) {
-                            Text(stringResource(R.string.library_delete))
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { deleteConfirmSelectedDialog = false }) {
-                            Text(stringResource(R.string.library_cancel))
-                        }
-                    }
-                )
-            }
         })
+      }
+        // At screen level, so the question stays open when Play All moves between its tablet row and the list.
+        if (deleteConfirmSelectedDialog) {
+            BoxloreAlertDialog(
+                onDismissRequest = { deleteConfirmSelectedDialog = false },
+                title = { Text(stringResource(R.string.library_downloads_delete_title)) },
+                text = {
+                    val selectedCount = selectedPodcastIds.size
+                    Text(pluralStringResource(R.plurals.library_downloads_delete_podcasts_body, selectedCount, selectedCount))
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val epsToDelete = sortedGroups
+                                .filter { it.podcastId in selectedPodcastIds }
+                                .flatMap { it.episodes }
+                                .map { it.episodeId }
+                            viewModel.removeMultipleDownloads(epsToDelete)
+                            isSelectionMode = false
+                            selectedPodcastIds.clear()
+                            deleteConfirmSelectedDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
+                        )
+                    ) {
+                        Text(stringResource(R.string.library_delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deleteConfirmSelectedDialog = false }) {
+                        Text(stringResource(R.string.library_cancel))
+                    }
+                }
+            )
+        }
     }
 }
+
+/** The empty page's gap above Smart Downloads, and the least height the empty page gets under it. */
+private val EmptyPageTopPadding = 8.dp
+private val EmptyPageMinHeight = 240.dp
+
+/** Test tag on the empty Downloads page's scrolling column. */
+internal const val DOWNLOADS_EMPTY_PAGE_TAG = "downloads_empty_page"
