@@ -186,7 +186,9 @@ internal fun ShowPageSkeleton(modifier: Modifier = Modifier, titlesOnly: Boolean
                 if (header.form == ShowHeaderForm.Stacked) StackedHeaderSkeleton(header.coverSize) else HorizontalHeaderSkeleton(header)
                 ToolbarSkeleton()
                 Column(Modifier.padding(top = 14.dp, start = 16.dp, end = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    if (titlesOnly) repeat(TITLE_ROW_SKELETONS) { EpisodeTitleRowSkeleton() } else repeat(2) { EpisodeCardSkeleton() }
+                    // Enough cards to reach the page's bottom in any form, so no card pops in below the last.
+                    val cards = (pageHeight / SKELETON_CARD_MIN_DP).toInt().coerceIn(2, MAX_SKELETON_CARDS)
+                    if (titlesOnly) repeat(TITLE_ROW_SKELETONS) { EpisodeTitleRowSkeleton() } else repeat(cards) { EpisodeCardSkeleton() }
                 }
             }
         }
@@ -205,6 +207,7 @@ private fun StackedHeaderSkeleton(coverSize: androidx.compose.ui.unit.Dp) {
 @Composable
 private fun HorizontalHeaderSkeleton(header: ShowHeaderLayout) {
     val wide = header.form == ShowHeaderForm.Wide
+    val beside = header.descriptionBeside
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Row(verticalAlignment = if (wide) Alignment.Top else Alignment.CenterVertically) {
             Block(header.coverSize, header.coverSize, MaterialTheme.shapes.extraLarge, Modifier.testTag(SHOW_PAGE_SKELETON_COVER_TAG))
@@ -213,10 +216,10 @@ private fun HorizontalHeaderSkeleton(header: ShowHeaderLayout) {
                 Block(null, 28.dp, RoundedCornerShape(10.dp), Modifier.padding(end = 24.dp))
                 Block(120.dp, 16.dp, RoundedCornerShape(8.dp), Modifier.padding(top = 12.dp))
                 ChipSkeletons(Modifier.padding(top = 16.dp))
-                if (wide) DescriptionSkeleton(Modifier.padding(top = 16.dp), lines = 3)
+                if (beside) DescriptionSkeleton(Modifier.padding(top = 16.dp), lines = 3)
             }
         }
-        if (!wide) DescriptionSkeleton(Modifier.padding(top = 16.dp))
+        if (!beside) DescriptionSkeleton(Modifier.padding(top = 16.dp))
     }
 }
 
@@ -251,6 +254,10 @@ internal const val SHOW_PAGE_SKELETON_TOOLBAR_TAG = "podcast_info_skeleton_toolb
 
 /** Title rows are about a third of a card's height, so the opening page shows more of them. */
 private const val TITLE_ROW_SKELETONS = 4
+
+/** Loading cards: one per short wide card's height of the page, at least two. */
+private const val SKELETON_CARD_MIN_DP = 120f
+private const val MAX_SKELETON_CARDS = 10
 
 /**
  * Completed episodes are hidden and the show has none left: says so, and offers to show them

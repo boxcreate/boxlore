@@ -101,6 +101,7 @@ import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.groupEpisodes
 import cx.aswin.boxlore.feature.info.logic.podcastSearchDisplayEpisodes
 import cx.aswin.boxlore.feature.info.logic.resolveAutoScrollTarget
+import cx.aswin.boxlore.feature.info.sections.ShowHeaderForm
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -291,8 +292,15 @@ fun PodcastInfoScreen(
     // camera cutout keep their own room on top of that.
     val readingSide = infoReadingSidePadding(boxloreContentWidthDp().dp)
     val (safeStart, safeEnd) = boxloreHorizontalSafeInsetsDp()
-    // Scroll-linked header and floating title, like Episode Info.
-    val titleMotion = rememberShowPageTitleMotion(listState, readingSide + safeStart, readingSide + safeEnd)
+    // Scroll-linked header and floating title, like Episode Info. Its pace follows the header form:
+    // beside the cover, the large title reaches the top bar after a short scroll.
+    var headerForm by remember(podcastId) { mutableStateOf(ShowHeaderForm.Stacked) }
+    val titleMotion = rememberShowPageTitleMotion(
+        listState,
+        readingSide + safeStart,
+        readingSide + safeEnd,
+        collapseDistance = if (headerForm == ShowHeaderForm.Stacked) StackedHeaderCollapse else SideHeaderCollapse,
+    )
 
     // State for options sheet
 
@@ -639,6 +647,7 @@ fun PodcastInfoScreen(
 
                 val contentCallbacks = EpisodeListContentCallbacks(
                     onDescExpandedChange = { isDescExpanded = it },
+                    onHeaderFormChange = { headerForm = it },
                     onPlayEpisode = { viewModel.onPlayClick(it) },
                     onPodcastClick = onPodcastClick,
                     onEditGenre = handleEditGenreClick,

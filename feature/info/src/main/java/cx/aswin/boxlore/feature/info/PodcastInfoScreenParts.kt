@@ -60,9 +60,18 @@ internal data class ShowPageTitleMotion(
 /**
  * [sideStart] and [sideEnd] are the room the page keeps clear at each side (side system buttons, a
  * camera cutout, the space beside a tablet's reading column); the floating title stays inside it.
+ * [collapseDistance] is how far the header scrolls before the top bar is solid and the floating
+ * title shows: the centred header's title sits under its cover ([StackedHeaderCollapse]), a header
+ * with the cover beside the title has it near the top ([SideHeaderCollapse]), so the bar fills
+ * before that title slides under Share and More.
  */
 @Composable
-internal fun rememberShowPageTitleMotion(listState: LazyListState, sideStart: Dp = 0.dp, sideEnd: Dp = 0.dp): ShowPageTitleMotion {
+internal fun rememberShowPageTitleMotion(
+    listState: LazyListState,
+    sideStart: Dp = 0.dp,
+    sideEnd: Dp = 0.dp,
+    collapseDistance: Dp = StackedHeaderCollapse,
+): ShowPageTitleMotion {
     val scrollOffset by remember {
         derivedStateOf {
             // Fully collapsed once the first item has scrolled away.
@@ -70,7 +79,7 @@ internal fun rememberShowPageTitleMotion(listState: LazyListState, sideStart: Dp
         }
     }
     val density = LocalDensity.current
-    val scrollFraction = (scrollOffset / with(density) { 150.dp.toPx() }).coerceIn(0f, 1f)
+    val scrollFraction = (scrollOffset / with(density) { collapseDistance.toPx() }).coerceIn(0f, 1f)
     val statusBarHeight = boxlorePaneTopInset()
     val collapsedHeaderHeight = 64.dp + statusBarHeight
     // Don't lerp from Color.Transparent: its RGB is 0,0,0, which flashes black.
@@ -116,6 +125,12 @@ internal fun rememberShowPageTitleMotion(listState: LazyListState, sideStart: Dp
         titleEndPadding = titleEndPadding,
     )
 }
+
+/** The centred header's collapse distance: its title sits under the cover. */
+internal val StackedHeaderCollapse = 150.dp
+
+/** With the cover beside it, the header's title starts 16dp under the top bar. */
+internal val SideHeaderCollapse = 24.dp
 
 /**
  * The system notification permission as the show page sees it: whether the system blocks the

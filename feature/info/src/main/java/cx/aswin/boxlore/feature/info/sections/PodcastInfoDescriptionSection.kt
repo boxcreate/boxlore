@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,10 +65,14 @@ internal fun stripHtml(html: String?): String {
     return android.text.Html.fromHtml(html, android.text.Html.FROM_HTML_MODE_LEGACY).toString().trim()
 }
 
+/**
+ * The locked-feed line and its explanation. [dialogOpen] is saved, so the explanation stays open
+ * through a fold that recreates the page; the show header holds it above its forms, so it also
+ * stays open when a resize moves the description.
+ */
 @Composable
-internal fun LockedFeedNotice() {
-    // Saved, so the explanation stays open through a fold that recreates the page.
-    var showLockedInfoDialog by rememberSaveable { mutableStateOf(false) }
+internal fun LockedFeedNotice(dialogOpen: MutableState<Boolean> = rememberSaveable { mutableStateOf(false) }) {
+    var showLockedInfoDialog by dialogOpen
 
     Spacer(modifier = Modifier.height(12.dp))
     androidx.compose.material3.HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
@@ -164,12 +169,16 @@ internal fun PodcastInfoDescriptionSection(
     onPodcastClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     collapsedLines: Int = 2,
+    lockedDialogOpen: MutableState<Boolean> = rememberSaveable { mutableStateOf(false) },
 ) {
     val hasPodroll = !podroll.isNullOrEmpty()
     if (strippedDesc.isEmpty() && !isLocked && !hasPodroll) return
     // Whether the closed text runs past its lines; read from the drawn layout, reset with the text.
     var textOverflows by remember(strippedDesc, collapsedLines) { mutableStateOf(false) }
-    val hidesMore = textOverflows || hasPodroll || isLocked
+    // With no text, the lock notice and the creator's picks always show: nothing is hidden.
+    val hidesMore = strippedDesc.isNotEmpty() && (textOverflows || hasPodroll || isLocked)
+    // The arrow and its open/closed state show while the card hides more or is open over text.
+    val showsCue = hidesMore || (isDescExpanded && strippedDesc.isNotEmpty())
     val expandedLabel = stringResource(R.string.branded_description_expanded)
     val collapsedLabel = stringResource(R.string.branded_description_collapsed)
 
@@ -184,7 +193,7 @@ internal fun PodcastInfoDescriptionSection(
                     stiffness = Spring.StiffnessMediumLow,
                 ),
             ).expressiveClickable(shape = MaterialTheme.shapes.large) { onToggleExpanded() }
-            .semantics { if (hidesMore || isDescExpanded) stateDescription = if (isDescExpanded) expandedLabel else collapsedLabel }
+            .semantics { if (showsCue) stateDescription = if (isDescExpanded) expandedLabel else collapsedLabel }
             .testTag(DESCRIPTION_CARD_TAG),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = MaterialTheme.shapes.large,
@@ -199,9 +208,10 @@ internal fun PodcastInfoDescriptionSection(
                 onPodcastClick = onPodcastClick,
                 collapsedLines = collapsedLines,
                 onCollapsedOverflow = { textOverflows = it },
-                endRoom = if (hidesMore || isDescExpanded) DescriptionChevronRoom else 0.dp,
+                lockedDialogOpen = lockedDialogOpen,
+                endRoom = if (showsCue) DescriptionChevronRoom else 0.dp,
             )
-            if (hidesMore || isDescExpanded) DescriptionChevron(isDescExpanded, Modifier.align(Alignment.TopEnd))
+            if (showsCue) DescriptionChevron(isDescExpanded, Modifier.align(Alignment.TopEnd))
         }
     }
 }
@@ -230,6 +240,7 @@ internal fun PodcastInfoDescriptionBody(
     collapsedLines: Int = 2,
     onCollapsedOverflow: (Boolean) -> Unit = {},
     endRoom: Dp = 0.dp,
+    lockedDialogOpen: MutableState<Boolean> = rememberSaveable { mutableStateOf(false) },
 ) {
     Column(
         modifier =
@@ -254,7 +265,7 @@ internal fun PodcastInfoDescriptionBody(
         // podroll in that case instead of hiding them behind a collapsed, empty description.
         val showMetadataRegardless = isDescExpanded || strippedDesc.isEmpty()
         if (showMetadataRegardless && isLocked) {
-            LockedFeedNotice()
+            LockedFeedNotice(lockedDialogOpen)
         }
         if (showMetadataRegardless && hasPodroll) {
             PodrollRecommendations(podroll = podroll.orEmpty(), onPodcastClick = onPodcastClick)

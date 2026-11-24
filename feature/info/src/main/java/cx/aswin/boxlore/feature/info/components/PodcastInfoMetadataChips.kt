@@ -3,7 +3,6 @@ package cx.aswin.boxlore.feature.info.components
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,7 +11,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Article
@@ -23,6 +24,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -360,6 +363,7 @@ private fun PodcastMetadataChip(
     val informational = onClick == null
     val container = when {
         genre -> MaterialTheme.colorScheme.secondaryContainer
+        informational && LocalSolidInfoChips.current -> MaterialTheme.colorScheme.surfaceContainerLow
         informational -> Color.Transparent
         else -> MaterialTheme.colorScheme.surfaceContainerHigh
     }
@@ -438,9 +442,14 @@ internal const val METADATA_CHIPS_ROW_TAG = "podcast_info_chips_row"
 internal const val METADATA_INFO_CHIP_TAG = "podcast_info_info_chip"
 internal const val METADATA_ACTION_CHIP_TAG = "podcast_info_action_chip"
 
-/** How the header lays its chips out: a centred row that scrolls, or start-aligned lines that wrap. */
-internal enum class MetadataChipsLayout { ScrollingRow, Wrapping }
+/** Information chips over the cover backdrop get a solid container, so their text stays readable on any cover. */
+private val LocalSolidInfoChips = staticCompositionLocalOf { false }
 
+/**
+ * The header's chips in one row that scrolls. They sit centred while they fit, or from the start
+ * when [alignStart] (beside the cover, under the title). [listState] keeps the row's scroll when
+ * the header changes form. [solidInfoChips] gives information chips a solid container.
+ */
 @Suppress("LongParameterList")
 @Composable
 internal fun PodcastInfoMetadataChipsRow(
@@ -451,37 +460,30 @@ internal fun PodcastInfoMetadataChipsRow(
     onEditGenre: (() -> Unit)? = null,
     onPlayTrailer: (Episode) -> Unit,
     modifier: Modifier = Modifier,
-    layout: MetadataChipsLayout = MetadataChipsLayout.ScrollingRow,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
     /** A followed show: a missing genre offers Add genre. */
     canEditGenre: Boolean = onEditGenre != null,
+    listState: LazyListState = rememberLazyListState(),
+    alignStart: Boolean = false,
+    solidInfoChips: Boolean = false,
 ) {
     val context = LocalContext.current
     val medium = resolveDisplayMedium(podcast)
     val branded = LocalBrandedPage.current != null
     val chips = podcastInfoChips(podcast, sortedPersons, trailerEpisode, medium, frequencyData, onEditGenre.takeIf { canEditGenre } to onEditGenre, onPlayTrailer, context)
 
-    if (layout == MetadataChipsLayout.Wrapping) {
-        FlowRow(
-            modifier = modifier.fillMaxWidth().testTag(METADATA_CHIPS_ROW_TAG),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            // Tappable chips keep a 48dp touch target around their 36dp pill: line them up by centre.
-            itemVerticalAlignment = Alignment.CenterVertically,
+    // A long row keeps off the page's margins at rest and scrolls to the page's edge, so it reads
+    // as a row that scrolls rather than one cut off.
+    CompositionLocalProvider(LocalSolidInfoChips provides solidInfoChips) {
+        LazyRow(
+            state = listState,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp, if (alignStart) Alignment.Start else Alignment.CenterHorizontally),
+            contentPadding = contentPadding,
+            modifier = (if (branded) Modifier.fillMaxWidth().height(BrandedChipRowHeight) else Modifier.fillMaxWidth()).then(modifier).testTag(METADATA_CHIPS_ROW_TAG),
         ) {
-            chips.forEach { chip -> chip() }
+            items(chips.size) { index -> chips[index]() }
         }
-        return
-    }
-    // Chips sit centred while they fit; a long row keeps off the page's margins at rest and scrolls
-    // to the page's edge, so it reads as a row that scrolls rather than one cut off.
-    LazyRow(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        contentPadding = contentPadding,
-        modifier = (if (branded) Modifier.fillMaxWidth().height(BrandedChipRowHeight) else Modifier.fillMaxWidth()).then(modifier).testTag(METADATA_CHIPS_ROW_TAG),
-    ) {
-        items(chips.size) { index -> chips[index]() }
     }
 }
 

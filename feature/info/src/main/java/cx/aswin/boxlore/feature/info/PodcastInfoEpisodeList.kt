@@ -73,6 +73,7 @@ import cx.aswin.boxlore.feature.info.logic.podcastSearchCoverage
 import cx.aswin.boxlore.feature.info.logic.podcastSearchHasNoResults
 import cx.aswin.boxlore.feature.info.logic.podcastSearchShowsFailure
 import cx.aswin.boxlore.feature.info.sections.PodcastInfoHeroSection
+import cx.aswin.boxlore.feature.info.sections.ShowHeaderForm
 
 internal data class EpisodeListContentState(
     val listState: LazyListState,
@@ -124,6 +125,8 @@ internal data class EpisodeListContentCallbacks(
     /** Try again after a page of episodes couldn't load ([PodcastInfoUiState.Success.pageLoadFailed]). */
     val onRetryPage: () -> Unit = {},
     val onUnhide: () -> Unit = {},
+    /** The regular header's form, for the title motion's pace. */
+    val onHeaderFormChange: (ShowHeaderForm) -> Unit = {},
 )
 
 @Composable
@@ -341,6 +344,7 @@ private fun LazyListScope.heroItem(contentState: EpisodeListContentState, callba
                 onPlayEpisode = callbacks.onPlayEpisode,
                 onPodcastClick = callbacks.onPodcastClick,
                 onEditGenre = callbacks.onEditGenre,
+                onFormChange = callbacks.onHeaderFormChange,
             )
         }
     }
