@@ -271,9 +271,9 @@ Every `app/`, `core/*/`, and `feature/*/` module keeps a folder README. Shape: [
 
 Debug JVM tests do not run optimized DEX. `testReleaseUnitTest` also uses JVM classes before R8, so it cannot replace a release-artifact gate or device acceptance.
 
-`release-contracts.yml` is the **Release dry run**. It runs on every release PR (a `release/v*` branch: the commit that will be released, with its new version code), so a publication failure shows up before the merge, and on demand from Actions → Release dry run → Run workflow on any branch. It builds unsigned optimized APK/AAB artifacts for the phone app and the Wear OS app and runs release lint using the same release rules and resource shrinking, a build-only Firebase stub, no production signing key, and no Crashlytics mapping upload. It does not publish a release or send notifications, and it is not a ruleset-required check. The one signed build in `changelog-on-merge.yml`, shared by publication and refresh, always runs the contract gate before publishing. Fast hermetic contract-regression tests remain in PR CI; existing unit/review merge requirements are unchanged.
+`release-contracts.yml` is the **Release dry run**. It runs on every release PR (a `release/v*` branch: the commit that will be released, with its new version code), so a publication failure shows up before the merge, and on demand from Actions → Release dry run → Run workflow on any branch. It builds unsigned optimized APK/AAB artifacts for the phone, Wear OS and Android TV apps and runs release lint using the same release rules and resource shrinking, a build-only Firebase stub, no production signing key, and no Crashlytics mapping upload. It does not publish a release or send notifications, and it is not a ruleset-required check. The one signed build in `changelog-on-merge.yml`, shared by publication and refresh, always runs the contract gate before publishing. Fast hermetic contract-regression tests remain in PR CI; existing unit/review merge requirements are unchanged.
 
-The gate derives contracts from pre-R8 release class files and the merged manifest, then checks the actual APK **and** AAB DEX with the matching R8 mapping:
+The gate derives contracts from pre-R8 release class files and the merged manifest, then checks the actual APK **and** AAB DEX with the matching R8 mapping. The phone app is checked against the whole table below. The Wear OS and TV apps (`--module wear`, `--module tv`) load only the modules they ship and are checked for their manifest entry points, Retrofit APIs (Wear OS adds `WatchAccountApi`), dynamic API serializers, literal resource URIs and debug-only components; their workers, Room implementations and TypeTokens are checked when R8 keeps them, and they have no stored Gson graph, legacy aliases, widgets, onboarding resources or installer:
 
 | Contract | Regression rejected |
 | :--- | :--- |
@@ -297,6 +297,11 @@ python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> \
 python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> --app-variant playRelease \
   --report app/build/reports/play-release-contracts.json \
   app/build/outputs/bundle/playRelease/app-playRelease.aab
+./gradlew :wear:assembleRelease :wear:bundleRelease :tv:assembleRelease :tv:bundleRelease
+for module in wear tv; do
+  python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> --module "$module" \
+    "$module"/build/outputs/apk/release/"$module"-release*.apk "$module/build/outputs/bundle/release/$module-release.aab"
+done
 python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
 ```
 

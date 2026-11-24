@@ -112,9 +112,13 @@ def parse_class(data: bytes) -> ClassFile:
     return ClassFile(name, super_name, access, fields, methods, signature(attrs))
 
 
-def load_project_classes(root: Path, app_variant: str = "release") -> dict[str, ClassFile]:
+def load_project_classes(root: Path, app_variant: str = "release", app: str = "app",
+                         modules: list[Path] | None = None, marker: str = "cx/aswin/boxlore/LegacyWorkerFactory",
+                         ) -> dict[str, ClassFile]:
+    """The pre-R8 classes of one app (`app`, `tv` or `wear`) and the library modules it ships."""
     result: dict[str, ClassFile] = {}
-    modules = [root / "app", *sorted((root / "core").glob("*")), *sorted((root / "feature").glob("*"))]
+    if modules is None:
+        modules = [root / app, *sorted((root / "core").glob("*")), *sorted((root / "feature").glob("*"))]
     for module in modules:
         jars = sorted((module / "build/intermediates/runtime_library_classes_jar/release").rglob("*.jar"))
         for jar in jars:
@@ -125,11 +129,11 @@ def load_project_classes(root: Path, app_variant: str = "release") -> dict[str, 
                         result[item.name] = item
     # The application is not published as a library jar.
     task_variant = app_variant[0].upper() + app_variant[1:]
-    for directory in [root / f"app/build/intermediates/javac/{app_variant}/compile{task_variant}JavaWithJavac/classes",
-                      root / f"app/build/intermediates/built_in_kotlinc/{app_variant}/compile{task_variant}Kotlin/classes"]:
+    for directory in [root / f"{app}/build/intermediates/javac/{app_variant}/compile{task_variant}JavaWithJavac/classes",
+                      root / f"{app}/build/intermediates/built_in_kotlinc/{app_variant}/compile{task_variant}Kotlin/classes"]:
         for path in sorted(directory.rglob("*.class")):
             item = parse_class(path.read_bytes())
             result[item.name] = item
-    if "cx/aswin/boxlore/core/network/BoxLoreApi" not in result or "cx/aswin/boxlore/LegacyWorkerFactory" not in result:
-        raise ValueError(f"Pre-R8 {app_variant} classes missing; build assembleRelease and bundlePlayRelease first")
+    if "cx/aswin/boxlore/core/network/BoxLoreApi" not in result or marker not in result:
+        raise ValueError(f"Pre-R8 {app} {app_variant} classes missing; build its release APK and bundle first")
     return result

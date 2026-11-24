@@ -599,6 +599,20 @@ jobs:
             --app-variant playRelease \
             --report app/build/reports/play-release-contracts.json \
             app/build/outputs/bundle/playRelease/app-playRelease.aab
+          # The build commit's own script runs, so a release made before the Wear OS and TV checks skips them.
+          if grep -q -- '"--module"' .github/scripts/verify_release_contracts.py; then
+            modules=(wear)
+            if [[ -f tv/build.gradle.kts ]]; then
+              modules+=(tv)
+            fi
+            for module in "${modules[@]}"; do
+              python3 .github/scripts/verify_release_contracts.py \
+                --module "$module" \
+                --report "$module/build/reports/release-contracts.json" \
+                "$module/build/outputs/apk/release/$module-release.apk" \
+                "$module/build/outputs/bundle/release/$module-release.aab"
+            done
+          fi
 
       - name: Preserve optimized release diagnostics
         if: always() && steps.release.outputs.build == 'true'
@@ -615,8 +629,10 @@ jobs:
             app/build/outputs/mapping/release/usage.txt
             app/build/outputs/mapping/release/missing_rules.txt
             app/build/outputs/mapping/playRelease/
+            wear/build/reports/release-contracts.json
             wear/build/outputs/mapping/release/mapping.txt
             wear/build/outputs/mapping/release/missing_rules.txt
+            tv/build/reports/release-contracts.json
             tv/build/outputs/mapping/release/mapping.txt
             tv/build/outputs/mapping/release/missing_rules.txt
 
