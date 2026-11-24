@@ -52,7 +52,8 @@ class ExploreSearchResultsTest {
         composeRule.onNodeWithText("Also found").assertIsDisplayed()
         composeRule.onNodeWithText("Show 2").assertIsDisplayed().performClick()
         assertEquals(1, composeRule.onAllNodesWithText("Show 1").fetchSemanticsNodes().size)
-        composeRule.onNodeWithText("Host 0").assertDoesNotExist()
+        // Results are list rows that name who makes each show.
+        composeRule.onNodeWithText("Host 0", useUnmergedTree = true).assertIsDisplayed()
         assertEquals(
             listOf(listOf("show_0", "explore_search", "All", 0), listOf("show_1", "explore_search", "All", 1), listOf("show_2", "explore_search_also_found", "All", 2)),
             showTaps,
@@ -167,6 +168,9 @@ class ExploreSearchResultsTest {
         assertTrue("the first episode follows its header closely", (first.top - header.bottom).value in 0f..40f)
         composeRule.onNodeWithText("Show 0").performClick()
         assertEquals(listOf(listOf("show_0", "explore_search_concept", "All", 0)), showTaps)
+        // The first cover lines up with the episode cards' edge; its press area reaches into the margin.
+        val cover = composeRule.onNodeWithContentDescription("Show 0", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(first.left.value, cover.left.value, 1f)
     }
 
     private fun semantic() {

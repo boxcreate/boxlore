@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.explore
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
@@ -21,7 +22,6 @@ import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
-import cx.aswin.boxlore.feature.explore.components.ExploreBrowsePodcastCard
 import cx.aswin.boxlore.feature.explore.components.ExploreEmptyState
 import cx.aswin.boxlore.feature.explore.components.ExploreEpisodesSearchEmptyState
 import cx.aswin.boxlore.feature.explore.components.ExploreEpisodesSearchIdleState
@@ -29,8 +29,11 @@ import cx.aswin.boxlore.feature.explore.components.ExploreRelatedShowsRail
 import cx.aswin.boxlore.feature.explore.components.ExploreSearchEpisodeCard
 import cx.aswin.boxlore.feature.explore.components.ExploreSearchLoadingState
 import cx.aswin.boxlore.feature.explore.components.ExploreSearchSectionHeader
+import cx.aswin.boxlore.feature.explore.components.ExploreShowResultRow
 import cx.aswin.boxlore.feature.explore.components.ExploreSuggestedMoodsHeader
 import cx.aswin.boxlore.feature.explore.components.ExploreVibeCard
+import cx.aswin.boxlore.feature.explore.components.exploreConnectedRowShape
+import cx.aswin.boxlore.feature.explore.logic.ExploreListRowLogic
 
 /** What Ask anything shows: its results with the order, keys and analytics positions they always had. */
 internal class ExploreEpisodeSearchContent(
@@ -145,6 +148,7 @@ internal class ExploreShowSearchContent(
 internal fun LazyStaggeredGridScope.exploreShowSearchItems(
     content: ExploreShowSearchContent,
     hasCatalog: Boolean,
+    rowColumns: Int,
     onMoodClick: (Pair<String, String>) -> Unit,
     onPodcastClick: (String, String, String?, Int?) -> Unit,
     onRetry: () -> Unit,
@@ -171,12 +175,9 @@ internal fun LazyStaggeredGridScope.exploreShowSearchItems(
                 }
             }
             orderedExploreItems(content.matches, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }) { podcast, index ->
-                ExploreBrowsePodcastCard(
-                    podcast = podcast,
-                    featured = false,
-                    showGenre = showGenreChip,
-                    onClick = { onPodcastClick(podcast.id, "explore_search", content.category, index) },
-                )
+                ShowResultRow(podcast, index, content.matches.size, rowColumns, showGenreChip) {
+                    onPodcastClick(podcast.id, "explore_search", content.category, index)
+                }
             }
             if (hasAlsoFound) {
                 item(key = "also_found_header", span = StaggeredGridItemSpan.FullLine) {
@@ -186,12 +187,9 @@ internal fun LazyStaggeredGridScope.exploreShowSearchItems(
                     )
                 }
                 orderedExploreItems(content.alsoFound, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "also") }) { podcast, index ->
-                    ExploreBrowsePodcastCard(
-                        podcast = podcast,
-                        featured = false,
-                        showGenre = showGenreChip,
-                        onClick = { onPodcastClick(podcast.id, "explore_search_also_found", content.category, content.matches.size + index) },
-                    )
+                    ShowResultRow(podcast, index, content.alsoFound.size, rowColumns, showGenreChip) {
+                        onPodcastClick(podcast.id, "explore_search_also_found", content.category, content.matches.size + index)
+                    }
                 }
             }
             if (content.loading) item(span = StaggeredGridItemSpan.FullLine) { ExploreSearchMoreLoader() }
@@ -204,5 +202,24 @@ internal fun LazyStaggeredGridScope.exploreShowSearchItems(
 private fun ExploreSearchMoreLoader() {
     Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
         BoxLoreLoader.Expressive(size = 48.dp)
+    }
+}
+
+/**
+ * One Find a show result. In one column, each section is a connected list; with two or three
+ * columns each row is its own rounded surface, no wider than 480dp.
+ */
+@Composable
+private fun ShowResultRow(podcast: Podcast, index: Int, count: Int, columns: Int, showGenre: Boolean, onClick: () -> Unit) {
+    val (starts, ends) = if (columns == 1) ExploreListRowLogic.connectedEnds(index, count, 1) else true to true
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopStart) {
+        ExploreShowResultRow(
+            podcast = podcast,
+            showGenre = showGenre,
+            shape = exploreConnectedRowShape(starts, ends),
+            onClick = onClick,
+            modifier = Modifier.widthIn(max = 480.dp),
+            uniformHeight = columns > 1,
+        )
     }
 }

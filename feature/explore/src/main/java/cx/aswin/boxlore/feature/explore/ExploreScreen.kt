@@ -92,6 +92,7 @@ import cx.aswin.boxlore.feature.explore.components.exploreTopicResults
 import cx.aswin.boxlore.feature.explore.components.rememberExploreTabPagerState
 import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
 import cx.aswin.boxlore.feature.explore.logic.ExploreChromeScrollLogic
+import cx.aswin.boxlore.feature.explore.logic.ExploreListRowLogic
 import cx.aswin.boxlore.feature.explore.logic.ExploreTabPagerLogic
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -387,22 +388,32 @@ fun ExploreContent(
             val posterColumns = boxlorePosterColumns(window, boxloreContentWidthDp(), gapDp = 12f)
             // Tablets lead with a featured row; compact windows keep the full-width first card.
             val tabletColumns = if (window.usesTabletLayout) posterColumns else 0
+            // Find a show results and tablet Top charts are list rows; everything else keeps posters.
+            val showRows = isSearchModeActive && state.currentVibe == null && state.searchTab == SearchTab.SHOWS && state.searchQuery.isNotEmpty()
+            val chartColumns = ExploreListRowLogic.chartColumns(window.widthDp)
             val gridPadding = boxloreHorizontalSafeContentPadding(
                 PaddingValues(start = 16.dp, end = 16.dp, top = expandedHeaderHeight, bottom = listBottomPadding),
             )
             val feed: @Composable (Int, LazyStaggeredGridState) -> Unit = { browseTab, pageGridState ->
                 ShimmerScope(active = if (state.currentVibe != null) state.isLoading else !isSearchModeActive && if (browseTab == 1) state.isRecommendationsLoading else state.isLoading) {
+                    val chart = !isSearchModeActive && state.currentVibe == null && browseTab == 0 && tabletColumns > 0 && displayList.isNotEmpty()
+                    val rowColumns = when {
+                        showRows -> ExploreListRowLogic.showResultColumns(window.widthDp)
+                        chart -> chartColumns
+                        else -> null
+                    }
                     LazyVerticalStaggeredGrid(
                         state = pageGridState,
-                        columns = if (window.isSpecified) {
-                            StaggeredGridCells.Fixed(posterColumns)
-                        } else {
+                        columns = when {
+                            showRows && window.isSpecified || chart -> StaggeredGridCells.Fixed(rowColumns ?: 1)
+                            window.isSpecified -> StaggeredGridCells.Fixed(posterColumns)
                             // Isolated previews and tests have no app shell to size the window.
-                            StaggeredGridCells.Adaptive(150.dp)
+                            else -> StaggeredGridCells.Adaptive(if (showRows) 600.dp else 150.dp)
                         },
                         contentPadding = gridPadding,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalItemSpacing = 12.dp,
+                        // Rows sit in connected lists; one-column results and chart columns join up.
+                        verticalItemSpacing = if (chart || rowColumns == 1) 2.dp else 12.dp,
                         modifier = Modifier.fillMaxSize().testTag("explore_feed_$browseTab")
                     ) {
                         if (state.currentVibe != null) {
@@ -445,6 +456,7 @@ fun ExploreContent(
                                         category = state.currentCategory,
                                     ),
                                     hasCatalog = displayList.isNotEmpty(),
+                                    rowColumns = ExploreListRowLogic.showResultColumns(window.widthDp),
                                     onMoodClick = { vibe ->
                                         searchActive = false
                                         focusManager.clearFocus()
@@ -586,8 +598,8 @@ fun ExploreContent(
                                         ExploreEmptyState(searchMode = false, failed = state.topChartFailed) { onRetry(ExploreRetry.TOP_CHART) }
                                     }
                                 } else if (showContent) {
-                                    if (tabletColumns >= 3) {
-                                        tabletTrendingItems(displayList[0], gridItems, tabletColumns, state.currentCategory, onPodcastClick)
+                                    if (chart) {
+                                        tabletChartItems(displayList[0], gridItems, chartColumns, state.currentCategory, onPodcastClick)
                                     } else {
                                     // Featured Hero Card (P1 only, when not searching and has content)
                                     item(
