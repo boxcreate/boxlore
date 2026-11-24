@@ -76,6 +76,9 @@ class SyncAndBackupsPageTest {
     fun resolveCloudSyncSubtitle_returnsExpectedStrings() {
         assertEquals("Signed in as listener@boxlore.cx", resolveCloudSyncSubtitle("listener@boxlore.cx").text())
         assertEquals("Sign in to backup and sync across devices", resolveCloudSyncSubtitle(null).text())
+        // The page card's title already asks you to sign in, so its second line says what you get.
+        assertEquals("Back up and sync your library across devices", resolveCloudSyncCardSubtitle(null).text())
+        assertEquals("Signed in as listener@boxlore.cx", resolveCloudSyncCardSubtitle("listener@boxlore.cx").text())
     }
 
     @Test

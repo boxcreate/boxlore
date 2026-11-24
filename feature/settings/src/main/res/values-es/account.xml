@@ -86,6 +86,7 @@
     <string name="settings_sync_badge_active">Sincronización en la nube activa</string>
     <string name="settings_sync_signed_in_as">Sesión iniciada como %1$s</string>
     <string name="settings_sync_sign_in_prompt">Inicia sesión para hacer copias de seguridad y sincronizar entre dispositivos</string>
+    <string name="settings_sync_signed_out_summary">Haz copias de tu biblioteca y sincronízala entre dispositivos</string>
     <string name="settings_sync_open_account">Abrir ajustes de la cuenta</string>
     <string name="settings_sync_full_backup_summary">Podcasts seguidos, carpetas, playlists, historial, me gusta y ajustes (JSON)</string>
     <string name="settings_sync_export_title">Exportar</string>

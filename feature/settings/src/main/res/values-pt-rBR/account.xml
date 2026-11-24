@@ -92,6 +92,7 @@
     <string name="settings_sync_badge_active">Sincronização ativa</string>
     <string name="settings_sync_signed_in_as">Conectado como %1$s</string>
     <string name="settings_sync_sign_in_prompt">Entre para fazer backup e sincronizar entre aparelhos</string>
+    <string name="settings_sync_signed_out_summary">Faça backup da sua biblioteca e sincronize entre aparelhos</string>
     <string name="settings_sync_open_account">Abrir configurações da conta</string>
     <string name="settings_sync_full_backup_summary">Podcasts seguidos, pastas, playlists, histórico, curtidas e configurações (JSON)</string>
     <string name="settings_sync_export_title">Exportar</string>
@@ -167,5 +168,5 @@
     <string name="account_tv_wrong_code">Esse código não funcionou. Confira na sua TV ou gere um novo lá.</string>
     <string name="account_tv_sign_in_first">Primeiro confirme seu e-mail neste celular.</string>
     <string name="account_tv_no_connection">Não foi possível conectar ao boxlore. Verifique sua conexão e tente de novo.</string>
-    <string name="settings_sync_import_footer">Podcasts com Faltam episódios? ativado são atualizados depois da importação.</string>
+    <string name="settings_sync_import_footer">Podcasts com “Faltam episódios?” ativado são atualizados depois da importação.</string>
 </resources>

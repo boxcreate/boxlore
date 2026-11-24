@@ -127,6 +127,10 @@ internal fun resolveSyncBadgeText(syncStatus: CloudSyncUiStatus): Int = when {
     else -> R.string.settings_sync_badge_active
 }
 
+/** The Cloud sync card's second line: who is signed in, or (below "Sign in to sync") what signing in gives you. */
+internal fun resolveCloudSyncCardSubtitle(accountStatus: String?): UiText =
+    if (accountStatus != null) resolveCloudSyncSubtitle(accountStatus) else UiText.res(R.string.settings_sync_signed_out_summary)
+
 internal fun resolveCloudSyncSubtitle(accountStatus: String?): UiText =
     if (accountStatus != null) {
         UiText.res(R.string.settings_sync_signed_in_as, accountStatus)
@@ -221,7 +225,7 @@ private fun CloudSyncCard(
             )
 
             Text(
-                text = resolveCloudSyncSubtitle(accountStatus).asString(),
+                text = resolveCloudSyncCardSubtitle(accountStatus).asString(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = if (isSignedIn) 1 else Int.MAX_VALUE,

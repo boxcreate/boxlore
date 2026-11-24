@@ -92,6 +92,7 @@
     <string name="settings_sync_badge_active">Synchro cloud active</string>
     <string name="settings_sync_signed_in_as">Connecté en tant que %1$s</string>
     <string name="settings_sync_sign_in_prompt">Connectez-vous pour sauvegarder et synchroniser entre vos appareils</string>
+    <string name="settings_sync_signed_out_summary">Sauvegardez votre bibliothèque et synchronisez-la entre vos appareils</string>
     <string name="settings_sync_open_account">Ouvrir les paramètres du compte</string>
     <string name="settings_sync_full_backup_summary">Abonnements, dossiers, playlists, historique, j’aime et paramètres (JSON)</string>
     <string name="settings_sync_export_title">Exporter</string>

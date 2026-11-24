@@ -92,6 +92,7 @@
     <string name="settings_sync_badge_active">Cloud-Sync aktiv</string>
     <string name="settings_sync_signed_in_as">Angemeldet als %1$s</string>
     <string name="settings_sync_sign_in_prompt">Melde dich an, um zu sichern und geräteübergreifend zu synchronisieren</string>
+    <string name="settings_sync_signed_out_summary">Deine Bibliothek sichern und geräteübergreifend synchronisieren</string>
     <string name="settings_sync_open_account">Kontoeinstellungen öffnen</string>
     <string name="settings_sync_full_backup_summary">Abos, Ordner, Playlists, Verlauf, Likes und Einstellungen (JSON)</string>
     <string name="settings_sync_export_title">Exportieren</string>
