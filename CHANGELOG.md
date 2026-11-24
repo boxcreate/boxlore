@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.33] - 2026-11-24
+
 ### Added
 - Two-column Standard player on sideways phones (`usesSidewaysPhoneColumns`, at least 600dp wide), with tighter controls under 400dp of visible height. ([#1301](https://github.com/boxcreate/boxlore/pull/1301)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - `PlayerState.sleepTimerPresetMinutes`, set by `PlaybackSleepController` for fixed sleep timers and cleared when the timer ends or is turned off. ([#1301](https://github.com/boxcreate/boxlore/pull/1301)) <!-- impact:user-impact-high --> <!-- copy:locked -->
@@ -148,6 +150,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `DailyBriefingCardTest` finds the Brief's hide button by its renamed description, so `:feature:home` tests pass on master again. ([#1313](https://github.com/boxcreate/boxlore/pull/1313)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Removed
 - The Daily's dateline (`millisUntilNextDay`) and the unused `daily_horizon` drawable. ([#1288](https://github.com/boxcreate/boxlore/pull/1288)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+
 ## [v0.0.32] - 2026-11-20
 
 ### Added
