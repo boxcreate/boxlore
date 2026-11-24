@@ -37,6 +37,9 @@ Announcement title:
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold. Half-open on a table, the full-screen transcript sits above the fold with its controls below.
 - On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.
 - The player fits more screens: on a phone turned sideways the Standard player style shows the cover beside the controls, an unfolded foldable shows Up next beside the player, and on tablets Up next fills the space under the controls.
+- Getting started with boxlore fits more screens: Echo's questions and show cards always show in full, the welcome screen fits the Galaxy Z Fold cover, and it sits beside its picture on sideways phones and tablets.
+- Picking your language now flows straight into the welcome screen.
+- While you get started, search keeps more shows in view on sideways phones, and Shows for you lays its shows out in rows on tablets.
 
 ## Fixed
 
@@ -53,3 +56,5 @@ Announcement title:
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.
 - After a video plays full screen, your phone turns with you again instead of staying upright.
 - The player keeps an open speed or sleep panel when you fold, unfold or turn your phone, and its place on the page when you turn it. A running sleep timer stays highlighted when you open the sleep options again, and an episode you remove from Up next stays removed even if you fold or unfold before Undo goes away.
+- Pick topics instead now keeps the topics you already chose with Echo.
+- If you skip the quick check before similar shows, boxlore now says so instead of asking you to check your connection.

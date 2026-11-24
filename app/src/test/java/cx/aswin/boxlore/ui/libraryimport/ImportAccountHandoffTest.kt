@@ -25,9 +25,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], qualifiers = "w393dp-h900dp-mdpi", application = Application::class)
+// Real graphics, so a tap is tested against the choices' real corner shapes.
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ImportAccountHandoffTest {
     @get:Rule val composeRule = createComposeRule()
 
