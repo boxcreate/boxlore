@@ -36,7 +36,7 @@ Announcement title:
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.
 - On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.
-- Settings fits short screens, phones turned sideways and large text better: page headers start slim, wide screens show the categories two by two, and long choice names wrap instead of being cut off.
+- Settings fits short screens, phones turned sideways and large text better: page headers start slim and line up with the page, wide screens show the categories two by two, and long names and the Support price show in full instead of being cut off.
 - Smart Downloads now looks like the other Settings pages, and the Settings hub tells you whether you're signed in and synced.
 
 ## Fixed
