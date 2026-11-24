@@ -84,7 +84,7 @@ class StoryPlayerResizeTest {
         assertEquals(scrolled, requireNotNull(frame.scroll()), 0.5f)
     }
 
-    @Test fun `the first card waits for a tap while part of it is off screen and moves on by itself when it fits`() {
+    @Test fun `a card that waited while cut off keeps waiting once it fits, and the next card moves on by itself`() {
         val story = story()
         window.value = COVER_SHORT
         render(story, StoryCard.HELLO)
@@ -92,18 +92,25 @@ class StoryPlayerResizeTest {
         waitPastCard()
         compose.onNodeWithContentDescription("Card 1 of", substring = true).assertExists()
 
-        // Tall enough: its 8 seconds are up, so it moves on at once, as on a phone.
+        // Unfolded to see it bigger: the card the listener was reading stays until they move on.
         compose.runOnIdle { window.value = PHONE_TALL }
-        frames(10)
-        compose.onNodeWithContentDescription("Card 2 of", substring = true).assertExists()
-
-        // Short again: card 2 stays, and a tap on the next area still moves on.
+        waitPastCard()
+        compose.onNodeWithContentDescription("Card 1 of", substring = true).assertExists()
         compose.runOnIdle { window.value = COVER_SHORT }
         waitPastCard()
+        compose.onNodeWithContentDescription("Card 1 of", substring = true).assertExists()
+
+        // A tap still moves on, and a card that fits from its start moves on by itself.
+        compose.onNodeWithContentDescription("Next card").performSemanticsAction(SemanticsActions.OnClick)
+        frames(3)
         compose.onNodeWithContentDescription("Card 2 of", substring = true).assertExists()
+        compose.runOnIdle { window.value = PHONE_TALL }
+        frames(3)
         compose.onNodeWithContentDescription("Next card").performSemanticsAction(SemanticsActions.OnClick)
         frames(3)
         compose.onNodeWithContentDescription("Card 3 of", substring = true).assertExists()
+        waitPastCard()
+        compose.onNodeWithContentDescription("Card 4 of", substring = true).assertExists()
     }
 
     @Test fun `on tablets the frame grows only a little and previous, pause and next sit beside it`() {
@@ -122,15 +129,25 @@ class StoryPlayerResizeTest {
         compose.onNodeWithTag(STORY_SIDE_PAUSE_TAG).assertContentDescriptionEquals("Pause story").performClick()
         waitPastCard()
         compose.onNodeWithContentDescription("Card 2 of", substring = true).assertExists()
+        // Moving to another card plays it: its entrance draws and the pause button is back.
         compose.onNodeWithTag(STORY_SIDE_PREVIOUS_TAG).performClick()
         frames(3)
         compose.onNodeWithContentDescription("Card 1 of", substring = true).assertExists()
+        compose.onNodeWithTag(STORY_SIDE_PAUSE_TAG).assertContentDescriptionEquals("Pause story").performClick()
+        frames(3)
 
-        // A phone has no room beside the frame: no buttons, and the card is kept.
+        // A phone has no room beside the frame: no buttons, the card is kept, and the story no longer
+        // stays paused with no way to resume.
         compose.runOnIdle { window.value = PHONE_TALL }
         frames(3)
         compose.onNodeWithTag(STORY_SIDE_PAUSE_TAG).assertDoesNotExist()
         compose.onNodeWithContentDescription("Card 1 of", substring = true).assertExists()
+        compose.runOnIdle { window.value = DpSize(1_280.dp, 800.dp) }
+        frames(3)
+        compose.onNodeWithTag(STORY_SIDE_PAUSE_TAG).assertContentDescriptionEquals("Pause story")
+        compose.runOnIdle { window.value = PHONE_TALL }
+        waitPastCard()
+        compose.onNodeWithContentDescription("Card 2 of", substring = true).assertExists()
     }
 
     private fun story() = requireNotNull(

@@ -40,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -149,6 +150,8 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
     val held = pressHeld || buttonPaused
     // True while part of the frame is off screen and it scrolls: the card then waits for a tap.
     var frameScrolls by remember { mutableStateOf(false) }
+    // The play whose card waited while cut off: it keeps waiting for a tap once it fits.
+    val waitedPlay = rememberSaveable(story.month) { mutableIntStateOf(-1) }
     val card = cards[index.coerceIn(0, cards.lastIndex)]
     TrackScreenView("listening_story_card", story.month, card) { previous ->
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackScreenViewed("listening_story_card", previous, mapOf("card" to card.name.lowercase(), "month" to story.month.toString()))
@@ -160,16 +163,10 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
             hopFrom = card.echo(story, palette).box
             index = next
             plays++
+            buttonPaused = false // A new card plays: the side pause was for the card being left.
         }
     }
-    val goTo by rememberUpdatedState(go)
-    val touchExploration = rememberTouchExploration()
-    LaunchedEffect(plays, touchExploration, frameScrolls) {
-        // With TalkBack on, or while part of the card is off screen, the card waits to be moved on.
-        if (index >= cards.lastIndex || touchExploration || frameScrolls) return@LaunchedEffect
-        snapshotFlow { clock.elapsed }.first { it >= StoryMotion.CARD_MS }
-        goTo(index + 1)
-    }
+    StoryAutoAdvance(plays, canGoOn = index < cards.lastIndex, frameScrolls, clock, waitedPlay) { go(index + 1) }
     val (background, content) = card.colors(story, palette)
     val bg by animateColorAsState(background, tween(StoryMotion.RISE_MS, easing = StoryMotion.Standard), label = "storyBackground")
     val fg by animateColorAsState(content, tween(StoryMotion.RISE_MS, easing = StoryMotion.Standard), label = "storyContent")
@@ -225,7 +222,9 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
                 }
                 }
             }
-            if (sideRoom >= SIDE_BUTTONS_ROOM) {
+            if (sideRoom < SIDE_BUTTONS_ROOM) {
+                if (buttonPaused) SideEffect { buttonPaused = false } // No buttons, so no pause the listener can't undo.
+            } else {
                 StorySideButtons(
                     gap = sideRoom,
                     colors = bg to fg,
@@ -238,6 +237,23 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
                 )
             }
         }
+    }
+}
+
+/**
+ * Moves on to the next card once this play's card has shown for its 8 seconds, unless it waits for a
+ * tap: with TalkBack on, or when part of the card is off screen now or was earlier in this play
+ * ([waitedPlay] holds that play, so a card the listener is still reading never skips ahead once it fits).
+ */
+@Composable
+private fun StoryAutoAdvance(plays: Int, canGoOn: Boolean, frameScrolls: Boolean, clock: StoryClock, waitedPlay: MutableIntState, goOn: () -> Unit) {
+    val next by rememberUpdatedState(goOn)
+    val touchExploration = rememberTouchExploration()
+    LaunchedEffect(plays, touchExploration, frameScrolls) {
+        if (frameScrolls) waitedPlay.intValue = plays
+        if (!canGoOn || touchExploration || waitedPlay.intValue == plays) return@LaunchedEffect
+        snapshotFlow { clock.elapsed }.first { it >= StoryMotion.CARD_MS }
+        next()
     }
 }
 
