@@ -119,11 +119,12 @@ internal fun LoreCardText(question: String, explanation: String?, modifier: Modi
         }
         val selection = selectLoreCardText(candidates, with(density) { maxHeight.roundToPx() })
         val spec = selection.spec
-        // Too long for this card even at the smallest size: the text scrolls, never clips.
-        val scroll = if (selection.overflows) rememberScrollState() else null
+        // Too long for this card even at the smallest size: the text scrolls, never clips. The scroll
+        // is kept while a larger window lets the text fit, so it is where the reader left it afterwards.
+        val scroll = rememberScrollState()
         Column(
             modifier = Modifier.align(Alignment.Center).fillMaxWidth()
-                .then(if (scroll != null) Modifier.fillMaxHeight().loreScrollFade(scroll).verticalScroll(scroll) else Modifier)
+                .then(if (selection.overflows) Modifier.fillMaxHeight().loreScrollFade(scroll).verticalScroll(scroll) else Modifier)
                 .padding(horizontal = spec.horizontalPadding.dp, vertical = spec.verticalPadding.dp),
             verticalArrangement = Arrangement.Center,
         ) {

@@ -91,16 +91,17 @@ class TabletLoreLayoutTest {
             host.fontScale.floatValue = scale
             host.moveTo(window, pane)
             val label = "$window pane=$pane scale=$scale"
-            host.reveal(host.activeText(LONG_QUESTION))
-            host.reveal(host.activeText(LONG_EXPLANATION))
+            host.dragText(toEnd = true)
             val play = host.bounds(host.play().assertHasClickAction())
             val root = host.rootBounds()
             assertTrue("$label: Play inside the window", play.bottom <= root.bottom + 0.5.dp && play.top >= root.top)
-            val explanation = host.bounds(host.activeText(LONG_EXPLANATION))
+            // The whole explanation against what is drawn of it: at the end of the text its last line is not cut.
+            val explanation = host.unclipped(host.activeText(LONG_EXPLANATION))
+            assertEquals("$label: the explanation's last line is in view", explanation.bottom.value, host.bounds(host.activeText(LONG_EXPLANATION)).bottom.value, 0.5f)
             assertTrue("$label: the explanation's last line clears Play ($explanation, $play)", explanation.bottom <= play.top)
-            host.reveal(host.activeText(LONG_QUESTION))
-            val question = host.bounds(host.activeText(LONG_QUESTION))
-            assertTrue("$label: the question's first line is back in view", question.top >= host.bounds(host.activeCard()).top)
+            host.dragText(toEnd = false)
+            val question = host.unclipped(host.activeText(LONG_QUESTION))
+            assertEquals("$label: the question's first line is back in view", question.top.value, host.bounds(host.activeText(LONG_QUESTION)).top.value, 0.5f)
         }
     }
 
@@ -118,6 +119,21 @@ class TabletLoreLayoutTest {
         host.moveTo(COVER_443)
         val cover = host.bounds(host.activeCard())
         assertEquals(COVER_443.widthDp - 2 * 12f, (cover.right - cover.left).value, 1f)
+    }
+
+    @Test
+    fun `scrolled text is where the reader left it after a window where it fits`() {
+        val host = LoreDeckHost(fixture)
+        host.state.value = LearnUiState.Success(LoreDeckHost.cards(question = { LONG_QUESTION }, explanation = LONG_EXPLANATION))
+        host.render()
+        host.moveTo(PHONE_LAND)
+        host.activeText(LONG_QUESTION).performTouchInput { swipeUp(startY = top + 10.dp.toPx(), endY = top - 110.dp.toPx()) }
+        host.settle()
+        fun questionInCard() = host.bounds(host.activeText(LONG_QUESTION)).top - host.bounds(host.activeCard()).top
+        val scrolled = questionInCard()
+        host.moveTo(TABLET)
+        host.moveTo(PHONE_LAND)
+        assertEquals("the text keeps its scroll", scrolled.value, questionInCard().value, 1f)
     }
 
     @Test

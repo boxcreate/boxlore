@@ -28,11 +28,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -52,7 +54,10 @@ import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
+import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -188,6 +193,27 @@ fun LearnHistoryScreen(
     }
 }
 
+/** The clock Lore history reads the day from; tests move it past midnight. */
+internal val LocalLearnHistoryClock = staticCompositionLocalOf<() -> Long> { System::currentTimeMillis }
+
+/** Today in [zone] by [now], moving on at each midnight while the screen stays open. */
+@Composable
+internal fun rememberToday(zone: ZoneId, now: () -> Long): LocalDate {
+    fun read() = Instant.ofEpochMilli(now()).atZone(zone).toLocalDate()
+    var today by remember(zone) { mutableStateOf(read()) }
+    LaunchedEffect(zone) {
+        while (true) {
+            val midnight = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            delay((midnight - now()).coerceIn(MIN_DAY_CHECK_MS, MAX_DAY_CHECK_MS))
+            today = read()
+        }
+    }
+    return today
+}
+
+private const val MIN_DAY_CHECK_MS = 1_000L
+private const val MAX_DAY_CHECK_MS = 60 * 60 * 1_000L
+
 /** The title, the filters and the cards grouped by when they were seen, in one readable column. */
 @Composable
 @Suppress("LongParameterList") // The list's content, its screen-owned state and its two actions.
@@ -202,8 +228,12 @@ private fun LearnHistoryList(
     modifier: Modifier = Modifier,
 ) {
     val locale = currentLocale()
-    val groups = remember(entries, filter, locale) {
-        groupLearnHistory(entries.filter(filter::keeps), System.currentTimeMillis(), ZoneId.systemDefault(), locale)
+    val now = LocalLearnHistoryClock.current
+    val zone = ZoneId.systemDefault()
+    // Regrouped when the day turns, so a page left open past midnight moves Today's cards to Yesterday.
+    val today = rememberToday(zone, now)
+    val groups = remember(entries, filter, locale, zone, today) {
+        groupLearnHistory(entries.filter(filter::keeps), now(), zone, locale)
     }
     LazyColumn(
         state = listState,

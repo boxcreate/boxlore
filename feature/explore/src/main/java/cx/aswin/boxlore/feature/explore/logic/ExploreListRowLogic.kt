@@ -1,19 +1,23 @@
 package cx.aswin.boxlore.feature.explore.logic
 
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowWidth
+
 /** Column counts and connected-list corners for Explore's list rows (Find a show results, tablet Top charts). */
 internal object ExploreListRowLogic {
-    private const val MEDIUM_WIDTH_DP = 600f
-    private const val EXPANDED_WIDTH_DP = 840f
-
-    /** Find a show rows: one column on compact windows, two on medium, three on expanded. */
-    fun showResultColumns(windowWidthDp: Float): Int = when {
-        windowWidthDp < MEDIUM_WIDTH_DP -> 1
-        windowWidthDp < EXPANDED_WIDTH_DP -> 2
+    /**
+     * Find a show rows by the shared width classes: one column on compact widths, two on medium, three
+     * from expanded. Like poster packing, the count follows the width alone, so a sideways phone lists
+     * its results several across instead of in one stretched column.
+     */
+    fun showResultColumns(window: BoxloreWindowLayout): Int = when (window.widthClass) {
+        BoxloreWindowWidth.Compact -> 1
+        BoxloreWindowWidth.Medium -> 2
         else -> 3
     }
 
-    /** Tablet Top chart rows after the featured show: two columns below 840dp, three from there. */
-    fun chartColumns(windowWidthDp: Float): Int = if (windowWidthDp < EXPANDED_WIDTH_DP) 2 else 3
+    /** Tablet Top chart rows after the featured show: two columns on medium widths, three from expanded. */
+    fun chartColumns(window: BoxloreWindowLayout): Int = if (window.widthClass <= BoxloreWindowWidth.Medium) 2 else 3
 
     /**
      * Whether row [index] of [count], laid out row by row in [columns], starts or ends its column:

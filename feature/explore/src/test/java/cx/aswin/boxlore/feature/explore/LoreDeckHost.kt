@@ -13,11 +13,15 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpRect
 import androidx.compose.ui.unit.dp
@@ -129,6 +133,18 @@ internal class LoreDeckHost(private val fixture: PhoneGoldenRule) {
 
     fun activeText(text: String): SemanticsNodeInteraction = onActiveCard(hasText(text))
 
+    /** Drags the active card's text as far as it goes: up to its end ([toEnd]) or down to its start. */
+    fun dragText(toEnd: Boolean) {
+        repeat(TEXT_DRAGS) {
+            // From the card's middle, which is its text: a part of the text may be out of view.
+            activeCard().performTouchInput { if (toEnd) swipeUp(startY = centerY, endY = top) else swipeDown(startY = centerY, endY = bottom) }
+            settle()
+        }
+    }
+
+    /** [node]'s whole bounds, including any part scrolled or clipped out of view. */
+    fun unclipped(node: SemanticsNodeInteraction): DpRect = node.getUnclippedBoundsInRoot()
+
     /** Scrolls [node] into view when its text scrolls; text that fits has nothing to scroll. */
     fun reveal(node: SemanticsNodeInteraction) {
         val scrolls = node.fetchSemanticsNode().let { semantics ->
@@ -146,6 +162,7 @@ internal class LoreDeckHost(private val fixture: PhoneGoldenRule) {
 
     companion object {
         const val ROOT = "lore_test_root"
+        private const val TEXT_DRAGS = 6
         const val ACTIVE_CARD = "lore_active_card"
         private const val SETTLE_MS = 1_600L
 

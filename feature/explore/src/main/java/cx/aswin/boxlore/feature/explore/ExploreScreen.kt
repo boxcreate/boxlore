@@ -390,7 +390,7 @@ fun ExploreContent(
             val tabletColumns = if (window.usesTabletLayout) posterColumns else 0
             // Find a show results and tablet Top charts are list rows; everything else keeps posters.
             val showRows = isSearchModeActive && state.currentVibe == null && state.searchTab == SearchTab.SHOWS && state.searchQuery.isNotEmpty()
-            val chartColumns = ExploreListRowLogic.chartColumns(window.widthDp)
+            val chartColumns = ExploreListRowLogic.chartColumns(window)
             val gridPadding = boxloreHorizontalSafeContentPadding(
                 PaddingValues(start = 16.dp, end = 16.dp, top = expandedHeaderHeight, bottom = listBottomPadding),
             )
@@ -398,7 +398,7 @@ fun ExploreContent(
                 ShimmerScope(active = if (state.currentVibe != null) state.isLoading else !isSearchModeActive && if (browseTab == 1) state.isRecommendationsLoading else state.isLoading) {
                     val chart = !isSearchModeActive && state.currentVibe == null && browseTab == 0 && tabletColumns > 0 && displayList.isNotEmpty()
                     val rowColumns = when {
-                        showRows -> ExploreListRowLogic.showResultColumns(window.widthDp)
+                        showRows -> ExploreListRowLogic.showResultColumns(window)
                         chart -> chartColumns
                         else -> null
                     }
@@ -456,7 +456,7 @@ fun ExploreContent(
                                         category = state.currentCategory,
                                     ),
                                     hasCatalog = displayList.isNotEmpty(),
-                                    rowColumns = ExploreListRowLogic.showResultColumns(window.widthDp),
+                                    rowColumns = ExploreListRowLogic.showResultColumns(window),
                                     onMoodClick = { vibe ->
                                         searchActive = false
                                         focusManager.clearFocus()

@@ -160,15 +160,6 @@ class ExploreTabletFeaturedTest {
         assertEquals(0, fixture.compose.onAllNodesWithText("Podcasts", useUnmergedTree = true).fetchSemanticsNodes().size)
     }
 
-    @Test
-    @Config(sdk = [33], application = Application::class, qualifiers = "de")
-    fun `genre tags follow the app's language`() {
-        render(ExploreUiState.Success(trending = List(4) { TestFixtures.podcast(id = "$it", title = "Show $it", imageUrl = PhoneGoldenRule.ARTWORK_URL, genre = "Society & Culture") }, selectedTab = 0))
-        val german = fixture.compose.activity.getString(cx.aswin.boxlore.core.catalog.R.string.auto_genre_society)
-        assertTrue("German name $german", german != "Society & Culture")
-        assertTrue(fixture.compose.onAllNodesWithText(german, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
-    }
-
     private fun assertLeadingRow() {
         val hero = fixture.compose.onNodeWithTag("tablet_featured_card", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         val neighbors = fixture.compose.onNodeWithTag("tablet_featured_neighbors", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot

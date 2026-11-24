@@ -67,6 +67,7 @@ class LearnHistoryScreenTest {
         entries: List<LearnHistoryEntry> = List(6) { index ->
             entry(index, if (index % 2 == 0) LearnHistoryAction.QUEUE else LearnHistoryAction.DISMISS, System.currentTimeMillis() - index * 60_000L)
         },
+        now: () -> Long = System::currentTimeMillis,
     ) {
         `when`(viewModel.uiState).thenReturn(MutableStateFlow(LearnHistoryUiState.Success(entries)))
         fixture.prepare()
@@ -78,7 +79,9 @@ class LearnHistoryScreenTest {
                 BoxLoreTheme(dynamicColor = false) {
                     Box(Modifier.requiredSize(size.widthDp.dp, size.heightDp.dp).testTag(ROOT)) {
                         Surface {
-                            LearnHistoryScreen(viewModel, appBottomChromeContentPadding(isMiniPlayerVisible = false), onBack = { backs++ }, onEpisodeClick = {})
+                            CompositionLocalProvider(LocalLearnHistoryClock provides now) {
+                                LearnHistoryScreen(viewModel, appBottomChromeContentPadding(isMiniPlayerVisible = false), onBack = { backs++ }, onEpisodeClick = {})
+                            }
                         }
                     }
                 }
@@ -165,6 +168,19 @@ class LearnHistoryScreenTest {
         fixture.compose.waitForIdle()
         assertEquals(1, clears())
         fixture.compose.onNodeWithText(string(R.string.lore_history_clear_title)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a card seen today moves under Yesterday when the day turns while the page is open`() {
+        val zone = java.time.ZoneId.systemDefault()
+        var clock = java.time.LocalDate.of(2026, 3, 9).atTime(23, 50).atZone(zone).toInstant().toEpochMilli()
+        render(listOf(entry(0, LearnHistoryAction.QUEUE, clock - 60_000L)), now = { clock })
+        fixture.compose.onNodeWithText(string(R.string.lore_history_today)).assertExists()
+        clock += 20 * 60_000L
+        fixture.compose.mainClock.advanceTimeBy(20 * 60_000L)
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithText(string(R.string.lore_history_yesterday)).assertExists()
+        fixture.compose.onNodeWithText(string(R.string.lore_history_today)).assertDoesNotExist()
     }
 
     @Test

@@ -79,7 +79,8 @@ class ExploreTabletAuditCaptureTest(private val scene: String, configuration: Ph
                 applyFakeSystemInsets(fixture.compose.activity, (fixture.configuration.systemInsets ?: SystemInsets()).copy(imeBottom = IME_DP))
             }
         }
-        fixture.capture("explore-$scene", allWindows = scene in DialogScenes)
+        // The keyboard stays up through the capture's own insets (the sideways and tabletop presets have none).
+        fixture.capture("explore-$scene", allWindows = scene in DialogScenes, imeBottomDp = IME_DP.takeIf { scene == "search-ime" })
     }
 
     private fun renderExplore() {

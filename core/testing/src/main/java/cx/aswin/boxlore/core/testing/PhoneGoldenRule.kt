@@ -289,18 +289,23 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
         ValueAnimator::class.java.getDeclaredMethod("setDurationScale", Float::class.javaPrimitiveType).invoke(null, scale)
     }
 
-    private fun dispatchSystemInsets() {
-        val insets = configuration.systemInsets ?: return
+    private fun dispatchSystemInsets(imeBottomDp: Int? = null) {
+        val preset = configuration.systemInsets
         if (!isAuditCapture) return
+        val insets = when {
+            imeBottomDp != null -> (preset ?: SystemInsets()).copy(imeBottom = imeBottomDp)
+            else -> preset ?: return
+        }
         compose.runOnUiThread { applyFakeSystemInsets(compose.activity, insets) }
     }
 
     /**
      * Settles animations and writes `screen-config.png`. [allWindows] composites every window (sheets,
-     * dialogs, menus and popups live in their own) instead of the content root only.
+     * dialogs, menus and popups live in their own) instead of the content root only. [imeBottomDp]
+     * keeps a keyboard of that height over the configuration's own insets.
      */
-    fun capture(screen: String, allWindows: Boolean = false) {
-        dispatchSystemInsets()
+    fun capture(screen: String, allWindows: Boolean = false, imeBottomDp: Int? = null) {
+        dispatchSystemInsets(imeBottomDp)
         compose.mainClock.advanceTimeBy(1_600)
         compose.waitForIdle()
         val filename = "$screen-$configuration.png"

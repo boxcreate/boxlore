@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.MaterialTheme
@@ -243,8 +244,8 @@ class ExploreSearchLandingTest {
             val rows = (0 until 6).map { composeRule.onNodeWithTag("concept_suggestion_$it").getUnclippedBoundsInRoot() }
             assertEquals("$size", columns, rows.map { it.left.value.roundToInt() }.toSet().size)
             val field = composeRule.onNode(hasSetTextAction()).getUnclippedBoundsInRoot()
-            assertTrue("$size: examples end by the search box's end", rows.maxOf { it.right.value } <= field.right.value + 1f)
             // The field sits 6dp inside the header's rounded container; the examples line up with the container.
+            assertTrue("$size: examples end by the search box's end", rows.maxOf { it.right.value } <= field.right.value + 8f)
             assertTrue("$size: examples start under the search box", rows.minOf { it.left.value } >= field.left.value - 8f)
         }
     }
@@ -321,6 +322,9 @@ class ExploreSearchLandingTest {
                 LocalBoxlorePaneWidth provides size.widthDp,
             ) {
             BoxLoreTheme(dynamicColor = false) {
+                // A given window is the space the page gets; the unspecified one keeps the host's size.
+                val space = if (size == BoxloreWindowLayout.Unspecified) Modifier else Modifier.requiredSize(size.widthDp.dp, size.heightDp.dp)
+                Box(space) {
                 ExploreContent(
                     uiState = state.value,
                     onSearchQueryChanged = {
@@ -338,6 +342,7 @@ class ExploreSearchLandingTest {
                     },
                     onClearVibe = { state.value = state.value.copy(currentVibe = null) },
                 )
+                }
             }
             }
         }

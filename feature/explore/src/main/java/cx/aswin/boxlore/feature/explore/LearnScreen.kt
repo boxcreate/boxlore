@@ -74,6 +74,9 @@ fun LearnScreen(
     val windowSize = loreTabletPaneSize(LocalBoxloreWindowLayout.current, LocalBoxlorePaneBounds.current)
         ?: boxloreConfigurationWindowSize()
     val compactSpacing = windowSize.width < 360.dp || windowSize.height < 720.dp
+    // The gap above the deck and the deck's sides, tighter in small windows.
+    val deckGap = if (compactSpacing) 8.dp else 16.dp
+    val deckSides = if (compactSpacing) 12.dp else 20.dp
     val uiState by viewModel.uiState.collectAsState()
     val stablePlayerState = remember(playbackRepository) {
         playbackRepository.playerState
@@ -204,13 +207,13 @@ fun LearnScreen(
                     when (val state = uiState) {
                         is LearnUiState.Loading -> {
                             // A card-shaped placeholder in the first card's exact place.
-                            Spacer(modifier = Modifier.height(if (compactSpacing) 8.dp else 16.dp))
+                            Spacer(modifier = Modifier.height(deckGap))
                             LoreCardSkeleton(
                                 accentColor = fallbackAccent,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f, fill = !tablet)
-                                    .padding(horizontal = if (compactSpacing) 12.dp else 20.dp)
+                                    .padding(horizontal = deckSides)
                             )
                         }
                         is LearnUiState.CaughtUp -> {
@@ -236,27 +239,18 @@ fun LearnScreen(
                             LaunchedEffect(visibleCard?.episodeId) {
                                 visibleCard?.let(viewModel::trackCardVisible)
                             }
-                            Spacer(modifier = Modifier.height(if (compactSpacing) 8.dp else 16.dp))
+                            Spacer(modifier = Modifier.height(deckGap))
                             CuriosityCardStack(
                                 questions = state.questionsStack,
                                 swipeState = swipeState,
                                 playerState = playerState,
-                                onCardAction = { action, card ->
-                                    val actionName = when (action) {
-                                        CardAction.Dismiss -> "dismiss"
-                                        CardAction.Queue -> "queue"
-                                        CardAction.Play -> "play"
-                                        CardAction.Click -> "info"
-                                        CardAction.PodcastClick -> "podcast"
-                                    }
-                                    handleLearnCardAction(actionName, card)
-                                },
+                                onCardAction = { action, card -> handleLearnCardAction(action.loreActionName(), card) },
                                 accentColor = fallbackAccent,
                                 artworkAccentColors = artworkColors,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f, fill = !tablet)
-                                    .padding(horizontal = if (compactSpacing) 12.dp else 20.dp)
+                                    .padding(horizontal = deckSides)
                             )
                         }
                         is LearnUiState.Error -> {
@@ -279,6 +273,15 @@ fun LearnScreen(
             }
         }
     }
+}
+
+/** The name a card action goes by in the screen's handler and in analytics. */
+private fun CardAction.loreActionName(): String = when (this) {
+    CardAction.Dismiss -> "dismiss"
+    CardAction.Queue -> "queue"
+    CardAction.Play -> "play"
+    CardAction.Click -> "info"
+    CardAction.PodcastClick -> "podcast"
 }
 
 /** Keep playback action branching out of the screen layout; reuse the injected player. */
