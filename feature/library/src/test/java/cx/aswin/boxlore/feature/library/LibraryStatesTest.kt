@@ -8,7 +8,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -18,7 +17,6 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -51,11 +49,10 @@ class LibraryStatesTest {
         }
         compose.mainClock.advanceTimeBy(100)
         compose.onNodeWithTag(LIBRARY_LOADING_TAG).assertIsDisplayed()
-        val before = compose.onAllNodesWithTag(LIBRARY_LOADING_TAG).fetchSemanticsNodes().single().children.size
-        assertEquals("nothing drawn before 150ms", 0, before)
+        compose.onNodeWithTag(LIBRARY_SKELETON_TAG, useUnmergedTree = true).assertDoesNotExist()
         compose.mainClock.advanceTimeBy(200)
         compose.waitForIdle()
-        assertTrue(compose.onAllNodesWithTag(LIBRARY_LOADING_TAG).fetchSemanticsNodes().isNotEmpty())
+        compose.onNodeWithTag(LIBRARY_SKELETON_TAG, useUnmergedTree = true).assertExists()
     }
 
     @Test

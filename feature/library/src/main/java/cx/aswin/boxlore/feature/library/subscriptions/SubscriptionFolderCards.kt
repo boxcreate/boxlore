@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -545,7 +546,7 @@ private fun OverflowNewEpisodesChip(
             color = MaterialTheme.colorScheme.onPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp).testTag(FOLDER_NEW_BANNER_TAG),
         )
     }
 }
@@ -624,3 +625,6 @@ internal fun overflowMosaicCells(count: Int): List<MosaicCell> = when (count) {
 }
 
 private const val HALF = 0.5f
+
+/** Test tag for the overflow tile's "N new" banner text. */
+internal const val FOLDER_NEW_BANNER_TAG = "folder_new_banner"

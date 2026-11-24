@@ -6,7 +6,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
@@ -23,10 +26,13 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.PlaylistMix
+import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.feature.library.playlists.PlaylistCreateRequest
 import cx.aswin.boxlore.feature.library.playlists.PlaylistPagesState
@@ -38,6 +44,7 @@ import cx.aswin.boxlore.feature.library.subscriptions.AutoOrganizePage
 import cx.aswin.boxlore.feature.library.subscriptions.AutoOrganizePageActions
 import cx.aswin.boxlore.feature.library.subscriptions.ContextMenuTarget
 import cx.aswin.boxlore.feature.library.subscriptions.FOLDER_LOOK_TILE_TAG
+import cx.aswin.boxlore.feature.library.subscriptions.FOLDER_NEW_BANNER_TAG
 import cx.aswin.boxlore.feature.library.subscriptions.FolderLookRow
 import cx.aswin.boxlore.feature.library.subscriptions.FolderShowsSelectionSheet
 import cx.aswin.boxlore.feature.library.subscriptions.LatestSortActions
@@ -217,5 +224,54 @@ class LibraryControlsTest {
         override fun create(request: PlaylistCreateRequest) = Unit
         override fun rename(playlistId: String, name: String) = Unit
         override fun delete(playlistId: String) = Unit
+    }
+
+    private fun showFolders(folders: List<SubscriptionFolder> = fixtures.folders, fontScale: Float = 1f) = compose.setContent {
+        val density = LocalDensity.current.density
+        CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreTestWindows.PHONE, LocalDensity provides Density(density, fontScale)) {
+            BoxLoreTheme(dynamicColor = false) {
+                SubscriptionsScreen(fixtures.viewModel(fixtures.loaded(), folders = folders), onBack = {}, onPodcastClick = {}, onExploreClick = {})
+            }
+        }
+    }
+
+    private fun textLayout(node: SemanticsNode): TextLayoutResult {
+        val results = mutableListOf<TextLayoutResult>()
+        node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+        return results.single()
+    }
+
+    @Test
+    fun `a folder's name pill shows as much of the name as fits, not a fixed ten letters`() {
+        showFolders(fixtures.folders.map { if (it.id == "news") it.copy(showPodcastGrid = true) else it })
+        val names = compose.onAllNodesWithText("Nachrichten-Ecke", useUnmergedTree = true).fetchSemanticsNodes()
+        assertTrue(names.isNotEmpty())
+        for (name in names) assertTrue("visible: ${textLayout(name).getLineEnd(0, visibleEnd = true)}", textLayout(name).getLineEnd(0, visibleEnd = true) >= 11)
+    }
+
+    private fun assertNewBannersFit() {
+        val banners = compose.onAllNodesWithTag(FOLDER_NEW_BANNER_TAG, useUnmergedTree = true).fetchSemanticsNodes()
+        assertTrue("the fixture's overflow tiles show their banner", banners.isNotEmpty())
+        for (banner in banners) assertTrue(banner.config[SemanticsProperties.Text].joinToString(), !textLayout(banner).isLineEllipsized(0))
+    }
+
+    @Test
+    fun `the overflow tile's new banner fits in English`() {
+        showFolders()
+        assertNewBannersFit()
+    }
+
+    @Test
+    @Config(qualifiers = "fr-w412dp-h915dp-mdpi")
+    fun `the overflow tile's new banner fits in French at large text`() {
+        showFolders(fontScale = 1.3f)
+        assertNewBannersFit()
+    }
+
+    @Test
+    @Config(qualifiers = "en-rXA-w412dp-h915dp-mdpi")
+    fun `the overflow tile's new banner fits in long pseudo-English at large text`() {
+        showFolders(fontScale = 1.3f)
+        assertNewBannersFit()
     }
 }

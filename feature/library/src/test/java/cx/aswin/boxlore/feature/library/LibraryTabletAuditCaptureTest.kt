@@ -5,28 +5,35 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.isRoot
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import androidx.core.view.ViewCompat
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
-import cx.aswin.boxlore.core.model.PlaylistMix
-import cx.aswin.boxlore.core.model.PlaylistShow
+import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
+import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.feature.library.LibraryCaptureFixtures.ART
 import cx.aswin.boxlore.feature.library.playlists.NewPlaylistDraft
-import cx.aswin.boxlore.feature.library.playlists.PlaylistCreateRequest
-import cx.aswin.boxlore.feature.library.playlists.PlaylistDetailActions
 import cx.aswin.boxlore.feature.library.playlists.PlaylistDetailContent
 import cx.aswin.boxlore.feature.library.playlists.PlaylistDetailState
 import cx.aswin.boxlore.feature.library.playlists.PlaylistPagesState
@@ -37,16 +44,11 @@ import cx.aswin.boxlore.feature.library.subscriptions.ContextMenuTarget
 import cx.aswin.boxlore.feature.library.subscriptions.FolderEditorPage
 import cx.aswin.boxlore.feature.library.subscriptions.FolderInterSort
 import cx.aswin.boxlore.feature.library.subscriptions.FolderIntraSort
-import cx.aswin.boxlore.feature.library.subscriptions.FolderMembershipChange
-import cx.aswin.boxlore.feature.library.subscriptions.FolderPagesActions
-import cx.aswin.boxlore.feature.library.subscriptions.FolderPagesData
 import cx.aswin.boxlore.feature.library.subscriptions.FolderPagesState
-import cx.aswin.boxlore.feature.library.subscriptions.FolderShowMove
 import cx.aswin.boxlore.feature.library.subscriptions.FolderShowsSelectionSheet
 import cx.aswin.boxlore.feature.library.subscriptions.MoveToFolderSheet
 import cx.aswin.boxlore.feature.library.subscriptions.NewFolderDraft
 import cx.aswin.boxlore.feature.library.subscriptions.OpenFolderPage
-import cx.aswin.boxlore.feature.library.subscriptions.ReorderMode
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionContextMenuActions
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionContextMenuSheet
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionSortActions
@@ -59,6 +61,7 @@ import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowDialog
 
 /**
  * Local review renders of every Library page, sheet and menu. `-PtabletCaptures=audit` draws each
@@ -69,10 +72,18 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(sdk = [33], application = Application::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class LibraryTabletAuditCaptureTest(private val scene: String, configuration: PhoneGoldenConfiguration) {
+class LibraryTabletAuditCaptureTest(private val sceneName: String, configuration: PhoneGoldenConfiguration) {
     @get:Rule val fixture = PhoneGoldenRule(configuration)
 
     private val fixtures = LibraryCaptureFixtures
+
+    /** A `-brand` scene draws in a non-Classic brand theme, `-brand-pure` in its Pure black dark form. */
+    private val theme = when {
+        sceneName.endsWith(PURE_SUFFIX) -> ThemeChoice(CAPTURE_BRAND, SurfaceStyles.AMOLED, dark = true)
+        sceneName.endsWith(BRAND_SUFFIX) -> ThemeChoice(CAPTURE_BRAND, SurfaceStyles.STANDARD, dark = configuration.dark)
+        else -> ThemeChoice("violet", SurfaceStyles.CLASSIC_DYNAMIC, dark = configuration.dark)
+    }
+    private val scene = sceneName.removeSuffix(PURE_SUFFIX).removeSuffix(BRAND_SUFFIX)
 
     @Test fun capture() {
         val mode = System.getProperty("boxlore.tabletCaptures")
@@ -80,19 +91,20 @@ class LibraryTabletAuditCaptureTest(private val scene: String, configuration: Ph
         fixture.prepare()
         val popup = scene in POPUP_SCENES
         fixture.setContent(foldSafeViewport = true) {
-            BoxLoreTheme(darkTheme = fixture.configuration.dark, dynamicColor = false) {
+            BoxLoreTheme(darkTheme = theme.dark, dynamicColor = false, themeBrand = theme.brand, surfaceStyle = theme.surface) {
                 Surface { Scene() }
             }
         }
         settle()
         interact()
+        sendInsetsToDialogs()
         // Every scene draws something: a broken fixture fails here instead of saving a blank picture.
         check(fixture.compose.onAllNodes(isRoot()).fetchSemanticsNodes().isNotEmpty()) { "library-$scene drew nothing" }
         if (popup) {
             val roots = fixture.compose.onAllNodes(isRoot()).fetchSemanticsNodes().size
             check(roots > 1) { "$scene opens its own window ($roots roots)" }
         }
-        fixture.capture("library-$scene", allWindows = popup)
+        fixture.capture("library-$sceneName", allWindows = popup)
     }
 
     @Composable
@@ -124,7 +136,7 @@ class LibraryTabletAuditCaptureTest(private val scene: String, configuration: Ph
                 onEpisodeClick = { _, _ -> },
                 onPlayEpisodes = { _, _ -> },
             )
-            "downloads", "downloads-selecting", "downloads-empty", "downloads-loading" -> DownloadedEpisodesScreen(
+            "downloads", "downloads-selecting", "downloads-empty", "downloads-loading", "downloads-syncing", "downloads-smart-off" -> DownloadedEpisodesScreen(
                 viewModel = fixtures.viewModel(
                     when (scene) {
                         "downloads-loading" -> LibraryUiState.Loading
@@ -132,14 +144,15 @@ class LibraryTabletAuditCaptureTest(private val scene: String, configuration: Ph
                         else -> fixtures.loaded()
                     },
                 ),
-                userPrefs = fixtures.smartDownloadPrefs(),
+                userPrefs = fixtures.smartDownloadPrefs(enabled = scene != "downloads-smart-off"),
                 onBack = {},
                 onExploreClick = {},
                 onPodcastShowClick = { _, _ -> },
                 isPlayerActive = true,
+                isSyncing = scene == "downloads-syncing",
             )
-            "downloaded-show" -> DownloadedShowEpisodesScreen(fixtures.viewModel(fixtures.loaded()), "show-0", LibraryCaptureFixtures.LONG_TITLE, {}, { _, _ -> }, true)
-            "subs-shows", "subs-shows-list", "subs-shows-empty", "subs-shows-loading", "subs-folders" -> SubscriptionsScreen(
+            "downloaded-show", "downloaded-show-menu" -> DownloadedShowEpisodesScreen(fixtures.viewModel(fixtures.loaded()), "show-0", LibraryCaptureFixtures.LONG_TITLE, {}, { _, _ -> }, true)
+            "subs-shows", "subs-shows-list", "subs-shows-empty", "subs-shows-loading", "subs-folders", "subs-search", "subs-sort-tooltip" -> SubscriptionsScreen(
                 viewModel = fixtures.viewModel(
                     state = when (scene) {
                         "subs-shows-loading" -> LibraryUiState.Loading
@@ -164,7 +177,7 @@ class LibraryTabletAuditCaptureTest(private val scene: String, configuration: Ph
                 onExploreClick = {},
                 initialTab = 1,
             )
-            "playlists", "playlists-empty", "playlists-loading", "new-playlist-pick", "new-playlist-settings" -> {
+            "playlists", "playlists-empty", "playlists-loading", "playlists-menu", "new-playlist-pick", "new-playlist-settings" -> {
                 val state = remember {
                     PlaylistPagesState(
                         newDraft = when (scene) {
@@ -186,13 +199,21 @@ class LibraryTabletAuditCaptureTest(private val scene: String, configuration: Ph
                     pickSource = PlaylistPickSource(fixtures.podcasts, fixtures.folders),
                 )
             }
-            "playlist-detail" -> PlaylistDetailContent(
-                detail = PlaylistDetailState.Ready(fixtures.playlists.first(), fixtures.playlistShows, fixtures.comingUp),
-                state = remember { PlaylistPagesState() },
-                actions = playlistActions,
-                onBack = {},
-                pickSource = PlaylistPickSource(fixtures.podcasts, fixtures.folders),
-            )
+            "playlist-detail", "playlist-detail-snackbar" -> {
+                val snackbar = remember { SnackbarHostState() }
+                if (scene == "playlist-detail-snackbar") {
+                    LaunchedEffect(Unit) { snackbar.showSnackbar("Removed ${fixtures.playlistShows[1].title}", "Undo", duration = SnackbarDuration.Indefinite) }
+                }
+                PlaylistDetailContent(
+                    detail = PlaylistDetailState.Ready(fixtures.playlists.first(), fixtures.playlistShows, fixtures.comingUp),
+                    state = remember { PlaylistPagesState() },
+                    actions = playlistActions,
+                    onBack = {},
+                    pickSource = PlaylistPickSource(fixtures.podcasts, fixtures.folders),
+                    snackbarHostState = snackbar,
+                    isPlayerActive = scene == "playlist-detail-snackbar",
+                )
+            }
             "folder-page" -> OpenFolderPage(FolderPagesState(openFolderId = "tech"), folderData, noFolderActions, bottomPadding = 96.dp)
             "new-folder-pick" -> FolderEditorPage(
                 remember { FolderPagesState().apply { openNewFolder() }.also { it.newFolderDraft = NewFolderDraft(pickedIds = listOf("show-1", "show-2")) } },
@@ -201,6 +222,11 @@ class LibraryTabletAuditCaptureTest(private val scene: String, configuration: Ph
             )
             "edit-folder" -> FolderEditorPage(remember { FolderPagesState().apply { openEdit(fixtures.folders[2]) } }, folderData, noFolderActions)
             "auto-organize" -> FolderEditorPage(remember { FolderPagesState().apply { openAutoOrganize() } }, folderData, noFolderActions)
+            "auto-organize-one-look" -> FolderEditorPage(
+                remember { FolderPagesState().apply { openAutoOrganize() } },
+                folderData.copy(autoOrganizeLook = AutoOrganizeLook(fixedSize = FolderDisplaySize.SHELF)),
+                noFolderActions,
+            )
             "sort-sheet" -> Backdrop {
                 SubscriptionSortSheet(
                     config = SubscriptionSortConfig(SubscriptionSort.SmartRank, FolderInterSort.Inherit, FolderIntraSort.Inherit, autoOrganizeFolders = true, genreFolderCount = 2),
@@ -235,7 +261,7 @@ class LibraryTabletAuditCaptureTest(private val scene: String, configuration: Ph
         sheet()
     }
 
-    /** Opens what the scene shows beyond its page: select mode, or the New Episodes sort. */
+    /** Opens what the scene shows beyond its page: select mode, a sort, a menu, the search or a tooltip. */
     private fun interact() {
         when (scene) {
             "downloads-selecting" -> {
@@ -243,8 +269,39 @@ class LibraryTabletAuditCaptureTest(private val scene: String, configuration: Ph
                 tap(byDescription(R.string.library_select_all))
             }
             "latest-sort" -> tap(byDescription(R.string.library_sort))
+            "downloaded-show-menu" -> tap(byDescription(R.string.library_options))
+            "playlists-menu" -> {
+                fixture.compose.onNodeWithText("Morning mix").performTouchInput { longClick() }
+                settle()
+            }
+            "subs-search" -> {
+                tap(byDescription(R.string.library_search))
+                fixture.compose.onNode(hasSetTextAction()).performTextInput("number 1")
+                settle()
+            }
+            "subs-sort-tooltip" -> {
+                byDescription(R.string.library_sort).performTouchInput { longClick() }
+                settle()
+            }
         }
     }
+
+    /**
+     * Editors, sheets and menus open in their own windows, which the capture's fake system bars and
+     * cutout don't reach; this sends the same insets to each of them.
+     */
+    private fun sendInsetsToDialogs() {
+        val insets = fixture.configuration.systemInsets ?: return
+        fixture.compose.runOnUiThread {
+            ShadowDialog.getShownDialogs().forEach { dialog ->
+                dialog.window?.decorView?.let { ViewCompat.dispatchApplyWindowInsets(it, insets.toWindowInsets()) }
+            }
+        }
+        settle()
+    }
+
+    /** The theme a scene draws in. */
+    private data class ThemeChoice(val brand: String, val surface: String, val dark: Boolean)
 
     private fun byDescription(id: Int): SemanticsNodeInteraction =
         fixture.compose.onAllNodesWithContentDescription(fixture.compose.activity.getString(id)).onFirst()
@@ -263,52 +320,39 @@ class LibraryTabletAuditCaptureTest(private val scene: String, configuration: Ph
         }
     }
 
-    private val folderData = FolderPagesData(
-        podcasts = fixtures.podcasts,
-        folders = fixtures.folders,
-        sort = SubscriptionSort.SmartRank,
-        smartOrderIds = fixtures.podcasts.map { it.id },
-        intraFolderSort = FolderIntraSort.Inherit,
-        autoOrganizeOn = true,
-        autoOrganizeLook = AutoOrganizeLook(),
-        reorderMode = ReorderMode.Inactive,
-    )
+    private val folderData = fixtures.folderPagesData
+    private val noFolderActions = fixtures.noFolderActions
 
-    private val noFolderActions = object : FolderPagesActions {
-        override fun openShow(podcastId: String) = Unit
-        override fun showMenu(target: ContextMenuTarget) = Unit
-        override fun addShows(folder: cx.aswin.boxlore.core.model.SubscriptionFolder) = Unit
-        override fun openSort() = Unit
-        override fun setReorderMode(mode: ReorderMode) = Unit
-        override fun saveFolderOrder(folderId: String, orderedIds: List<String>) = Unit
-        override fun deleteFolder(folder: cx.aswin.boxlore.core.model.SubscriptionFolder) = Unit
-        override fun createFolder(params: FolderSaveParams, podcastIds: List<String>, move: FolderShowMove?) = Unit
-        override fun updateFolder(folder: cx.aswin.boxlore.core.model.SubscriptionFolder) = Unit
-        override fun changeMembership(podcastId: String, change: FolderMembershipChange) = Unit
-        override fun turnOnAutoOrganize(look: AutoOrganizeLook) = Unit
-        override fun turnOffAutoOrganize() = Unit
-        override fun setAutoOrganizeLook(look: AutoOrganizeLook) = Unit
-        override fun applyLookToGenreFolders(look: AutoOrganizeLook) = Unit
-    }
-
-    private val playlistActions = object : PlaylistDetailActions {
-        override fun open(playlistId: String) = Unit
-        override fun create(request: PlaylistCreateRequest) = Unit
-        override fun rename(playlistId: String, name: String) = Unit
-        override fun delete(playlistId: String) = Unit
-        override fun play() = Unit
-        override fun setPlayback(mix: PlaylistMix, perShowLimit: Int?) = Unit
-        override fun addShows(podcastIds: List<String>) = Unit
-        override fun removeShow(show: PlaylistShow) = Unit
-    }
+    private val playlistActions = fixtures.noPlaylistActions
 
     companion object {
         /** Scenes whose subject is a sheet, menu or dialog in its own window. */
         private val POPUP_SCENES = setOf(
             "latest-sort", "sort-sheet", "context-menu-show", "context-menu-folder-show", "context-menu-folder",
-            "add-shows-sheet", "move-sheet", "new-folder-pick", "edit-folder", "auto-organize",
-            "new-playlist-pick", "new-playlist-settings",
+            "add-shows-sheet", "move-sheet", "new-folder-pick", "edit-folder", "auto-organize", "auto-organize-one-look",
+            "new-playlist-pick", "new-playlist-settings", "downloaded-show-menu", "playlists-menu", "subs-sort-tooltip",
         )
+
+        private const val BRAND_SUFFIX = "-brand"
+        private const val PURE_SUFFIX = "-brand-pure"
+        private const val CAPTURE_BRAND = "emerald"
+
+        /** Open menus, search, tooltips, Smart Downloads states and snackbars: the sizes where they change most. */
+        private val STATE_SCENES = listOf(
+            "downloaded-show-menu",
+            "playlists-menu",
+            "subs-search",
+            "subs-sort-tooltip",
+            "downloads-syncing",
+            "downloads-smart-off",
+            "auto-organize-one-look",
+            "playlist-detail-snackbar",
+        )
+        private val STATE_SIZES = setOf("360x800", "412x915", "915x412-insets", "475x695-de", "932x650-book", "932x650-tabletop", "1280x800")
+
+        /** The hub and Playlists' empty page in a brand theme and in Pure black. */
+        private val THEME_SCENES = listOf("hub", "hub-empty", "playlists-empty").flatMap { listOf(it + BRAND_SUFFIX, it + PURE_SUFFIX) }
+        private val THEME_SIZES = setOf("412x915", "1280x800")
 
         private val AUDIT_SCENES = listOf(
             "hub", "hub-empty", "hub-loading",
@@ -325,8 +369,18 @@ class LibraryTabletAuditCaptureTest(private val scene: String, configuration: Ph
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}-{1}")
         fun configurations(): List<Array<Any>> {
             if (System.getProperty("boxlore.tabletCaptures") == "audit") {
-                val sizes = PhoneGoldenConfiguration.auditConfigurations(extra = listOf(PhoneGoldenConfiguration(360, 800, false)))
-                return AUDIT_SCENES.flatMap { scene -> sizes.map { arrayOf<Any>(scene, it) } }
+                val sizes = PhoneGoldenConfiguration.auditConfigurations(
+                    extra = listOf(
+                        PhoneGoldenConfiguration(360, 800, false),
+                        PhoneGoldenConfiguration(412, 915, true),
+                        PhoneGoldenConfiguration(1_280, 800, true),
+                    ),
+                )
+                val stateSizes = sizes.filter { it.auditKey in STATE_SIZES }
+                val themeSizes = sizes.filter { it.auditKey in THEME_SIZES && !it.dark }
+                return AUDIT_SCENES.flatMap { scene -> sizes.map { arrayOf<Any>(scene, it) } } +
+                    STATE_SCENES.flatMap { scene -> stateSizes.map { arrayOf<Any>(scene, it) } } +
+                    THEME_SCENES.flatMap { scene -> themeSizes.map { arrayOf<Any>(scene, it) } }
             }
             return listOf("liked", "liked-empty", "downloads", "downloaded-show").flatMap { scene ->
                 listOf(1280 to 800, 840 to 1280).flatMap { (width, height) -> listOf(false, true).map { dark -> arrayOf<Any>(scene, PhoneGoldenConfiguration(width, height, dark)) } }

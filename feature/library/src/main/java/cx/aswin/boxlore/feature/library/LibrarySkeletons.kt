@@ -46,7 +46,9 @@ internal fun LibraryLoading(modifier: Modifier = Modifier, content: @Composable 
     }
     val loading = stringResourceLoading()
     Box(modifier.fillMaxSize().testTag(LIBRARY_LOADING_TAG).semantics { contentDescription = loading }) {
-        if (visible) ShimmerScope(active = true, content = content)
+        if (visible) {
+            Box(Modifier.fillMaxSize().testTag(LIBRARY_SKELETON_TAG)) { ShimmerScope(active = true, content = content) }
+        }
     }
 }
 
@@ -109,3 +111,6 @@ private const val LOADING_SHOW_DELAY_MS = 150L
 
 /** Test tag of a loading Library page. */
 internal const val LIBRARY_LOADING_TAG = "library_loading"
+
+/** Test tag for the page outline a loading page draws once its short wait is over. */
+internal const val LIBRARY_SKELETON_TAG = "library_loading_skeleton"
