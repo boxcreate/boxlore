@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.genreLabelRes
@@ -32,12 +34,28 @@ import cx.aswin.boxlore.feature.explore.R
  * show's place in Top charts, shown on the cover.
  */
 @Composable
-internal fun ExploreBrowsePodcastCard(podcast: Podcast, featured: Boolean, showGenre: Boolean, rank: Int? = null, onClick: () -> Unit) {
+internal fun ExploreBrowsePodcastCard(
+    podcast: Podcast,
+    featured: Boolean,
+    showGenre: Boolean,
+    rank: Int? = null,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     if (featured && rank != null) {
-        // The featured card draws no cover chrome, so its number sits on the card's corner instead.
+        // The featured card draws no cover chrome, so its number sits over the artwork's top corner,
+        // never over the title; the card itself says the number, so the badge is silent.
+        val description = exploreRankDescription(rank)
         Box(Modifier.fillMaxWidth()) {
-            ExploreBrowsePodcastCard(podcast, featured = true, showGenre = showGenre, rank = null, onClick = onClick)
-            ExploreRankBadge(rank = rank, title = podcast.title, modifier = Modifier.align(Alignment.TopStart).padding(12.dp))
+            ExploreBrowsePodcastCard(
+                podcast,
+                featured = true,
+                showGenre = showGenre,
+                rank = null,
+                onClick = onClick,
+                modifier = Modifier.semantics { contentDescription = description },
+            )
+            ExploreRankBadge(rank = rank, announce = false, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp))
         }
         return
     }
@@ -48,11 +66,11 @@ internal fun ExploreBrowsePodcastCard(podcast: Podcast, featured: Boolean, showG
         title = podcast.title,
         subtitle = null,
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         presentation = if (featured) FeedMediaCardPresentation.ExpressiveFeatured else FeedMediaCardPresentation.ExpressivePoster,
         imageChrome = {
             if (rank != null) {
-                ExploreRankBadge(rank = rank, title = podcast.title, modifier = Modifier.align(Alignment.TopStart).padding(8.dp))
+                ExploreRankBadge(rank = rank, modifier = Modifier.align(Alignment.TopStart).padding(8.dp))
             }
             if (genre != null) {
                 Surface(
