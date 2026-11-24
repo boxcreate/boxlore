@@ -144,6 +144,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SubscriptionSyncResolver` starts or clears the local catalog's unsubscribe TTL on pulled unfollows and follows, so cloud and watch unfollows are cleaned up like local ones. ([#1295](https://github.com/boxcreate/boxlore/pull/1295)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Locale and resource reads in Settings, Library, History and Onboarding follow configuration changes, and the account check-email screen updates with the signed-in user. ([#1290](https://github.com/boxcreate/boxlore/pull/1290)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - `FirebaseAuthAuthenticator` refreshes and attaches the Firebase ID token only for 401s from the API base URL's origin. ([#1294](https://github.com/boxcreate/boxlore/pull/1294)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- `DailyBriefingCardTest` finds the Brief's hide button by its renamed description, so `:feature:home` tests pass on master again. ([#1313](https://github.com/boxcreate/boxlore/pull/1313)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Removed
 - The Daily's dateline (`millisUntilNextDay`) and the unused `daily_horizon` drawable. ([#1288](https://github.com/boxcreate/boxlore/pull/1288)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ## [v0.0.32] - 2026-11-20
