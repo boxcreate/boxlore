@@ -36,6 +36,8 @@ Announcement title:
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.
 - On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.
+- Settings fits short screens, phones turned sideways and large text better: page headers start slim, wide screens show the categories two by two, and long choice names wrap instead of being cut off.
+- Smart Downloads now looks like the other Settings pages, and the Settings hub tells you whether you're signed in and synced.
 
 ## Fixed
 
@@ -50,3 +52,4 @@ Announcement title:
 - Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.
+- Turning off Smart Downloads now asks first, because it also removes the episodes Smart Downloads saved.

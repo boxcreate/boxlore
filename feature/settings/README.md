@@ -18,7 +18,7 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 ## Navigation and tablet split
 
 - `ProfileSettingsDestination` lists every page; its `parent` is where Back goes (Appearance's pages → Appearance, the custom theme editor → Theme & colors, LeaveMeAlone → Library). `resolveSettingsBackAction` decides Back; a page opened directly leaves Settings.
-- On tablet windows `AdaptiveSettingsLayout` puts a category list beside the page, highlighting its top-level category (`settingsCategoryOf`; Account sits under Cloud Sync). Onboarding and Support stay full-page.
+- On wide landscape windows `AdaptiveSettingsLayout` puts a category list beside the page, highlighting its top-level category (`settingsCategoryOf`; Account sits under Cloud Sync). Onboarding and Support stay full-page.
 - Window gates and state retention follow [`ARCHITECTURE.md#adaptive-ui-and-state`](../../ARCHITECTURE.md#adaptive-ui-and-state).
 
 ## Appearance
@@ -62,7 +62,7 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 - Every world is `SupportDevelopmentPage` with a `SupportPageStyle`; a world changes only art, fonts and wording. Prices and tiers come from `SUPPORT_OFFERS` in every world.
 - Payments are off (`SUPPORT_PAYMENTS_LIVE`): every pay tap opens `SupportPaymentNotice`, which says nothing was charged.
 - `SupportPageSession` reports one view and one exit per visit, surviving configuration changes. `SupportEntryImpression` reports each time Settings shows the Support entry.
-- The page never scrolls; `SupportPageLayout.kt` drops or rearranges parts to fit the window.
+- `SupportPageLayout.kt` drops or rearranges parts to fit; scrolling is the last resort.
 - `SupportPageEnvironment` holds the flag reader, analytics sink, clock and configuration-change check so tests can replace them.
 
 ## Library and LeaveMeAlone
