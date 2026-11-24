@@ -90,6 +90,8 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>The monthly story now waits for you when part of a card is off screen, and shows previous, pause and next buttons beside it on tablets.</li>
 <li>On tablets and unfolded foldables, the Brief now shows every story beside the edition, and on a tablet held upright it lists the stories one after another.</li>
 <li>The Brief's back button is now at the top left, its edition menu marks the edition you're on, and each story's play button is smaller so Listen stands out.</li>
+<li>Settings fits short screens, phones turned sideways and large text better: page headers start slim and line up with the page, wide screens show the categories two by two, and long names and the Support price show in full instead of being cut off.</li>
+<li>Smart Downloads now looks like the other Settings pages, and the Settings hub tells you whether you're signed in and synced.</li>
 </ul>
 <b>🐛 Fixed:</b>
 <ul align="left">
@@ -113,6 +115,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Library now fits sideways phones, foldables and tablets, long titles in other languages fit, and lists, selections and open menus stay as you left them when you fold, unfold or resize boxlore.</li>
 <li>Undo after removing an episode from Listening history now shows above the bottom bar, where you can tap it.</li>
 <li>On sideways phones and the Galaxy Z Fold cover, Listening history and the Brief keep their buttons clear of the system buttons and the bottom bar, and the Brief's error page scrolls to Try again.</li>
+<li>Turning off Smart Downloads now asks first, because it also removes the episodes Smart Downloads saved.</li>
 </ul>
 <!-- release-upcoming:end -->
 
