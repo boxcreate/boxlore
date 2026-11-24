@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import re
 import struct
 import sys
 import tempfile
@@ -415,6 +416,7 @@ Class #4 -
         dry_run = (root / ".github/workflows/release-contracts.yml").read_text()
         self.assertIn("app-release-unsigned.apk", dry_run)
         self.assertIn("for module in wear tv; do", dry_run)
+        self.assertGreaterEqual(int(re.search(r"timeout-minutes: (\d+)", dry_run).group(1)), 60)
         self.assertIn('--module "$module"', dry_run)
         self.assertIn("uploadCrashlyticsMappingFileRelease", dry_run)
         self.assertIn("--app-variant playRelease", dry_run)

@@ -22,7 +22,8 @@ jobs:
     name: Optimized release contracts
     if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'release/v')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Three apps' optimized builds and release lint take just over 30 minutes on a hosted runner.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
         with:
