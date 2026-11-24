@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,7 +24,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -37,9 +35,7 @@ import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Podcasts
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,7 +44,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -62,10 +57,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -74,7 +67,10 @@ import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.BoxLoreUser
+import cx.aswin.boxlore.feature.settings.LocalSettingsSplitPane
 import cx.aswin.boxlore.feature.settings.R
+import cx.aswin.boxlore.feature.settings.components.SETTINGS_PAGE_MAX_WIDTH
+import cx.aswin.boxlore.feature.settings.components.SETTINGS_SPLIT_PAGE_START
 
 /**
  * The Account & sync page frame: a top bar (the page title in Settings; on the onboarding route no title
@@ -114,9 +110,14 @@ internal fun AccountPageScaffold(
             }
         },
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding).imePadding(), contentAlignment = Alignment.TopCenter) {
+        // Beside the tablet category list the page starts by the list, as wide as the other pages.
+        val split = LocalSettingsSplitPane.current
+        Box(
+            Modifier.fillMaxSize().padding(padding).imePadding().then(if (split) Modifier.padding(start = SETTINGS_SPLIT_PAGE_START) else Modifier),
+            contentAlignment = if (split) Alignment.TopStart else Alignment.TopCenter,
+        ) {
             Column(
-                modifier = Modifier.widthIn(max = 600.dp).fillMaxWidth().verticalScroll(scroll).navigationBarsPadding()
+                modifier = Modifier.widthIn(max = if (split) SETTINGS_PAGE_MAX_WIDTH else 600.dp).fillMaxWidth().verticalScroll(scroll).navigationBarsPadding()
                     .padding(horizontal = 20.dp).padding(top = 4.dp, bottom = if (isOnboarding) 24.dp else 104.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 content = content,
@@ -306,30 +307,6 @@ internal fun AccountSignedInSettings(user: BoxLoreUser, syncStatus: CloudSyncUiS
     AccountSyncTiles(state = null)
     AccountManagementGroup(user, actions.onResetPassword, actions.onSignOut, actions.onDeleteAccountClick, actions.onTvSignIn)
     AccountFooterLinks(actions.onOpenAccountDeletionInfo)
-}
-
-/** Keep both password choices readable at narrow widths and large text scales. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-internal fun AccountAuthModeSelector(selected: AuthMode, onSelect: (AuthMode) -> Unit) {
-    val options = listOf(AuthMode.SIGN_IN to R.string.account_sign_in, AuthMode.SIGN_UP to R.string.account_create)
-    Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
-        options.forEachIndexed { index, (mode, label) ->
-            ToggleButton(
-                checked = selected == mode,
-                onCheckedChange = { checked -> if (checked) onSelect(mode) },
-                modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { role = Role.RadioButton },
-                shapes = if (index == 0) {
-                    ButtonGroupDefaults.connectedLeadingButtonShapes(pressedShape = RoundedCornerShape(12.dp))
-                } else {
-                    ButtonGroupDefaults.connectedTrailingButtonShapes(pressedShape = RoundedCornerShape(12.dp))
-                },
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
-            ) {
-                Text(stringResource(label), Modifier.fillMaxWidth(), style = MaterialTheme.typography.labelLarge, maxLines = 2, textAlign = TextAlign.Center)
-            }
-        }
-    }
 }
 
 /** A tonal button that keeps its label readable at any text size. */

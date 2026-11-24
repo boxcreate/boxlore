@@ -113,7 +113,7 @@ class WearOsSettingsTest {
         fixture.prepare()
         fixture.setContent {
             BoxLoreTheme(darkTheme = false, dynamicColor = false) {
-                CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(1280f, 1280f)) {
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(1280f, 800f)) {
                     Box(Modifier.requiredSize(paneWidth.value.dp, 800.dp)) {
                         val wearOs =
                             WearOsSettings(

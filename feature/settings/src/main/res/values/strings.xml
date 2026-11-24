@@ -27,7 +27,7 @@
     <string name="settings_back">Back</string>
     <string name="settings_hub_sync_description">Account sync, OPML feeds, and library backups</string>
     <string name="settings_hub_library_description">Discovery region, content languages, and RSS feeds</string>
-    <string name="settings_hub_appearance_description">Theme and navigation settings</string>
+    <string name="settings_hub_appearance_description">Theme, Home, player, navigation, text and language</string>
     <string name="settings_hub_playback_description">Intro skip, seek controls, and completed episodes</string>
     <string name="settings_hub_downloads_description">Smart and automatic episode downloads</string>
     <string name="settings_hub_wear_os_description">Your shows layout and download storage on your watch</string>
@@ -94,4 +94,5 @@
         <item quantity="one">%1$d second</item>
         <item quantity="other">%1$d seconds</item>
     </plurals>
+    <string name="settings_hub_sync_signed_in" translatable="false">%1$s · %2$s</string>
 </resources>

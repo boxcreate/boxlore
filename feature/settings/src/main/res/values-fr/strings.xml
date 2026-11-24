@@ -24,7 +24,7 @@
     <string name="settings_back">Retour</string>
     <string name="settings_hub_sync_description">Synchro du compte, flux OPML et sauvegardes de la bibliothèque</string>
     <string name="settings_hub_library_description">Région de découverte, langues du contenu et flux RSS</string>
-    <string name="settings_hub_appearance_description">Thème et navigation</string>
+    <string name="settings_hub_appearance_description">Thème, Accueil, lecteur, navigation, texte et langue</string>
     <string name="settings_hub_playback_description">Saut des intros, avance et retour, épisodes terminés</string>
     <string name="settings_hub_downloads_description">Téléchargements intelligents et automatiques des épisodes</string>
     <string name="settings_hub_wear_os_description">Disposition de vos podcasts et stockage des téléchargements sur votre montre</string>

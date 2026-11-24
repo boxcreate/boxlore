@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -30,8 +32,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarState
 import androidx.compose.material3.TwoRowsTopAppBar
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,12 +53,34 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentHeightDp
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.settings.LocalSettingsPaneBackVisible
 import cx.aswin.boxlore.feature.settings.LocalSettingsSplitPane
 import cx.aswin.boxlore.feature.settings.R
 
 private val SETTINGS_CONTENT_BOTTOM_PADDING = 220.dp
+
+/** Every Settings page's content column is at most this wide. */
+internal val SETTINGS_PAGE_MAX_WIDTH = 720.dp
+
+/** Beside the tablet category list a page starts this far from the list, not centred in its pane. */
+internal val SETTINGS_SPLIT_PAGE_START = 24.dp
+
+/** Windows (or panes) shorter than this open a page with its header already slim, so content shows first. */
+internal const val SETTINGS_SHORT_WINDOW_DP = 700f
+
+/** The content column: centred and capped on its own, start-aligned beside the tablet category list. */
+@Composable
+private fun Modifier.settingsPageColumn(): Modifier =
+    if (LocalSettingsSplitPane.current) {
+        widthIn(max = SETTINGS_PAGE_MAX_WIDTH).fillMaxWidth()
+    } else {
+        boxloreCardWidth(BoxloreCardFamily.Utility).widthIn(max = SETTINGS_PAGE_MAX_WIDTH).fillMaxWidth()
+    }
 
 @Composable
 internal fun SettingsScaffold(
@@ -65,7 +94,7 @@ internal fun SettingsScaffold(
 ) {
     SettingsScaffoldFrame(title, onBack, modifier, actions, onUnconsumedTap) {
         Column(
-            modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).widthIn(max = 720.dp).fillMaxWidth().verticalScroll(scrollState)
+            modifier = Modifier.settingsPageColumn().verticalScroll(scrollState)
                 .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = boxloreContentBottomPadding(SETTINGS_CONTENT_BOTTOM_PADDING)),
             verticalArrangement = Arrangement.spacedBy(20.dp),
             content = content,
@@ -81,7 +110,7 @@ internal fun SettingsLazyScaffold(
 ) {
     SettingsScaffoldFrame(title, onBack, Modifier, {}, null) {
         LazyColumn(
-            modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).widthIn(max = 720.dp).fillMaxWidth(),
+            modifier = Modifier.settingsPageColumn(),
             contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = boxloreContentBottomPadding(SETTINGS_CONTENT_BOTTOM_PADDING)),
             verticalArrangement = Arrangement.spacedBy(20.dp),
             content = content,
@@ -99,7 +128,13 @@ private fun SettingsScaffoldFrame(
     onUnconsumedTap: (() -> Unit)?,
     content: @Composable () -> Unit,
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val split = LocalSettingsSplitPane.current
+    val short = boxloreContentHeightDp() < SETTINGS_SHORT_WINDOW_DP
+    val collapseLimit = with(LocalDensity.current) { -(TopAppBarDefaults.LargeAppBarExpandedHeight - TopAppBarDefaults.LargeAppBarCollapsedHeight).toPx() }
+    // Short windows open with the header slim; the one saved state follows later changes of height.
+    val barState = rememberTopAppBarState(initialHeightOffsetLimit = collapseLimit, initialHeightOffset = if (short) collapseLimit else 0f)
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(barState)
+    SettingsHeaderFollowsHeight(barState, short, collapseLimit)
     val currentOnUnconsumedTap = rememberUpdatedState(onUnconsumedTap)
     val focusManager = LocalFocusManager.current
 
@@ -119,19 +154,29 @@ private fun SettingsScaffoldFrame(
         modifier =
         modifier
             .fillMaxSize()
-            .then(if (LocalSettingsSplitPane.current) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)),
+            .then(if (split) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)),
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            if (LocalSettingsSplitPane.current) {
+            if (split) {
+                // Starts where the page starts, with a heavier title than the category list's "Settings".
                 TopAppBar(
-                    modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
-                    title = { Text(title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                    modifier = Modifier.padding(start = SETTINGS_SPLIT_PAGE_START).widthIn(max = SETTINGS_PAGE_MAX_WIDTH),
+                    title = {
+                        Text(
+                            title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = GoogleSansWeight.semiBold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
                     navigationIcon = { if (LocalSettingsPaneBackVisible.current) SettingsBackButton(onBack) },
                     actions = actions,
                 )
             } else {
                 TwoRowsTopAppBar(
-                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
+                // Lines up with the page's column, clear of a camera cutout or side system buttons.
+                modifier = Modifier.boxloreHorizontalSafePadding().boxloreReadingColumn(SETTINGS_PAGE_MAX_WIDTH.value),
                 title = { expanded ->
                     val presentation = if (expanded) titlePresentation else compactTitlePresentation
                     Text(
@@ -169,6 +214,8 @@ private fun SettingsScaffoldFrame(
             Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                // The scaffold already pads for side system buttons; a camera cutout is added here.
+                .then(if (split) Modifier.padding(start = SETTINGS_SPLIT_PAGE_START) else Modifier.boxloreHorizontalSafePadding(WindowInsets.displayCutout))
                 .imePadding()
                 .pointerInput(Unit) {
                     awaitEachGesture {
@@ -178,9 +225,30 @@ private fun SettingsScaffoldFrame(
                         }
                     }
                 },
-            contentAlignment = Alignment.TopCenter,
+            contentAlignment = if (split) Alignment.TopStart else Alignment.TopCenter,
         ) {
             content()
+        }
+    }
+}
+
+/**
+ * Keeps the header's height in step with the window: it goes slim when the window turns short (a
+ * phone turned sideways, a fold, a split screen) and opens again when it is tall enough and the page
+ * is at its top. It acts only when the window crosses the line, never against the listener's scroll.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsHeaderFollowsHeight(state: TopAppBarState, short: Boolean, collapseLimit: Float) {
+    val wasShort = remember { mutableStateOf(short) }
+    LaunchedEffect(short) {
+        if (short == wasShort.value) return@LaunchedEffect
+        wasShort.value = short
+        state.heightOffsetLimit = collapseLimit
+        if (short) {
+            state.heightOffset = collapseLimit
+        } else if (state.contentOffset >= 0f) {
+            state.heightOffset = 0f
         }
     }
 }
