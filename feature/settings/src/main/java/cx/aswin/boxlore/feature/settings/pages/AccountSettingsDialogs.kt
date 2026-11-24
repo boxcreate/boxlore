@@ -10,11 +10,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -112,13 +114,15 @@ private fun DeleteAccountConfirmationDialog(
                     stringResource(R.string.account_delete_dialog_body),
                 )
                 Spacer(Modifier.height(4.dp))
-                // A real button with a full touch area, lined up with the text above.
+                // A real button with a full touch area, its label lined up with the text above. Its corners
+                // are smaller than its top and bottom padding, so a label that wraps keeps every letter.
                 TextButton(
                     onClick = onOpenAccountDeletionInfo,
                     modifier = Modifier.heightIn(min = 48.dp),
+                    shape = MaterialTheme.shapes.extraSmall,
                     contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp),
                 ) {
-                    Text(stringResource(R.string.account_delete_dialog_learn_more))
+                    Text(stringResource(R.string.account_delete_dialog_learn_more), textAlign = TextAlign.Start)
                 }
             }
         },

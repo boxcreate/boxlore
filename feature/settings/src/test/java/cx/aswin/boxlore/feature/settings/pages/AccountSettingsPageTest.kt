@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.settings.pages
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import cx.aswin.boxlore.core.auth.RecentLoginRequiredException
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -45,6 +46,35 @@ class AccountSettingsPageTest {
         compose.onNode(hasText(text(R.string.account_delete_dialog_confirm)) and hasClickAction()).performClick()
         compose.onNode(hasText(text(R.string.settings_cancel)) and hasClickAction()).performClick()
         assertEquals(listOf("learn", "delete", "cancel"), calls)
+    }
+
+    // At large text Learn more wraps to two lines: it stays one button, lined up with the text above.
+    @Config(qualifiers = "w443dp-h649dp", fontScale = 1.7f)
+    @Test
+    fun `at large text a wrapped Learn more is still one button lined up with the text`() {
+        var opened = 0
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                AccountSettingsDialogs(
+                    showDeleteConfirmation = true,
+                    showReauthRequiredDialog = false,
+                    onDismissDeleteConfirmation = {},
+                    onConfirmDelete = {},
+                    onDismissReauthRequired = {},
+                    onSignOutToReauth = {},
+                    onOpenAccountDeletionInfo = { opened++ },
+                )
+            }
+        }
+        val label = text(R.string.account_delete_dialog_learn_more)
+        val button = compose.onNode(hasText(label) and hasClickAction())
+        val buttonBounds = button.fetchSemanticsNode().boundsInRoot
+        val labelBounds = compose.onNode(hasText(label) and !hasClickAction(), useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val body = compose.onNodeWithText(text(R.string.account_delete_dialog_body), useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals("label starts with the body text", body.left, labelBounds.left, 1f)
+        assertTrue("label ($labelBounds) inside a full-size button ($buttonBounds)", buttonBounds.contains(labelBounds.center) && buttonBounds.height >= 48f)
+        button.performClick()
+        assertEquals(1, opened)
     }
 
     @Test
