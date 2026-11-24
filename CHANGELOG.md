@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- The release contract gate (`verify_release_contracts.py --module wear|tv`) checks the Wear OS and TV apps' optimized APKs and bundles in the Release dry run and before publication. ([#1316](https://github.com/boxcreate/boxlore/pull/1316)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ## [v0.0.33] - 2026-11-24
 
 ### Added
