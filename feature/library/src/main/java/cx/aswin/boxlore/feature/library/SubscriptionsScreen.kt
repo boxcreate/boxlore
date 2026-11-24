@@ -45,7 +45,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -125,7 +124,6 @@ import cx.aswin.boxlore.feature.library.subscriptions.latestQueueMessage
 import cx.aswin.boxlore.feature.library.subscriptions.rememberFolderPagesState
 import cx.aswin.boxlore.feature.library.subscriptions.rememberSubscriptionsScreenState
 import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 val LocalLastSeenEpisodes = compositionLocalOf<Map<String, String>> { emptyMap() }
@@ -197,13 +195,8 @@ fun SubscriptionsScreen(
         val shortPane = boxloreIsShortPane()
         // In a short window the whole header (bar and docked tabs) scrolls away with the list.
         val shortHeaderBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-        // A short window starts with that header tucked away, so the shows come first; scrolling up brings it back.
-        LaunchedEffect(shortPane) {
-            if (shortPane && !screenState.isSearchActive) {
-                val limit = snapshotFlow { shortHeaderBehavior.state.heightOffsetLimit }.first { it > -Float.MAX_VALUE && it < 0f }
-                shortHeaderBehavior.state.heightOffset = limit
-            }
-        }
+        // A window that becomes short starts with that header tucked away, so the shows come first; scrolling up brings it back.
+        val shortHeaderStart = remember(shortPane) { ShortHeaderStart(tucked = shortPane && !screenState.isSearchActive) }
         val keyboard = LocalSoftwareKeyboardController.current
 
         val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -304,7 +297,7 @@ fun SubscriptionsScreen(
                             .fillMaxWidth()
                             .background(headerBgColor)
                             // In a short window the bar and docked tabs scroll away with the list and come back on the way up.
-                            .then(if (shortPane) Modifier.collapseWith(shortHeaderBehavior.state) else Modifier)
+                            .then(if (shortPane) Modifier.collapseWith(shortHeaderBehavior.state, shortHeaderStart) else Modifier)
                             .boxloreCardWidth(BoxloreCardFamily.Grid),
                     ) {
                         TopAppBar(
@@ -952,13 +945,21 @@ private suspend fun handleLatestSwipe(
  * little room for the list.
  */
 @OptIn(ExperimentalMaterial3Api::class)
-private fun Modifier.collapseWith(state: TopAppBarState): Modifier = clipToBounds().layout { measurable, constraints ->
+private fun Modifier.collapseWith(state: TopAppBarState, start: ShortHeaderStart): Modifier = clipToBounds().layout { measurable, constraints ->
     val placeable = measurable.measure(constraints)
     val limit = -placeable.height.toFloat()
     if (state.heightOffsetLimit != limit) state.heightOffsetLimit = limit
+    if (start.tucked) {
+        // Once the header's height is known: start fully tucked away.
+        state.heightOffset = limit
+        start.tucked = false
+    }
     val offset = state.heightOffset.roundToInt().coerceIn(-placeable.height, 0)
     layout(placeable.width, placeable.height + offset) { placeable.place(0, offset) }
 }
+
+/** Whether a short window's header still has to start tucked away; read once, when its height is first known. */
+private class ShortHeaderStart(var tucked: Boolean)
 
 /** Test tag for Subscriptions' docked Shows / New Episodes switcher. */
 internal const val SUBSCRIPTIONS_TAB_SWITCHER_TAG = "subscriptions_tab_switcher"

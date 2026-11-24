@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -172,6 +173,7 @@ class LibraryHeaderAdaptiveTest {
                     .map { it.boundsInRoot.top }
                     .distinct()
                 assertTrue("rows fully shown: $rows", rows.size >= 2)
+                compose.onNodeWithText("Subscriptions").assertIsNotDisplayed()
             } else {
                 compose.onNodeWithText("Subscriptions").assertIsDisplayed()
             }
