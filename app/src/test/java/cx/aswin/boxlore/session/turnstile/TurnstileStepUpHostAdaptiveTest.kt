@@ -3,6 +3,7 @@ package cx.aswin.boxlore.session.turnstile
 import android.app.Application
 import android.content.Context
 import android.view.View
+import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.echo.LocalEchoMotion
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
@@ -284,7 +286,7 @@ class TurnstileStepUpHostAdaptiveTest {
     }
 
     @Test
-    fun `the card shows a loader until the check has drawn, again after a resize, and a resize never rebuilds the page`() {
+    fun `the card shows a loader until the check has drawn, and a resize never rebuilds the page`() {
         holdDrawing = true
         window.value = BoxloreTestWindows.PHONE
         render()
@@ -298,15 +300,38 @@ class TurnstileStepUpHostAdaptiveTest {
         compose.mainClock.advanceTimeBy(1_000)
         compose.onNodeWithTag(CHALLENGE_LOADER_TAG).assertDoesNotExist()
 
-        // A wider phone sheet: the same presentation, so the page is not moved, but it redraws.
         compose.runOnIdle { window.value = BoxloreTestWindows.COVER_443 }
         compose.mainClock.advanceTimeBy(1_000)
-        compose.onNodeWithTag(CHALLENGE_LOADER_TAG).assertExists()
-        compose.runOnIdle { heldDraws.removeAt(0).invoke() }
-        compose.mainClock.advanceTimeBy(1_000)
-        compose.onNodeWithTag(CHALLENGE_LOADER_TAG).assertDoesNotExist()
         assertEquals(1, created.size)
         assertTrue("no draw left waiting", heldDraws.isEmpty())
+    }
+
+    @Test
+    fun `a drawn check that changes size in its card waits to redraw and is never rebuilt`() {
+        holdDrawing = true
+        var built = 0
+        val holder = TurnstilePageHolder(
+            create = { context -> View(context).also { built++ } },
+            destroy = {},
+            whenDrawn = pages::whenDrawn,
+        )
+        compose.runOnUiThread {
+            val page = holder.attachToCard(compose.activity)
+            compose.activity.addContentView(page, ViewGroup.LayoutParams(300, 72))
+        }
+        compose.runOnIdle { holder.cardResized(IntSize(300, 72)) }
+        assertFalse("not drawn before the page reports it", holder.drawn)
+        compose.runOnIdle { heldDraws.removeAt(0).invoke() }
+        assertTrue(holder.drawn)
+
+        compose.runOnIdle { holder.cardResized(IntSize(300, 72)) }
+        assertTrue("the same size needs no redraw", holder.drawn)
+        compose.runOnIdle { holder.cardResized(IntSize(260, 72)) }
+        assertFalse("a new size shows the loader until the page redraws", holder.drawn)
+        compose.runOnIdle { heldDraws.removeAt(0).invoke() }
+        assertTrue(holder.drawn)
+        assertEquals(1, built)
+        assertTrue(heldDraws.isEmpty())
     }
 
     private companion object {

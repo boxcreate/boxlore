@@ -407,6 +407,7 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
             PhoneGoldenConfiguration(360, 800, false),
             PhoneGoldenConfiguration(360, 800, false, fontScale = 1.3f, locale = "de"),
         )
+
         /** Dark captures of the screens whose colours changed, on a phone and a tablet. */
         private val DARK_SIZES = listOf(PhoneGoldenConfiguration(412, 915, true), PhoneGoldenConfiguration(1_280, 800, true))
         private val DARK_SCREENS = listOf("announcement-card", "app-updates", "cross-device-email", "import-done", "connection-check")
