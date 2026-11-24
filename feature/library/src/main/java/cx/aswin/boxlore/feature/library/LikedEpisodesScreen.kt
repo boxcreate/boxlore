@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,12 +52,9 @@ fun LikedEpisodesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
-        fraction = scrollBehavior.state.collapsedFraction,
-    )
+    val listState = rememberLazyListState()
+    val header = rememberLibraryHeaderState()
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
 
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
@@ -85,11 +82,13 @@ fun LikedEpisodesScreen(
             LargeTopAppBar(
                 modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = {
-                    Text(
-                        text = stringResource(R.string.library_hub_liked_episodes),
-                        style = titleStyle,
+                    LibraryLargeTitle(
+                        title = stringResource(R.string.library_hub_liked_episodes),
+                        collapsedFraction = scrollBehavior.state.collapsedFraction,
+                        header = header,
                     )
                 },
+                expandedHeight = header.expandedHeight(),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.library_back))
@@ -119,6 +118,7 @@ fun LikedEpisodesScreen(
                         }
                     } else {
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode),
                             contentPadding = PaddingValues(bottom = 180.dp) // Nav bar padding
                         ) {

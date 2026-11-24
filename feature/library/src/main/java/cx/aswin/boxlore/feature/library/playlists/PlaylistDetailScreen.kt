@@ -66,7 +66,6 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -91,7 +90,11 @@ import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.model.text.resolve
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import cx.aswin.boxlore.feature.library.LibraryLargeTitle
 import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderScrollBehavior
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderState
 import kotlinx.coroutines.launch
 
 /** A playlist page's wording. */
@@ -193,12 +196,9 @@ internal fun PlaylistDetailContent(
 ) {
     val ready = detail as? PlaylistDetailState.Ready
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val titleStyle = lerp(
-        start = MaterialTheme.typography.headlineLarge.copy(fontWeight = GoogleSansWeight.bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
-        fraction = scrollBehavior.state.collapsedFraction,
-    )
+    val listState = rememberLazyListState()
+    val header = rememberLibraryHeaderState()
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surface,
@@ -207,7 +207,15 @@ internal fun PlaylistDetailContent(
         topBar = {
             LargeTopAppBar(
                 modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
-                title = { Text(ready?.playlist?.name.orEmpty(), style = titleStyle, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                title = {
+                    LibraryLargeTitle(
+                        title = ready?.playlist?.name.orEmpty(),
+                        collapsedFraction = scrollBehavior.state.collapsedFraction,
+                        header = header,
+                        largeStyle = MaterialTheme.typography.headlineLarge,
+                    )
+                },
+                expandedHeight = header.expandedHeight(),
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = PlaylistsCopy.BACK) }
                 },
@@ -240,6 +248,7 @@ internal fun PlaylistDetailContent(
                     // The list's 16dp sides and the rows' 4dp sides.
                     val columns = playlistShowColumns(maxWidth - 40.dp)
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.fillMaxSize().testTag(PLAYLIST_DETAIL_TAG),
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = playlistChromeBottom(isPlayerActive)),
                     ) {

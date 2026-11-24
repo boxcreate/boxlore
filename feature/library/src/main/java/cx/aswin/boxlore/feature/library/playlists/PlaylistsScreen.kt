@@ -56,7 +56,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -75,7 +74,11 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.text.resolve
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import cx.aswin.boxlore.feature.library.LibraryLargeTitle
 import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderScrollBehavior
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderState
 import kotlinx.coroutines.launch
 
 /** The Playlists page's wording, from the module's resources. */
@@ -180,12 +183,9 @@ internal fun PlaylistsContent(
     bottomPadding: androidx.compose.ui.unit.Dp = 96.dp,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
-        fraction = scrollBehavior.state.collapsedFraction,
-    )
+    val gridState = rememberLazyGridState()
+    val header = rememberLibraryHeaderState()
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior { gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0 }
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surface,
@@ -194,7 +194,8 @@ internal fun PlaylistsContent(
         topBar = {
             LargeTopAppBar(
                 modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
-                title = { Text(PlaylistsCopy.TITLE, style = titleStyle) },
+                title = { LibraryLargeTitle(PlaylistsCopy.TITLE, scrollBehavior.state.collapsedFraction, header) },
+                expandedHeight = header.expandedHeight(),
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = PlaylistsCopy.BACK) }
                 },
@@ -220,6 +221,7 @@ internal fun PlaylistsContent(
                 }
                 else -> LazyVerticalGrid(
                     columns = PlaylistGridCells,
+                    state = gridState,
                     modifier = Modifier.fillMaxSize().testTag(PLAYLISTS_GRID_TAG),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = boxloreContentBottomPadding(bottomPadding)),
                     horizontalArrangement = Arrangement.spacedBy(PlaylistGridSpacing),

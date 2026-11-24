@@ -159,10 +159,13 @@ fun DownloadedShowEpisodesScreen(
     val collapsedHeaderHeight = 64.dp + statusBarHeight
 
     var isSelectionMode by rememberSaveable { mutableStateOf(false) }
-    val selectedEpisodeIds = remember { mutableStateListOf<String>() }
-    var deleteConfirmSelectedDialog by remember { mutableStateOf(false) }
-    var deleteConfirmShowDialog by remember { mutableStateOf(false) }
-    var swipeToDeleteEpisode by remember { mutableStateOf<DownloadedEpisodeEntity?>(null) }
+    // Saved state, so a selection or an open question comes back as it was after a restart.
+    val selectedEpisodeIds = rememberSaveable(saver = selectedIdsSaver()) { mutableStateListOf<String>() }
+    var deleteConfirmSelectedDialog by rememberSaveable { mutableStateOf(false) }
+    var deleteConfirmShowDialog by rememberSaveable { mutableStateOf(false) }
+    var swipeToDeleteEpisodeId by rememberSaveable { mutableStateOf<String?>(null) }
+    // A download that went away meanwhile drops its question quietly.
+    val swipeToDeleteEpisode = swipeToDeleteEpisodeId?.let { id -> showEpisodes.firstOrNull { it.episodeId == id } }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         if (showEpisodes.isNotEmpty()) {
@@ -422,7 +425,7 @@ fun DownloadedShowEpisodesScreen(
                                 enableDismissFromEndToStart = !isSelectionMode,
                                 onDismiss = { value ->
                                     if (value == SwipeToDismissBoxValue.EndToStart) {
-                                        swipeToDeleteEpisode = download
+                                        swipeToDeleteEpisodeId = download.episodeId
                                     }
                                     // Keep the row; confirm dialog owns deletion (same as former veto).
                                     dismissScope.launch { dismissState.reset() }
@@ -689,7 +692,7 @@ fun DownloadedShowEpisodesScreen(
                                                             text = { Text(stringResource(R.string.library_remove_download)) },
                                                             onClick = {
                                                                 showMenu = false
-                                                                swipeToDeleteEpisode = download
+                                                                swipeToDeleteEpisodeId = download.episodeId
                                                             },
                                                             leadingIcon = {
                                                                 Icon(Icons.Rounded.DeleteOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error)
@@ -710,15 +713,14 @@ fun DownloadedShowEpisodesScreen(
 
         // Dialog for delete confirmation (swipe or 3-dots menu)
         if (swipeToDeleteEpisode != null) {
-            val episode = swipeToDeleteEpisode!!
             RemoveDownloadConfirmationDialog(
-                episodeTitle = episode.episodeTitle,
+                episodeTitle = swipeToDeleteEpisode.episodeTitle,
                 onConfirm = {
-                    viewModel.removeDownload(episode.episodeId)
-                    swipeToDeleteEpisode = null
+                    viewModel.removeDownload(swipeToDeleteEpisode.episodeId)
+                    swipeToDeleteEpisodeId = null
                 },
                 onDismiss = {
-                    swipeToDeleteEpisode = null
+                    swipeToDeleteEpisodeId = null
                 },
             )
         }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -47,7 +48,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.lerp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,7 +62,10 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.DownloadsSortOrder
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
+import cx.aswin.boxlore.feature.library.LibraryLargeTitle
 import cx.aswin.boxlore.feature.library.LibraryPlaybackLayout
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderScrollBehavior
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderState
 import cx.aswin.boxlore.feature.library.LibraryUiState
 import cx.aswin.boxlore.feature.library.LibraryViewModel
 import cx.aswin.boxlore.feature.library.PlayAllFab
@@ -84,12 +87,9 @@ fun DownloadedEpisodesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
-        fraction = scrollBehavior.state.collapsedFraction,
-    )
+    val listState = rememberLazyListState()
+    val header = rememberLibraryHeaderState()
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
 
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
@@ -140,7 +140,8 @@ fun DownloadedEpisodesScreen(
     }
 
     var isSelectionMode by rememberSaveable { mutableStateOf(false) }
-    val selectedPodcastIds = remember { mutableStateListOf<String>() }
+    // Saved, so select mode never comes back after a restart with nothing selected.
+    val selectedPodcastIds = rememberSaveable(saver = selectedIdsSaver()) { mutableStateListOf<String>() }
     var deleteConfirmSelectedDialog by rememberSaveable { mutableStateOf(false) }
 
     val summary = remember(downloads) { downloads.downloadSummary() }
@@ -211,20 +212,14 @@ fun DownloadedEpisodesScreen(
                     LargeTopAppBar(
                 modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                         title = {
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.library_hub_downloads),
-                                    style = titleStyle,
-                                )
-                                if (downloads.isNotEmpty() && scrollBehavior.state.collapsedFraction < 0.4f) {
-                                    Text(
-                                        text = summary.countLine(DownloadSizeWording.Used, currentLocale()).asString(),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
+                            LibraryLargeTitle(
+                                title = stringResource(R.string.library_hub_downloads),
+                                collapsedFraction = scrollBehavior.state.collapsedFraction,
+                                header = header,
+                                subtitle = if (downloads.isNotEmpty()) summary.countLine(DownloadSizeWording.Used, currentLocale()).asString() else null,
+                            )
                         },
+                        expandedHeight = header.expandedHeight(),
                         navigationIcon = {
                             IconButton(onClick = onBack) {
                                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.library_back))
@@ -298,6 +293,7 @@ fun DownloadedEpisodesScreen(
                 }
                 is LibraryUiState.Success -> {
                     LazyColumn(
+                        state = listState,
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = if (LocalBoxloreWindowLayout.current.usesTabletLayout) 24.dp else listBottomPadding, top = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize()
@@ -390,42 +386,42 @@ fun DownloadedEpisodesScreen(
                     }
                 )
             }
-
-            if (deleteConfirmSelectedDialog) {
-                BoxloreAlertDialog(
-                    onDismissRequest = { deleteConfirmSelectedDialog = false },
-                    title = { Text(stringResource(R.string.library_downloads_delete_title)) },
-                    text = {
-                        val selectedCount = selectedPodcastIds.size
-                        Text(pluralStringResource(R.plurals.library_downloads_delete_podcasts_body, selectedCount, selectedCount))
-                    },
-                    confirmButton = {
-                        Button(
-                            onClick = {
-                                val epsToDelete = sortedGroups
-                                    .filter { it.podcastId in selectedPodcastIds }
-                                    .flatMap { it.episodes }
-                                    .map { it.episodeId }
-                                viewModel.removeMultipleDownloads(epsToDelete)
-                                isSelectionMode = false
-                                selectedPodcastIds.clear()
-                                deleteConfirmSelectedDialog = false
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError
-                            )
-                        ) {
-                            Text(stringResource(R.string.library_delete))
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { deleteConfirmSelectedDialog = false }) {
-                            Text(stringResource(R.string.library_cancel))
-                        }
-                    }
-                )
-            }
         })
+        // At screen level, so the question stays open when Play All moves between its tablet row and the list.
+        if (deleteConfirmSelectedDialog) {
+            BoxloreAlertDialog(
+                onDismissRequest = { deleteConfirmSelectedDialog = false },
+                title = { Text(stringResource(R.string.library_downloads_delete_title)) },
+                text = {
+                    val selectedCount = selectedPodcastIds.size
+                    Text(pluralStringResource(R.plurals.library_downloads_delete_podcasts_body, selectedCount, selectedCount))
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val epsToDelete = sortedGroups
+                                .filter { it.podcastId in selectedPodcastIds }
+                                .flatMap { it.episodes }
+                                .map { it.episodeId }
+                            viewModel.removeMultipleDownloads(epsToDelete)
+                            isSelectionMode = false
+                            selectedPodcastIds.clear()
+                            deleteConfirmSelectedDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
+                        )
+                    ) {
+                        Text(stringResource(R.string.library_delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deleteConfirmSelectedDialog = false }) {
+                        Text(stringResource(R.string.library_cancel))
+                    }
+                }
+            )
+        }
     }
 }

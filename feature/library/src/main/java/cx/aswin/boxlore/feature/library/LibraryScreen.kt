@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,7 +53,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -157,7 +156,7 @@ fun LibraryScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Suppress("LongParameterList", "LongMethod") // One callback per hub card; the phone hub lists every card inline.
+@Suppress("LongParameterList") // One callback per hub card.
 fun LibraryContent(
     uiState: LibraryUiState,
     onNavigateToLiked: () -> Unit,
@@ -171,12 +170,10 @@ fun LibraryContent(
     onSettingsLongClick: () -> Unit = {},
     playlists: LibraryPlaylistsCard? = null,
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
-        fraction = scrollBehavior.state.collapsedFraction,
-    )
+    // One grid state for every window, so folding or unfolding keeps the hub where it was.
+    val gridState = rememberLazyGridState()
+    val header = rememberLibraryHeaderState()
+    val scrollBehavior = rememberLibraryHeaderScrollBehavior { gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0 }
 
     Scaffold(
         modifier = Modifier
@@ -187,9 +184,10 @@ fun LibraryContent(
             LargeTopAppBar(
                 modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = {
-                    Text(
-                        text = stringResource(R.string.library_title),
-                        style = titleStyle,
+                    LibraryLargeTitle(
+                        title = stringResource(R.string.library_title),
+                        collapsedFraction = scrollBehavior.state.collapsedFraction,
+                        header = header,
                     )
                 },
                 actions = {
@@ -204,6 +202,7 @@ fun LibraryContent(
                         )
                     }
                 },
+                expandedHeight = header.expandedHeight(),
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -233,105 +232,13 @@ fun LibraryContent(
                     Text(stringResource(R.string.library_error_loading))
                 }
             }
-            is LibraryUiState.Success -> {
-                if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
-                    TabletLibraryHub(uiState, onNavigateToSubscriptions, onNavigateToLiked, onNavigateToDownloads, onNavigateToHistory, Modifier.padding(innerPadding), playlists)
-                } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 8.dp,
-                        bottom = 180.dp,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                ) {
-                    item {
-                        val subscriptionImages = uiState.subscribedPodcasts.take(3).map { it.imageUrl }
-                        val specificSubShapes = listOf(
-                            ExpressiveShapes.Circle,
-                            ExpressiveShapes.Puffy,
-                            ExpressiveShapes.Diamond,
-                        )
-
-                        LibraryMenuCard(
-                            title = stringResource(R.string.library_hub_subscriptions),
-                            icon = Icons.Rounded.Add,
-                            onClick = onNavigateToSubscriptions,
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            images = subscriptionImages,
-                            shapes = specificSubShapes,
-                        )
-                    }
-
-                    item {
-                        val likedImages = uiState.likedEpisodes.take(3).map {
-                            it.episodeImageUrl ?: it.podcastImageUrl ?: ""
-                        }
-                        val likedShapes = listOf(
-                            ExpressiveShapes.Heart,
-                            ExpressiveShapes.Star,
-                            ExpressiveShapes.SoftBurst,
-                        )
-
-                        LibraryMenuCard(
-                            title = stringResource(R.string.library_hub_liked_episodes),
-                            icon = Icons.Rounded.Favorite,
-                            onClick = onNavigateToLiked,
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                            images = likedImages,
-                            shapes = likedShapes,
-                        )
-                    }
-
-                    item {
-                        val downloadImages = uiState.downloadedEpisodes.take(3).map {
-                            it.episodeImageUrl ?: it.podcastImageUrl ?: ""
-                        }
-                        val downloadShapes = listOf(
-                            ExpressiveShapes.Hexagon,
-                            ExpressiveShapes.Gem,
-                            ExpressiveShapes.Cookie4,
-                        )
-
-                        LibraryMenuCard(
-                            title = stringResource(R.string.library_hub_downloads),
-                            icon = Icons.Rounded.DownloadDone,
-                            onClick = onNavigateToDownloads,
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            images = downloadImages,
-                            shapes = downloadShapes,
-                        )
-                    }
-
-                    item {
-                        val historyImages = uiState.recentHistory.take(3).map {
-                            it.episodeImageUrl ?: it.podcastImageUrl ?: ""
-                        }
-                        val historyShapes = listOf(
-                            ExpressiveShapes.Circle,
-                            ExpressiveShapes.Burst,
-                            ExpressiveShapes.Sunny,
-                        )
-                        LibraryMenuCard(
-                            title = stringResource(R.string.library_hub_listening_history),
-                            icon = Icons.Rounded.History,
-                            onClick = onNavigateToHistory,
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            images = historyImages,
-                            shapes = historyShapes,
-                        )
-                    }
-
-                    playlists?.let { card ->
-                        item(key = "playlists") { LibraryPlaylistsMenuCard(card) }
-                    }
-                }
-                }
-            }
+            is LibraryUiState.Success -> LibraryHubGrid(
+                state = uiState,
+                gridState = gridState,
+                destinations = LibraryHubDestinations(onNavigateToSubscriptions, onNavigateToLiked, onNavigateToDownloads, onNavigateToHistory),
+                modifier = Modifier.padding(innerPadding),
+                playlists = playlists,
+            )
         }
     }
 }
