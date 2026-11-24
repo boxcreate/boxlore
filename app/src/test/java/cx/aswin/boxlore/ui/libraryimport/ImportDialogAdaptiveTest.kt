@@ -14,7 +14,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasText
@@ -26,6 +28,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -276,6 +279,42 @@ class ImportDialogAdaptiveTest {
         }
     }
 
+    @Test fun `a tap that moves a little still reaches the import page's own controls`() {
+        var accountPicked = 0
+        state.value = OpmlImportState.AskCompleted(shows, shows.map { it.id }.toSet())
+        render(onSyncAccountSelected = { accountPicked++ })
+        compose.onNodeWithTag("import_fresh_confirm").performTouchInput { tapWithSmallMove() }
+        compose.waitForIdle()
+        assertEquals(1, confirmed)
+
+        // Picking the account hands over to the Account page, so it comes last.
+        compose.runOnIdle { state.value = OpmlImportState.ShowSelector }
+        compose.onNodeWithTag("import_option_account").performScrollTo().performTouchInput { tapWithSmallMove() }
+        compose.waitForIdle()
+        assertEquals(1, accountPicked)
+    }
+
+    /** A real finger moves a pixel or two between touching down and lifting. */
+    private fun TouchInjectionScope.tapWithSmallMove() {
+        down(center)
+        moveBy(Offset(0f, 3f))
+        up()
+    }
+
+    @Test fun `a finger swipe scrolls the list of shows on phones held either way`() {
+        state.value = OpmlImportState.AskCompleted(shows, shows.map { it.id }.toSet())
+        render()
+        listOf(BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND).forEach { next ->
+            compose.runOnIdle { window.value = next }
+            compose.onNodeWithTag("import_fresh_list").performScrollToIndex(0)
+            compose.waitForIdle()
+            compose.onNodeWithText("Show 1").assertIsDisplayed()
+            compose.onNodeWithTag("import_fresh_list").performTouchInput { swipeUp() }
+            compose.waitForIdle()
+            compose.onNodeWithText("Show 1").assertIsNotDisplayed()
+        }
+    }
+
     private fun back() {
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
@@ -286,6 +325,7 @@ class ImportDialogAdaptiveTest {
         direction: LayoutDirection = LayoutDirection.Ltr,
         fontScale: Float = 1f,
         behind: (@Composable () -> Unit)? = null,
+        onSyncAccountSelected: () -> Unit = {},
     ) {
         compose.setContent {
             val density = LocalDensity.current
@@ -306,6 +346,7 @@ class ImportDialogAdaptiveTest {
                                     onSelectionChanged = { ids -> (state.value as? OpmlImportState.AskCompleted)?.let { state.value = it.copy(selectedIds = ids) } },
                                     onConfirmCompleted = { confirmed++ },
                                     onSkipCompleted = { skipped++ },
+                                    onSyncAccountSelected = onSyncAccountSelected,
                                     onChooseAnotherFile = if (withRetry) ({ retried++ }) else null,
                                 ),
                             )

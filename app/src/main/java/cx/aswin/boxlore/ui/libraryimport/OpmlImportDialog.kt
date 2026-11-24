@@ -216,12 +216,10 @@ private fun ImportDialogSurface(state: OpmlImportState, actions: OpmlImportDialo
             .fillMaxSize()
             .zIndex(200f)
             .testTag("import_overlay")
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    // Final pass: the page's own controls have already had the touch.
-                    while (true) awaitPointerEvent(PointerEventPass.Final).changes.forEach { it.consume() }
-                }
-            },
+            // Hit-testing stops at this full-window layer, so touches never reach the page behind.
+            // It must not consume anything: a parent that consumes moves cancels its children's
+            // taps and scroll gestures.
+            .pointerInput(Unit) {},
         color = backgroundColor,
     ) {
         Box(
