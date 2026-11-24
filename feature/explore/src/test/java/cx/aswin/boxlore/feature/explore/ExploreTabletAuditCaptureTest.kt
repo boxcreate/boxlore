@@ -105,8 +105,9 @@ class ExploreTabletAuditCaptureTest(private val scene: String, configuration: Ph
             "loading-topic" to topic.copy(isLoading = true),
             "for-you" to ExploreUiState.Success(recommendations = episodes, suggestedVibes = moods, selectedTab = 1),
             "for-you-empty" to ExploreUiState.Success(suggestedVibes = moods, selectedTab = 1),
-            "genre-sheet" to ExploreUiState.Success(trending = chart, selectedTab = 0),
-            "top-genre" to ExploreUiState.Success(trending = chart, selectedTab = 0, currentCategory = "Comedy"),
+            // The app always has moods, so Top's header keeps For you's height as it does in use.
+            "genre-sheet" to ExploreUiState.Success(trending = chart, suggestedVibes = moods, selectedTab = 0),
+            "top-genre" to ExploreUiState.Success(trending = chart, suggestedVibes = moods, selectedTab = 0, currentCategory = "Comedy"),
             "top-100" to ExploreUiState.Success(trending = longChart, selectedTab = 0, hasMore = false),
             "show-landing" to ExploreUiState.Success(suggestedVibes = moods, selectedTab = 0),
             "ask-landing" to ExploreUiState.Success(suggestedVibes = moods, selectedTab = 0, searchTab = SearchTab.EPISODES),
