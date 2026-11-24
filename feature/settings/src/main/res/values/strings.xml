@@ -94,4 +94,5 @@
         <item quantity="one">%1$d second</item>
         <item quantity="other">%1$d seconds</item>
     </plurals>
+    <string name="settings_hub_sync_signed_in" translatable="false">%1$s · %2$s</string>
 </resources>

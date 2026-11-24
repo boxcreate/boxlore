@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.ListeningTime
 import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.home.R
 
@@ -27,8 +28,9 @@ internal fun denseDurationText(
     if (durationSeconds <= 0) return null
     val locale = currentLocale()
     if (isInProgress && progress > 0f) {
-        val remaining = ((1f - progress) * durationSeconds).toLong()
-        return stringResource(R.string.home_hero_remaining, LocaleFormats.duration(remaining, locale, LocaleFormats.DurationWidth.NARROW))
+        // Rounded as the hero, Daily Mix and the mini player round time left: a partial minute counts.
+        val minutes = ListeningTime.minutesLeft(durationSeconds.toLong(), progress) ?: 1L
+        return stringResource(R.string.home_hero_remaining, LocaleFormats.duration(minutes * 60L, locale, LocaleFormats.DurationWidth.NARROW))
     }
     return LocaleFormats.duration(durationSeconds.toLong(), locale, LocaleFormats.DurationWidth.NARROW)
 }

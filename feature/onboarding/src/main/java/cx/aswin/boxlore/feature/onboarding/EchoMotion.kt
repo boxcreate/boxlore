@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * One choreography for every Echo change: the old content leaves quickly, then the new content
@@ -49,15 +51,28 @@ internal object EchoMotion {
     }
 }
 
-/** Fades and lifts [content] in once per [key], [index] steps after the question arrives. */
+/**
+ * One entry progress per answer for [key], started together in the usual stagger. Held by the whole
+ * group, so answers that move to another row or column when the window changes never enter again.
+ */
 @Composable
-internal fun EchoStaggeredEntry(key: Any, index: Int, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    val progress = remember(key) { Animatable(0f) }
-    LaunchedEffect(key) {
+internal fun rememberEchoStagger(key: Any, count: Int): List<Animatable<Float, AnimationVector1D>> {
+    val items = remember(key, count) { List(count) { Animatable(0f) } }
+    LaunchedEffect(items) {
         val scale = coroutineContext[MotionDurationScale]?.scaleFactor ?: 1f
-        if (scale > 0f) delay(((EchoMotion.StaggerStartMillis + index * EchoMotion.StaggerStepMillis) * scale).toLong())
-        progress.animateTo(1f, EchoMotion.itemSpring)
+        items.forEachIndexed { index, item ->
+            launch {
+                if (scale > 0f) delay(((EchoMotion.StaggerStartMillis + index * EchoMotion.StaggerStepMillis) * scale).toLong())
+                item.animateTo(1f, EchoMotion.itemSpring)
+            }
+        }
     }
+    return items
+}
+
+/** Fades and lifts [content] in with its [progress] from [rememberEchoStagger]. */
+@Composable
+internal fun EchoStaggeredEntry(progress: Animatable<Float, AnimationVector1D>, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Box(
         modifier.graphicsLayer {
             alpha = progress.value

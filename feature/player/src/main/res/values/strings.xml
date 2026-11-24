@@ -26,7 +26,7 @@
 
     <!-- Transcript -->
     <!-- Toggle that keeps the transcript scrolled to the spoken line -->
-    <string name="player_transcript_sync_scroll">Sync Scroll</string>
+    <string name="player_transcript_sync_scroll">Follow along</string>
     <!-- Phone inline transcript; the tablet pane uses player_open_fullscreen_transcript -->
     <string name="player_inline_open_fullscreen_transcript">Open fullscreen transcript</string>
 
@@ -84,7 +84,7 @@
     <string name="player_show_less">Show less</string>
 
     <!-- Queue sheet -->
-    <string name="player_queue_title">Up Next</string>
+    <string name="player_queue_title">Up next</string>
     <string name="player_close_queue">Close queue</string>
     <string name="player_queue_empty">Queue is empty</string>
     <string name="player_smart_queue_off">Smart queue is off, so nothing is added automatically.</string>
@@ -120,6 +120,7 @@
     <!-- Cast -->
     <string name="player_cast">Cast</string>
     <string name="player_change_cast_device">Change Cast device</string>
+    <string name="player_cast_volume">Cast volume</string>
     <string name="player_show_cast_controls">Show Cast controls</string>
     <!-- Section header; shown in capitals -->
     <string name="player_cast_available_devices">Available devices</string>

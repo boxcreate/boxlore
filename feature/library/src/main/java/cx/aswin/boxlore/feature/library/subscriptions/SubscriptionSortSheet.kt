@@ -155,7 +155,7 @@ private val SubscriptionSortOptions = listOf(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SortSection(title: String, description: String, chips: @Composable () -> Unit) {
+internal fun SortSection(title: String, description: String, chips: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Column {
             Text(text = title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
@@ -168,7 +168,7 @@ private fun SortSection(title: String, description: String, chips: @Composable (
 }
 
 @Composable
-private fun SortChip(label: String, selected: Boolean, onClick: () -> Unit) {
+internal fun SortChip(label: String, selected: Boolean, onClick: () -> Unit) {
     SubscriptionChip(
         label = label,
         selected = selected,

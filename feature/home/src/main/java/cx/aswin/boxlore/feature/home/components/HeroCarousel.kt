@@ -15,18 +15,23 @@ import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
+import cx.aswin.boxlore.feature.home.LocalHomeSectionsUiState
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.StableHeroList
 import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
 import kotlin.math.floor
+import kotlinx.coroutines.flow.drop
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,18 +56,29 @@ fun HeroCarousel(
         MarqueeCarousel(heroItems, playing, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, maxScrolledIndex, modifier)
         return
     }
-    val carouselState = rememberCarouselState { heroItems.list.size }
+    // The card the listener is on, shared with Marquee's pager so folding or unfolding keeps it.
+    val heroIndex = LocalHomeSectionsUiState.current?.heroIndex
+    val carouselState = rememberCarouselState(initialItem = (heroIndex?.intValue ?: 0).coerceIn(0, heroItems.list.lastIndex)) { heroItems.list.size }
+    if (heroIndex != null) {
+        // Only a scroll the listener makes moves it: a row that can't bring the card to its start (the
+        // last cards of a wide row) still shows it, and keeps it for Marquee when the phone folds again.
+        LaunchedEffect(carouselState, heroIndex) {
+            snapshotFlow { carouselState.isScrollInProgress }.drop(1).collect { scrolling -> if (!scrolling) heroIndex.intValue = carouselState.currentItem }
+        }
+    }
 
+    val rowMode = heroRowMode(LocalBoxloreWindowLayout.current)
     Column(modifier.fillMaxWidth()) {
     ResponsiveHeroCarousel(
         state = carouselState,
-        preferredItemWidth = 320.dp,
-        itemSpacing = 16.dp,
+        preferredItemWidth = HeroPreferredCard,
+        itemSpacing = HeroGap,
         contentPadding = PaddingValues(0.dp),
         modifier =
         Modifier
             .fillMaxWidth()
-            .height(homeHeroHeight()),
+            .height(homeHeroHeight())
+            .testTag("home_hero_row"),
     ) { i ->
         val item = heroItems.list[i]
         val onCollectionPlayback = collectionPlaybackAction(
@@ -80,6 +96,8 @@ fun HeroCarousel(
             onDispose {}
         }
 
+        // A peeking card shows its artwork or colour; its words and buttons fade in as it slides into place.
+        ProvideHeroPeekReveal(carouselItemDrawInfo, cutByRowEdge = rowMode == HeroRowMode.Row) {
         when {
             HeroCardStyle.usesArtworkColors(style) ->
                 FullArtworkHeroItem(style, item, i, onCollectionPlayback, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, playing)
@@ -113,6 +131,7 @@ fun HeroCarousel(
                     modifier = Modifier.maskClip(HomeHeroStyle.CardShape),
                 )
             }
+        }
         }
     }
     // Position dots are off for now; the strip keeps the 12dp gap to Your shows either way.
@@ -317,13 +336,20 @@ private fun FullArtworkHeroCard(
 }
 
 /**
- * Tablets show fixed-width cards on an uncontained carousel; phones keep multi-browse.
+ * Lays out hero cards for the window it is in, keeping one [state] across every change:
+ * - Phones up to [PhoneMaxWidth] wide: material3's multi-browse carousel at [preferredItemWidth].
+ * - Wider compact windows below the tablet width (the Galaxy Z Fold 8 cover, split-screen halves):
+ *   multi-browse at the [heroCompactGeometry] card width, so the row shows one large card and a
+ *   40-56dp peek at every width. At [preferredItemWidth], material3's keylines switched between one
+ *   large card and three or four narrow ones from one width to the next (about 470-495dp wide).
+ * - Tablets, and compact windows at least [TabletMinWidth] wide (sideways phones): fixed-width cards
+ *   on an uncontained carousel ([heroTabletItemWidth]).
  *
  * Known material3 carousel bug (material3 1.5.0 with Compose 1.12, `HorizontalUncontainedCarousel`),
  * all at the end of the row, for 320dp cards and 16dp gaps:
  * - With no end padding it crashes where the space after the last whole card is almost a card wide
  *   (616–672, 952–1008, 1288–1344dp): its end shift distance is zero while it has two end steps.
- *   Tablets therefore keep at least [UncontainedEndPadding] after the last card.
+ *   Wide rows therefore keep at least [UncontainedEndPadding] after the last card.
  * - Where one whole card fits with almost a second (about 606–672dp), the last card ends past the
  *   end edge. [heroTabletItemWidth] fits two whole cards there instead.
  * - With two or more whole cards, the last card can stop up to one card spacing short of the end
@@ -344,38 +370,107 @@ internal fun ResponsiveHeroCarousel(
     modifier: Modifier,
     content: @Composable CarouselItemScope.(Int) -> Unit,
 ) {
-    if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
-        val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
-        val padding = PaddingValues(
-            start = contentPadding.calculateStartPadding(direction),
-            top = contentPadding.calculateTopPadding(),
-            end = maxOf(contentPadding.calculateEndPadding(direction), UncontainedEndPadding),
-            bottom = contentPadding.calculateBottomPadding(),
-        )
-        BoxWithConstraints(modifier) {
-            val available = maxWidth - padding.calculateStartPadding(direction) - padding.calculateEndPadding(direction)
-            val itemWidth = heroTabletItemWidth(available, preferredItemWidth, itemSpacing)
-            HorizontalUncontainedCarousel(state = state, itemWidth = itemWidth, itemSpacing = itemSpacing, contentPadding = padding, modifier = Modifier.matchParentSize(), content = content)
+    val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
+    when (heroRowMode(LocalBoxloreWindowLayout.current)) {
+        HeroRowMode.Phone ->
+            HorizontalMultiBrowseCarousel(state = state, preferredItemWidth = preferredItemWidth, itemSpacing = itemSpacing, contentPadding = contentPadding, modifier = modifier, content = content)
+        HeroRowMode.Compact -> BoxWithConstraints(modifier) {
+            val available = maxWidth - contentPadding.calculateStartPadding(direction) - contentPadding.calculateEndPadding(direction)
+            HorizontalMultiBrowseCarousel(
+                state = state,
+                preferredItemWidth = heroCompactGeometry(available).card,
+                itemSpacing = itemSpacing,
+                contentPadding = contentPadding,
+                modifier = Modifier.matchParentSize(),
+                content = content,
+            )
         }
-    } else {
-        HorizontalMultiBrowseCarousel(state = state, preferredItemWidth = preferredItemWidth, itemSpacing = itemSpacing, contentPadding = contentPadding, modifier = modifier, content = content)
+        HeroRowMode.Row -> {
+            val padding = PaddingValues(
+                start = contentPadding.calculateStartPadding(direction),
+                top = contentPadding.calculateTopPadding(),
+                end = maxOf(contentPadding.calculateEndPadding(direction), UncontainedEndPadding),
+                bottom = contentPadding.calculateBottomPadding(),
+            )
+            BoxWithConstraints(modifier) {
+                val available = maxWidth - padding.calculateStartPadding(direction) - padding.calculateEndPadding(direction)
+                val itemWidth = heroTabletItemWidth(available, preferredItemWidth, itemSpacing)
+                HorizontalUncontainedCarousel(state = state, itemWidth = itemWidth, itemSpacing = itemSpacing, contentPadding = padding, modifier = Modifier.matchParentSize(), content = content)
+            }
+        }
     }
 }
 
+/** How the hero row lays out its cards in a window; see [ResponsiveHeroCarousel]. */
+internal enum class HeroRowMode { Phone, Compact, Row }
+
+internal fun heroRowMode(window: cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout): HeroRowMode = when {
+    window.usesTabletLayout || window.widthDp >= TabletMinWidth -> HeroRowMode.Row
+    window.widthDp > PhoneMaxWidth -> HeroRowMode.Compact
+    else -> HeroRowMode.Phone
+}
+
+/** The widest phone window that keeps the 320dp multi-browse hero unchanged. */
+private const val PhoneMaxWidth = 430f
+
+/** From this window width compact windows (sideways phones) show the tablet's row of whole cards. */
+private const val TabletMinWidth = 600f
+
+/** One large hero card, the gap after it and the narrow peek of the next card, filling a row. */
+internal data class HeroCompactGeometry(val card: Dp, val gap: Dp, val peek: Dp)
+
+/**
+ * The hero row aims for a 320dp card after a 16dp gap and keeps the peek between 40dp and 56dp, so
+ * narrow rows shrink the card and wide ones grow it. The loading placeholder uses the same widths.
+ */
+internal fun heroCompactGeometry(available: Dp): HeroCompactGeometry {
+    val peek = (available - HeroGap - HeroPreferredCard).coerceIn(HeroMinPeek, HeroMaxPeek)
+    val card = (available - HeroGap - peek).coerceAtLeast(0.dp)
+    return HeroCompactGeometry(card = card, gap = HeroGap, peek = (available - card - HeroGap).coerceAtLeast(0.dp))
+}
+
+internal val HeroGap = 16.dp
+internal val HeroPreferredCard = 320.dp
+internal val HeroMinPeek = 40.dp
+internal val HeroMaxPeek = 56.dp
+
 /** The least end padding that keeps material3's uncontained carousel from crashing at the end of the row (see [ResponsiveHeroCarousel]). */
-private val UncontainedEndPadding = 1.dp
+internal val UncontainedEndPadding = 1.dp
 
 /**
  * The tablet card width for a row [available] wide. When one whole card fits with almost a second
  * one after it, two narrower cards fill the row instead: material3's uncontained carousel otherwise
  * leaves the last card past the end edge at the end of the row (a known material3 bug, see
- * [ResponsiveHeroCarousel]). Every other width keeps [preferred].
+ * [ResponsiveHeroCarousel]). A narrow pane (a half-open book foldable, a split view beside the
+ * player) that can't show a card and at least [HeroMinPeek] of the next gets one card filling it, so
+ * the card is never cut at the pane's edge and no sliver of the next one shows; material3 draws it at
+ * most the row's width. Wider rows that would end in a sliver widen their whole cards to fill the row
+ * ([wholeCardsWithoutSliver]). Every other width keeps [preferred].
  */
 internal fun heroTabletItemWidth(available: Dp, preferred: Dp, spacing: Dp): Dp {
     val slot = preferred + spacing
+    if (available < slot + HeroMinPeek) return available
     val whole = floor(available / slot).toInt().coerceAtLeast(1)
     val rest = available - slot * whole
-    return if (whole == 1 && rest >= slot * NearlyAnotherCard) available / 2 - spacing else preferred
+    if (whole == 1 && rest >= slot * NearlyAnotherCard) return available / 2 - spacing
+    return wholeCardsWithoutSliver(available, preferred, spacing)
+}
+
+/**
+ * material3 draws each uncontained card one gap wider than asked, so a row can end in a sliver of the
+ * next card (13dp on a half-open book's 718dp row: two whole cards, then the third's edge). When the
+ * next card would show less than [HeroMinPeek], the whole cards widen to fill the row instead.
+ */
+private fun wholeCardsWithoutSliver(available: Dp, preferred: Dp, spacing: Dp): Dp {
+    val drawnStride = preferred + spacing * 2
+    val whole = floor((available + spacing) / drawnStride).toInt().coerceAtLeast(1)
+    val nextShows = available - drawnStride * whole
+    return when {
+        nextShows <= 0.dp || nextShows >= HeroMinPeek -> preferred
+        // One card fills the row as on the narrowest panes; material3 draws it at most the row's width.
+        whole == 1 -> available
+        else -> (available - spacing * (whole - 1)) / whole - spacing
+    }
 }
 
 /** How much of another card's space counts as "almost a second card" for [heroTabletItemWidth]. */

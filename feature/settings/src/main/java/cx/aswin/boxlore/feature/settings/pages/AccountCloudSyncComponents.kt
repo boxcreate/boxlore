@@ -25,9 +25,9 @@ import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -82,7 +83,7 @@ internal fun AccountSyncPanel(syncStatus: CloudSyncUiStatus, onSyncNow: () -> Un
                 if (showEcho) AccountEcho(syncing, Modifier.size(AccountPanelEchoSize), stageColor = content.copy(alpha = 0.12f))
             }
             if (syncing) {
-                LinearProgressIndicator(Modifier.fillMaxWidth(), color = content, trackColor = content.copy(alpha = 0.2f))
+                BoxLoreLoader.LinearWavy(Modifier.fillMaxWidth(), color = content, trackColor = content.copy(alpha = 0.2f))
             } else {
                 OutlinedButton(
                     onClick = onSyncNow,
@@ -127,6 +128,7 @@ internal fun AccountManagementGroup(
     onResetPassword: () -> Unit,
     onSignOut: () -> Unit,
     onDeleteAccountClick: () -> Unit,
+    onTvSignIn: (() -> Unit)? = null,
 ) {
     val isPasswordAccount = user.providerId != PROVIDER_GOOGLE && !user.email.isNullOrBlank()
     SettingsGroup(title = stringResource(R.string.account_section)) {
@@ -134,6 +136,10 @@ internal fun AccountManagementGroup(
         SettingsDivider()
         if (isPasswordAccount) {
             SettingsActionRow(title = stringResource(R.string.account_reset_password), icon = Icons.Rounded.Key, onClick = onResetPassword)
+            SettingsDivider()
+        }
+        if (onTvSignIn != null) {
+            SettingsActionRow(title = stringResource(R.string.account_tv_sign_in), icon = Icons.Rounded.Tv, onClick = onTvSignIn)
             SettingsDivider()
         }
         SettingsActionRow(title = stringResource(R.string.account_sign_out), icon = Icons.AutoMirrored.Rounded.Logout, onClick = onSignOut)

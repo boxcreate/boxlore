@@ -109,7 +109,8 @@ internal val CenteredSheetTopSpace = 24.dp
  * Which hosts are open and which one draws the content. Each host is its own window, so the content
  * can move only between two windows that are both open: the new host opens holding a blank of the
  * content's height (so a phone sheet settles where it would with the content in it), reports that
- * it is ready, takes the content in the next frame, and then the old host closes.
+ * it is ready, takes the content a frame later (once its window has finished composing), and then
+ * the old host closes.
  */
 @Stable
 private class SheetHandoff(initial: SheetHost) {
@@ -143,6 +144,9 @@ private fun rememberSheetHandoff(centered: Boolean): SheetHandoff {
         if (handoff.owner != target) {
             handoff.hosts = handoff.hosts + target
             snapshotFlow { handoff.ready[target] == true }.first { it }
+            // The new host's window may still be composing its first frame (sheets and dialogs
+            // subcompose); moving the content into it then breaks the move, so wait a frame.
+            withFrameNanos { }
             handoff.owner = target
             withFrameNanos { }
         }

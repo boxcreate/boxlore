@@ -7,11 +7,13 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.TextAutoSize
@@ -51,6 +53,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -96,12 +99,15 @@ fun HeroGridCard(
         Box(Modifier.fillMaxSize()) {
             // Material's minSize includes an off-screen anchor; visible peeks start at 40dp.
             val minimumPeekWidth = with(LocalDensity.current) { 40.dp.toPx() }
-            val contentVisible by remember(carouselItemDrawInfo, minimumPeekWidth) {
-                derivedStateOf { carouselItemDrawInfo == null || HeroPeekMotion.contentAlpha(carouselItemDrawInfo.expansion(minimumPeekWidth)) > 0f }
+            // In the carousel the reveal also hides the words while the tablet row's edge cuts the card.
+            val reveal = LocalHeroPeekReveal.current
+            val contentAlpha = { reveal?.alpha ?: HeroPeekMotion.contentAlpha(carouselItemDrawInfo.expansion(minimumPeekWidth)) }
+            val contentVisible by remember(carouselItemDrawInfo, minimumPeekWidth, reveal) {
+                derivedStateOf { carouselItemDrawInfo == null || contentAlpha() > 0f }
             }
             Column(
                 Modifier.fillMaxSize().padding(18.dp)
-                    .graphicsLayer { alpha = HeroPeekMotion.contentAlpha(carouselItemDrawInfo.expansion(minimumPeekWidth)) }
+                    .graphicsLayer { alpha = contentAlpha() }
                     .then(if (contentVisible) Modifier else Modifier.clearAndSetSemantics {}),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -111,34 +117,32 @@ fun HeroGridCard(
                         displayItems.size.toString(),
                         style = MaterialTheme.typography.labelLarge,
                         color = foreground.copy(alpha = 0.8f),
-                        modifier = Modifier.semantics { contentDescription = countDescription },
+                        modifier = Modifier.testTag("home_hero_collection_count").semantics { contentDescription = countDescription },
                     )
                 }
                 Spacer(Modifier.height(12.dp))
-                Column(Modifier.weight(1f)) {
-                    displayItems.forEachIndexed { index, podcast ->
-                        if (index > 0) HorizontalDivider(color = foreground.copy(alpha = 0.15f))
-                        val nowPlaying = HomePlaybackStateLogic.isHeroItemPlaying(
-                            itemEpisodeId = podcast.latestEpisode?.id,
-                            itemPodcastId = podcast.id,
-                            currentPlayingEpisodeId = currentPlayingEpisodeId,
-                            currentPlayingPodcastId = currentPlayingPodcastId,
-                            isPlaying = isPlaying,
-                        )
-                        HeroCollectionRow(
-                            podcast = podcast,
-                            mode = mode,
-                            onClick = onCellClick,
-                            onPlaybackClick = onPlaybackClick,
-                            nowPlaying = nowPlaying,
-                            count = displayItems.size,
-                            tag = "home_hero_collection_$index",
-                            modifier = Modifier.weight(1f).fillMaxWidth(),
-                            enabled = contentVisible,
-                            foreground = foreground,
-                            artworkColorFilter = artworkColorFilter?.invoke(podcast),
-                        )
-                    }
+                HeroCollectionRows(displayItems, foreground, Modifier.weight(1f)) { index, podcast, cellModifier, twoColumns ->
+                    val nowPlaying = HomePlaybackStateLogic.isHeroItemPlaying(
+                        itemEpisodeId = podcast.latestEpisode?.id,
+                        itemPodcastId = podcast.id,
+                        currentPlayingEpisodeId = currentPlayingEpisodeId,
+                        currentPlayingPodcastId = currentPlayingPodcastId,
+                        isPlaying = isPlaying,
+                    )
+                    HeroCollectionRow(
+                        podcast = podcast,
+                        mode = mode,
+                        onClick = onCellClick,
+                        onPlaybackClick = onPlaybackClick,
+                        nowPlaying = nowPlaying,
+                        count = displayItems.size,
+                        tag = "home_hero_collection_$index",
+                        modifier = cellModifier,
+                        twoColumns = twoColumns,
+                        enabled = contentVisible,
+                        foreground = foreground,
+                        artworkColorFilter = artworkColorFilter?.invoke(podcast),
+                    )
                 }
             }
             if (carouselItemDrawInfo != null) {
@@ -215,6 +219,7 @@ private fun HeroCollectionRow(
     count: Int,
     tag: String,
     modifier: Modifier,
+    twoColumns: Boolean,
     enabled: Boolean,
     foreground: Color,
     artworkColorFilter: ColorFilter?,
@@ -223,16 +228,17 @@ private fun HeroCollectionRow(
     val currentOnClick by rememberUpdatedState(onClick)
     val currentPlaybackClick by rememberUpdatedState(onPlaybackClick)
     BoxWithConstraints(modifier) {
-        val artworkSize = when {
-            count <= 2 && maxWidth >= 254.dp -> 98.dp
-            count <= 2 -> 78.dp
-            count == 3 && maxWidth >= 254.dp -> 78.dp
-            else -> 68.dp
-        }
+        // A short hero (sideways phones, split-screen halves) leaves rows too low for the artwork and two
+        // lines of words: the row keeps a square cover and its title, and drops the progress line.
+        // Two to a line, a row keeps a Play-sized cover and one title line beside it.
+        val compact = twoColumns || maxHeight < CollectionRowCompactHeight
+        val padding = if (compact) 4.dp else 10.dp
+        val artworkSize = if (twoColumns) CollectionPlayTarget else collectionArtworkSize(count, maxWidth, maxHeight, compact, padding)
         Row(
             Modifier.fillMaxSize().testTag(tag)
                 .expressiveClickable(enabled = enabled, shape = HomeHeroStyle.CollectionArtworkShape) { currentOnClick(currentPodcast) }
-                .padding(vertical = 10.dp),
+                // Compact rows let the cover's Play target take the row's full height (at least 48dp).
+                .padding(vertical = if (compact) 0.dp else padding),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -245,7 +251,14 @@ private fun HeroCollectionRow(
             } else {
                 Modifier
             }
-            Box(Modifier.size(artworkSize).testTag("${tag}_artwork").then(artworkAction)) {
+            // On compact rows the cover keeps its drawn size; the target around it is at least 48dp each way.
+            val target = if (compact) {
+                Modifier.width(maxOf(artworkSize, CollectionPlayTarget)).fillMaxHeight()
+            } else {
+                Modifier.size(artworkSize)
+            }
+            Box(target.testTag("${tag}_artwork").then(artworkAction), contentAlignment = Alignment.CenterStart) {
+            Box(Modifier.size(artworkSize)) {
                 OptimizedImage(
                     url = podcast.imageUrl,
                     fallbackUrls = podcast.artworkUrls(),
@@ -262,9 +275,10 @@ private fun HeroCollectionRow(
                     )
                 }
             }
+            }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                HeroCollectionTitle(podcast, count, foreground, "${tag}_title")
-                HeroCollectionMetadata(podcast, mode, foreground, nowPlaying, tag)
+                HeroCollectionTitle(podcast, count, foreground, "${tag}_title", maxLines = if (compact) 1 else null)
+                if (!compact) HeroCollectionMetadata(podcast, mode, foreground, nowPlaying, tag)
             }
         }
     }
@@ -291,7 +305,7 @@ private fun HeroCollectionPlayback(playing: Boolean, modifier: Modifier) {
 }
 
 @Composable
-private fun HeroCollectionTitle(podcast: Podcast, count: Int, foreground: Color, tag: String) {
+private fun HeroCollectionTitle(podcast: Podcast, count: Int, foreground: Color, tag: String, maxLines: Int? = null) {
     Text(
         podcast.latestEpisode?.title?.ifEmpty { podcast.title } ?: podcast.title,
         style = MaterialTheme.typography.titleSmall.copy(
@@ -300,7 +314,7 @@ private fun HeroCollectionTitle(podcast: Podcast, count: Int, foreground: Color,
             fontWeight = GoogleSansWeight.bold,
         ),
         color = foreground,
-        maxLines = if (count <= 2) 3 else 2,
+        maxLines = maxLines ?: if (count <= 2) 3 else 2,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.testTag(tag),
     )
@@ -331,11 +345,7 @@ private fun HeroCollectionMetadata(podcast: Podcast, mode: HeroGridMode, foregro
                 )
             }
             if (minutes != null) {
-                val duration = if (minutes >= 60) {
-                    stringResource(R.string.home_hero_hours_minutes, minutes / 60, minutes % 60)
-                } else {
-                    stringResource(R.string.home_hero_minutes, minutes)
-                }
+                val duration = heroDurationText(minutes)
                 Text(
                     if (resume) stringResource(R.string.home_hero_remaining, duration) else duration,
                     style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
@@ -349,4 +359,59 @@ private fun HeroCollectionMetadata(podcast: Podcast, mode: HeroGridMode, foregro
             }
         }
     }
+}
+
+/** Collection rows lower than this (a short hero) show a square cover and one title line. */
+private val CollectionRowCompactHeight = 64.dp
+
+/** The smallest Play target a collection row's cover may have, and so the lowest row a short hero shows. */
+internal val CollectionPlayTarget = 48.dp
+
+/** Rows between collection rows. */
+private val CollectionDivider = 1.dp
+
+/**
+ * How many columns [count] collection rows take in [height]. Portrait phones and tablets stack every
+ * row; a short hero (sideways phones, split-screen halves) that can't keep each row's Play cover a
+ * full [CollectionPlayTarget] tall lays the rows out two to a line, so every episode stays on the card.
+ */
+internal fun collectionColumns(height: Dp, count: Int): Int {
+    if (count <= 1) return 1
+    val fit = ((height + CollectionDivider) / (CollectionPlayTarget + CollectionDivider)).toInt()
+    return if (fit >= count) 1 else 2
+}
+
+/** The collection's rows, stacked or two to a line ([collectionColumns]), each given [cell]'s modifier. */
+@Composable
+private fun HeroCollectionRows(
+    items: List<Podcast>,
+    foreground: Color,
+    modifier: Modifier,
+    cell: @Composable (index: Int, podcast: Podcast, modifier: Modifier, twoColumns: Boolean) -> Unit,
+) {
+    BoxWithConstraints(modifier) {
+        val columns = collectionColumns(maxHeight, items.size)
+        Column(Modifier.fillMaxSize()) {
+            items.chunked(columns).forEachIndexed { line, lineItems ->
+                if (line > 0) HorizontalDivider(color = foreground.copy(alpha = 0.15f))
+                Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    lineItems.forEachIndexed { column, podcast ->
+                        cell(line * columns + column, podcast, Modifier.weight(1f).fillMaxHeight(), columns > 1)
+                    }
+                    repeat(columns - lineItems.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
+}
+
+/** A collection row's cover: larger for fewer, wider rows; on compact rows no taller than the row allows. */
+private fun collectionArtworkSize(count: Int, width: Dp, height: Dp, compact: Boolean, padding: Dp): Dp {
+    val preferred = when {
+        count <= 2 && width >= 254.dp -> 98.dp
+        count <= 2 -> 78.dp
+        count == 3 && width >= 254.dp -> 78.dp
+        else -> 68.dp
+    }
+    return if (compact) minOf(preferred, (height - padding * 2).coerceAtLeast(0.dp)) else preferred
 }

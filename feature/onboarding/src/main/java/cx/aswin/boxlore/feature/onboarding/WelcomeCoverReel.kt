@@ -4,9 +4,13 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -44,9 +49,23 @@ private val LowerCovers = listOf(
     DesignR.drawable.pod_cover_22, // Comedy Bang! Bang!
     DesignR.drawable.pod_cover_77, // Hidden Brain
 )
-private val CoverGap = 12.dp
+internal val WelcomeCoverGap = 12.dp
+private val CoverGap = WelcomeCoverGap
 
-/** Bundled, sharp artwork; only the two row layers move, with no per-frame recomposition. */
+/** A third row for tall side panels: six other covers, so no cover shows twice on the panel at once. */
+private val ThirdRowCovers = listOf(
+    DesignR.drawable.pod_cover_97, // Science Friday
+    DesignR.drawable.pod_cover_63, // Curiosity Weekly
+    DesignR.drawable.pod_cover_29, // The Weirdest Thing I Learned This Week
+    DesignR.drawable.pod_cover_98, // Unexplainable
+    DesignR.drawable.pod_cover_96, // Stuff To Blow Your Mind
+    DesignR.drawable.pod_cover_42, // Overheard at National Geographic
+)
+
+/**
+ * Bundled, sharp artwork; only the row layers move, with no per-frame recomposition. Two rows, or
+ * [rows] = 3 on a tall side panel.
+ */
 @Composable
 internal fun WelcomeCoverReel(
     clock: WelcomeMotionClock,
@@ -54,10 +73,11 @@ internal fun WelcomeCoverReel(
     viewportWidth: Dp,
     panelColor: Color,
     modifier: Modifier = Modifier,
+    rows: Int = 2,
 ) {
     // Decorative movement keeps the same physical direction in RTL; the actual UI mirrors normally.
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        Box(modifier.fillMaxWidth()) {
+        Box(modifier.fillMaxWidth().testTag("welcome_cover_reel")) {
             Column(
                 Modifier.graphicsLayer {
                     alpha = if (clock.animationsDisabled.value) 1f else WelcomeReelMotion.coverAlpha(clock.elapsedMillis.value)
@@ -74,6 +94,9 @@ internal fun WelcomeCoverReel(
                     phase = 0.24,
                     rowDelayMillis = WelcomeReelMotion.RowStaggerMillis,
                 )
+                if (rows > 2) {
+                    WelcomeCoverRow(ThirdRowCovers, clock, coverSize, viewportWidth, reverse = false, phase = 0.4, rowDelayMillis = WelcomeReelMotion.RowStaggerMillis * 2)
+                }
             }
             val edgeFraction = (16.dp / viewportWidth).coerceIn(0f, 0.1f)
             Box(
@@ -123,3 +146,33 @@ private fun WelcomeCoverRow(
         }
     }
 }
+
+/**
+ * The cover reel filling the side panel under the logo: three rows when they fit at a good size, else
+ * two. [overlay] draws over the reel's area (the language question's greeting during the hand-off).
+ */
+@Composable
+internal fun ColumnScope.WelcomePaneReel(
+    clock: WelcomeMotionClock,
+    pane: PaneSize,
+    panel: LanguagePanelColors,
+    reelAlpha: () -> Float = { 1f },
+    overlay: @Composable BoxScope.() -> Unit = {},
+) {
+    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) {
+        val rows = welcomePaneReelRows(maxHeight)
+        val coverSize = welcomePaneCoverSize(maxHeight, rows)
+        WelcomeCoverReel(clock, coverSize, pane.width, panel.container, Modifier.graphicsLayer { alpha = reelAlpha() }, rows = rows)
+        overlay()
+    }
+}
+
+/** Rows of covers for a side panel with [room] under its logo. */
+internal fun welcomePaneReelRows(room: Dp): Int = if (welcomePaneCoverSize(room, 3) >= WelcomePaneMinCover) 3 else 2
+
+/** Covers as large as [rows] of them fit in [room], up to the stacked page's largest. */
+internal fun welcomePaneCoverSize(room: Dp, rows: Int): Dp = ((room - WelcomeCoverGap * (rows - 1)) / rows).coerceIn(WelcomePaneMinCover / 2, WelcomeMaxCover)
+
+/** Side-panel covers stay at least this large; below it the panel shows two rows. */
+private val WelcomePaneMinCover = 96.dp
+internal val WelcomeMaxCover = 132.dp

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
@@ -39,9 +40,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
@@ -49,6 +52,9 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreConfigurationWindowSize
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeInsetsDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -66,8 +72,13 @@ internal fun BriefingStoriesPager(
     onEpisodeClick: (Episode) -> Unit,
     onPlayPauseClick: (Long?) -> Unit,
     onShowSources: () -> Unit = {},
+    initialPage: Int = 0,
+    onPageChange: (Int) -> Unit = {},
 ) {
-    val pagerState = rememberPagerState(pageCount = { chapters.size })
+    // Opens at the story the listener was on in another layout (a list on a wider window).
+    val pagerState = rememberPagerState(initialPage = initialPage.coerceIn(0, (chapters.size - 1).coerceAtLeast(0)), pageCount = { chapters.size })
+    val pageChange by rememberUpdatedState(onPageChange)
+    LaunchedEffect(pagerState) { snapshotFlow { pagerState.currentPage }.collect { pageChange(it) } }
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
     val scope = rememberCoroutineScope()
     var userClickedPage by remember { mutableStateOf<Int?>(null) }
@@ -95,6 +106,7 @@ internal fun BriefingStoriesPager(
         activeChapterIndex = activeChapterIndex,
         userClickedPage = userClickedPage,
         onUserClickedPageChange = updateUserClickedPage,
+        isPlaying = isPlaying,
     )
 
     val paragraphs = remember(briefing.script) {
@@ -126,7 +138,7 @@ internal fun BriefingStoriesPager(
     )
 }
 
-private fun activeChapterIndexFor(
+internal fun activeChapterIndexFor(
     chapters: List<cx.aswin.boxlore.core.model.Chapter>,
     currentPositionMs: Long,
 ): Int {
@@ -156,6 +168,7 @@ internal data class BriefingStoriesPagerActions(
     val onShowSources: () -> Unit = {},
 )
 
+@Suppress("LongParameterList") // The pager's state, playback and the listener's last tap, all read by its effects.
 @Composable
 private fun BriefingPagerEffects(
     briefing: Briefing,
@@ -165,10 +178,17 @@ private fun BriefingPagerEffects(
     activeChapterIndex: Int,
     userClickedPage: Int?,
     onUserClickedPageChange: (Int?) -> Unit,
+    isPlaying: Boolean,
 ) {
     val latestUserClickedPage = rememberUpdatedState(userClickedPage)
 
+    // Reopened on another story (after a list on a wider window) while paused: stay there until playback moves.
+    val opened = remember { mutableStateOf(pagerState.currentPage != 0 && !isPlaying) }
     LaunchedEffect(activeChapterIndex) {
+        if (opened.value) {
+            opened.value = false
+            return@LaunchedEffect
+        }
         syncPagerToPlayback(
             chapters = chapters,
             pagerState = pagerState,
@@ -267,7 +287,7 @@ private fun BriefingStoriesPagerContent(
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+            Modifier.fillMaxWidth().boxloreHorizontalSafePadding().padding(horizontal = 20.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -293,7 +313,7 @@ private fun BriefingStoriesPagerContent(
     }
 }
 
-private val PagerSidePadding = 24.dp
+private val PagerSidePadding = 20.dp
 
 /** Cards never grow past this share of the screen; longer stories scroll inside their card. */
 private const val STORY_CARD_MAX_SCREEN_FRACTION = 0.7f
@@ -321,8 +341,11 @@ private fun BriefingChapterPager(
     val windowHeight = if (tablet && pane != null) pane.height.dp else boxloreConfigurationWindowSize().height
     val maxCardHeight = windowHeight * STORY_CARD_MAX_SCREEN_FRACTION
     val scrollStoryAsOne = storyCardScrollsAsOne(windowHeight.value.toInt())
+    // Cards clear a sideways phone's cutout and side buttons; swiping still reaches the edge.
+    val (safeStart, safeEnd) = boxloreHorizontalSafeInsetsDp()
+    val sidePadding = PaddingValues(start = PagerSidePadding + safeStart, end = PagerSidePadding + safeEnd)
     SubcomposeLayout(Modifier.fillMaxWidth()) { constraints ->
-        val availableWidth = (constraints.maxWidth - (PagerSidePadding * 2).roundToPx()).coerceAtLeast(0)
+        val availableWidth = (constraints.maxWidth - (PagerSidePadding * 2 + safeStart + safeEnd).roundToPx()).coerceAtLeast(0)
         val pageWidth = if (tablet) availableWidth.coerceAtMost(720.dp.roundToPx()) else availableWidth
         val tallest = subcompose("measure") {
             uiState.chapters.indices.forEach { page ->
@@ -335,7 +358,7 @@ private fun BriefingChapterPager(
             HorizontalPager(
                 state = actions.pagerState,
                 pageSize = if (tablet) PageSize.Fixed(pageWidth.toDp()) else PageSize.Fill,
-                contentPadding = PaddingValues(horizontal = PagerSidePadding),
+                contentPadding = sidePadding,
                 pageSpacing = 16.dp,
                 key = { page -> stableChapterKey(uiState.chapters[page]) },
                 modifier = Modifier.fillMaxWidth().height(tallest.toDp()),
@@ -351,9 +374,30 @@ private fun stableChapterKey(
     chapter: cx.aswin.boxlore.core.model.Chapter,
 ): String = "${chapter.startTime}:${chapter.title}:${chapter.url.orEmpty()}:${chapter.img.orEmpty()}"
 
-/** One 96 dp box for both states, so a fetch that ends empty swaps the text without moving the page. */
+/**
+ * Stories still loading: a story card's placeholder at the pager's page width, announced politely,
+ * so the page doesn't jump when the cards arrive. With no stories, a 96dp line says so.
+ */
 @Composable
 private fun StoriesPlaceholder(loading: Boolean) {
+    val text = stringResource(storiesPlaceholderText(loading))
+    if (loading) {
+        val (safeStart, safeEnd) = boxloreHorizontalSafeInsetsDp()
+        ShimmerScope(active = true) {
+            BriefingStoryCardSkeleton(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = PagerSidePadding + safeStart, end = PagerSidePadding + safeEnd)
+                    .then(if (LocalBoxloreWindowLayout.current.usesTabletLayout) Modifier.widthIn(max = 720.dp) else Modifier)
+                    .testTag(BRIEFING_STORIES_LOADING_TAG)
+                    .clearAndSetSemantics {
+                        contentDescription = text
+                        liveRegion = LiveRegionMode.Polite
+                    },
+            )
+        }
+        return
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -363,12 +407,15 @@ private fun StoriesPlaceholder(loading: Boolean) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = stringResource(storiesPlaceholderText(loading)),
+            text = text,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
+
+/** The stories' loading placeholder's test tag. */
+internal const val BRIEFING_STORIES_LOADING_TAG = "briefing_stories_loading"
 
 @StringRes
 internal fun storiesPlaceholderText(loading: Boolean): Int =

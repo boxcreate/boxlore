@@ -4,8 +4,6 @@
     <string name="home_hero_play_latest">Play latest</string>
     <string name="home_hero_pause">Pause</string>
     <string name="home_hero_resume">Resume</string>
-    <string name="home_hero_minutes">%1$dm</string>
-    <string name="home_hero_hours_minutes">%1$dh %2$dm</string>
     <!-- Keep each number and unit together. Hours and minutes occupy separate lines in the narrow hero column. -->
     <string name="home_hero_hours_minutes_stacked">%1$dh\n%2$dm</string>
     <string name="home_hero_time_left">left</string>

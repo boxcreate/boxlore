@@ -4,17 +4,13 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.MarqueeSpacing
-import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -28,7 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -71,8 +66,10 @@ import cx.aswin.boxlore.feature.player.QueueSheetContent
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerMetadataStylingLogic
 import cx.aswin.boxlore.feature.player.v2.logic.resolveQueuePodcast
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 internal fun PlayerMetadata(
@@ -177,6 +174,7 @@ internal fun MarqueeMetadataText(
 }
 
 @Composable
+@Suppress("LongParameterList")
 internal fun FullPlayerControls(
     model: FullPlayerControlModel,
     dependencies: FullPlayerDependencies,
@@ -185,6 +183,8 @@ internal fun FullPlayerControls(
     scope: CoroutineScope,
     inlineSupportingContent: Boolean = false,
     primaryControlHeight: Dp = 104.dp,
+    /** Space above and below the play controls; by default 14dp on compact layouts and 18dp otherwise. */
+    controlGap: Dp = if (model.isCompact) 14.dp else 18.dp,
 ) {
     if (model.state.duration > 0) {
         PlayerSeekbar(
@@ -196,12 +196,13 @@ internal fun FullPlayerControls(
                 cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("seek")
                 dependencies.playbackRepository.seekTo(it)
             },
-            chapters = model.state.currentChapters
+            chapters = model.state.currentChapters,
+            showTotalDuration = ui.showTotalDurationState,
         )
     }
-    Spacer(modifier = Modifier.height(if (model.isCompact) 14.dp else 18.dp))
+    Spacer(modifier = Modifier.height(controlGap))
     FullPlayerPrimaryControls(model, dependencies.playbackRepository, primaryControlHeight)
-    Spacer(modifier = Modifier.height(if (model.isCompact) 14.dp else 18.dp))
+    Spacer(modifier = Modifier.height(controlGap))
     FullPlayerSecondaryControls(model, dependencies, ui, scope, inlineSupportingContent)
 }
 
@@ -250,7 +251,8 @@ internal fun FullPlayerSecondaryControls(
             model.state.playbackSpeed,
             model.state.sleepTimerEnd,
             model.state.sleepAtEndOfEpisode,
-            audio = PlayerSpeedAudio.from(model.state)
+            audio = PlayerSpeedAudio.from(model.state),
+            sleepTimerPresetMinutes = model.state.sleepTimerPresetMinutes
         ),
         availability = SecondaryAvailabilityState(
             hasChapters = !model.episode.chaptersUrl.isNullOrEmpty() ||
@@ -271,7 +273,8 @@ internal fun FullPlayerSecondaryControls(
         ),
         colorScheme = model.colorScheme,
         selectionActions = fullPlayerSelectionActions(dependencies.playbackRepository),
-        clickActions = fullPlayerClickActions(model, dependencies, ui, scope, inlineSupportingContent)
+        clickActions = fullPlayerClickActions(model, dependencies, ui, scope, inlineSupportingContent),
+        controlModeState = ui.quickControlModeState
     )
 }
 
@@ -392,7 +395,8 @@ internal fun FullPlayerSupportingContent(
             cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("episode_info")
             actions.onCollapse()
             actions.onEpisodeInfoClick(episode)
-        }
+        },
+        expandedState = ui.notesExpandedState
     )
 }
 
@@ -434,7 +438,7 @@ internal fun PlayerQueueSheet(
         sheetState = resources.sheetState,
         containerColor = model.colorScheme.surface,
         contentColor = model.colorScheme.onSurface,
-        dragHandle = { SheetDragHandle(model.colorScheme) }
+        dragHandle = { BottomSheetDefaults.DragHandle(color = model.colorScheme.onSurfaceVariant) }
     ) {
         QueueSheetContent(
             queue = model.state.queue.drop(1),
@@ -520,15 +524,35 @@ internal suspend fun handleQueueRemoval(
     text: PlayerQueueText,
 ) {
     val removed = playbackRepository.removeFromQueue(episodeId, deferSkipSignal = true) ?: return
-    val result = snackbarHostState.showSnackbar(
-        message = text.removed,
-        actionLabel = text.undo,
-        duration = SnackbarDuration.Short
+    settleQueueRemoval(
+        removed = removed,
+        awaitUndo = {
+            snackbarHostState.showSnackbar(
+                message = text.removed,
+                actionLabel = text.undo,
+                duration = SnackbarDuration.Short
+            ) == SnackbarResult.ActionPerformed
+        },
+        undo = { playbackRepository.undoQueueRemoval(it) },
+        confirm = { playbackRepository.confirmQueueRemoval(it) },
     )
-    if (result == SnackbarResult.ActionPerformed) {
-        playbackRepository.undoQueueRemoval(removed)
-    } else {
-        playbackRepository.confirmQueueRemoval(removed)
+}
+
+/**
+ * Settles a removal exactly once: Undo restores it, anything else confirms it, including the message
+ * being cancelled because the player moved to another layout, so the skip is never lost.
+ */
+internal suspend fun <T> settleQueueRemoval(
+    removed: T,
+    awaitUndo: suspend () -> Boolean,
+    undo: suspend (T) -> Unit,
+    confirm: (T) -> Unit,
+) {
+    var undone = false
+    try {
+        undone = awaitUndo()
+    } finally {
+        withContext(NonCancellable) { if (undone) undo(removed) else confirm(removed) }
     }
 }
 
@@ -549,7 +573,7 @@ internal fun PlayerChaptersSheet(
         sheetState = sheetState,
         containerColor = colorScheme.surface,
         contentColor = colorScheme.onSurface,
-        dragHandle = { SheetDragHandle(colorScheme) }
+        dragHandle = { BottomSheetDefaults.DragHandle(color = colorScheme.onSurfaceVariant) }
     ) {
         ChaptersSheetContent(
             chapters = state.currentChapters,
@@ -565,15 +589,4 @@ internal fun PlayerChaptersSheet(
             isChaptersLoading = state.isChaptersLoading
         )
     }
-}
-
-@Composable
-internal fun SheetDragHandle(colorScheme: ColorScheme) {
-    Box(
-        modifier = Modifier
-            .padding(vertical = 10.dp)
-            .size(width = 36.dp, height = 4.dp)
-            .clip(MaterialTheme.shapes.extraLarge)
-            .background(colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
-    )
 }

@@ -31,6 +31,8 @@
     <string name="suggestions_loading_library">Recherche de podcasts comme ceux de votre bibliothèque.</string>
     <string name="suggestions_error_title">Impossible de charger les suggestions</string>
     <string name="suggestions_error_body">Vérifiez votre connexion, puis réessayez.</string>
+    <string name="suggestions_check_title">Les podcasts similaires demandent une vérification rapide</string>
+    <string name="suggestions_check_body">La vérification n’a pas abouti, boxlore ne peut donc pas trouver de podcasts similaires pour le moment. Vous pouvez commencer à écouter et en découvrir d’autres plus tard.</string>
     <string name="suggestions_empty_title">Aucune suggestion cette fois</string>
     <string name="suggestions_empty_body">Réessayez, ou commencez sans.</string>
     <string name="suggestions_try_again">Réessayer</string>
@@ -63,4 +65,8 @@
     <string name="suggestions_details_remove">Retirer</string>
     <string name="suggestions_details_fallback">Découvrez les épisodes et les sujets de %1$s.</string>
     <string name="suggestions_details_fallback_with_host">Découvrez les épisodes et les sujets de %1$s, par %2$s.</string>
+    <plurals name="suggestions_show_all">
+        <item quantity="one">Voir les %d</item>
+        <item quantity="other">Voir les %d</item>
+    </plurals>
 </resources>

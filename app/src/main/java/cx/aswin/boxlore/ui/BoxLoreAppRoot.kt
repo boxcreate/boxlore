@@ -99,6 +99,7 @@ import cx.aswin.boxlore.ui.libraryimport.OpmlImportEffects
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
 import cx.aswin.boxlore.ui.libraryimport.libraryImportPhase
 import cx.aswin.boxlore.ui.libraryimport.performJsonLibraryImport
+import cx.aswin.boxlore.ui.libraryimport.rememberOpmlImportState
 import cx.aswin.boxlore.ui.logic.SubscriptionResumeRefreshLogic
 import cx.aswin.boxlore.ui.logic.canUseAdaptivePlayer
 import dev.chrisbanes.haze.HazeState
@@ -494,8 +495,10 @@ fun BoxLoreAppRoot(
         FcmTopicHelper.subscribeDefaultTopics(activity)
     }
 
-    var opmlImportState by remember { mutableStateOf<OpmlImportState>(OpmlImportState.Idle) }
-    var opmlImportSource by remember { mutableStateOf("welcome_screen") }
+    // The picker and where it was opened from survive recreation (fold, unfold, display size).
+    val opmlImport = rememberOpmlImportState()
+    var opmlImportState by opmlImport.state
+    var opmlImportSource by opmlImport.source
     var importTriggerKey by remember { mutableStateOf(0L) }
     // Home's review prompt waits a couple of days after an import: marked when it starts (a backup's
     // listening history lands before it ends) and again when it succeeds.

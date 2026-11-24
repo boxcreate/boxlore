@@ -8,19 +8,18 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -32,7 +31,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -42,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,11 +52,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreConfigurationWindowSize
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneBottomInset
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -72,7 +76,11 @@ import cx.aswin.boxlore.core.playback.stopCasting
 import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerMetadataStylingLogic
 import cx.aswin.boxlore.feature.player.v2.logic.calculateResponsiveHeroLayout
+import cx.aswin.boxlore.feature.player.v2.logic.castHeroDimensions
+import cx.aswin.boxlore.feature.player.v2.logic.sidewaysHeroSize
 import cx.aswin.boxlore.feature.player.v2.logic.useMinimalPlayer
+import cx.aswin.boxlore.feature.player.v2.logic.usesSidewaysPhoneColumns
+import cx.aswin.boxlore.feature.player.v2.logic.usesTightSidewaysControls
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -127,6 +135,34 @@ internal class FullPlayerUiState {
     var supportingContentUsesTablet by mutableStateOf(false)
     var restoreSupportingContentOnCompact by mutableStateOf(false)
 
+    /** The quick-action tray's open panel, kept when the player moves between phone and tablet layouts. */
+    val quickControlModeState = mutableStateOf(QuickControlMode.ACTIONS)
+    var quickControlMode by quickControlModeState
+
+    /** Whether the Cast hero shows receiver controls, and the route it last followed ([castRouteRemote]). */
+    var showCastControls by mutableStateOf(false)
+    var castRouteRemote by mutableStateOf(false)
+    val notesExpandedState = mutableStateOf(false)
+    var notesExpanded by notesExpandedState
+
+    /** The seekbar's end label shows the total length instead of the time left. */
+    val showTotalDurationState = mutableStateOf(false)
+    var showTotalDuration by showTotalDurationState
+
+    /** Carries the Cast toggle into the next episode's state, so the listener's choice and route stay as they were. */
+    fun inheritCastToggle(previous: FullPlayerUiState) {
+        showCastControls = previous.showCastControls
+        castRouteRemote = previous.castRouteRemote
+    }
+
+    /** Follows a Cast connect or disconnect once; a layout change with the same route keeps the listener's toggle. */
+    fun followCastRoute(isRemote: Boolean): Boolean {
+        if (isRemote == castRouteRemote) return false
+        castRouteRemote = isRemote
+        showCastControls = isRemote
+        return true
+    }
+
     fun selectSupportingTab(tab: PlayerSupportingTab, restoreOnCompact: Boolean = true) {
         supportingTab = tab
         restoreSupportingContentOnCompact = restoreOnCompact
@@ -154,6 +190,19 @@ internal class FullPlayerUiState {
     }
 }
 
+/** Hands the Cast toggle from one episode's state to the next while this player stays on screen. */
+private class CastToggleHandOff {
+    private var episodeId: String? = null
+    private var ui: FullPlayerUiState? = null
+
+    fun carry(id: String, next: FullPlayerUiState) {
+        val previous = ui
+        if (previous != null && previous !== next && episodeId != id) next.inheritCastToggle(previous)
+        episodeId = id
+        ui = next
+    }
+}
+
 internal val FullPlayerUiStateSaver =
     listSaver<FullPlayerUiState, Boolean>(
         save = { state ->
@@ -173,6 +222,13 @@ internal val FullPlayerUiStateSaver =
                 state.supportingTab == PlayerSupportingTab.Notes,
                 state.supportingContentUsesTablet,
                 state.restoreSupportingContentOnCompact,
+                // Appended later; lists saved before them restore with defaults.
+                state.quickControlMode == QuickControlMode.SPEED,
+                state.quickControlMode == QuickControlMode.SLEEP,
+                state.showCastControls,
+                state.castRouteRemote,
+                state.notesExpanded,
+                state.showTotalDuration,
             )
         },
         restore = { values ->
@@ -195,6 +251,15 @@ internal val FullPlayerUiStateSaver =
                 }
                 supportingContentUsesTablet = values.getOrElse(13) { false }
                 restoreSupportingContentOnCompact = values.getOrElse(14) { false }
+                quickControlMode = when {
+                    values.getOrElse(15) { false } -> QuickControlMode.SPEED
+                    values.getOrElse(16) { false } -> QuickControlMode.SLEEP
+                    else -> QuickControlMode.ACTIONS
+                }
+                showCastControls = values.getOrElse(17) { false }
+                castRouteRemote = values.getOrElse(18) { false }
+                notesExpanded = values.getOrElse(19) { false }
+                showTotalDuration = values.getOrElse(20) { false }
             }
         },
     )
@@ -234,11 +299,13 @@ fun FullPlayerV2(
     val context = LocalContext.current
     val window = (context as? android.app.Activity)?.window
 
-    val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    // Measured from the pane the player is in, so insets the shell already reserves are not added twice.
+    val statusBarPadding = boxlorePaneTopInset()
+    val navBarPadding = boxlorePaneBottomInset()
 
     val localUi = rememberSaveable(episode.id, saver = FullPlayerUiStateSaver) { FullPlayerUiState() }
-    val ui = LocalPlayerPresentationStore.current?.uiFor(episode.id, localUi) ?: localUi
+    val castToggleHandOff = remember { CastToggleHandOff() }
+    val ui = (LocalPlayerPresentationStore.current?.uiFor(episode.id, localUi) ?: localUi).also { castToggleHandOff.carry(episode.id, it) }
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     val fullscreenRequest = LocalPlayerFullscreenRequest.current.takeIf { tablet }
     val playerActions = fullscreenRequest?.let { request -> actions.copy(onFullscreenVideoChange = { request(PlayerFullscreenOverlay.Video, it) }) } ?: actions
@@ -309,9 +376,7 @@ fun FullPlayerV2(
                 actions = minimalPlayerActions(dependencies, state, ui, playerActions),
                 modifier = modifier,
             )
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-                SnackbarHost(queueSnackbarHostState, Modifier.padding(bottom = navBarPadding))
-            }
+            PlayerSnackbarHost(queueSnackbarHostState, display.visibleHeight, navBarPadding)
         } else {
             FullPlayerBody(
                 model =
@@ -448,6 +513,21 @@ private fun FullPlayerBody(
     ui: FullPlayerUiState,
     resources: FullPlayerBodyResources,
 ) {
+    // Both arrangements keep their own scroll position here, so turning the phone and back returns to it.
+    val uprightScroll = rememberScrollState()
+    val sidewaysScroll = rememberScrollState()
+    // The sideways start column (cover, title, show) too: it leaves composition while the phone is upright.
+    val sidewaysStartScroll = rememberScrollState()
+    // Reset scroll when collapsing so reopen always starts at the top.
+    LaunchedEffect(display.isExpanded) {
+        if (!display.isExpanded) {
+            uprightScroll.scrollTo(0)
+            sidewaysScroll.scrollTo(0)
+            sidewaysStartScroll.scrollTo(0)
+        }
+    }
+    // One hero for both arrangements, so the inline transcript keeps its place when the phone turns.
+    val hero = remember { movableContentOf { heroModel: FullPlayerHeroModel, bindings: FullPlayerHeroBindings -> FullPlayerHeroSection(heroModel, bindings) } }
     Box(
         modifier =
         resources.modifier
@@ -458,12 +538,16 @@ private fun FullPlayerBody(
         val screenWidth = windowSize.width
         val screenHeight = windowSize.height
         val finalMaxHeight = screenHeight - resources.statusBarPadding - resources.navBarPadding
+        val sideways = usesSidewaysPhoneColumns(screenWidth.value, screenHeight.value, LocalBoxloreWindowLayout.current.usesTabletLayout, boxloreIsShortPane())
+        val tight = sideways && usesTightSidewaysControls(finalMaxHeight)
 
         Column(
             modifier =
             Modifier
                 .fillMaxSize()
-                .padding(top = resources.statusBarPadding, bottom = resources.navBarPadding),
+                .padding(top = resources.statusBarPadding, bottom = resources.navBarPadding)
+                // Sideways phones: Share, Cast and the controls stay clear of side system buttons and cutouts.
+                .boxloreHorizontalSafePadding(),
         ) {
             PlayerTopBar(
                 colorScheme = display.colorScheme,
@@ -481,6 +565,7 @@ private fun FullPlayerBody(
                     },
                     onShare = { ui.showShareSheet = true },
                 ),
+                tight = tight,
             )
             Box(
                 modifier =
@@ -489,49 +574,40 @@ private fun FullPlayerBody(
                     .nestedScroll(display.sheetNestedScrollConnection),
             ) {
                 val layoutValues = calculateResponsiveHeroLayout(screenWidth, finalMaxHeight, model.isVideo)
-                FullPlayerScrollableContent(
-                    model = model,
-                    dependencies = dependencies,
-                    display = display,
-                    actions = actions,
-                    flows = flows,
-                    ui = ui,
-                    resources =
-                    FullPlayerScrollResources(
-                        resources.scope,
-                        layoutValues,
-                    ),
-                )
+                val scrollResources = FullPlayerScrollResources(resources.scope, layoutValues)
+                val parts = FullPlayerBodyParts(dependencies, display, actions, flows, ui, hero)
+                if (sideways) {
+                    FullPlayerSidewaysContent(model, parts, scrollResources, sidewaysScroll, sidewaysStartScroll, tight)
+                } else {
+                    FullPlayerScrollableContent(model, parts, scrollResources, uprightScroll)
+                }
             }
         }
-        SnackbarHost(
-            hostState = resources.snackbarHostState,
-            modifier =
-            Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp),
-        )
+        PlayerSnackbarHost(resources.snackbarHostState, display.visibleHeight, resources.navBarPadding)
     }
+}
+
+/** What both phone arrangements draw with, including the [hero] that moves between them. */
+private data class FullPlayerBodyParts(
+    val dependencies: FullPlayerDependencies,
+    val display: FullPlayerDisplay,
+    val actions: FullPlayerActions,
+    val flows: FullPlayerFlows,
+    val ui: FullPlayerUiState,
+    val hero: @Composable (FullPlayerHeroModel, FullPlayerHeroBindings) -> Unit,
+) {
+    fun bindings(isCompact: Boolean) = FullPlayerHeroBindings(flows.position, dependencies.playbackRepository, display, actions, ui, isCompact)
 }
 
 @Composable
 private fun FullPlayerScrollableContent(
     model: FullPlayerBodyModel,
-    dependencies: FullPlayerDependencies,
-    display: FullPlayerDisplay,
-    actions: FullPlayerActions,
-    flows: FullPlayerFlows,
-    ui: FullPlayerUiState,
+    parts: FullPlayerBodyParts,
     resources: FullPlayerScrollResources,
+    scrollState: ScrollState,
 ) {
-    val scrollState = rememberScrollState()
-    // Reset scroll when collapsing so reopen always starts at the top.
-    LaunchedEffect(display.isExpanded) {
-        if (!display.isExpanded && scrollState.value > 0) {
-            scrollState.scrollTo(0)
-        }
-    }
-
+    val display = parts.display
+    val ui = parts.ui
     Column(
         modifier =
         Modifier
@@ -540,9 +616,8 @@ private fun FullPlayerScrollableContent(
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(if (resources.layout.isCompact) 6.dp else 14.dp))
-        FullPlayerHeroSection(
-            model =
+        Spacer(modifier = Modifier.height(resources.layout.topSpacing))
+        parts.hero(
             FullPlayerHeroModel(
                 state = model.state,
                 episode = model.episode,
@@ -551,12 +626,7 @@ private fun FullPlayerScrollableContent(
                 isVideo = model.isVideo,
                 dimensions = resources.layout.dimensions,
             ),
-            positionFlow = flows.position,
-            playbackRepository = dependencies.playbackRepository,
-            display = display,
-            actions = actions,
-            ui = ui,
-            isCompact = resources.layout.isCompact,
+            parts.bindings(resources.layout.isCompact),
         )
         val (metadataTopSpacing, metadataBottomSpacing) =
             PlayerMetadataStylingLogic.resolveMetadataSpacing(
@@ -568,7 +638,7 @@ private fun FullPlayerScrollableContent(
             episode = model.episode,
             podcast = model.podcast,
             colorScheme = display.colorScheme,
-            actions = actions,
+            actions = parts.actions,
             isTranscriptMode = ui.showInlineTranscript,
         )
         Spacer(modifier = Modifier.height(metadataBottomSpacing))
@@ -583,8 +653,8 @@ private fun FullPlayerScrollableContent(
                 isDownloading = model.download.isDownloading,
                 isCompact = resources.layout.isCompact,
             ),
-            dependencies = dependencies,
-            flows = flows,
+            dependencies = parts.dependencies,
+            flows = parts.flows,
             ui = ui,
             scope = resources.scope,
         )
@@ -594,13 +664,72 @@ private fun FullPlayerScrollableContent(
             episode = model.episode,
             nextEpisode = model.nextEpisode,
             colorScheme = display.colorScheme,
-            playbackRepository = dependencies.playbackRepository,
-            actions = actions,
+            playbackRepository = parts.dependencies.playbackRepository,
+            actions = parts.actions,
             ui = ui,
         )
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
+
+/**
+ * Sideways phones: cover, title and show on the left; seekbar, play controls, quick actions, Up next
+ * and notes on the right. The same pieces as the upright player, so the tray, notes, seekbar label,
+ * Cast toggle and inline transcript carry over when the phone turns. [tight] phones (less than about
+ * 400dp under the system bars) use a smaller play row and gaps so the quick actions still fit.
+ */
+@Composable
+private fun FullPlayerSidewaysContent(
+    model: FullPlayerBodyModel,
+    parts: FullPlayerBodyParts,
+    resources: FullPlayerScrollResources,
+    scrollState: ScrollState,
+    startScroll: ScrollState,
+    tight: Boolean,
+) {
+    val display = parts.display
+    val ui = parts.ui
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 24.dp)) {
+        val columnWidth = ((maxWidth - SIDEWAYS_GAP) / 2).coerceAtMost(SIDEWAYS_COLUMN_MAX)
+        val heroSize = sidewaysHeroSize(columnWidth, maxHeight)
+        val heroDimensions = if (model.isVideo) HeroDimensions(columnWidth - 16.dp, (columnWidth - 16.dp) * (9f / 16f)) else HeroDimensions(heroSize, heroSize)
+        androidx.compose.foundation.layout.Row(
+            Modifier.fillMaxSize(),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(SIDEWAYS_GAP, Alignment.CenterHorizontally),
+        ) {
+            Column(
+                Modifier.width(columnWidth).fillMaxHeight().verticalScroll(startScroll).testTag("player_sideways_start"),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+            ) {
+                parts.hero(FullPlayerHeroModel(model.state, model.episode, model.podcast, model.nextEpisode, model.isVideo, heroDimensions), parts.bindings(isCompact = true))
+                Spacer(Modifier.height(12.dp))
+                PlayerMetadata(model.episode, model.podcast, display.colorScheme, parts.actions, isTranscriptMode = ui.showInlineTranscript)
+            }
+            Column(
+                Modifier.width(columnWidth).fillMaxHeight().verticalScroll(scrollState),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (!tight) Spacer(Modifier.height(8.dp))
+                FullPlayerControls(
+                    model = FullPlayerControlModel(model.state, model.episode, model.podcast, display.colorScheme, model.download.isDownloaded, model.download.isDownloading, isCompact = true),
+                    dependencies = parts.dependencies,
+                    flows = parts.flows,
+                    ui = ui,
+                    scope = resources.scope,
+                    primaryControlHeight = if (tight) 64.dp else 80.dp,
+                    controlGap = if (tight) 6.dp else 14.dp,
+                )
+                Spacer(Modifier.height(14.dp))
+                FullPlayerSupportingContent(model.state, model.episode, model.nextEpisode, display.colorScheme, parts.dependencies.playbackRepository, parts.actions, ui)
+                Spacer(Modifier.height(24.dp))
+            }
+        }
+    }
+}
+
+private val SIDEWAYS_GAP = 24.dp
+private val SIDEWAYS_COLUMN_MAX = 480.dp
 
 internal data class FullPlayerHeroModel(
     val state: PlayerState,
@@ -635,23 +764,19 @@ internal fun FullPlayerHeroSection(
     actions: FullPlayerActions,
     ui: FullPlayerUiState,
     isCompact: Boolean,
-) {
+) = FullPlayerHeroSection(model, FullPlayerHeroBindings(positionFlow, playbackRepository, display, actions, ui, isCompact))
+
+@Composable
+private fun FullPlayerHeroSection(model: FullPlayerHeroModel, bindings: FullPlayerHeroBindings) {
     val isRemote = model.state.playbackRoute.isRemote
-    val bindings =
-        FullPlayerHeroBindings(
-            positionFlow = positionFlow,
-            playbackRepository = playbackRepository,
-            display = display,
-            actions = actions,
-            ui = ui,
-            isCompact = isCompact,
-        )
-    var showCastControls by rememberSaveable { mutableStateOf(isRemote) }
+    val ui = bindings.ui
+    val display = bindings.display
+    val actions = bindings.actions
     val castPicker = LocalCastPicker.current
-    LaunchedEffect(isRemote) {
-        showCastControls = isRemote
-        if (isRemote) actions.onFullscreenVideoChange(false)
+    LaunchedEffect(ui, isRemote) {
+        if (ui.followCastRoute(isRemote) && isRemote) actions.onFullscreenVideoChange(false)
     }
+    val showCastControls = ui.showCastControls || (isRemote && !ui.castRouteRemote)
     val heroMode =
         resolveCastHeroDisplayMode(
             isRemote = isRemote,
@@ -684,7 +809,7 @@ internal fun FullPlayerHeroSection(
             visible = isRemote && heroMode != CastHeroDisplayMode.TRANSCRIPT,
             showCastControls = showCastControls,
             colorScheme = display.colorScheme,
-            onToggle = { showCastControls = !showCastControls },
+            onToggle = { ui.showCastControls = !showCastControls },
             modifier = Modifier.align(Alignment.TopEnd),
         )
     }
@@ -694,7 +819,7 @@ internal fun FullPlayerHeroSection(
     )
 }
 
-private data class FullPlayerHeroBindings(
+internal data class FullPlayerHeroBindings(
     val positionFlow: Flow<Long>,
     val playbackRepository: PlaybackRepository,
     val display: FullPlayerDisplay,
@@ -746,7 +871,7 @@ private fun FullPlayerHeroModeContent(
                 model =
                 FullPlayerCastHeroModel(
                     route = model.state.playbackRoute,
-                    dimensions = model.dimensions,
+                    dimensions = castHeroDimensions(model.dimensions, boxloreConfigurationWindowSize().width, model.state.playbackRoute.canControlVolume),
                     canSkipNext = canSkipFromCastHero(model.nextEpisode?.id),
                     colorScheme = bindings.display.colorScheme,
                 ),

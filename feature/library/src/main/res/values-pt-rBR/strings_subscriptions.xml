@@ -13,10 +13,6 @@
     <string name="library_search_subscribed_shows">Pesquisar podcasts seguidos…</string>
     <!-- Search field placeholder -->
     <string name="library_search_your_shows">Pesquisar seus podcasts</string>
-    <!-- Screen-reader label -->
-    <string name="library_close_search">Fechar pesquisa</string>
-    <!-- Screen-reader label -->
-    <string name="library_clear_search">Limpar pesquisa</string>
     <!-- Screen-reader label for the button that switches to a list -->
     <string name="library_list_view">Ver em lista</string>
     <!-- Screen-reader label for the button that switches to a grid -->
@@ -59,14 +55,6 @@
     <string name="library_sort_manual">Manual</string>
     <!-- Sort choice -->
     <string name="library_sort_chronological">Cronológica</string>
-    <!-- Menu item -->
-    <string name="library_sort_smart_sort">Ordem inteligente</string>
-    <!-- Menu item -->
-    <string name="library_sort_recently_updated_menu">Atualizados recentemente</string>
-    <!-- Menu item: alphabetical -->
-    <string name="library_sort_a_to_z_menu">A-Z</string>
-    <!-- Menu item -->
-    <string name="library_sort_most_listened_menu">Mais ouvidos</string>
     <!-- Sort choice chip -->
     <string name="library_sort_recently_updated">Atualizados recentemente</string>
     <!-- Sort choice chip -->
@@ -77,8 +65,6 @@
     <string name="library_sort_same_as_shows">Igual aos podcasts</string>
     <!-- Sort choice chip: the order the listener arranged by hand -->
     <string name="library_sort_your_order">Sua ordem</string>
-    <!-- Menu item -->
-    <string name="library_sort_auto_organize_into_folders">Organizar em pastas automaticamente</string>
     <!-- Menu item -->
     <string name="library_hide_played_episodes">Ocultar episódios ouvidos</string>
     <!-- Sheet title -->
@@ -134,4 +120,7 @@
     <string name="library_genre_full_religion">Religião e espiritualidade</string>
     <string name="library_genre_full_family">Crianças e família</string>
     <string name="library_genre_full_govt">Governo</string>
+    <string name="library_pin_home">Fixar no Início</string>
+    <string name="library_unpin_home">Desafixar do Início</string>
+    <string name="library_pin_capacity">Você pode fixar até %1$d podcasts no Início</string>
 </resources>

@@ -14,7 +14,7 @@
     <string name="onboarding_select_at_least_one">Selecione pelo menos 1</string>
     <string name="onboarding_select_all_that_apply">Selecione todas as opções que se aplicam</string>
     <!-- Above the genre chips under a picked listening moment or length; tapping a chip assigns or removes that genre. -->
-    <string name="onboarding_target_genres">Gêneros (toque para marcar ou desmarcar):</string>
+    <string name="onboarding_target_genres">Gêneros para isso</string>
 
     <string name="onboarding_genres_title">Podemos te conhecer melhor?</string>
     <string name="onboarding_genres_body">Escolha os temas de que você gosta</string>
@@ -162,7 +162,7 @@
     <!-- Listening moments. -->
     <string name="onboarding_activity_commuting">No trajeto</string>
     <string name="onboarding_activity_working">Trabalhando</string>
-    <string name="onboarding_activity_meditating">Meditando / Relaxando</string>
+    <string name="onboarding_activity_meditating">Relaxando</string>
     <string name="onboarding_activity_winding_down">Antes de dormir</string>
     <string name="onboarding_activity_working_out">Malhando</string>
     <string name="onboarding_activity_chores">Fazendo tarefas de casa</string>

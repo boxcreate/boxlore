@@ -87,13 +87,12 @@
     <string name="account_delete">Excluir conta</string>
     <string name="account_privacy_policy">Política de privacidade</string>
     <string name="account_how_deletion_works">Como funciona a exclusão</string>
-    <string name="settings_sync_cloud_sync_title">Sincronização na nuvem</string>
     <string name="settings_sync_badge_issue">Problema na sincronização</string>
     <string name="settings_sync_badge_syncing">Sincronizando...</string>
     <string name="settings_sync_badge_active">Sincronização ativa</string>
     <string name="settings_sync_signed_in_as">Conectado como %1$s</string>
     <string name="settings_sync_sign_in_prompt">Entre para fazer backup e sincronizar entre aparelhos</string>
-    <string name="settings_sync_cloud_sync_label">Sincronização na nuvem</string>
+    <string name="settings_sync_signed_out_summary">Faça backup da sua biblioteca e sincronize entre aparelhos</string>
     <string name="settings_sync_open_account">Abrir configurações da conta</string>
     <string name="settings_sync_full_backup_summary">Podcasts seguidos, pastas, playlists, histórico, curtidas e configurações (JSON)</string>
     <string name="settings_sync_export_title">Exportar</string>
@@ -102,7 +101,7 @@
     <string name="settings_sync_opml_file">Arquivo OPML</string>
     <string name="settings_sync_import_title">Importar</string>
     <!-- "Missing episodes?" is the name of a per-show option. -->
-    <string name="settings_sync_import_full_description">Restaura as opções Faltam episódios? e atualiza esses podcasts</string>
+    <string name="settings_sync_import_full_description">Restaura sua biblioteca e suas configurações a partir do arquivo de backup</string>
     <string name="settings_sync_import_opml_description">Importar de um arquivo OPML</string>
     <string name="account_deleted_toast">Conta excluída</string>
     <string name="account_delete_dialog_title">Excluir conta</string>
@@ -159,4 +158,15 @@
     <plurals name="account_sync_minutes_ago"><item quantity="one">Sincronizado há %d min</item><item quantity="many">Sincronizado há %d min</item><item quantity="other">Sincronizado há %d min</item></plurals>
     <plurals name="account_sync_hours_ago"><item quantity="one">Sincronizado há %d h</item><item quantity="many">Sincronizado há %d h</item><item quantity="other">Sincronizado há %d h</item></plurals>
     <plurals name="account_sync_days_ago"><item quantity="one">Sincronizado há %d dia</item><item quantity="many">Sincronizado há %d dias</item><item quantity="other">Sincronizado há %d dias</item></plurals>
+    <string name="account_tv_sign_in">Entrar em uma TV</string>
+    <string name="account_tv_instruction">Abra o boxlore na sua TV, escolha Entrar e digite o código que aparece.</string>
+    <string name="account_tv_code">Código da TV</string>
+    <string name="account_tv_own_tv_only">Só digite um código da sua própria TV. Essa TV recebe seus programas e o que você ouve.</string>
+    <string name="account_tv_confirm">Entrar na TV</string>
+    <string name="account_tv_done">Pronto</string>
+    <string name="account_tv_signed_in">Sua TV está conectada. Seus programas aparecem nela em alguns segundos.</string>
+    <string name="account_tv_wrong_code">Esse código não funcionou. Confira na sua TV ou gere um novo lá.</string>
+    <string name="account_tv_sign_in_first">Primeiro confirme seu e-mail neste celular.</string>
+    <string name="account_tv_no_connection">Não foi possível conectar ao boxlore. Verifique sua conexão e tente de novo.</string>
+    <string name="settings_sync_import_footer">Podcasts com “Faltam episódios?” ativado são atualizados depois da importação.</string>
 </resources>

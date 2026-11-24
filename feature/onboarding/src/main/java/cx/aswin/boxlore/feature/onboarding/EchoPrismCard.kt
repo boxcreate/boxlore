@@ -118,7 +118,15 @@ internal fun EchoPrismCard(
 private fun EchoPrismFace(card: OnboardingProbeCard, title: String, index: Int, count: Int, plan: PrismPlan, reveal: EchoCardReveal?) {
     val motion = rememberEchoCardMotion()
     val clock = rememberPrismClock()
-    val sparkles = remember(card.id) { echoSparkles(card.id, PrismDust) }
+    val density = LocalDensity.current
+    // The glitter keeps to the art and the card's edge, off the name, byline and pitch.
+    val sparkles = remember(card.id, plan, density) {
+        with(density) {
+            val border = EchoPrismLayout.Border.dp.toPx() * 2
+            val area = prismSparkleArea(plan, plan.width - border, plan.height - border, EchoPrismLayout.Padding.dp.toPx(), EchoPrismLayout.TiltClearance.dp.toPx())
+            echoSparkles(card.id, PrismDust, area)
+        }
+    }
     val revealClock = remember { Animatable(0f) }
     val view = LocalView.current
     LaunchedEffect(Unit) {
@@ -135,7 +143,6 @@ private fun EchoPrismFace(card: OnboardingProbeCard, title: String, index: Int, 
     val lean = { frame().sweep?.let { motion.lean.copy(y = motion.lean.y + it * 18f) } ?: motion.lean }
     val glare = { PrismGlare * (1f + 1.8f * (frame().sweep?.let { sin(it * PI.toFloat()) } ?: 0f)) }
     val sweep = { prismSweep(clock.value) }
-    val density = LocalDensity.current
     val art = with(density) { plan.art.toDp() }
     val look = PrismLook(clock, lean, light, glare, sweep)
     Box(
@@ -235,11 +242,11 @@ private fun PrismCompactFace(card: OnboardingProbeCard, title: String, index: In
                 Modifier.padding(start = if (plan.art > 0) EchoPrismLayout.CompactGap.dp else 0.dp),
                 verticalArrangement = Arrangement.spacedBy(EchoPrismLayout.TagGap.dp),
             ) {
-                PrismTag(card, index, count, sticker = false)
+                if (plan.showTag) PrismTag(card, index, count, sticker = false)
                 PrismTitle(title, card.title, plan, TextAlign.Start)
             }
         }
-        PrismHook(card.hook, plan.hookSp, TextAlign.Start)
+        if (plan.showHook) PrismHook(card.hook, plan.hookSp, TextAlign.Start)
     }
 }
 
@@ -323,7 +330,7 @@ private fun PrismTitle(upper: String, title: String, plan: PrismPlan, align: Tex
             }
             .testTag("echo_deck_title"),
         style = prismTitleStyle(plan.titleSp).copy(textAlign = align),
-        maxLines = plan.titleLines.coerceAtMost(EchoPrismLayout.MaxTitleLines),
+        maxLines = plan.titleLines,
         overflow = TextOverflow.Ellipsis,
     )
 }

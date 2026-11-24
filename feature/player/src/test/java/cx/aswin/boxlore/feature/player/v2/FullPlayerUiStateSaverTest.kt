@@ -200,4 +200,38 @@ class FullPlayerUiStateSaverTest {
         assertEquals(expected == PlayerSupportingTab.Chapters, state.showChaptersSheet)
         assertEquals(expected == PlayerSupportingTab.UpNext, state.showQueueSheet)
     }
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun `tray panel, Cast toggle and expanded notes survive restoration and older saved lists`() {
+        listOf(QuickControlMode.SPEED, QuickControlMode.SLEEP, QuickControlMode.ACTIONS).forEach { mode ->
+            val original = FullPlayerUiState().apply {
+                quickControlMode = mode
+                followCastRoute(true)
+                showCastControls = false
+                notesExpanded = true
+            }
+            val saved = with(FullPlayerUiStateSaver) { SaverScope { true }.save(original) } as List<Boolean>
+            val restored = requireNotNull(FullPlayerUiStateSaver.restore(saved))
+            assertEquals(mode, restored.quickControlMode)
+            assertFalse(restored.showCastControls)
+            assertTrue(restored.castRouteRemote)
+            assertTrue(restored.notesExpanded)
+        }
+        val legacy = requireNotNull(FullPlayerUiStateSaver.restore(List(15) { false }))
+        assertEquals(QuickControlMode.ACTIONS, legacy.quickControlMode)
+        assertFalse(legacy.notesExpanded)
+    }
+
+    @Test
+    fun `the Cast toggle follows a route change once and keeps the listener's choice otherwise`() {
+        val state = FullPlayerUiState()
+        assertTrue(state.followCastRoute(true))
+        assertTrue(state.showCastControls)
+        state.showCastControls = false
+        assertFalse(state.followCastRoute(true), "A new layout with the same route keeps the toggle")
+        assertFalse(state.showCastControls)
+        assertTrue(state.followCastRoute(false))
+        assertFalse(state.showCastControls)
+    }
 }

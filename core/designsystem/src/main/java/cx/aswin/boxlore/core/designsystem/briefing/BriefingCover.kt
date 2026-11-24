@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,7 +33,10 @@ import cx.aswin.boxlore.core.designsystem.R
 internal fun briefingCoverPainter(region: String, editionDate: String): Painter =
     painterResource(briefingCoverResource(region, editionDate))
 
-/** Uncropped landscape artwork; contrast is confined to the masthead and metadata. */
+/**
+ * Uncropped landscape artwork; contrast is confined to the masthead and metadata. [mastheadLeftPadding]
+ * moves the logo and its scrim right, past a button the page places at the cover's top left.
+ */
 @Composable
 @Suppress("LongParameterList")
 fun BriefingCover(
@@ -41,6 +45,7 @@ fun BriefingCover(
     modifier: Modifier = Modifier,
     mastheadTopPadding: Dp = 16.dp,
     mastheadScrim: Boolean = false,
+    mastheadLeftPadding: Dp = 0.dp,
     artworkContentScale: ContentScale = ContentScale.Fit,
     trailing: @Composable BoxScope.() -> Unit = {},
     footer: @Composable BoxScope.() -> Unit = {},
@@ -55,13 +60,15 @@ fun BriefingCover(
         if (mastheadScrim) {
             Box(
                 Modifier.fillMaxSize().drawBehind {
+                    // A logo moved right on a narrow or cropped cover lands on the bright map: a wider, deeper scrim keeps it readable.
+                    val strong = mastheadLeftPadding > 0.dp && (artworkContentScale == ContentScale.Crop || size.width < STRONG_SCRIM_BELOW_WIDTH.toPx())
                     drawRect(
                         Brush.radialGradient(
-                            0f to Color.Black.copy(alpha = 0.45f),
-                            0.5f to Color.Black.copy(alpha = 0.22f),
+                            0f to Color.Black.copy(alpha = if (strong) 0.55f else 0.45f),
+                            0.5f to Color.Black.copy(alpha = if (strong) 0.3f else 0.22f),
                             1f to Color.Transparent,
-                            center = Offset(84.dp.toPx(), mastheadTopPadding.toPx() + 32.dp.toPx()),
-                            radius = 146.dp.toPx(),
+                            center = Offset(84.dp.toPx() + mastheadLeftPadding.toPx(), mastheadTopPadding.toPx() + 32.dp.toPx()),
+                            radius = (if (strong) 190.dp else 146.dp).toPx(),
                         ),
                     )
                 },
@@ -72,13 +79,15 @@ fun BriefingCover(
             contentDescription = stringResource(R.string.briefing_brand_name),
             colorFilter = ColorFilter.tint(Color.White),
             contentScale = ContentScale.Fit,
-            modifier = Modifier.align(AbsoluteAlignment.TopLeft).padding(top = mastheadTopPadding).padding(horizontal = 16.dp)
+            modifier = Modifier.align(AbsoluteAlignment.TopLeft).padding(top = mastheadTopPadding).absolutePadding(left = mastheadLeftPadding).padding(horizontal = 16.dp)
                 .width(136.dp).height(64.dp),
         )
         trailing()
         footer()
     }
 }
+
+private val STRONG_SCRIM_BELOW_WIDTH = 480.dp
 
 /** One readable line, leaving the architecture and upper image untouched. */
 @Composable

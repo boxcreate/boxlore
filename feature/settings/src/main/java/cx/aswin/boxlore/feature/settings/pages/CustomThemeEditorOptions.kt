@@ -2,7 +2,6 @@ package cx.aswin.boxlore.feature.settings.pages
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -16,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -30,8 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.CustomThemeSeeds
 import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
 import cx.aswin.boxlore.core.designsystem.theme.findThemePreset
@@ -108,19 +106,12 @@ internal fun ThemeBackgroundOptions(surface: String, savedSurface: String, onSel
         .let { if (findThemePreset(savedSurface) == null) it else it + (savedSurface to R.string.theme_editor_saved) }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(stringResource(R.string.theme_editor_background), style = MaterialTheme.typography.titleMedium)
-        FlowRow(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            options.forEach { (key, label) ->
-                FilterChip(
-                    selected = surface == key,
-                    onClick = { onSelect(key) },
-                    label = { Text(stringResource(label)) },
-                    modifier = Modifier.defaultMinSize(minHeight = 48.dp).semantics { role = Role.RadioButton },
-                    leadingIcon = {
-                        if (surface == key) Icon(Icons.Rounded.Check, null, Modifier.size(18.dp)) else Box(Modifier.size(18.dp))
-                    },
-                )
-            }
-        }
+        ConnectedOptionSelector(
+            options = options.map { (key, label) -> key to stringResource(label) },
+            selected = surface,
+            onSelect = onSelect,
+            labelStyle = MaterialTheme.typography.labelMedium,
+        )
         Text(
             stringResource(
                 when (surface) {

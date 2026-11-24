@@ -563,10 +563,10 @@ private fun ArtifactLoreStoryContent(
             text = stringResource(R.string.settings_support_tap_to_return),
             style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = GoogleSansWeight.semiBold,
-                fontSize = 9.sp,
+                fontSize = 11.sp,
                 letterSpacing = 1.6.sp,
             ),
-            color = Color.White.copy(alpha = 0.40f * storyProgress),
+            color = Color.White.copy(alpha = 0.60f * storyProgress),
         )
     }
 }
@@ -849,7 +849,7 @@ private fun SupportMissionCard(
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = GoogleSansWeight.bold,
                         letterSpacing = 1.1.sp,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                     ),
                     color = activeColor,
                 )

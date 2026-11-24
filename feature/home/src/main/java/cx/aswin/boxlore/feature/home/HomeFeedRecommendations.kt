@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryExpressiveTheme
@@ -113,8 +114,10 @@ private fun LazyStaggeredGridScope.becauseYouLikeItem(
 internal fun LazyStaggeredGridScope.discoveryGreetingItem(
     feedState: PodcastFeedUiState,
     callbacks: HomeFeedCallbacks,
+    editorialRowsLoading: Boolean,
+    editorialRowCount: Int,
 ) {
-    if (!feedState.showDiscoveryGreeting) return
+    if (!showsDiscoveryGreeting(feedState.showDiscoveryGreeting, editorialRowsLoading, editorialRowCount)) return
     item(
         span = StaggeredGridItemSpan.FullLine,
         key = "discovery_greeting",
@@ -126,7 +129,7 @@ internal fun LazyStaggeredGridScope.discoveryGreetingItem(
                 // Without For you, Explore opens on its charts.
                 callbacks.onNavigateToExplore?.invoke(null, "home_discovery_greeting", "foryou".takeIf { feedState.exploreHasForYou })
             },
-            modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap),
+            modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap).testTag("home_discovery_greeting"),
         )
     }
 }
@@ -136,16 +139,18 @@ internal fun LazyStaggeredGridScope.discoverFeedItems(
     derivedState: PodcastFeedDerivedState,
     callbacks: HomeFeedCallbacks,
     columns: Int = 2,
+    tablet: Boolean = false,
 ) {
     discoverHeaderItem(feedState, callbacks)
     if (derivedState.showDiscoverContent) {
         discoverPodcastItems(derivedState, feedState, callbacks, columns)
         discoverViewMoreItem(feedState, callbacks)
     } else if (derivedState.showDiscoverSkeleton) {
-        repeat((HomeFeedSpacing.ExploreGridCap + columns - 1) / columns) { row ->
-            item(span = StaggeredGridItemSpan.FullLine, key = "discover_grid_$row", contentType = "discover_grid") {
+        val placeholders = HomeFeedSpacing.exploreItemCount(columns, tablet)
+        repeat((placeholders + columns - 1) / columns) { row ->
+            item(span = StaggeredGridItemSpan.FullLine, key = exploreRowKey(row), contentType = "discover_grid") {
                 EqualHeightPosterGrid(columns = columns) {
-                    repeat((HomeFeedSpacing.ExploreGridCap - row * columns).coerceAtMost(columns)) {
+                    repeat((placeholders - row * columns).coerceAtMost(columns)) {
                         HomeMediaCardSkeleton()
                     }
                 }
@@ -163,7 +168,7 @@ private fun LazyStaggeredGridScope.discoverHeaderItem(
             selectedCategory = feedState.selectedCategory,
             onCategorySelected = callbacks.onSelectCategory,
             onHeaderClick = { callbacks.onNavigateToExplore?.invoke(feedState.selectedCategory ?: "All", "home_discover_header", null) },
-            modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap),
+            modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap).testTag("home_discover_header"),
         )
     }
 }
@@ -175,7 +180,7 @@ private fun LazyStaggeredGridScope.discoverPodcastItems(
     columns: Int,
 ) {
     derivedState.discoverItems.chunked(columns).forEachIndexed { row, rowItems ->
-        item(span = StaggeredGridItemSpan.FullLine, key = "discover_grid_$row", contentType = "discover_grid") {
+        item(span = StaggeredGridItemSpan.FullLine, key = exploreRowKey(row), contentType = "discover_grid") {
             EqualHeightPosterGrid(columns = columns) {
                 rowItems.forEachIndexed { index, podcast ->
                     PodcastCard(
@@ -247,3 +252,10 @@ private fun DiscoveryGreetingHeader(
         modifier = modifier,
     )
 }
+
+/**
+ * The time-of-day greeting heads its picks, so it shows only while they load or once some arrive:
+ * an empty or failed set leaves no heading sitting on top of the next one.
+ */
+internal fun showsDiscoveryGreeting(settingOn: Boolean, rowsLoading: Boolean, rowCount: Int): Boolean =
+    settingOn && (rowsLoading || rowCount > 0)

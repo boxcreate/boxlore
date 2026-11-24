@@ -1,8 +1,6 @@
 package cx.aswin.boxlore.feature.settings.pages
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
@@ -10,9 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Podcasts
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -20,15 +16,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.SubcomposeAsyncImage
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.model.HiddenShow
 import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
@@ -110,27 +105,21 @@ private fun HiddenShowRow(show: HiddenShow, onUnhide: () -> Unit) {
     }
 }
 
+/** The show's artwork at row size; missing artwork shows boxlore's own mark, as everywhere else. */
 @Composable
 private fun HiddenShowArtwork(imageUrl: String) {
-    val shape = MaterialTheme.shapes.medium
-    val placeholder = @Composable {
-        Box(Modifier.size(40.dp).clip(shape).background(MaterialTheme.colorScheme.secondaryContainer), contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.Podcasts, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(20.dp))
-        }
-    }
-    if (imageUrl.isBlank()) {
-        placeholder()
-    } else {
-        SubcomposeAsyncImage(
-            model = imageUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.size(40.dp).clip(shape),
-            loading = { placeholder() },
-            error = { placeholder() },
-        )
-    }
+    OptimizedImage(
+        url = imageUrl.ifBlank { null },
+        proxyWidth = HIDDEN_SHOW_ART_PROXY_WIDTH,
+        contentDescription = null,
+        modifier = Modifier.size(40.dp).clip(MaterialTheme.shapes.medium).testTag(HIDDEN_SHOW_ART_TAG),
+    )
 }
+
+/** Test tag on each hidden show's artwork. */
+internal const val HIDDEN_SHOW_ART_TAG = "hidden_show_art"
+
+private const val HIDDEN_SHOW_ART_PROXY_WIDTH = 120
 
 /** `settings_interaction` action for an Unhide here; the value is the show ID. Same key as the show page's. */
 private const val ACTION_UNHIDDEN = "show_unhidden"

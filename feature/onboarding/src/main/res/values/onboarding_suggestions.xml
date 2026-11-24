@@ -36,6 +36,9 @@
     <string name="suggestions_loading_library">Finding shows like the ones in your library.</string>
     <string name="suggestions_error_title">Couldn’t load suggestions</string>
     <string name="suggestions_error_body">Check your connection, then try again.</string>
+    <!-- Similar shows asked for the human check, and it was skipped or failed; trying again soon shows the same. -->
+    <string name="suggestions_check_title">Similar shows need a quick check</string>
+    <string name="suggestions_check_body">The check didn’t finish, so boxlore can’t find similar shows right now. You can start listening and find more later.</string>
     <string name="suggestions_empty_title">No suggestions this time</string>
     <string name="suggestions_empty_body">Try again, or start without them.</string>
     <string name="suggestions_try_again">Try again</string>
@@ -54,8 +57,8 @@
     <string name="suggestions_lane_for_you">For you</string>
     <string name="suggestions_lane_popular_now">Popular now</string>
     <!-- Fallback lanes when suggestions fall back to the charts. -->
-    <string name="suggestions_lane_trending_hits">Trending Hits</string>
-    <string name="suggestions_lane_trending_genres">Trending in your Genres</string>
+    <string name="suggestions_lane_trending_hits">Trending hits</string>
+    <string name="suggestions_lane_trending_genres">Trending in your genres</string>
     <!-- One line about what a lane is for. -->
     <string name="suggestions_lane_purpose_matched">Shows matched to this taste lane.</string>
     <string name="suggestions_lane_purpose_themed">A themed set based on what you told us.</string>
@@ -79,4 +82,9 @@
     <string name="suggestions_details_fallback">Explore episodes and topics from %1$s.</string>
     <!-- When a show has no description. %1$s is the show's name, %2$s its host or publisher. -->
     <string name="suggestions_details_fallback_with_host">Explore episodes and topics from %1$s by %2$s.</string>
+    <!-- Under a lane on wide screens: shows the rest of its shows. %d is how many shows the lane has. -->
+    <plurals name="suggestions_show_all">
+        <item quantity="one">Show all %d</item>
+        <item quantity="other">Show all %d</item>
+    </plurals>
 </resources>

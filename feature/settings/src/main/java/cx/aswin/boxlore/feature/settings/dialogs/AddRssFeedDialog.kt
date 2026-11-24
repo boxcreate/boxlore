@@ -11,7 +11,6 @@ import androidx.compose.material.icons.rounded.RssFeed
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -24,6 +23,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.feature.settings.R
@@ -115,7 +115,7 @@ internal fun AddRssFeedDialog(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        BoxLoreLoader.LinearWavy(modifier = Modifier.fillMaxWidth())
                         Text(
                             text = stringResource(R.string.settings_rss_subscribing),
                             style = MaterialTheme.typography.bodySmall,
@@ -181,7 +181,7 @@ internal fun RssMatchConfirmationDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 AnimatedVisibility(visible = isLinking) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    BoxLoreLoader.LinearWavy(modifier = Modifier.fillMaxWidth())
                 }
             }
         },

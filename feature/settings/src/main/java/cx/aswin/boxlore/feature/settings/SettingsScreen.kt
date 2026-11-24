@@ -75,8 +75,10 @@ import cx.aswin.boxlore.feature.settings.pages.RecommendationsSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.SettingsHub
 import cx.aswin.boxlore.feature.settings.pages.SupportPageHost
 import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
+import cx.aswin.boxlore.feature.settings.pages.TvSignInApprover
 import cx.aswin.boxlore.feature.settings.pages.WearOsSettings
 import cx.aswin.boxlore.feature.settings.pages.WearOsSettingsPage
+import cx.aswin.boxlore.feature.settings.pages.settingsHubAccount
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -143,6 +145,8 @@ data class SettingsScreenConfig(
     val onCheckForUpdates: (() -> Unit)? = null,
     /** Set once boxlore on a watch has linked with this phone; null hides the Wear OS entry. */
     val wearOs: WearOsSettings? = null,
+    /** Approves the code boxlore on a TV shows; null hides the TV entry on the account page. */
+    val tvSignIn: TvSignInApprover? = null,
 )
 
 /** Appearance sub-page state paired with its actions, so [SettingsScreen] can pass both as one. */
@@ -446,6 +450,7 @@ private fun AccountDestination(
         syncStatus = syncStatus,
         onSyncNow = repositories.onSyncNow ?: {},
         isOnboarding = config.isOnboarding,
+        tvSignIn = config.tvSignIn,
         emailLink = AccountEmailLinkUi(
             status = emailLinkStatus,
             onRetry = { emailLinkSignIn?.retry() },
@@ -471,6 +476,7 @@ private fun SettingsDestinationContent(
                 onNavigate = actions.onNavigate,
                 onCheckForUpdates = config.onCheckForUpdates,
                 showWearOs = config.wearOs != null,
+                account = settingsHubAccount(signInAvailable = repositories.authRepository != null, uiData.accountStatus, syncStatus),
             )
 
         ProfileSettingsDestination.Account ->

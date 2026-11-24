@@ -87,13 +87,12 @@
     <string name="account_delete">Supprimer le compte</string>
     <string name="account_privacy_policy">Politique de confidentialité</string>
     <string name="account_how_deletion_works">Fonctionnement de la suppression</string>
-    <string name="settings_sync_cloud_sync_title">Synchro cloud</string>
     <string name="settings_sync_badge_issue">Problème de synchro</string>
     <string name="settings_sync_badge_syncing">Synchronisation…</string>
     <string name="settings_sync_badge_active">Synchro cloud active</string>
     <string name="settings_sync_signed_in_as">Connecté en tant que %1$s</string>
     <string name="settings_sync_sign_in_prompt">Connectez-vous pour sauvegarder et synchroniser entre vos appareils</string>
-    <string name="settings_sync_cloud_sync_label">Synchro cloud</string>
+    <string name="settings_sync_signed_out_summary">Sauvegardez votre bibliothèque et synchronisez-la entre vos appareils</string>
     <string name="settings_sync_open_account">Ouvrir les paramètres du compte</string>
     <string name="settings_sync_full_backup_summary">Abonnements, dossiers, playlists, historique, j’aime et paramètres (JSON)</string>
     <string name="settings_sync_export_title">Exporter</string>
@@ -102,7 +101,7 @@
     <string name="settings_sync_opml_file">Fichier OPML</string>
     <string name="settings_sync_import_title">Importer</string>
     <!-- "Missing episodes?" is the name of a per-show option. -->
-    <string name="settings_sync_import_full_description">Restaure les choix « Des épisodes manquent ? » et actualise ces podcasts</string>
+    <string name="settings_sync_import_full_description">Restaure votre bibliothèque et vos paramètres depuis le fichier de sauvegarde</string>
     <string name="settings_sync_import_opml_description">Importer depuis un fichier OPML</string>
     <string name="account_deleted_toast">Compte supprimé</string>
     <string name="account_delete_dialog_title">Supprimer le compte</string>
@@ -159,4 +158,15 @@
     <plurals name="account_sync_minutes_ago"><item quantity="one">Synchronisé il y a %d min</item><item quantity="many">Synchronisé il y a %d min</item><item quantity="other">Synchronisé il y a %d min</item></plurals>
     <plurals name="account_sync_hours_ago"><item quantity="one">Synchronisé il y a %d h</item><item quantity="many">Synchronisé il y a %d h</item><item quantity="other">Synchronisé il y a %d h</item></plurals>
     <plurals name="account_sync_days_ago"><item quantity="one">Synchronisé il y a %d jour</item><item quantity="many">Synchronisé il y a %d jours</item><item quantity="other">Synchronisé il y a %d jours</item></plurals>
+    <string name="account_tv_sign_in">Se connecter sur une TV</string>
+    <string name="account_tv_instruction">Ouvrez boxlore sur votre TV, choisissez Se connecter et saisissez le code affiché.</string>
+    <string name="account_tv_code">Code de la TV</string>
+    <string name="account_tv_own_tv_only">Ne saisissez que le code de votre propre TV. Cette TV aura accès à vos émissions et à votre écoute.</string>
+    <string name="account_tv_confirm">Connecter la TV</string>
+    <string name="account_tv_done">OK</string>
+    <string name="account_tv_signed_in">Votre TV est connectée. Vos émissions y apparaîtront dans quelques secondes.</string>
+    <string name="account_tv_wrong_code">Ce code n’a pas fonctionné. Vérifiez-le sur votre TV ou demandez-en un nouveau.</string>
+    <string name="account_tv_sign_in_first">Confirmez d’abord votre adresse e-mail sur ce téléphone.</string>
+    <string name="account_tv_no_connection">Impossible de joindre boxlore. Vérifiez votre connexion et réessayez.</string>
+    <string name="settings_sync_import_footer">Les podcasts où « Des épisodes manquent ? » est activé sont actualisés après l’import.</string>
 </resources>

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,7 +29,6 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,6 +55,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.settings.R
@@ -120,7 +122,7 @@ private fun AccountMethodCards(state: AccountAuthState) {
         ) {
             Box(Modifier.size(36.dp).background(Color.White, CircleShape), contentAlignment = Alignment.Center) {
                 if (state.isGoogleLoading) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    BoxLoreLoader.CircularWavy(size = 18.dp)
                 } else {
                     Image(painterResource(cx.aswin.boxlore.core.designsystem.R.drawable.ic_google_logo), contentDescription = null, modifier = Modifier.size(20.dp))
                 }
@@ -245,7 +247,13 @@ private fun ColumnScope.PasswordAuthSection(
     selectedMode: AuthMode,
     actionButtonRequester: BringIntoViewRequester,
 ) {
-    AccountAuthModeSelector(selected = selectedMode, onSelect = actions.onSelectMode)
+    ConnectedOptionSelector(
+        options = listOf(AuthMode.SIGN_IN to stringResource(R.string.account_sign_in), AuthMode.SIGN_UP to stringResource(R.string.account_create)),
+        selected = selectedMode,
+        onSelect = actions.onSelectMode,
+        labelStyle = MaterialTheme.typography.labelLarge,
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+    )
     OutlinedTextField(
         value = state.email,
         onValueChange = actions.onEmailChange,
@@ -306,7 +314,7 @@ private fun ColumnScope.AccountOtherWays(onClick: () -> Unit) {
 internal fun AccountPrimaryButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, loading: Boolean = false, enabled: Boolean = true) {
     Button(onClick, modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = enabled, shape = CircleShape) {
         if (loading) {
-            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+            BoxLoreLoader.CircularWavy(size = 20.dp, color = MaterialTheme.colorScheme.onPrimary)
         } else {
             Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.medium)
         }

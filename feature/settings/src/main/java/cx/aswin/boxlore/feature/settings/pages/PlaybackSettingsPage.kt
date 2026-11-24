@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.LastPage
 import androidx.compose.material.icons.rounded.FastForward
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.feature.settings.R
@@ -140,6 +142,7 @@ internal fun PlaybackSettingsPage(
         }
 
         SettingsGroup(
+            modifier = Modifier.selectableGroup(),
             title = stringResource(R.string.settings_playback_skip_title),
             footer = stringResource(R.string.settings_playback_skip_footer),
         ) {

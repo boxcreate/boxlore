@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <string name="history_title">Listening history</string>
     <string name="history_back">Back</string>
@@ -63,7 +63,6 @@
     <string name="history_tab_insights">Insights</string>
     <string name="history_more_options">More options</string>
     <string name="history_search_hint">Search episodes and shows</string>
-    <string name="history_search_clear">Clear search</string>
     <string name="history_jump_back_in">Jump back in</string>
     <!-- Opens every in-progress episode. The argument is how many there are. -->
     <string name="history_jump_back_in_all">All %1$d</string>
@@ -297,7 +296,11 @@
     <string name="history_ins_review_in_progress">Review in-progress episodes</string>
     <!-- Little data (only a few days timed) -->
     <string name="history_early_title">Your listening so far</string>
-    <string name="history_early_finished">episodes finished</string>
+    <!-- The count is shown in large type beside these words, so the words carry no number. -->
+    <plurals name="history_early_finished" tools:ignore="ImpliedQuantity">
+        <item quantity="one">episode finished</item>
+        <item quantity="other">episodes finished</item>
+    </plurals>
     <string name="history_early_in_progress">%1$d in progress</string>
     <plurals name="history_early_played_days">
         <item quantity="one">Played on %1$d day this month</item>
@@ -325,6 +328,8 @@
     <string name="history_story_card_of">Card %1$d of %2$d</string>
     <string name="history_story_previous">Previous card</string>
     <string name="history_story_next">Next card</string>
+    <string name="history_story_pause">Pause story</string>
+    <string name="history_story_play">Play story</string>
     <string name="history_story_clock">Listening clock: %1$s</string>
     <string name="history_story_hello_eyebrow">Your month in listening</string>
     <string name="history_story_hello_eyebrow_year">Your month in listening · %1$d</string>

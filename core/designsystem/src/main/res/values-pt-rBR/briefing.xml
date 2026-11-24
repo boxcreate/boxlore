@@ -24,9 +24,9 @@
     <string name="briefing_sources">Fontes</string>
     <string name="briefing_open_sources">Abrir fontes</string>
     <string name="briefing_try_again">Tentar de novo</string>
-    <string name="briefing_pause">Pausar Brief</string>
-    <string name="briefing_resume">Continuar Brief</string>
-    <string name="briefing_listen">Ouvir Brief</string>
+    <string name="briefing_pause">Pausar o Brief</string>
+    <string name="briefing_resume">Continuar o Brief</string>
+    <string name="briefing_listen">Ouvir o Brief</string>
     <string name="briefing_finished">Concluído</string>
     <string name="briefing_default_region">Região padrão do Brief</string>
     <string name="briefing_default_region_description">O Início e o Brief abrem nesta edição. Você pode trocar de edição sem mudar o padrão.</string>
@@ -51,7 +51,7 @@
     <string name="briefing_card_pause">Pausar</string>
     <string name="briefing_card_resume">Continuar</string>
     <string name="briefing_card_listen">Ouvir</string>
-    <string name="briefing_open">Abrir Brief</string>
+    <string name="briefing_open">Abrir o Brief</string>
     <plurals name="briefing_story_count">
         <item quantity="one">%d notícia</item>
         <item quantity="other">%d notícias</item>

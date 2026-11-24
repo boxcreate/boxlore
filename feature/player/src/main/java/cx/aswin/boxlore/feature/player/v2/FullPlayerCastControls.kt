@@ -52,6 +52,7 @@ import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
+import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.player.R
 
 @OptIn(UnstableApi::class)
@@ -320,9 +321,9 @@ private fun CastRouteRow(
         modifier =
         Modifier
             .fillMaxWidth()
+            .expressiveClickable(enabled = enabled, shape = MaterialTheme.shapes.large, onClick = onClick)
             .clip(MaterialTheme.shapes.large)
             .background(containerColor)
-            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

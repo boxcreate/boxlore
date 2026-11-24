@@ -32,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -165,6 +167,7 @@ internal fun FullPlayerCastHero(
                         color = model.colorScheme.surfaceContainerHigh,
                         contentColor = model.colorScheme.onSurface,
                     ) {
+                        val volumeLabel = stringResource(R.string.player_cast_volume)
                         Row(
                             modifier =
                             Modifier
@@ -197,7 +200,7 @@ internal fun FullPlayerCastHero(
                                     minimumVolume = model.route.minimumVolume,
                                     maximumVolume = model.route.maximumVolume,
                                 ),
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1f).semantics { contentDescription = volumeLabel },
                             )
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.VolumeUp,

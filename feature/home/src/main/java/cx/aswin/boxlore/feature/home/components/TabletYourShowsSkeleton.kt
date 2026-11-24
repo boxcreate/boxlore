@@ -30,15 +30,12 @@ internal fun TabletYourShowsSkeleton(subscribedCount: Int, modifier: Modifier) {
     val count = if (subscribedCount == 0) 10 else subscribedCount + if (subscribedCount > 1) 1 else 0
     val background = Modifier.clip(RoundedCornerShape(30.dp)).background(homeMixModuleColor())
     Column(modifier.widthIn(max = 1200.dp).fillMaxWidth().padding(bottom = 16.dp)) {
-        Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            TabletShowPlaceholder(Modifier.width(120.dp).height(24.dp))
-            TabletShowPlaceholder(Modifier.size(32.dp))
-        }
+        YourShowsHeaderSkeleton(tabletPlaceholderBase(), tabletPlaceholderHighlight())
         YourShowsModuleFrame(
             sidebar = boxloreContentWidthDp() >= 672f,
             selectorCount = count,
             background = background,
-            selectors = { TabletSelectorSkeletons(count) },
+            selectors = { TabletSelectorSkeletons(subscribedCount, count) },
             content = {
                 Column(Modifier.padding(top = HomeMixLayout.TopPadding, bottom = HomeMixLayout.BottomPadding)) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = HomeMixLayout.ContentInset).height(HomeMixLayout.HeaderHeight), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -54,15 +51,20 @@ internal fun TabletYourShowsSkeleton(subscribedCount: Int, modifier: Modifier) {
 }
 
 @Composable
-private fun TabletSelectorSkeletons(count: Int) {
+private fun TabletSelectorSkeletons(subscribedCount: Int, count: Int) {
+    // Above the episodes (no sidebar) the loaded picker lays out its covers as on phones.
+    if (LocalYourShowsPickerColumns.current == 0) {
+        YourShowsSelectorSkeletons(subscribedCount, tabletPlaceholderBase(), tabletPlaceholderHighlight())
+        return
+    }
     BoxWithConstraints(Modifier.fillMaxWidth().padding(YourShowsLayout.Padding)) {
         val columns = LocalYourShowsPickerColumns.current.takeIf { it > 0 } ?: ((maxWidth + 8.dp) / (YourShowsLayout.TileWidth + 8.dp)).toInt().coerceAtLeast(1)
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             (0 until count).chunked(columns).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     row.forEach { index ->
-                        Box(Modifier.size(YourShowsLayout.TileWidth).padding(YourShowsLayout.TilePadding)) {
-                            TabletShowPlaceholder(Modifier.size(YourShowsLayout.CoverSize).testTag("home_show_skeleton_$index"))
+                        Box(Modifier.size(YourShowsLayout.TileWidth).testTag("home_show_skeleton_$index").padding(YourShowsLayout.TilePadding)) {
+                            TabletShowPlaceholder(Modifier.size(YourShowsLayout.CoverSize))
                         }
                     }
                 }
@@ -90,7 +92,11 @@ private fun TabletMixSkeletons() {
 
 @Composable
 private fun TabletShowPlaceholder(modifier: Modifier) {
-    val base = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-    val highlight = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
-    Box(modifier.m3Shimmer(base, highlight, RoundedCornerShape(20.dp)))
+    Box(modifier.m3Shimmer(tabletPlaceholderBase(), tabletPlaceholderHighlight(), RoundedCornerShape(20.dp)))
 }
+
+@Composable
+private fun tabletPlaceholderBase() = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+
+@Composable
+private fun tabletPlaceholderHighlight() = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)

@@ -10,8 +10,6 @@
     <string name="library_search_shows">Buscar podcasts…</string>
     <string name="library_search_subscribed_shows">Buscar en los podcasts seguidos…</string>
     <string name="library_search_your_shows">Buscar en tus podcasts</string>
-    <string name="library_close_search">Cerrar búsqueda</string>
-    <string name="library_clear_search">Borrar búsqueda</string>
     <string name="library_list_view">Vista de lista</string>
     <string name="library_grid_view">Vista de cuadrícula</string>
     <string name="library_tab_shows">Podcasts</string>
@@ -40,16 +38,11 @@
     <string name="library_sort_a_to_z">A–Z</string>
     <string name="library_sort_manual">Manual</string>
     <string name="library_sort_chronological">Cronológico</string>
-    <string name="library_sort_smart_sort">Orden inteligente</string>
-    <string name="library_sort_recently_updated_menu">Actualizados recientemente</string>
-    <string name="library_sort_a_to_z_menu">A-Z</string>
-    <string name="library_sort_most_listened_menu">Más escuchados</string>
     <string name="library_sort_recently_updated">Actualizados recientemente</string>
     <string name="library_sort_most_listened">Más escuchados</string>
     <string name="library_sort_most_shows">Más podcasts</string>
     <string name="library_sort_same_as_shows">Igual que los podcasts</string>
     <string name="library_sort_your_order">Tu orden</string>
-    <string name="library_sort_auto_organize_into_folders">Organizar en carpetas automáticamente</string>
     <string name="library_hide_played_episodes">Ocultar episodios escuchados</string>
     <string name="library_sort_and_organize">Ordenar y organizar</string>
     <string name="library_sort_your_shows_description">Podcasts que no están en una carpeta</string>
@@ -96,4 +89,7 @@
     <string name="library_genre_full_religion">Religión y espiritualidad</string>
     <string name="library_genre_full_family">Niños y familia</string>
     <string name="library_genre_full_govt">Gobierno</string>
+    <string name="library_pin_home">Fijar en Inicio</string>
+    <string name="library_unpin_home">Dejar de fijar en Inicio</string>
+    <string name="library_pin_capacity">Puedes fijar hasta %1$d podcasts en Inicio</string>
 </resources>

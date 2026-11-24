@@ -4,7 +4,7 @@
     <string name="briefing_screen_previous_story">Sujet précédent</string>
     <string name="briefing_screen_next_story">Sujet suivant</string>
     <string name="briefing_screen_stories_loading">Chargement des sujets…</string>
-    <string name="briefing_screen_stories_unavailable">Le texte du sujet n’est pas disponible. Vous pouvez quand même écouter le brief.</string>
+    <string name="briefing_screen_stories_unavailable">Le texte du sujet n’est pas disponible. Vous pouvez quand même écouter le Brief.</string>
     <string name="briefing_screen_listen_further">Pour aller plus loin</string>
     <string name="briefing_screen_time_left">%1$s restantes</string>
     <plurals name="briefing_screen_listen_minutes">
@@ -13,4 +13,8 @@
     </plurals>
     <string name="briefing_screen_episode_description">Votre brief d’actu quotidien généré par IA pour %1$s.</string>
     <string name="briefing_screen_sources_heading">Références et sources</string>
+    <!-- TalkBack name of the Brief's seek bar. -->
+    <string name="briefing_screen_seek_name">Position de lecture</string>
+    <!-- TalkBack position on the seek bar: where playback is, then the Brief's length, e.g. "12:03 of 58:00". -->
+    <string name="briefing_screen_seek_position">%1$s sur %2$s</string>
 </resources>
