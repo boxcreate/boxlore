@@ -90,7 +90,7 @@
     <string name="settings_sync_badge_syncing">Syncing...</string>
     <string name="settings_sync_badge_active">Cloud sync active</string>
     <string name="settings_sync_signed_in_as">Signed in as %1$s</string>
-    <string name="settings_sync_sign_in_prompt">Sign in to backup and sync across devices</string>
+    <string name="settings_sync_sign_in_prompt">Sign in to back up and sync across devices</string>
     <string name="settings_sync_signed_out_summary">Back up and sync your library across devices</string>
     <string name="settings_sync_open_account">Open account settings</string>
     <string name="settings_sync_full_backup_summary">Subscriptions, folders, playlists, history, likes, and settings (JSON)</string>
