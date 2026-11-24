@@ -278,6 +278,13 @@ class LibraryViewModel(
                 initialValue = emptySet(),
             )
 
+    /**
+     * Pins [podcastId] to Home, or unpins it. Returns false when Home already has the most pinned
+     * shows ([cx.aswin.boxlore.core.prefs.HomePinnedShows.MAX]), so the screen can say so.
+     */
+    suspend fun toggleHomePin(podcastId: String): Boolean =
+        userPreferencesRepository.toggleHomePinnedPodcastId(podcastId) != cx.aswin.boxlore.core.prefs.HomePinnedShows.ToggleResult.AtCapacity
+
     fun setSubscriptionSort(sort: SubscriptionSort) {
         viewModelScope.launch {
             if (sort == SubscriptionSort.Manual) {

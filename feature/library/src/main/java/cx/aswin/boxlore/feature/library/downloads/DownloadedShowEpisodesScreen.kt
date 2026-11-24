@@ -6,14 +6,17 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -33,18 +36,18 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Queue
+import androidx.compose.material.icons.rounded.QueuePlayNext
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SelectAll
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
@@ -72,28 +75,34 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
+import cx.aswin.boxlore.core.designsystem.components.rememberBoxloreMenuState
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafeContentPadding
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
-import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.downloads.canRetryDownload
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.feature.library.LibraryEpisodeRow
+import cx.aswin.boxlore.feature.library.LibraryRowSelection
 import cx.aswin.boxlore.feature.library.LibraryUiState
 import cx.aswin.boxlore.feature.library.LibraryViewModel
 import cx.aswin.boxlore.feature.library.R
@@ -219,11 +228,14 @@ fun DownloadedShowEpisodesScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (isSelectionMode) {
-                        IconButton(onClick = {
-                            isSelectionMode = false
-                            selectedEpisodeIds.clear()
-                        }) {
-                            Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.library_cancel_selection))
+                        val cancelLabel = stringResource(R.string.library_cancel_selection)
+                        BoxloreTooltip(cancelLabel) {
+                            IconButton(onClick = {
+                                isSelectionMode = false
+                                selectedEpisodeIds.clear()
+                            }) {
+                                Icon(Icons.Rounded.Close, contentDescription = cancelLabel)
+                            }
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -232,25 +244,31 @@ fun DownloadedShowEpisodesScreen(
                             fontWeight = GoogleSansWeight.bold,
                             modifier = Modifier.weight(1f)
                         )
-                        IconButton(onClick = {
-                            if (selectedEpisodeIds.size == showEpisodes.size) {
-                                selectedEpisodeIds.clear()
-                            } else {
-                                selectedEpisodeIds.clear()
-                                selectedEpisodeIds.addAll(showEpisodes.map { it.episodeId })
+                        val selectAllLabel = stringResource(R.string.library_select_all)
+                        BoxloreTooltip(selectAllLabel) {
+                            IconButton(onClick = {
+                                if (selectedEpisodeIds.size == showEpisodes.size) {
+                                    selectedEpisodeIds.clear()
+                                } else {
+                                    selectedEpisodeIds.clear()
+                                    selectedEpisodeIds.addAll(showEpisodes.map { it.episodeId })
+                                }
+                            }) {
+                                Icon(Icons.Rounded.SelectAll, contentDescription = selectAllLabel)
                             }
-                        }) {
-                            Icon(Icons.Rounded.SelectAll, contentDescription = stringResource(R.string.library_select_all))
                         }
-                        IconButton(
-                            onClick = { deleteConfirmSelectedDialog = true },
-                            enabled = selectedEpisodeIds.isNotEmpty()
-                        ) {
-                            Icon(
-                                Icons.Rounded.Delete,
-                                contentDescription = stringResource(R.string.library_delete_selected),
-                                tint = if (selectedEpisodeIds.isNotEmpty()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            )
+                        val deleteLabel = stringResource(R.string.library_delete_selected)
+                        BoxloreTooltip(deleteLabel) {
+                            IconButton(
+                                onClick = { deleteConfirmSelectedDialog = true },
+                                enabled = selectedEpisodeIds.isNotEmpty()
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Delete,
+                                    contentDescription = deleteLabel,
+                                    tint = if (selectedEpisodeIds.isNotEmpty()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                )
+                            }
                         }
                     } else {
                         IconButton(onClick = onBack) {
@@ -284,7 +302,8 @@ fun DownloadedShowEpisodesScreen(
                     LazyColumn(
                         modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode),
                         state = listState,
-                        contentPadding = PaddingValues(bottom = if (isPlayerActive) 150.dp else 80.dp, top = 8.dp),
+                        // Clear of a sideways phone's side bar and cutout; on tablets the list ends just above the player.
+                        contentPadding = boxloreHorizontalSafeContentPadding(PaddingValues(bottom = boxloreContentBottomPadding(if (isPlayerActive) 150.dp else 80.dp), top = 8.dp)),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         // Compact, Space-Efficient Left-Aligned Header Row
@@ -331,71 +350,33 @@ fun DownloadedShowEpisodesScreen(
 
                                     Spacer(modifier = Modifier.height(2.dp))
 
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                    // Real buttons at boxlore's touch size: Play all filled, Delete all outlined in red.
+                                    FlowRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
                                     ) {
-                                        // Play All Pill
-                                        Row(
-                                            modifier = Modifier
-                                                .height(36.dp)
-                                                .expressiveClickable(
-                                                    feedback = ExpressivePressFeedback.Control,
-                                                    shape = RoundedCornerShape(50),
-                                                    onClick = {
-                                                        // A failed download has no audio, so playing skips it.
-                                                        val episodes = showEpisodes.playableDownloads().map { it.toEpisode() }
-                                                        if (episodes.isNotEmpty()) viewModel.playQueue(episodes, firstItem.toPodcast())
-                                                    }
-                                                )
-                                                .background(MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(50))
-                                                .padding(horizontal = 16.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center
+                                        Button(
+                                            onClick = {
+                                                // A failed download has no audio, so playing skips it.
+                                                val episodes = showEpisodes.playableDownloads().map { it.toEpisode() }
+                                                if (episodes.isNotEmpty()) viewModel.playQueue(episodes, firstItem.toPodcast())
+                                            },
+                                            shapes = ButtonDefaults.shapes(),
+                                            modifier = Modifier.heightIn(min = 48.dp).testTag(SHOW_PLAY_ALL_TAG),
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Rounded.PlayArrow,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onPrimary,
-                                                modifier = Modifier.size(18.dp)
-                                            )
+                                            Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                                             Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = stringResource(R.string.library_play_all),
-                                                style = MaterialTheme.typography.labelLarge,
-                                                fontWeight = GoogleSansWeight.bold,
-                                                color = MaterialTheme.colorScheme.onPrimary
-                                            )
+                                            Text(stringResource(R.string.library_play_all))
                                         }
-
-                                        // Delete All Pill
-                                        Row(
-                                            modifier = Modifier
-                                                .height(36.dp)
-                                                .expressiveClickable(
-                                                    feedback = ExpressivePressFeedback.Control,
-                                                    shape = RoundedCornerShape(50),
-                                                    onClick = { deleteConfirmShowDialog = true }
-                                                )
-                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape = RoundedCornerShape(50))
-                                                .background(Color.Transparent)
-                                                .padding(horizontal = 16.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center
+                                        OutlinedButton(
+                                            onClick = { deleteConfirmShowDialog = true },
+                                            shapes = ButtonDefaults.shapes(),
+                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                                            modifier = Modifier.heightIn(min = 48.dp).testTag(SHOW_DELETE_ALL_TAG),
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Rounded.DeleteOutline,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.size(16.dp)
-                                            )
+                                            Icon(Icons.Rounded.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp))
                                             Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = stringResource(R.string.library_delete_all),
-                                                style = MaterialTheme.typography.labelLarge,
-                                                fontWeight = GoogleSansWeight.bold,
-                                                color = MaterialTheme.colorScheme.error
-                                            )
+                                            Text(stringResource(R.string.library_delete_all))
                                         }
                                     }
                                 }
@@ -411,300 +392,25 @@ fun DownloadedShowEpisodesScreen(
 
                         // Episode List with Swipe to Delete
                         items(items = sortedEpisodes, key = { it.episodeId }) { download ->
-                            val isSelected = selectedEpisodeIds.contains(download.episodeId)
-                            var showMenu by remember { mutableStateOf(false) }
-                            // A download that failed stays listed, offering to download it again instead of playing.
-                            val canRetry = download.canRetryDownload()
-
-                            val dismissScope = rememberCoroutineScope()
-                            val dismissState = rememberSwipeToDismissBoxState()
-
-                            SwipeToDismissBox(
-                                state = dismissState,
-                                enableDismissFromStartToEnd = false,
-                                enableDismissFromEndToStart = !isSelectionMode,
-                                onDismiss = { value ->
-                                    if (value == SwipeToDismissBoxValue.EndToStart) {
-                                        swipeToDeleteEpisodeId = download.episodeId
+                            DownloadedEpisodeItem(
+                                download = download,
+                                viewModel = viewModel,
+                                selection = if (isSelectionMode) {
+                                    LibraryRowSelection(download.episodeId in selectedEpisodeIds) { selected ->
+                                        if (selected) selectedEpisodeIds.add(download.episodeId) else selectedEpisodeIds.remove(download.episodeId)
                                     }
-                                    // Keep the row; confirm dialog owns deletion (same as former veto).
-                                    dismissScope.launch { dismissState.reset() }
+                                } else {
+                                    null
                                 },
-                                backgroundContent = {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(MaterialTheme.colorScheme.errorContainer)
-                                            .padding(horizontal = 24.dp),
-                                        contentAlignment = Alignment.CenterEnd
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.DeleteOutline,
-                                            contentDescription = stringResource(R.string.library_delete),
-                                            tint = MaterialTheme.colorScheme.onErrorContainer
-                                        )
-                                    }
-                                }
-                            ) {
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .expressiveClickable(
-                                                shape = RoundedCornerShape(12.dp),
-                                                onLongClickLabel = stringResource(R.string.library_select),
-                                                onLongClick = {
-                                                    isSelectionMode =
-                                                        selectedEpisodeIds.applyLongPressDownloadSelection(
-                                                            isSelectionMode,
-                                                            download.episodeId,
-                                                        )
-                                                },
-                                                onClick = {
-                                                    if (isSelectionMode) {
-                                                        if (selectedEpisodeIds.contains(download.episodeId)) {
-                                                            selectedEpisodeIds.remove(download.episodeId)
-                                                        } else {
-                                                            selectedEpisodeIds.add(download.episodeId)
-                                                        }
-                                                    } else {
-                                                        val episode = download.toEpisode()
-                                                        val podcast = download.toPodcast()
-                                                        viewModel.genericEpisodesClickedCount++
-                                                        onEpisodeClick(episode, podcast)
-                                                    }
-                                                }
-                                            )
-                                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        if (isSelectionMode) {
-                                            Checkbox(
-                                                checked = isSelected,
-                                                onCheckedChange = {
-                                                    if (isSelected) {
-                                                        selectedEpisodeIds.remove(download.episodeId)
-                                                    } else {
-                                                        selectedEpisodeIds.add(download.episodeId)
-                                                    }
-                                                }
-                                            )
-                                        }
-
-                                        // Cover art with download status overlay badges
-                                        Box(modifier = Modifier.size(46.dp)) {
-                                            OptimizedImage(
-            proxyWidth = 240,
-            url = download.episodeImageUrl,
-                                                fallbackUrls = listOf(download.podcastImageUrl),
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .clip(RoundedCornerShape(8.dp)),
-                                                contentScale = ContentScale.Crop
-                                            )
-
-                                            when (download.status) {
-                                                DownloadedEpisodeEntity.STATUS_DOWNLOADING -> {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .fillMaxSize()
-                                                            .background(Color.Black.copy(alpha = 0.4f)),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        CircularProgressIndicator(
-                                                            modifier = Modifier.size(18.dp),
-                                                            strokeWidth = 2.dp,
-                                                            color = MaterialTheme.colorScheme.primary
-                                                        )
-                                                    }
-                                                }
-                                                DownloadedEpisodeEntity.STATUS_QUEUED -> {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .fillMaxSize()
-                                                            .background(Color.Black.copy(alpha = 0.4f)),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Rounded.Queue,
-                                                            contentDescription = stringResource(R.string.library_downloads_status_queued),
-                                                            tint = Color.White,
-                                                            modifier = Modifier.size(16.dp)
-                                                        )
-                                                    }
-                                                }
-                                                DownloadedEpisodeEntity.STATUS_FAILED -> {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .fillMaxSize()
-                                                            .background(Color.Black.copy(alpha = 0.4f)),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Rounded.Info,
-                                                            contentDescription = stringResource(R.string.library_downloads_status_failed),
-                                                            tint = MaterialTheme.colorScheme.error,
-                                                            modifier = Modifier.size(16.dp)
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = download.episodeTitle,
-                                                maxLines = 2,
-                                                overflow = TextOverflow.Ellipsis,
-                                                fontWeight = GoogleSansWeight.semiBold,
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                            val locale = currentLocale()
-                                            val relativeDate = formatRelativeDate(download.publishedDate, locale)?.asString()
-                                            val durationText = if (download.durationMs > 0) {
-                                                LocaleFormats.duration(download.durationMs / 1000 / 60 * 60, locale, LocaleFormats.DurationWidth.NARROW)
-                                            } else {
-                                                null
-                                            }
-                                            val sizeText = formatSize(download.sizeBytes, locale).asString()
-                                            val subText = listOfNotNull(
-                                                relativeDate,
-                                                durationText,
-                                                sizeText
-                                            ).joinToString(" • ")
-
-                                            Text(
-                                                text = subText,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            if (canRetry) {
-                                                Text(
-                                                    text = stringResource(DOWNLOAD_FAILED_LINE),
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.error
-                                                )
-                                            }
-
-                                            // Linear progress loader under text if actively downloading
-                                            if (download.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING) {
-                                                Spacer(modifier = Modifier.height(4.dp))
-                                                LinearProgressIndicator(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(2.dp)
-                                                        .clip(RoundedCornerShape(100.dp)),
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)
-                                                )
-                                            }
-                                        }
-
-                                        if (!isSelectionMode) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                IconButton(
-                                                    onClick = {
-                                                        if (canRetry) {
-                                                            viewModel.retryDownload(download.episodeId)
-                                                        } else {
-                                                            viewModel.playQueue(listOf(download.toEpisode()), download.toPodcast())
-                                                        }
-                                                    },
-                                                    modifier = Modifier.size(32.dp)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = if (canRetry) Icons.Rounded.Refresh else Icons.Rounded.PlayArrow,
-                                                        contentDescription = stringResource(if (canRetry) DOWNLOAD_AGAIN_LABEL else R.string.library_play_episode),
-                                                        tint = MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                }
-                                                Box {
-                                                    IconButton(
-                                                        onClick = { showMenu = true },
-                                                        modifier = Modifier.size(32.dp)
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Rounded.MoreVert,
-                                                            contentDescription = stringResource(R.string.library_options),
-                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                                            modifier = Modifier.size(18.dp)
-                                                        )
-                                                    }
-                                                    DropdownMenu(
-                                                        expanded = showMenu,
-                                                        onDismissRequest = { showMenu = false },
-                                                        shape = RoundedCornerShape(20.dp),
-                                                        offset = DpOffset(x = (-12).dp, y = 4.dp)
-                                                    ) {
-                                                        if (canRetry) {
-                                                            DropdownMenuItem(
-                                                                text = { Text(stringResource(DOWNLOAD_AGAIN_LABEL)) },
-                                                                onClick = {
-                                                                    showMenu = false
-                                                                    viewModel.retryDownload(download.episodeId)
-                                                                },
-                                                                leadingIcon = {
-                                                                    Icon(Icons.Rounded.Refresh, contentDescription = null)
-                                                                }
-                                                            )
-                                                        } else {
-                                                            DropdownMenuItem(
-                                                                text = { Text(stringResource(R.string.library_play)) },
-                                                                onClick = {
-                                                                    showMenu = false
-                                                                    viewModel.playQueue(listOf(download.toEpisode()), download.toPodcast())
-                                                                },
-                                                                leadingIcon = {
-                                                                    Icon(Icons.Rounded.PlayArrow, contentDescription = null)
-                                                                }
-                                                            )
-                                                            DropdownMenuItem(
-                                                                text = { Text(stringResource(R.string.library_play_next)) },
-                                                                onClick = {
-                                                                    showMenu = false
-                                                                    viewModel.addToQueueNext(download.toEpisode(), download.toPodcast())
-                                                                },
-                                                                leadingIcon = {
-                                                                    Icon(Icons.Rounded.PlayArrow, contentDescription = null)
-                                                                }
-                                                            )
-                                                            DropdownMenuItem(
-                                                                text = { Text(stringResource(R.string.library_add_to_queue_menu)) },
-                                                                onClick = {
-                                                                    showMenu = false
-                                                                    viewModel.addToQueue(download.toEpisode(), download.toPodcast())
-                                                                },
-                                                                leadingIcon = {
-                                                                    Icon(Icons.Rounded.Queue, contentDescription = null)
-                                                                }
-                                                            )
-                                                        }
-                                                        DropdownMenuItem(
-                                                            text = { Text(stringResource(R.string.library_remove_download)) },
-                                                            onClick = {
-                                                                showMenu = false
-                                                                swipeToDeleteEpisodeId = download.episodeId
-                                                            },
-                                                            leadingIcon = {
-                                                                Icon(Icons.Rounded.DeleteOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                                                            }
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                                onOpen = {
+                                    viewModel.genericEpisodesClickedCount++
+                                    onEpisodeClick(download.toEpisode(), download.toPodcast())
+                                },
+                                onStartSelection = {
+                                    isSelectionMode = selectedEpisodeIds.applyLongPressDownloadSelection(isSelectionMode, download.episodeId)
+                                },
+                                onRemove = { swipeToDeleteEpisodeId = download.episodeId },
+                            )
                         }
                     }
                 }
@@ -779,3 +485,155 @@ internal val DOWNLOAD_FAILED_LINE: Int = R.string.library_downloads_failed_line
 
 @StringRes
 internal val DOWNLOAD_AGAIN_LABEL: Int = R.string.library_downloads_download_again
+
+/**
+ * One downloaded episode: the shared Library row with its download state on the artwork, a Play (or
+ * Download again) button and a menu, swipe left to remove. In select mode the row ticks as a whole.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DownloadedEpisodeItem(
+    download: DownloadedEpisodeEntity,
+    viewModel: LibraryViewModel,
+    selection: LibraryRowSelection?,
+    onOpen: () -> Unit,
+    onStartSelection: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    // A download that failed stays listed, offering to download it again instead of playing.
+    val canRetry = download.canRetryDownload()
+    val dismissScope = rememberCoroutineScope()
+    val dismissState = rememberSwipeToDismissBoxState()
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = selection == null,
+        onDismiss = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) onRemove()
+            // Keep the row; the confirm dialog owns deletion.
+            dismissScope.launch { dismissState.reset() }
+        },
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 24.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.DeleteOutline,
+                    contentDescription = stringResource(R.string.library_delete),
+                    tint = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+    ) {
+        Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
+            LibraryEpisodeRow(
+                title = download.episodeTitle,
+                artwork = { DownloadArtwork(download) },
+                onClick = onOpen,
+                meta = { DownloadMeta(download, canRetry) },
+                trailing = { DownloadActions(download, canRetry, viewModel, onRemove) },
+                onLongClick = onStartSelection,
+                onLongClickLabel = stringResource(R.string.library_select),
+                selection = selection,
+            )
+        }
+    }
+}
+
+/** The episode's art at the shared row size, with the download's state over it while it isn't ready. */
+@Composable
+private fun DownloadArtwork(download: DownloadedEpisodeEntity) {
+    Box(modifier = Modifier.size(72.dp).clip(RoundedCornerShape(12.dp))) {
+        OptimizedImage(
+            proxyWidth = 240,
+            url = download.episodeImageUrl,
+            fallbackUrls = listOf(download.podcastImageUrl),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+        val overlay: (@Composable () -> Unit)? = when (download.status) {
+            DownloadedEpisodeEntity.STATUS_DOWNLOADING -> {
+                { BoxLoreLoader.CircularWavy(size = 22.dp) }
+            }
+            DownloadedEpisodeEntity.STATUS_QUEUED -> {
+                { Icon(Icons.Rounded.Queue, contentDescription = stringResource(R.string.library_downloads_status_queued), tint = Color.White, modifier = Modifier.size(18.dp)) }
+            }
+            DownloadedEpisodeEntity.STATUS_FAILED -> {
+                { Icon(Icons.Rounded.Info, contentDescription = stringResource(R.string.library_downloads_status_failed), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)) }
+            }
+            else -> null
+        }
+        if (overlay != null) {
+            // A local scrim, only where the state sits on the artwork.
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)), contentAlignment = Alignment.Center) { overlay() }
+        }
+    }
+}
+
+@Composable
+private fun RowScope.DownloadMeta(download: DownloadedEpisodeEntity, canRetry: Boolean) {
+    val locale = currentLocale()
+    val relativeDate = formatRelativeDate(download.publishedDate, locale)?.asString()
+    val durationText = if (download.durationMs > 0) {
+        LocaleFormats.duration(download.durationMs / 1000 / 60 * 60, locale, LocaleFormats.DurationWidth.NARROW)
+    } else {
+        null
+    }
+    val sizeText = formatSize(download.sizeBytes, locale).asString()
+    Text(
+        text = if (canRetry) stringResource(DOWNLOAD_FAILED_LINE) else listOfNotNull(relativeDate, durationText, sizeText).joinToString(" • "),
+        style = MaterialTheme.typography.labelSmall,
+        color = if (canRetry) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+/** Play (or Download again) as a 48dp tonal button, and the episode's menu. */
+@Composable
+private fun DownloadActions(download: DownloadedEpisodeEntity, canRetry: Boolean, viewModel: LibraryViewModel, onRemove: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        FilledTonalIconButton(
+            onClick = {
+                if (canRetry) viewModel.retryDownload(download.episodeId) else viewModel.playQueue(listOf(download.toEpisode()), download.toPodcast())
+            },
+            modifier = Modifier.size(48.dp),
+        ) {
+            Icon(
+                imageVector = if (canRetry) Icons.Rounded.Refresh else Icons.Rounded.PlayArrow,
+                contentDescription = stringResource(if (canRetry) DOWNLOAD_AGAIN_LABEL else R.string.library_play_episode),
+            )
+        }
+        // Keyed by episode, so an open menu stays open when the screen is recreated.
+        val menu = rememberBoxloreMenuState(key = download.episodeId)
+        Box {
+            IconButton(onClick = menu::open) {
+                Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.library_options), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            val downloadAgain = stringResource(DOWNLOAD_AGAIN_LABEL)
+            val play = stringResource(R.string.library_play)
+            val playNext = stringResource(R.string.library_play_next)
+            val addToQueue = stringResource(R.string.library_add_to_queue_menu)
+            val remove = stringResource(R.string.library_remove_download)
+            BoxloreDropdownMenu(menu) {
+                if (canRetry) {
+                    item(downloadAgain, { viewModel.retryDownload(download.episodeId) }, Icons.Rounded.Refresh)
+                } else {
+                    item(play, { viewModel.playQueue(listOf(download.toEpisode()), download.toPodcast()) }, Icons.Rounded.PlayArrow)
+                    item(playNext, { viewModel.addToQueueNext(download.toEpisode(), download.toPodcast()) }, Icons.Rounded.QueuePlayNext)
+                    item(addToQueue, { viewModel.addToQueue(download.toEpisode(), download.toPodcast()) }, Icons.Rounded.Queue)
+                }
+                item(remove, onRemove, Icons.Rounded.DeleteOutline, destructive = true)
+            }
+        }
+    }
+}
+
+/** Test tags for a show's downloads Play all and Delete all buttons. */
+internal const val SHOW_PLAY_ALL_TAG = "downloaded_show_play_all"
+internal const val SHOW_DELETE_ALL_TAG = "downloaded_show_delete_all"

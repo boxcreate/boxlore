@@ -46,8 +46,8 @@
     </plurals>
     <!-- Small badge on a folder; all capitals where the language uses them -->
     <plurals name="library_folder_new_episodes_badge">
-        <item quantity="one">%1$d NOUVEL ÉPISODE</item>
-        <item quantity="other">%1$d NOUVEAUX ÉPISODES</item>
+        <item quantity="one">%1$d NOUVEAU</item>
+        <item quantity="other">%1$d NOUVEAUX</item>
     </plurals>
     <string name="library_folder_empty_tap_to_add">Dossier vide • Appuyez pour ajouter des podcasts</string>
     <string name="library_folder_empty_title">Aucun podcast dans ce dossier</string>
@@ -132,7 +132,6 @@
     <string name="library_auto_organize">Rangement auto</string>
     <string name="library_auto_organize_is_on">Le rangement auto est activé</string>
     <string name="library_auto_organize_turn_on">Activer le rangement auto</string>
-    <string name="library_auto_organize_turn_off">Désactiver le rangement auto</string>
     <string name="library_auto_organize_turn_off_title">Désactiver le rangement auto ?</string>
     <string name="library_auto_organize_turn_off_body">boxlore ne créera plus de nouveaux dossiers par genre. Vos dossiers par genre restent, et les nouveaux podcasts de leur genre continuent d’y être ajoutés.</string>
     <string name="library_auto_organize_turn_off_hint">Pour vous en débarrasser, supprimez le dossier. Ses podcasts restent dans votre bibliothèque.</string>

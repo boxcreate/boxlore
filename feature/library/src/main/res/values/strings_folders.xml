@@ -44,10 +44,10 @@
         <item quantity="one">%1$d new</item>
         <item quantity="other">%1$d new</item>
     </plurals>
-    <!-- Small badge on a folder; all capitals where the language uses them -->
+    <!-- Short banner on a folder's "+N" tile: how many new episodes; all capitals where the language uses them -->
     <plurals name="library_folder_new_episodes_badge">
-        <item quantity="one">%1$d NEW EPISODE</item>
-        <item quantity="other">%1$d NEW EPISODES</item>
+        <item quantity="one">%1$d NEW</item>
+        <item quantity="other">%1$d NEW</item>
     </plurals>
     <string name="library_folder_empty_tap_to_add">Folder is empty • Tap to add shows</string>
     <string name="library_folder_empty_title">No shows in this folder</string>
@@ -132,7 +132,6 @@
     <string name="library_auto_organize">Auto-organize</string>
     <string name="library_auto_organize_is_on">Auto-organize is on</string>
     <string name="library_auto_organize_turn_on">Turn on auto-organize</string>
-    <string name="library_auto_organize_turn_off">Turn off auto-organize</string>
     <string name="library_auto_organize_turn_off_title">Turn off auto-organize?</string>
     <string name="library_auto_organize_turn_off_body">boxlore stops making new genre folders. The genre folders you have stay, and new shows of their genre still join them.</string>
     <string name="library_auto_organize_turn_off_hint">To get rid of one, delete the folder. Its shows stay in your library.</string>

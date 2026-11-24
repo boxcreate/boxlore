@@ -88,7 +88,7 @@ class LibraryLayoutAdaptiveTest {
         val save = compose.onNodeWithText("Save").fetchSemanticsNode().boundsInRoot
         val play = bounds("play_all")
         val close = compose.onNodeWithContentDescription("Close").fetchSemanticsNode().boundsInRoot
-        for ((name, rect) in listOf("Save" to save, "Play All" to play, "Close" to close)) {
+        for ((name, rect) in listOf("Save" to save, "Play all" to play, "Close" to close)) {
             assertTrue("$name ($rect) clear of the cutout", rect.left >= 32f)
             assertTrue("$name ($rect) clear of the side buttons", rect.right <= width - 48f)
         }

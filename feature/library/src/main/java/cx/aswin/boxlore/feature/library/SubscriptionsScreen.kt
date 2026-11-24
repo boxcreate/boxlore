@@ -24,7 +24,6 @@ import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,29 +37,28 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -72,10 +70,13 @@ import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.components.BoxloreSearchField
 import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
 import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
+import cx.aswin.boxlore.core.designsystem.components.discoveryTabSwitcherHeight
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreMiniPlayerVisible
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
-import cx.aswin.boxlore.core.designsystem.components.discoveryTabSwitcherHeight
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -208,6 +209,7 @@ fun SubscriptionsScreen(
             null
         }
 
+        val pinCapacityMessage = stringResource(R.string.library_pin_capacity, cx.aswin.boxlore.core.prefs.HomePinnedShows.MAX)
         val focusRequester = remember { FocusRequester() }
         val focusManager = LocalFocusManager.current
 
@@ -382,9 +384,11 @@ fun SubscriptionsScreen(
             ) { innerPadding ->
                 Box(modifier = Modifier.padding(innerPadding).imePadding()) {
                     when (uiState) {
-                        is LibraryUiState.Loading -> {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator()
+                        is LibraryUiState.Loading -> LibraryLoading {
+                            if (isGridView && pagerState.currentPage == 0) {
+                                LibraryGridSkeleton(columns = boxlorePosterColumns(LocalBoxloreWindowLayout.current, libraryGridWidthDp(), compactColumns = 3, gapDp = 12f))
+                            } else {
+                                LibraryRowsSkeleton()
                             }
                         }
                         is LibraryUiState.Error -> {
@@ -521,11 +525,13 @@ fun SubscriptionsScreen(
             }
 
             // boxlore's notice sits above the bar and mini player on its own; this lifts it over the tabs and Play All too.
-            BoxloreSnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter),
-                extraBottom = (if (isFloatingTabs) discoveryTabSwitcherHeight() + FLOATING_TABS_GAPS else 0.dp) + SNACKBAR_ABOVE_PLAY_ALL,
-            )
+            CompositionLocalProvider(LocalBoxloreMiniPlayerVisible provides (LocalBoxloreMiniPlayerVisible.current || isPlayerActive)) {
+                BoxloreSnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    extraBottom = (if (isFloatingTabs) discoveryTabSwitcherHeight() + FLOATING_TABS_GAPS else 0.dp) + SNACKBAR_ABOVE_PLAY_ALL,
+                )
+            }
 
             if (reorderMode is ReorderMode.Folders || reorderMode is ReorderMode.RootShows) {
                 SubscriptionReorderBar(
@@ -688,6 +694,15 @@ fun SubscriptionsScreen(
                         onUnsubscribePodcast = { podcast ->
                             screenState.confirmUnsubscribeId = podcast.id
                         },
+                        onTogglePin = { podcast ->
+                            coroutineScope.launch {
+                                if (!viewModel.toggleHomePin(podcast.id)) {
+                                    snackbarHostState.showSnackbar(
+                                        pinCapacityMessage,
+                                    )
+                                }
+                            }
+                        },
                         onReorderRootShows = {
                             val unfiledPodcasts = (uiState as? LibraryUiState.Success)?.subscribedPodcasts.orEmpty()
                                 .filter { pod -> folders.none { folder -> pod.id in folder.podcastIds } }
@@ -705,6 +720,7 @@ fun SubscriptionsScreen(
                         },
                     ),
                     onDismissRequest = { screenState.contextMenu = null },
+                    pinnedPodcastIds = pinnedPodcastIds,
                 )
             }
 

@@ -5,7 +5,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -18,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.rounded.SyncAlt
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -35,6 +33,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.PLAYLIST_PER_SHOW_CHOICES
@@ -82,15 +81,13 @@ internal fun PlaylistPlaybackSettings(
             modifier = Modifier.padding(top = 8.dp).semantics { heading() },
         )
         val locale = currentLocale()
-        FlowRow(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PLAYLIST_PER_SHOW_CHOICES.forEach { choice ->
-                FilterChip(
-                    selected = choice == perShowLimit,
-                    onClick = { if (choice != perShowLimit) onChange(mix, choice) },
-                    label = { Text(choice?.let { LocaleFormats.number(it.toLong(), locale) } ?: stringResource(R.string.library_playlist_per_show_none)) },
-                )
-            }
-        }
+        // The app's single-choice control, as for the auto-download episode limit: TalkBack reads it as a choice.
+        val none = stringResource(R.string.library_playlist_per_show_none)
+        ConnectedOptionSelector(
+            options = PLAYLIST_PER_SHOW_CHOICES.map { choice -> choice to (choice?.let { LocaleFormats.number(it.toLong(), locale) } ?: none) },
+            selected = perShowLimit,
+            onSelect = { choice -> if (choice != perShowLimit) onChange(mix, choice) },
+        )
         Text(
             perShowLimit?.let { pluralStringResource(R.plurals.library_playlist_per_show_summary, it, it) }
                 ?: stringResource(R.string.library_playlist_per_show_summary_none),

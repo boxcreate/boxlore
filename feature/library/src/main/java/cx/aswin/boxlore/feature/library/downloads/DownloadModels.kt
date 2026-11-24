@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
@@ -116,31 +118,28 @@ internal fun PodcastListShowCard(
     val locale = currentLocale()
     val countLine = group.episodes.downloadSummary().countLine(locale = locale).asString()
     val latestDownloadedAt = group.latestDownloadedAt
+    // In select mode the whole card ticks and says whether it is selected; otherwise it opens the show.
+    val interaction = if (selection.active) {
+        Modifier.clip(RoundedCornerShape(16.dp)).toggleable(value = selection.selected, role = Role.Checkbox, onValueChange = selection.onSelectedChange)
+    } else {
+        Modifier.expressiveClickable(
+            onClick = onClick,
+            onLongClick = selection.onLongClick,
+            onLongClickLabel = stringResource(R.string.library_select),
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
     Row(
         modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Episode)
             .fillMaxWidth()
-            .expressiveClickable(
-                onClick = {
-                    if (selection.active) {
-                        selection.onSelectedChange(!selection.selected)
-                    } else {
-                        onClick()
-                    }
-                },
-                onLongClick = selection.onLongClick,
-                onLongClickLabel = stringResource(R.string.library_select),
-                shape = RoundedCornerShape(16.dp)
-            )
+            .then(interaction)
             .background(MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(16.dp))
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         if (selection.active) {
-            Checkbox(
-                checked = selection.selected,
-                onCheckedChange = selection.onSelectedChange
-            )
+            Checkbox(checked = selection.selected, onCheckedChange = null)
         }
 
         OptimizedImage(

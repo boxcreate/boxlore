@@ -40,9 +40,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,6 +65,7 @@ import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.library.R
+import kotlin.math.roundToInt
 
 /**
  * Callbacks for interacting with folder cards in the Subscriptions grid.
@@ -462,33 +465,27 @@ private fun FolderOverflowSlotCard(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        // 2×2 mini collage preview of overflow shows
+        // The preview fills by count: one cover fills the tile, two sit side by side, three are a half
+        // and two quarters, four or more a 2x2, so there's never a flat grey half.
         val previewShows = overflowShows.take(4)
-        Column(
+        val cells = overflowMosaicCells(previewShows.size)
+        Layout(
+            content = { previewShows.forEach { MiniCover(it, Modifier) } },
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(1.dp),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(1.dp),
-            ) {
-                previewShows.getOrNull(0)?.let { MiniCover(it, Modifier.weight(1f)) }
-                    ?: Spacer(Modifier.weight(1f))
-                previewShows.getOrNull(1)?.let { MiniCover(it, Modifier.weight(1f)) }
-                    ?: Spacer(Modifier.weight(1f))
+        ) { measurables, constraints ->
+            val width = constraints.maxWidth
+            val height = constraints.maxHeight
+            val gap = 1.dp.roundToPx()
+            val placeables = measurables.mapIndexed { index, measurable ->
+                val cell = cells[index]
+                val cellWidth = (cell.width * width).roundToInt() - if (cell.right < 1f) gap else 0
+                val cellHeight = (cell.height * height).roundToInt() - if (cell.bottom < 1f) gap else 0
+                measurable.measure(Constraints.fixed(cellWidth.coerceAtLeast(0), cellHeight.coerceAtLeast(0)))
             }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(1.dp),
-            ) {
-                previewShows.getOrNull(2)?.let { MiniCover(it, Modifier.weight(1f)) }
-                    ?: Spacer(Modifier.weight(1f))
-                previewShows.getOrNull(3)?.let { MiniCover(it, Modifier.weight(1f)) }
-                    ?: Spacer(Modifier.weight(1f))
+            layout(width, height) {
+                placeables.forEachIndexed { index, placeable ->
+                    placeable.place((cells[index].left * width).roundToInt(), (cells[index].top * height).roundToInt())
+                }
             }
         }
 
@@ -610,3 +607,20 @@ internal fun AutoFolderMark(size: Dp, modifier: Modifier = Modifier) {
         modifier = modifier.size(size),
     )
 }
+
+/** One preview cell of an overflow tile, as fractions of the tile. */
+internal data class MosaicCell(val left: Float, val top: Float, val right: Float, val bottom: Float) {
+    val width: Float get() = right - left
+    val height: Float get() = bottom - top
+}
+
+/** Where an overflow tile's [count] preview covers sit: full, side by side, a half and two quarters, or 2x2. */
+internal fun overflowMosaicCells(count: Int): List<MosaicCell> = when (count) {
+    0 -> emptyList()
+    1 -> listOf(MosaicCell(0f, 0f, 1f, 1f))
+    2 -> listOf(MosaicCell(0f, 0f, HALF, 1f), MosaicCell(HALF, 0f, 1f, 1f))
+    3 -> listOf(MosaicCell(0f, 0f, HALF, 1f), MosaicCell(HALF, 0f, 1f, HALF), MosaicCell(HALF, HALF, 1f, 1f))
+    else -> listOf(MosaicCell(0f, 0f, HALF, HALF), MosaicCell(HALF, 0f, 1f, HALF), MosaicCell(0f, HALF, HALF, 1f), MosaicCell(HALF, HALF, 1f, 1f))
+}
+
+private const val HALF = 0.5f

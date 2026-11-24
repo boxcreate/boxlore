@@ -134,4 +134,7 @@
     <string name="library_genre_full_religion">Religion &amp; Spiritualität</string>
     <string name="library_genre_full_family">Kinder &amp; Familie</string>
     <string name="library_genre_full_govt">Politik</string>
+    <string name="library_pin_home">Auf Start anheften</string>
+    <string name="library_unpin_home">Von Start lösen</string>
+    <string name="library_pin_capacity">Du kannst bis zu %1$d Podcasts auf Start anheften</string>
 </resources>

@@ -7,9 +7,6 @@
     <string name="library_hub_downloads">Descargas</string>
     <string name="library_hub_listening_history">Historial</string>
     <string name="library_hub_playlists">Playlists</string>
-    <string name="library_empty_title">Tu biblioteca está vacía</string>
-    <string name="library_empty_body">Ahí fuera hay un universo enorme.\nEmpieza a explorar.</string>
-    <string name="library_empty_action">Explorar</string>
     <string name="library_find_podcasts">Buscar podcasts</string>
     <string name="library_discover_shows">Descubrir podcasts</string>
     <string name="library_video_badge">Video</string>
@@ -119,4 +116,21 @@
     <string name="library_playlist_remove_show">Quitar %1$s</string>
     <string name="library_playlist_no_followed">Primero sigue algunos podcasts y luego añádelos aquí.</string>
     <string name="library_playlist_all_added">Todos los podcasts que sigues ya están en esta playlist.</string>
+
+    <plurals name="library_hub_episode_count">
+        <item quantity="one">%1$d episodio</item>
+        <item quantity="many">%1$d episodios</item>
+        <item quantity="other">%1$d episodios</item>
+    </plurals>
+    <plurals name="library_hub_playlist_count">
+        <item quantity="one">%1$d playlist</item>
+        <item quantity="many">%1$d playlists</item>
+        <item quantity="other">%1$d playlists</item>
+    </plurals>
+    <string name="library_hub_last_played">Última escucha: %1$s</string>
+    <string name="library_hub_no_downloads">Aún no hay descargas</string>
+    <string name="library_hub_no_likes">Aún no hay episodios que te gusten</string>
+    <string name="library_hub_no_history">Aún no has escuchado nada</string>
+    <string name="library_hub_no_playlists">Aún no hay playlists</string>
+    <string name="library_liked_time_left">quedan %1$s</string>
 </resources>

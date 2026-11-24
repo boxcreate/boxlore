@@ -17,7 +17,6 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
-import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -121,7 +120,7 @@ class LibraryHeaderAdaptiveTest {
             }
             compose.waitForIdle()
             assertTrue("${step.widthDp}x${step.heightDp}: header is slim", card("Subscriptions").top <= 64f + 8f)
-            compose.onNodeWithText("Liked Episodes").assertIsDisplayed()
+            compose.onNodeWithText("Liked episodes").assertIsDisplayed()
         }
     }
 

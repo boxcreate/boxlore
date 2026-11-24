@@ -27,12 +27,12 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.library.FolderSaveParams
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test

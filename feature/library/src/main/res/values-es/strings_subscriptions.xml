@@ -96,4 +96,7 @@
     <string name="library_genre_full_religion">Religión y espiritualidad</string>
     <string name="library_genre_full_family">Niños y familia</string>
     <string name="library_genre_full_govt">Gobierno</string>
+    <string name="library_pin_home">Fijar en Inicio</string>
+    <string name="library_unpin_home">Dejar de fijar en Inicio</string>
+    <string name="library_pin_capacity">Puedes fijar hasta %1$d podcasts en Inicio</string>
 </resources>

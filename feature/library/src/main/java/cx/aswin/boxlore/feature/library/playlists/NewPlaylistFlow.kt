@@ -7,18 +7,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -29,10 +29,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -53,8 +51,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChip
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTextField
 import cx.aswin.boxlore.core.designsystem.components.PLAYLIST_NAME_FIELD_TAG
 import cx.aswin.boxlore.core.designsystem.components.PlaylistCopy
 import cx.aswin.boxlore.core.designsystem.components.PlaylistCover
@@ -277,21 +278,28 @@ private fun PickStep(draft: NewPlaylistDraft, onDraftChange: (NewPlaylistDraft) 
 @Composable
 private fun GenreChips(chips: List<Pair<String, Int>>, draft: NewPlaylistDraft, onDraftChange: (NewPlaylistDraft) -> Unit, shownIds: List<String>) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        // The same genre pills as Subscriptions; the row scrolls out to the screen edges.
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = ChipRowBleed),
+            modifier = Modifier.bleedHorizontally(ChipRowBleed).testTag(PLAYLIST_GENRE_ROW_TAG),
+        ) {
             item(key = "all") {
-                FilterChip(
+                BoxloreFilterChip(
                     selected = draft.genreFilter == null,
                     onClick = { onDraftChange(NewPlaylistFlowLogic.withGenreFilter(draft, null)) },
-                    label = { Text(stringResource(R.string.library_playlist_filter_all)) },
+                    label = stringResource(R.string.library_playlist_filter_all),
+                    showCheckWhenSelected = true,
                 )
             }
             items(chips, key = { it.first }) { (genre, count) ->
                 val item = resolveSubscriptionGenreItem(genre)
-                FilterChip(
+                BoxloreFilterChip(
                     selected = draft.genreFilter == genre,
                     onClick = { onDraftChange(NewPlaylistFlowLogic.withGenreFilter(draft, if (draft.genreFilter == genre) null else genre)) },
-                    label = { Text("${subscriptionGenreDisplayName(genre)} · $count") },
-                    leadingIcon = { Icon(item.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    label = "${subscriptionGenreDisplayName(genre)} · $count",
+                    leadingIcon = item.icon,
+                    showCheckWhenSelected = true,
                 )
             }
         }
@@ -334,11 +342,10 @@ private fun FinishStep(draft: NewPlaylistDraft, onDraftChange: (NewPlaylistDraft
                     Text(PlaylistCopy.showCount(draft.pickedIds.size).asString(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            OutlinedTextField(
+            BoxloreTextField(
                 value = draft.name,
                 onValueChange = { onDraftChange(NewPlaylistFlowLogic.withName(draft, it.take(PLAYLIST_NAME_MAX_LENGTH), findExactGenreIconKey(it))) },
-                label = { Text(stringResource(PlaylistCopy.NAME_LABEL)) },
-                singleLine = true,
+                label = stringResource(PlaylistCopy.NAME_LABEL),
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
                 modifier = Modifier.fillMaxWidth().testTag(PLAYLIST_NAME_FIELD_TAG),
             )
@@ -405,3 +412,16 @@ private const val SuggestionTones = 3
 
 internal const val NEW_PLAYLIST_FLOW_TAG = "new_playlist_flow"
 internal const val PLAYLIST_MORE_ICONS_TAG = "playlist_more_icons"
+
+/** The grid's side padding, which the genre row reaches past so it scrolls to the screen edges. */
+private val ChipRowBleed = 16.dp
+
+/** Widens this element by [amount] on each side, past its parent's padding. */
+private fun Modifier.bleedHorizontally(amount: Dp): Modifier = layout { measurable, constraints ->
+    val extra = amount.roundToPx() * 2
+    val placeable = measurable.measure(constraints.copy(minWidth = constraints.minWidth + extra, maxWidth = constraints.maxWidth + extra))
+    layout(placeable.width - extra, placeable.height) { placeable.place(-extra / 2, 0) }
+}
+
+/** The New playlist genre row, for tests. */
+internal const val PLAYLIST_GENRE_ROW_TAG = "playlist_genre_row"

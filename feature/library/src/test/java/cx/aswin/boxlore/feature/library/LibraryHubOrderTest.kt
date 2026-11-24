@@ -69,7 +69,7 @@ class LibraryHubOrderTest {
         for (layout in layouts) {
             compose.runOnIdle { window.value = layout }
             val playlists = card("Playlists").top
-            for (other in listOf("Subscriptions", "Liked Episodes", "Downloads", "Listening History")) {
+            for (other in listOf("Subscriptions", "Liked episodes", "Downloads", "Listening history")) {
                 assertTrue("$other should sit above Playlists at ${layout.widthDp}dp", card(other).top < playlists)
             }
         }
@@ -81,7 +81,7 @@ class LibraryHubOrderTest {
         for (phone in listOf(BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_SMALL)) {
             compose.runOnIdle { window.value = phone }
             val subscriptions = card("Subscriptions")
-            val liked = card("Liked Episodes")
+            val liked = card("Liked episodes")
             // The large header (152dp) and the grid's 8dp top padding come first.
             assertEquals(160f, subscriptions.top)
             assertEquals(16f, subscriptions.left)

@@ -4,17 +4,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -25,14 +26,14 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -101,16 +102,17 @@ internal fun AutoOrganizePage(
                     }
                     AutoOrganizeLookChoice(look.fixedSize, onFixedLookChange, look.tileShowsCovers, onCoversChange)
                     if (genreFolders.isNotEmpty()) {
-                        OutlinedButton(onClick = actions.onApplyToAll) {
-                            Text(text = applyToAllLabel(genreFolders.size).asString())
-                        }
+                        // What Apply does comes before the button; the switch at the top is the one way to turn it off.
                         Text(
                             text = stringResource(R.string.library_auto_organize_apply_note),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.testTag(AUTO_ORGANIZE_APPLY_NOTE_TAG),
                         )
+                        OutlinedButton(onClick = actions.onApplyToAll) {
+                            Text(text = applyToAllLabel(genreFolders.size).asString())
+                        }
                     }
-                    TextButton(onClick = actions.onTurnOff) { Text(text = stringResource(R.string.library_auto_organize_turn_off)) }
                 } else {
                     AutoOrganizeSetupContent(podcasts, folders, look.fixedSize, onFixedLookChange, look.tileShowsCovers, onCoversChange)
                 }
@@ -131,8 +133,14 @@ private fun AutoOrganizeStatusCard(genreFolderCount: Int, onTurnOff: () -> Unit)
         color = MaterialTheme.colorScheme.primaryContainer,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
     ) {
-        val autoOrganizeLabel = stringResource(R.string.library_auto_organize)
-        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        // The whole row is the switch, so TalkBack reads it once and any tap on it turns auto-organize off.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(value = true, role = Role.Switch, onValueChange = { if (!it) onTurnOff() })
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = stringResource(R.string.library_auto_organize_is_on), style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold)
                 Text(
@@ -141,11 +149,7 @@ private fun AutoOrganizeStatusCard(genreFolderCount: Int, onTurnOff: () -> Unit)
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Switch(
-                checked = true,
-                onCheckedChange = { if (!it) onTurnOff() },
-                modifier = Modifier.semantics { contentDescription = autoOrganizeLabel },
-            )
+            Switch(checked = true, onCheckedChange = null)
         }
     }
 }
@@ -193,3 +197,6 @@ private fun GenreFolderList(folders: List<SubscriptionFolder>, onOpenFolder: (St
         }
     }
 }
+
+/** Auto-organize's note on what Apply to all does, for tests. */
+internal const val AUTO_ORGANIZE_APPLY_NOTE_TAG = "auto_organize_apply_note"

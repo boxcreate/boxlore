@@ -134,4 +134,7 @@
     <string name="library_genre_full_religion">Religion et spiritualité</string>
     <string name="library_genre_full_family">Enfants et famille</string>
     <string name="library_genre_full_govt">Politique</string>
+    <string name="library_pin_home">Épingler sur l’accueil</string>
+    <string name="library_unpin_home">Retirer de l’accueil</string>
+    <string name="library_pin_capacity">Vous pouvez épingler jusqu’à %1$d podcasts sur l’accueil</string>
 </resources>

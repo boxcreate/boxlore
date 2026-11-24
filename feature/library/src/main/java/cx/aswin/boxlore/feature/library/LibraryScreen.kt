@@ -4,10 +4,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,21 +14,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.DownloadDone
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Videocam
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
@@ -40,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -47,13 +38,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -63,9 +54,10 @@ import cx.aswin.boxlore.core.designsystem.components.TopBarUtilityActions
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
-import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
@@ -89,6 +81,7 @@ fun LibraryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val homeShortcutsInLibrary by viewModel.homeShortcutsInLibrary.collectAsStateWithLifecycle()
+    val lastSeenEpisodes by viewModel.lastSeenEpisodes.collectAsStateWithLifecycle()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
@@ -128,6 +121,7 @@ fun LibraryScreen(
             onNavigateToHistory()
         },
         showHomeShortcuts = homeShortcutsInLibrary,
+        lastSeenEpisodes = lastSeenEpisodes,
         playlists = playlists?.copy(onClick = {
             viewModel.hubNavigatedTo = "playlists"
             playlists.onClick()
@@ -169,6 +163,7 @@ fun LibraryContent(
     onSettingsClick: () -> Unit = {},
     onSettingsLongClick: () -> Unit = {},
     playlists: LibraryPlaylistsCard? = null,
+    lastSeenEpisodes: Map<String, String> = emptyMap(),
 ) {
     // One grid state for every window, so folding or unfolding keeps the hub where it was.
     val gridState = rememberLazyGridState()
@@ -212,16 +207,7 @@ fun LibraryContent(
         },
     ) { innerPadding ->
         when (uiState) {
-            is LibraryUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
+            is LibraryUiState.Loading -> LibraryLoading(Modifier.padding(innerPadding)) { LibraryHubSkeleton() }
             is LibraryUiState.Error -> {
                 Box(
                     modifier = Modifier
@@ -238,39 +224,56 @@ fun LibraryContent(
                 destinations = LibraryHubDestinations(onNavigateToSubscriptions, onNavigateToLiked, onNavigateToDownloads, onNavigateToHistory),
                 modifier = Modifier.padding(innerPadding),
                 playlists = playlists,
+                lastSeenEpisodes = lastSeenEpisodes,
             )
         }
     }
 }
 
+/**
+ * A hub card: its title and a short [status] line bottom-start, the section's artwork as a small
+ * collage at the end, and its icon in the top corner. An empty section ([images] empty) shows a
+ * medallion in the card's first shape instead of the collage and corner icon. The press follows the
+ * card's rounded shape.
+ */
 @Composable
+@Suppress("LongParameterList") // The card's look and its one action.
 fun LibraryMenuCard(
     title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     onClick: () -> Unit,
     containerColor: Color,
     images: List<String> = emptyList(),
-    shapes: List<androidx.compose.ui.graphics.Shape> = emptyList()
+    shapes: List<Shape> = emptyList(),
+    status: String? = null,
+    contentColor: Color = contentColorFor(containerColor),
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = containerColor),
+    val shape = RoundedCornerShape(HubCardCorner)
+    // On a sideways phone or a wide split half the collage sits at the card's end, not mid-card.
+    val wideCompact = !LocalBoxloreWindowLayout.current.usesTabletLayout && boxloreContentWidthDp() > PHONE_MAX_WIDTH_DP
+    val artwork = images.filter(String::isNotEmpty)
+    Surface(
+        color = containerColor,
+        contentColor = contentColor,
+        shape = shape,
         modifier = Modifier
             .fillMaxWidth()
             .boxloreCardWidth(BoxloreCardFamily.Utility)
-            .height(120.dp)
-            .expressiveClickable(onClick = onClick)
+            .height(HubCardHeight)
+            .expressiveClickable(shape = shape, onClick = onClick),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Collage Background (Right Side)
-            if (images.isNotEmpty()) {
+            if (artwork.isEmpty()) {
+                EmptyMedallion(icon, shapes.firstOrNull() ?: ExpressiveShapes.Circle, Modifier.align(Alignment.CenterEnd).padding(end = 24.dp))
+            } else {
                 Box(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
-                        .padding(end = 16.dp)
+                        .padding(end = CollageEndPadding)
                         .fillMaxHeight()
-                        .fillMaxWidth(0.5f) // Take up half the card width
+                        .then(if (wideCompact) Modifier.width(CollageWidth) else Modifier.fillMaxWidth(0.5f)),
                 ) {
-                    LibraryCardCollage(images = images, shapes = shapes)
+                    LibraryCardCollage(images = artwork, shapes = shapes)
                 }
 
                 // Scrim to ensure text readability if images slide under text
@@ -288,24 +291,38 @@ fun LibraryMenuCard(
                             )
                         )
                 )
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .size(32.dp)
+                )
             }
 
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = GoogleSansWeight.bold,
+            Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(16.dp)
-            )
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-                    .size(32.dp)
-            )
+                    .padding(16.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = GoogleSansWeight.bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (status != null) {
+                    Text(
+                        text = status,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.testTag(HUB_CARD_STATUS_TAG),
+                    )
+                }
+            }
         }
     }
 }
@@ -354,73 +371,40 @@ private fun LibraryCardCollage(
                         rotationZ = rotation
                     }
                     .clip(shape)
-                    .border(2.dp, MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), shape)
+                    .border(2.dp, MaterialTheme.colorScheme.surface, shape)
             )
         }
     }
 }
 
+/** An empty section's mark: the section icon on a solid medallion in the card's own shape. */
 @Composable
-fun ExpressiveSolarSystemEmptyState(
-    title: String = stringResource(R.string.library_empty_title),
-    description: String = stringResource(R.string.library_empty_body),
-    icon: ImageVector = Icons.Rounded.AutoAwesome,
-    actionText: String? = stringResource(R.string.library_empty_action),
-    modifier: Modifier = Modifier.verticalScroll(rememberScrollState()),
-    onExploreClick: () -> Unit = {}
-) {
-    Column(
+private fun EmptyMedallion(icon: ImageVector, shape: Shape, modifier: Modifier) {
+    val fill = if (LocalEffectiveDarkTheme.current) MaterialTheme.colorScheme.surfaceContainerLowest else MaterialTheme.colorScheme.surface
+    Box(
         modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 32.dp)
-            .padding(bottom = 150.dp, top = 32.dp), // Extra bottom padding to avoid mini player
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .size(MedallionSize)
+            .clip(shape)
+            .background(fill)
+            .testTag(HUB_CARD_MEDALLION_TAG),
+        contentAlignment = Alignment.Center,
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = GoogleSansWeight.bold,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = description,
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        if (!actionText.isNullOrEmpty()) {
-            Spacer(modifier = Modifier.height(48.dp))
-
-            Box(
-                modifier = Modifier
-                    .height(56.dp)
-                    .fillMaxWidth()
-                    .padding(horizontal = 48.dp)
-                    .expressiveClickable(
-                        feedback = ExpressivePressFeedback.Control,
-                        shape = RoundedCornerShape(28.dp),
-                        onClick = onExploreClick
-                    )
-                    .background(MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(28.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = actionText,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = GoogleSansWeight.bold
-                )
-            }
-        }
+        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(28.dp))
     }
 }
+
+private val HubCardHeight = 120.dp
+private val HubCardCorner = 24.dp
+private val MedallionSize = 64.dp
+private val CollageWidth = 160.dp
+
+/** The collage keeps clear of the corner icon. */
+private val CollageEndPadding = 56.dp
+private const val PHONE_MAX_WIDTH_DP = 430f
+
+/** Test tags for a hub card's status line and an empty section's medallion. */
+internal const val HUB_CARD_STATUS_TAG = "library_hub_card_status"
+internal const val HUB_CARD_MEDALLION_TAG = "library_hub_card_medallion"
 
 /**
  * Unified Card Style matching ExploreScreen.kt

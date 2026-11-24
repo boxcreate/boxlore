@@ -68,7 +68,7 @@ class LibraryPlaybackLayoutTest {
             val action = compose.onNodeWithTag("play_all").fetchSemanticsNode().boundsInRoot
             assertTrue(list.height > 400f)
             assertTrue(list.bottom <= action.top)
-            compose.onNodeWithText("Play All").performClick()
+            compose.onNodeWithText("Play all").performClick()
         }
         assertEquals(2, plays)
     }
@@ -109,7 +109,7 @@ class LibraryPlaybackLayoutTest {
                 val list = compose.onNodeWithTag("episodes").fetchSemanticsNode().boundsInRoot
                 assertTrue("Play All sits under the list at ${step.widthDp}x${step.heightDp}", action.top >= list.bottom)
             }
-            compose.onAllNodesWithText("Play All")[0].performClick()
+            compose.onAllNodesWithText("Play all")[0].performClick()
         }
         assertEquals(there.size + back.size, plays)
     }

@@ -17,6 +17,10 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Podcasts
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -34,22 +38,23 @@ import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
-import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
+import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.text.UiText
-import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
+import cx.aswin.boxlore.feature.library.LibraryEmptyContent
+import cx.aswin.boxlore.feature.library.LibraryEmptyState
 import cx.aswin.boxlore.feature.library.LibraryPlaybackLayout
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.library.PlayAllFab
 import cx.aswin.boxlore.feature.library.R
-import cx.aswin.boxlore.feature.library.libraryGridWidthDp
-import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.feature.library.SubscriptionSort
+import cx.aswin.boxlore.feature.library.libraryGridWidthDp
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
 import sh.calvin.reorderable.rememberReorderableLazyGridState
@@ -156,11 +161,17 @@ internal fun ShowsTabContent(
     actions: ShowsTabActions,
 ) {
     if (podcasts.isEmpty()) {
-        ExpressiveSolarSystemEmptyState(
-            title = stringResource(R.string.library_subscriptions_empty_title),
-            description = stringResource(R.string.library_subscriptions_empty_body),
-            actionText = stringResource(R.string.library_find_podcasts),
-            onExploreClick = actions.onExploreClick,
+        LibraryEmptyState(
+            content = LibraryEmptyContent(
+                title = stringResource(R.string.library_subscriptions_empty_title),
+                body = stringResource(R.string.library_subscriptions_empty_body),
+                icon = Icons.Rounded.Podcasts,
+                shape = ExpressiveShapes.Circle,
+                actionText = stringResource(R.string.library_find_podcasts),
+            ),
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            onAction = actions.onExploreClick,
+            modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
         )
         return
     }
@@ -500,21 +511,11 @@ internal fun LatestTabContent(
         when {
             allWithLatest.isEmpty() ->
                 PullableEmptyState {
-                    ExpressiveSolarSystemEmptyState(
-                        title = stringResource(R.string.library_latest_empty_title),
-                        description = stringResource(R.string.library_latest_empty_body),
-                        actionText = stringResource(R.string.library_discover_shows),
-                        onExploreClick = actions.onExploreClick,
-                    )
+                    LatestEmptyState(R.string.library_latest_empty_title, R.string.library_latest_empty_body, actions.onExploreClick)
                 }
             episodePodcasts.isEmpty() ->
                 PullableEmptyState {
-                    ExpressiveSolarSystemEmptyState(
-                        title = stringResource(R.string.library_latest_all_hidden_title),
-                        description = stringResource(R.string.library_latest_all_hidden_body),
-                        actionText = stringResource(R.string.library_discover_shows),
-                        onExploreClick = actions.onExploreClick,
-                    )
+                    LatestEmptyState(R.string.library_latest_all_hidden_title, R.string.library_latest_all_hidden_body, actions.onExploreClick)
                 }
             else ->
                 LatestEpisodesList(
@@ -700,3 +701,20 @@ private fun showsBottomPadding(floatingTabsClearance: Dp): Dp =
     if (LocalBoxloreWindowLayout.current.usesTabletLayout) boxloreContentBottomPadding(PHONE_SHOWS_BOTTOM) + floatingTabsClearance else PHONE_SHOWS_BOTTOM
 
 private val PHONE_SHOWS_BOTTOM = 180.dp
+
+/** New Episodes with nothing to list: the section's sparkle in a puffy medallion. */
+@Composable
+private fun LatestEmptyState(@androidx.annotation.StringRes title: Int, @androidx.annotation.StringRes body: Int, onExplore: () -> Unit) {
+    LibraryEmptyState(
+        content = LibraryEmptyContent(
+            title = stringResource(title),
+            body = stringResource(body),
+            icon = Icons.Rounded.AutoAwesome,
+            shape = ExpressiveShapes.Puffy,
+            actionText = stringResource(R.string.library_discover_shows),
+        ),
+        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        onAction = onExplore,
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
+    )
+}

@@ -19,11 +19,11 @@ import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,23 +53,29 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
+import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.DownloadsSortOrder
-import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
+import cx.aswin.boxlore.feature.library.LibraryBlockSkeleton
+import cx.aswin.boxlore.feature.library.LibraryEmptyContent
+import cx.aswin.boxlore.feature.library.LibraryEmptyState
 import cx.aswin.boxlore.feature.library.LibraryLargeTitle
+import cx.aswin.boxlore.feature.library.LibraryLoading
 import cx.aswin.boxlore.feature.library.LibraryPlaybackLayout
-import cx.aswin.boxlore.feature.library.rememberLibraryHeaderScrollBehavior
-import cx.aswin.boxlore.feature.library.rememberLibraryHeaderState
+import cx.aswin.boxlore.feature.library.LibraryRowsSkeleton
 import cx.aswin.boxlore.feature.library.LibraryUiState
 import cx.aswin.boxlore.feature.library.LibraryViewModel
 import cx.aswin.boxlore.feature.library.PlayAllFab
 import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderScrollBehavior
+import cx.aswin.boxlore.feature.library.rememberLibraryHeaderState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,37 +178,46 @@ fun DownloadedEpisodesScreen(
                             )
                         },
                         navigationIcon = {
-                            IconButton(onClick = {
-                                isSelectionMode = false
-                                selectedPodcastIds.clear()
-                            }) {
-                                Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.library_cancel_selection))
+                            val cancelLabel = stringResource(R.string.library_cancel_selection)
+                            BoxloreTooltip(cancelLabel) {
+                                IconButton(onClick = {
+                                    isSelectionMode = false
+                                    selectedPodcastIds.clear()
+                                }) {
+                                    Icon(Icons.Rounded.Close, contentDescription = cancelLabel)
+                                }
                             }
                         },
                         actions = {
-                            IconButton(onClick = {
-                                if (selectedPodcastIds.size == sortedGroups.size) {
-                                    selectedPodcastIds.clear()
-                                } else {
-                                    selectedPodcastIds.clear()
-                                    selectedPodcastIds.addAll(sortedGroups.map { it.podcastId })
+                            val selectAllLabel = stringResource(R.string.library_select_all)
+                            BoxloreTooltip(selectAllLabel) {
+                                IconButton(onClick = {
+                                    if (selectedPodcastIds.size == sortedGroups.size) {
+                                        selectedPodcastIds.clear()
+                                    } else {
+                                        selectedPodcastIds.clear()
+                                        selectedPodcastIds.addAll(sortedGroups.map { it.podcastId })
+                                    }
+                                }) {
+                                    Icon(Icons.Rounded.SelectAll, contentDescription = selectAllLabel)
                                 }
-                            }) {
-                                Icon(Icons.Rounded.SelectAll, contentDescription = stringResource(R.string.library_select_all))
                             }
+                            val deleteLabel = stringResource(R.string.library_delete_selected)
+                            BoxloreTooltip(deleteLabel) {
                             IconButton(
                                 onClick = { deleteConfirmSelectedDialog = true },
                                 enabled = selectedPodcastIds.isNotEmpty()
                             ) {
                                 Icon(
                                     Icons.Rounded.Delete,
-                                    contentDescription = stringResource(R.string.library_delete_selected),
+                                    contentDescription = deleteLabel,
                                     tint = if (selectedPodcastIds.isNotEmpty()) {
                                         MaterialTheme.colorScheme.error
                                     } else {
                                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                     }
                                 )
+                            }
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
@@ -283,17 +298,39 @@ fun DownloadedEpisodesScreen(
     ) { innerPadding ->
         LibraryPlaybackLayout(modifier = Modifier.padding(innerPadding).boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize(), content = {
             when (uiState) {
-                is LibraryUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                is LibraryUiState.Loading -> LibraryLoading {
+                    LibraryRowsSkeleton(artwork = 56.dp, rows = 3, leading = { LibraryBlockSkeleton(height = 80.dp) })
                 }
                 is LibraryUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(stringResource(R.string.library_downloads_error_loading))
                     }
                 }
-                is LibraryUiState.Success -> {
+                is LibraryUiState.Success -> if (downloads.isEmpty()) {
+                    // Smart Downloads, then the empty page centred in the space under it (it scrolls in a short window).
+                    Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Episode).padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
+                        SmartDownloadsDashboardCard(
+                            userPrefs = userPrefs,
+                            downloads = downloads,
+                            onSettingsClick = onSettingsClick,
+                            onSyncNow = onSyncNow,
+                            isSyncing = isSyncing
+                        )
+                        LibraryEmptyState(
+                            content = LibraryEmptyContent(
+                                title = stringResource(R.string.library_downloads_empty_title),
+                                body = stringResource(if (isOffline) R.string.library_downloads_empty_offline_body else R.string.library_downloads_empty_body),
+                                icon = if (isOffline) Icons.Rounded.CloudOff else Icons.Rounded.DownloadDone,
+                                shape = ExpressiveShapes.Hexagon,
+                                actionText = if (isOffline) null else stringResource(R.string.library_find_podcasts),
+                                secondaryAction = true,
+                            ),
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            onAction = onExploreClick,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                } else {
                     LazyColumn(
                         state = listState,
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = if (LocalBoxloreWindowLayout.current.usesTabletLayout) 24.dp else listBottomPadding, top = 8.dp),
@@ -311,59 +348,40 @@ fun DownloadedEpisodesScreen(
                             )
                         }
 
-                        if (downloads.isEmpty()) {
-                            item {
-                                val emptyTitle = stringResource(R.string.library_downloads_empty_title)
-                                val emptyDescription = if (isOffline) {
-                                    stringResource(R.string.library_downloads_empty_offline_body)
-                                } else {
-                                    stringResource(R.string.library_downloads_empty_body)
-                                }
-                                ExpressiveSolarSystemEmptyState(
-                                    title = emptyTitle,
-                                    description = emptyDescription,
-                                    icon = Icons.Rounded.CloudOff,
-                                    actionText = if (isOffline) null else stringResource(R.string.library_find_podcasts),
-                                    modifier = Modifier,
-                                    onExploreClick = onExploreClick
-                                )
-                            }
-                        } else {
-                            items(items = sortedGroups, key = { it.podcastId }) { group ->
-                                val isSelected = group.podcastId in selectedPodcastIds
-                                PodcastListShowCard(
-                                    group = group,
-                                    onClick = {
-                                        onPodcastShowClick(group.podcastId, group.podcastName)
-                                    },
-                                    onPlayClick = {
-                                        // A failed download has no audio, so playing skips it.
-                                        val playable = group.episodes.playableDownloads()
-                                        if (playable.isNotEmpty()) {
-                                            viewModel.playQueue(playable.map { it.toEpisode() }, playable.first().toPodcast())
+                        items(items = sortedGroups, key = { it.podcastId }) { group ->
+                            val isSelected = group.podcastId in selectedPodcastIds
+                            PodcastListShowCard(
+                                group = group,
+                                onClick = {
+                                    onPodcastShowClick(group.podcastId, group.podcastName)
+                                },
+                                onPlayClick = {
+                                    // A failed download has no audio, so playing skips it.
+                                    val playable = group.episodes.playableDownloads()
+                                    if (playable.isNotEmpty()) {
+                                        viewModel.playQueue(playable.map { it.toEpisode() }, playable.first().toPodcast())
+                                    }
+                                },
+                                selection =
+                                DownloadShowCardSelection(
+                                    active = isSelectionMode,
+                                    selected = isSelected,
+                                    onSelectedChange = { selected ->
+                                        if (selected) {
+                                            selectedPodcastIds.add(group.podcastId)
+                                        } else {
+                                            selectedPodcastIds.remove(group.podcastId)
                                         }
                                     },
-                                    selection =
-                                    DownloadShowCardSelection(
-                                        active = isSelectionMode,
-                                        selected = isSelected,
-                                        onSelectedChange = { selected ->
-                                            if (selected) {
-                                                selectedPodcastIds.add(group.podcastId)
-                                            } else {
-                                                selectedPodcastIds.remove(group.podcastId)
-                                            }
-                                        },
-                                        onLongClick = {
-                                            isSelectionMode =
-                                                selectedPodcastIds.applyLongPressDownloadSelection(
-                                                    isSelectionMode,
-                                                    group.podcastId,
-                                                )
-                                        },
-                                    ),
-                                )
-                            }
+                                    onLongClick = {
+                                        isSelectionMode =
+                                            selectedPodcastIds.applyLongPressDownloadSelection(
+                                                isSelectionMode,
+                                                group.podcastId,
+                                            )
+                                    },
+                                ),
+                            )
                         }
                     }
                 }

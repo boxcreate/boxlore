@@ -7,13 +7,15 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Podcasts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -21,7 +23,10 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.model.isLatestEpisodeNew
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 
 /** The hub's cards in order, keyed so a window change keeps the card in view. */
 internal object LibraryHubKeys {
@@ -44,7 +49,9 @@ internal fun LibraryHubGrid(
     destinations: LibraryHubDestinations,
     modifier: Modifier,
     playlists: LibraryPlaylistsCard? = null,
+    lastSeenEpisodes: Map<String, String> = emptyMap(),
 ) {
+    val status = rememberLibraryHubStatus(state, lastSeenEpisodes)
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     LazyVerticalGrid(
         columns = GridCells.Fixed(if (tablet && boxloreContentWidthDp() >= TWO_COLUMNS_FROM_DP) 2 else 1),
@@ -58,11 +65,13 @@ internal fun LibraryHubGrid(
         item(key = LibraryHubKeys.SUBSCRIPTIONS) {
             LibraryMenuCard(
                 title = stringResource(R.string.library_hub_subscriptions),
-                icon = Icons.Rounded.Add,
+                // A plain section icon: the card opens the list, it doesn't add a show.
+                icon = Icons.Rounded.Podcasts,
                 onClick = destinations.subscriptions,
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 images = state.subscribedPodcasts.take(3).map { it.imageUrl },
                 shapes = listOf(ExpressiveShapes.Circle, ExpressiveShapes.Puffy, ExpressiveShapes.Diamond),
+                status = status.subscriptions,
             )
         }
         item(key = LibraryHubKeys.LIKED) {
@@ -73,6 +82,7 @@ internal fun LibraryHubGrid(
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 images = state.likedEpisodes.take(3).map { it.episodeImageUrl ?: it.podcastImageUrl ?: "" },
                 shapes = listOf(ExpressiveShapes.Heart, ExpressiveShapes.Star, ExpressiveShapes.SoftBurst),
+                status = status.liked,
             )
         }
         item(key = LibraryHubKeys.DOWNLOADS) {
@@ -83,6 +93,7 @@ internal fun LibraryHubGrid(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 images = state.downloadedEpisodes.take(3).map { it.episodeImageUrl ?: it.podcastImageUrl ?: "" },
                 shapes = listOf(ExpressiveShapes.Hexagon, ExpressiveShapes.Gem, ExpressiveShapes.Cookie4),
+                status = status.downloads,
             )
         }
         item(key = LibraryHubKeys.HISTORY) {
@@ -93,6 +104,7 @@ internal fun LibraryHubGrid(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 images = state.recentHistory.take(3).map { it.episodeImageUrl ?: it.podcastImageUrl ?: "" },
                 shapes = listOf(ExpressiveShapes.Circle, ExpressiveShapes.Burst, ExpressiveShapes.Sunny),
+                status = status.history,
             )
         }
         playlists?.let { card ->
@@ -114,3 +126,39 @@ private const val TWO_COLUMNS_FROM_DP = 640f
 
 /** Phones: room under the last card for the floating bar and mini player. */
 private val PHONE_BOTTOM_PADDING = 180.dp
+
+/** Each hub card's status line. */
+internal data class LibraryHubStatus(val subscriptions: String, val liked: String, val downloads: String, val history: String)
+
+/**
+ * What each hub card says is inside: shows and how many have a new episode (the same NEW rule as
+ * Subscriptions), liked episodes, downloaded episodes, and when the listener last played something.
+ * Worked out when the lists change, never per playback tick.
+ */
+@Composable
+internal fun rememberLibraryHubStatus(state: LibraryUiState.Success, lastSeenEpisodes: Map<String, String>): LibraryHubStatus {
+    val newCount = remember(state.subscribedPodcasts, lastSeenEpisodes) {
+        state.subscribedPodcasts.count { it.isLatestEpisodeNew(lastSeenEpisodes[it.id]) }
+    }
+    val locale = currentLocale()
+    val shows = state.subscribedPodcasts.size
+    val subscriptions = buildList {
+        add(pluralStringResource(R.plurals.library_show_count, shows, shows))
+        if (newCount > 0) add(pluralStringResource(R.plurals.library_folder_new_count, newCount, newCount))
+    }.joinToString(STATUS_SEPARATOR)
+    val liked = state.likedEpisodes.size
+    val downloaded = state.downloadedEpisodes.size
+    val lastPlayed = state.recentHistory.maxOfOrNull { it.lastPlayedAt }
+    return LibraryHubStatus(
+        subscriptions = subscriptions,
+        liked = if (liked == 0) stringResource(R.string.library_hub_no_likes) else pluralStringResource(R.plurals.library_hub_episode_count, liked, liked),
+        downloads = if (downloaded == 0) stringResource(R.string.library_hub_no_downloads) else pluralStringResource(R.plurals.library_hub_episode_count, downloaded, downloaded),
+        history = if (lastPlayed == null || lastPlayed <= 0L) {
+            stringResource(R.string.library_hub_no_history)
+        } else {
+            stringResource(R.string.library_hub_last_played, LocaleFormats.relativeTime(lastPlayed, System.currentTimeMillis(), locale))
+        },
+    )
+}
+
+private const val STATUS_SEPARATOR = " · "

@@ -131,12 +131,12 @@ class LibraryStateRestorationTest {
         compose.onNodeWithContentDescription("Select podcasts").performClick()
         compose.onNodeWithText("Downloaded show 2").performClick()
         compose.onNodeWithText("Downloaded show 3").performClick()
-        compose.onNodeWithText("2 Selected").assertExists()
+        compose.onNodeWithText("2 selected").assertExists()
 
         restorer.emulateSavedInstanceStateRestore()
 
-        compose.onNodeWithText("2 Selected").assertExists()
-        compose.onNodeWithContentDescription("Delete Selected").performClick()
+        compose.onNodeWithText("2 selected").assertExists()
+        compose.onNodeWithContentDescription("Delete selected").performClick()
         compose.onNodeWithText("Delete").performClick()
         val removed = mockingDetails(vm).invocations.filter { it.method.name == "removeMultipleDownloads" }
         val expected = fixtures.downloads().filter { it.podcastId == "show-1" || it.podcastId == "show-2" }.map { it.episodeId }.toSet()

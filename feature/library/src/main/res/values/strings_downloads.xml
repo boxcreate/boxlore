@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Shown as the show name while every download plays -->
-    <string name="library_downloads_all">All Downloads</string>
+    <string name="library_downloads_all">All downloads</string>
     <string name="library_downloads_error_loading">Error loading downloads</string>
     <!-- Screen-reader label -->
     <string name="library_downloads_select_podcasts">Select podcasts</string>
     <!-- Screen-reader label -->
     <string name="library_downloads_select_episodes">Select episodes</string>
-    <string name="library_downloads_offline_title">Offline Mode</string>
+    <string name="library_downloads_offline_title">Offline mode</string>
     <string name="library_downloads_offline_body">No internet connection. Playing downloaded episodes.</string>
-    <!-- Playful empty-state title; a light pun is welcome -->
-    <string name="library_downloads_empty_title">Buddha woulda coulda</string>
+    <!-- Empty-state title: says what is empty; a light pun is welcome -->
+    <string name="library_downloads_empty_title">Nothing downloaded yet</string>
     <string name="library_downloads_empty_offline_body">No downloaded episodes found. Turn on Wi-Fi and charging to auto-sync your smart downloads!</string>
     <!-- Smart Downloads is a feature name -->
-    <string name="library_downloads_empty_body">No downloaded episodes yet. Turn on Smart Downloads above or find podcasts to download manually.</string>
+    <string name="library_downloads_empty_body">Turn on Smart Downloads or download episodes from a show\'s page.</string>
     <string name="library_downloads_delete_title">Delete downloads?</string>
     <plurals name="library_downloads_delete_podcasts_body">
         <item quantity="one">Are you sure you want to delete all downloaded episodes for the %1$d selected podcast?</item>

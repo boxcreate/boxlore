@@ -2,15 +2,8 @@ package cx.aswin.boxlore.feature.library.downloads
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,13 +26,11 @@ import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -51,76 +42,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.core.model.text.formatTimeOfDay
 import cx.aswin.boxlore.feature.library.R
-
-@Composable
-fun SquigglyProgressLoader(
-    modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.primary,
-    strokeWidth: androidx.compose.ui.unit.Dp = 3.dp
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "squiggly")
-    val phaseShift by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 2f * Math.PI.toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "phase"
-    )
-
-    val density = LocalDensity.current
-    val strokeWidthPx = with(density) { strokeWidth.toPx() }
-
-    Canvas(modifier = modifier) {
-        val width = size.width
-        val height = size.height
-        val midY = height / 2f
-        val path = Path()
-
-        // Fits ~7 full waves for a tighter, denser squiggly waveform
-        val wavelength = width / 7.0f
-        // Amplitude is 25% of the height to keep it clean and bounded
-        val amplitude = height * 0.25f
-
-        path.moveTo(0f, midY)
-        for (x in 0..width.toInt()) {
-            val angle = (x.toFloat() / wavelength) * (2f * Math.PI.toFloat()) - phaseShift
-            val y = midY + amplitude * kotlin.math.sin(angle)
-            path.lineTo(x.toFloat(), y)
-        }
-
-        drawPath(
-            path = path,
-            color = color,
-            style = Stroke(
-                width = strokeWidthPx,
-                cap = StrokeCap.Round,
-                join = StrokeJoin.Round
-            )
-        )
-    }
-}
 
 @Composable
 fun SmartDownloadsDashboardCard(
@@ -158,18 +94,13 @@ fun SmartDownloadsDashboardCard(
     }
 
     if (!isEnabled) {
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            ),
+        Surface(
+            onClick = onSettingsClick,
+            color = MaterialTheme.colorScheme.primaryContainer,
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
-                .expressiveClickable(
-                    shape = RoundedCornerShape(16.dp),
-                    onClick = onSettingsClick
-                )
         ) {
             Row(
                 modifier = Modifier
@@ -217,12 +148,10 @@ fun SmartDownloadsDashboardCard(
         },
     )
 
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
+    // A solid panel, like the module's other panels (no outline).
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
         shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
@@ -292,26 +221,15 @@ fun SmartDownloadsDashboardCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (isExpanded) {
-                        IconButton(
-                            onClick = onSettingsClick,
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                        ) {
+                        FilledTonalIconButton(onClick = onSettingsClick, modifier = Modifier.size(48.dp)) {
                             Icon(
                                 imageVector = Icons.Rounded.Settings,
                                 contentDescription = stringResource(R.string.library_smart_downloads_settings),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     } else if (isSyncing || smartDownloadingCount > 0) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        BoxLoreLoader.CircularWavy(size = 20.dp)
                     }
 
                     Icon(
@@ -381,13 +299,7 @@ fun SmartDownloadsDashboardCard(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        SquigglyProgressLoader(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(18.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 3.dp
-                        )
+                        BoxLoreLoader.LinearWavy(modifier = Modifier.fillMaxWidth())
                         Text(
                             text = if (smartDownloadingCount > 0) {
                                 pluralStringResource(R.plurals.library_smart_downloads_downloading, smartDownloadingCount, smartDownloadingCount)
