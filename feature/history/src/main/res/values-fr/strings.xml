@@ -274,7 +274,7 @@
         <item quantity="other">Écoute sur %1$d jours ce mois-ci</item>
     </plurals>
     <string name="history_early_timing_title">Statistiques limitées pour l’instant</string>
-    <string name="history_early_timing_body">boxlore enregistre votre temps d’écoute depuis le %1$s. Revenez après quelques jours d’écoute pour avoir une vue complète.</string>
+    <string name="history_early_timing_body">Depuis le %1$s, boxlore enregistre votre temps d’écoute. Revenez après quelques jours d’écoute pour avoir une vue complète.</string>
     <string name="history_early_timing_body_new">boxlore commencera à enregistrer votre temps d’écoute à votre prochaine lecture. Revenez après quelques jours d’écoute pour avoir une vue complète.</string>
     <string name="history_early_most_played">Podcasts les plus écoutés</string>
     <string name="history_early_by_episodes">par épisodes</string>

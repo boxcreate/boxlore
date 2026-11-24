@@ -308,7 +308,7 @@
     </plurals>
     <!-- E.g. "Listening time starts from Oct 22". -->
     <string name="history_early_timing_title">Insights limitados por enquanto</string>
-    <string name="history_early_timing_body">O boxlore começou a salvar seu tempo de escuta em %1$s. Volte depois de alguns dias ouvindo para ver o quadro completo.</string>
+    <string name="history_early_timing_body">Desde %1$s, o boxlore salva seu tempo de escuta. Volte depois de alguns dias ouvindo para ver o quadro completo.</string>
     <string name="history_early_timing_body_new">O boxlore começa a salvar seu tempo de escuta na próxima reprodução. Volte depois de alguns dias ouvindo para ver o quadro completo.</string>
     <string name="history_early_most_played">Podcasts mais ouvidos</string>
     <string name="history_early_by_episodes">por episódios</string>
