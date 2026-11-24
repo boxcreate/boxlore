@@ -196,9 +196,9 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
 
     /**
      * The platform dialog that phones use never settles under Robolectric with a text field inside
-     * (it keeps relaying out), so this one is captured on windows 600dp and wider only.
+     * (it keeps relaying out), so this one is captured on tablet-sized windows only.
      */
-    @Test fun crossDeviceEmail() = render("cross-device-email", include = !isRailOnlySize && size.width >= 600, dialog = true) {
+    @Test fun crossDeviceEmail() = render("cross-device-email", include = !isRailOnlySize && isTablet, dialog = true) {
         CrossDeviceEmailDialog(onDismiss = {}, onConfirm = {})
     }
 
@@ -250,7 +250,7 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         updates.open()
         render(name, include = true, dialog = true, capture = !download) { AppUpdatesPanel(updates, {}, {}) }
         if (download) {
-            golden.compose.onNodeWithText("Download update").performClick()
+            golden.compose.onNodeWithText(golden.compose.activity.getString(cx.aswin.boxlore.R.string.updates_download)).performClick()
             golden.capture(name, allWindows = true)
         }
     }
