@@ -549,7 +549,19 @@ fun PodcastInfoScreen(
                 }
                 val listFeedItems = remember(feedItems, spotlightEpisode) { feedItemsWithoutSpotlight(feedItems, spotlightEpisode) }
                 val hideShow = rememberPodcastInfoHideShow(viewModel, state, snackbarHostState, pendingUndo)
-                RestorePendingUndo(pendingUndo, snackbarHostState, state.episodes, viewModel)
+                // A restored archive Undo looks in everything the selection could hold (Select all
+                // and search reach past the loaded list), then in the show's whole selection window.
+                val undoPool by rememberUpdatedState(selectionEpisodePool + state.episodes + displayEpisodes + state.searchResults.orEmpty())
+                val undoSort by rememberUpdatedState(state.currentSort)
+                RestorePendingUndo(pendingUndo, snackbarHostState, viewModel) { ids ->
+                    val known = undoPool.filter { it.id in ids }.distinctBy(Episode::id)
+                    val missing = ids.toSet() - known.map(Episode::id).toSet()
+                    if (missing.isEmpty()) {
+                        known
+                    } else {
+                        known + viewModel.selectionWindowResult(undoSort).getOrNull()?.episodes.orEmpty().filter { it.id in missing }.distinctBy(Episode::id)
+                    }
+                }
                 val contentState = EpisodeListContentState(
                     listState = listState,
                     modifier = episodeListModifier,
