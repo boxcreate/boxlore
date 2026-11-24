@@ -42,7 +42,7 @@ internal fun BrandedEpisodeActions(spotlight: BrandedSpotlight, colors: BrandedA
     )
     MaterialTheme(colorScheme = scheme) {
         Column(modifier) {
-            PodcastEpisodeActions(spotlight.actions, spotlight.callbacks, scheme.primary, colors.playRing)
+            PodcastEpisodeActions(spotlight.actions, spotlight.callbacks, scheme.primary, colors.playRing, tooltips = true)
             if (showProgress) spotlight.progress?.let { PodcastEpisodeProgress(it, spotlight.timeLeft, scheme.primary) }
         }
     }

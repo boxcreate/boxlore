@@ -66,6 +66,10 @@
     <string name="episode_info_more_from">More from %1$s</string>
     <!-- Small label above the show name in the show row that heads the More from list. -->
     <string name="episode_info_more_from_label">More from</string>
+    <!-- After the show name on the "More from" row, which opens the show page. -->
+    <string name="episode_info_see_all">See all</string>
+    <!-- Above an episode number on a small tile, where an episode has no picture of its own or date; short. -->
+    <string name="episode_info_number_short">Ep.</string>
     <string name="episode_info_explore_podcast">Explore podcast</string>
     <string name="episode_info_no_more">No other episodes available</string>
     <string name="episode_info_people">People in this episode</string>
@@ -116,6 +120,8 @@
     <string name="genre_edit_placeholder">Click to set custom tag</string>
     <string name="episode_info_episode_from_show">%1$s, from %2$s</string>
     <string name="podcast_info_load_error">Couldn’t load this podcast</string>
+    <!-- Under "Couldn’t load this episode" or "Couldn’t load this podcast"; Try again (podcast_info_retry) and Back sit below it. -->
+    <string name="info_load_error_body">Check your internet connection, then try again.</string>
     <string name="podcast_info_retry">Try again</string>
     <!-- End of a show's episode list when its next page couldn't load; Try again (podcast_info_retry) sits under it. -->
     <string name="podcast_info_more_episodes_failed">Couldn’t load more episodes</string>

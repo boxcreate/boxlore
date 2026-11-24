@@ -55,6 +55,8 @@ data class OnboardingUiState(
     val aiDeck: EchoDeck = EchoDeck(),
     val aiLoadingStage: AiLoadingStage = AiLoadingStage.IDLE,
     val onboardingError: String? = null,
+    /** Why [onboardingError] happened, for the copy that names the cause. */
+    val onboardingErrorKind: OnboardingErrorKind = OnboardingErrorKind.Network,
     val reachedSuggestionsViaAiFlow: Boolean = false,
     val reachedSuggestionsViaSearchFlow: Boolean = false,
     val reachedSuggestionsViaOpmlFlow: Boolean = false,
@@ -71,6 +73,8 @@ data class OnboardingUiState(
     val selectedSearchGenre: String? = null,
     /** Onboarding's first question, while [currentStep] is [OnboardingStep.APP_LANGUAGE]. */
     val appLanguageQuestion: AppLanguageQuestion? = null,
+    /** From a language pick until Welcome has taken over the question's panel. */
+    val openingHandoff: OpeningHandoff? = null,
 )
 
 enum class OnboardingStep {
@@ -84,4 +88,13 @@ enum class OnboardingStep {
     SEARCH,
     AI_ONBOARDING,
     AI_SUGGESTIONS,
+}
+
+/** What a failed AI request on the onboarding path ran into. */
+enum class OnboardingErrorKind {
+    /** The connection or the server; trying again can help. */
+    Network,
+
+    /** The API asked for the human check and it was skipped or failed, so it stays unavailable for a while. */
+    VerificationSkipped,
 }

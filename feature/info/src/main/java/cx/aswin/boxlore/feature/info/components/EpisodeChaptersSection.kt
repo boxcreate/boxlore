@@ -15,7 +15,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,22 +37,25 @@ import java.util.Locale
 @Composable
 internal fun EpisodeChaptersSection(episodeId: String, chapters: List<Chapter>, positionMs: Long, onSeekTo: (Long) -> Unit, modifier: Modifier = Modifier) {
     var expanded by rememberSaveable(episodeId) { mutableStateOf(false) }
-    val visible = if (expanded) chapters else chapters.take(4)
+    val visible = if (expanded) chapters else chapters.take(COLLAPSED_CHAPTERS)
     val active = if (positionMs > 0) chapters.indexOfLast { it.startTime * 1_000 <= positionMs } else -1
     Column(modifier.fillMaxWidth().animateContentSize(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.episode_info_chapters), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-            Text(pluralStringResource(R.plurals.episode_info_chapter_count, chapters.size, chapters.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        EpisodeSectionHeader(
+            stringResource(R.string.episode_info_chapters),
+            Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+            trailing = pluralStringResource(R.plurals.episode_info_chapter_count, chapters.size, chapters.size),
+        )
         visible.forEachIndexed { index, chapter ->
             val time = chapterTime(chapter.startTime)
             val action = stringResource(R.string.episode_info_jump_chapter, chapter.title, time)
             val current = stringResource(R.string.episode_info_current_chapter)
+            // With more chapters than fit, the expand row closes the group instead of the last chapter.
+            val last = index == visible.lastIndex && chapters.size <= COLLAPSED_CHAPTERS
             val shape = RoundedCornerShape(
                 topStart = if (index == 0) 24.dp else 5.dp,
                 topEnd = if (index == 0) 24.dp else 5.dp,
-                bottomStart = if (index == visible.lastIndex) 24.dp else 5.dp,
-                bottomEnd = if (index == visible.lastIndex) 24.dp else 5.dp
+                bottomStart = if (last) 24.dp else 5.dp,
+                bottomEnd = if (last) 24.dp else 5.dp
             )
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -77,13 +79,21 @@ internal fun EpisodeChaptersSection(episodeId: String, chapters: List<Chapter>, 
                 }
             }
         }
-        if (chapters.size > 4) {
-            TextButton(onClick = { expanded = !expanded }) {
-            Text(stringResource(if (expanded) R.string.episode_info_fewer_chapters else R.string.episode_info_all_chapters))
-        }
+        if (chapters.size > COLLAPSED_CHAPTERS) {
+            val shape = RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
+            Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = shape, modifier = Modifier.fillMaxWidth()) {
+                EpisodeExpandRow(
+                    label = stringResource(if (expanded) R.string.episode_info_fewer_chapters else R.string.episode_info_all_chapters),
+                    expanded = expanded,
+                    onClick = { expanded = !expanded },
+                    shape = shape,
+                )
+            }
         }
     }
 }
+
+private const val COLLAPSED_CHAPTERS = 4
 
 internal fun chapterTime(seconds: Double): String {
     val total = seconds.toLong().coerceAtLeast(0)

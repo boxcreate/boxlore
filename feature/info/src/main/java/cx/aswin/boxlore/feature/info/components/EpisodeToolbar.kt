@@ -36,6 +36,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Sort
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.NotificationsNone
 import androidx.compose.material.icons.rounded.Search
@@ -46,6 +47,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalToggleButton
 import androidx.compose.material3.FilledTonalToggleButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -60,17 +62,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltipPosition
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.contrastColor
 import cx.aswin.boxlore.feature.info.EpisodeSort
@@ -260,7 +268,8 @@ private fun SubscribeButton(
 ) {
     val subscribeLabel = stringResource(R.string.podcast_info_subscribe)
     val unsubscribeLabel = stringResource(R.string.podcast_info_unsubscribe)
-    val labels = BrandedSubscribeLabels(subscribeLabel, stringResource(R.string.podcast_info_subscribed), compact)
+    // Showcase pages put a check before Subscribed when there's room; plain show pages keep the word alone.
+    val labels = BrandedSubscribeLabels(subscribeLabel, stringResource(R.string.podcast_info_subscribed), compact, subscribedCheck = style != null && !compact)
     val moment = subscribe.moment
     val playing = subscribe.playing
     // The button morphs to its pressed shape and back on its own clock: Material's built-in morph
@@ -331,10 +340,8 @@ private fun SubscribeButtonContent(phase: SubscriptionButtonPhase, hasMoment: Bo
             // The show's own moment draws over the whole button instead.
             shown == SubscriptionButtonPhase.CONFIRMATION && hasMoment -> Unit
             shown == SubscriptionButtonPhase.CONFIRMATION -> SubscriptionGenreConfirmation(genre)
-            else -> SubscriptionLabel(
-                text = if (shown == SubscriptionButtonPhase.SUBSCRIBED) labels.subscribed else labels.subscribe,
-                compact = labels.compact,
-            )
+            shown == SubscriptionButtonPhase.SUBSCRIBED -> SubscriptionLabel(text = labels.subscribed, compact = labels.compact, check = labels.subscribedCheck)
+            else -> SubscriptionLabel(text = labels.subscribe, compact = labels.compact)
         }
     }
 }
@@ -391,6 +398,9 @@ private fun ConnectedToolbarAction(
     trailing: Boolean = false,
     style: BrandedToolbarStyle? = null,
 ) {
+    // Long-press or hover names the icon-only button.
+    Box(modifier) {
+    BoxloreTooltip(label, position = BoxloreTooltipPosition.Above) {
     Button(
         onClick = onClick,
         shapes = ButtonDefaults.shapes(
@@ -406,9 +416,11 @@ private fun ConnectedToolbarAction(
             contentColor = style?.actionContent ?: MaterialTheme.colorScheme.onSurfaceVariant,
         ),
         contentPadding = PaddingValues(0.dp),
-        modifier = modifier.size(48.dp).semantics { contentDescription = label },
+        modifier = Modifier.size(48.dp).semantics { contentDescription = label },
     ) {
         Icon(icon, null, Modifier.size(21.dp))
+    }
+    }
     }
 }
 
@@ -435,6 +447,8 @@ private fun SubscriptionToggle(
     val offContent = style?.toggleContent ?: scheme.onSurfaceVariant
     val on = if (blocked) scheme.errorContainer else style?.toggleCheckedContainer ?: scheme.primaryContainer
     val onContent = if (blocked) scheme.onErrorContainer else style?.toggleCheckedContent ?: scheme.onPrimaryContainer
+    Box(modifier) {
+    BoxloreTooltip(label, position = BoxloreTooltipPosition.Above) {
     FilledTonalToggleButton(
         checked = checked,
         onCheckedChange = { onClick() },
@@ -449,7 +463,7 @@ private fun SubscriptionToggle(
             disabledContentColor = if (checked) onContent else offContent,
         ),
         contentPadding = PaddingValues(0.dp),
-        modifier = modifier.size(48.dp).semantics {
+        modifier = Modifier.size(48.dp).semantics {
             contentDescription = label
             if (blocked) stateDescription = blockedLabel
         },
@@ -463,6 +477,8 @@ private fun SubscriptionToggle(
                 )
             }
         }
+    }
+    }
     }
 }
 
@@ -499,17 +515,46 @@ internal fun subscribeButtonShape(pressed: Float): RoundedCornerShape {
     return RoundedCornerShape(topStart = leading, topEnd = trailing, bottomEnd = trailing, bottomStart = leading)
 }
 
-/** The Subscribe or Subscribed label, shared with a show's own subscribe moment so its last frame matches. */
+/**
+ * The Subscribe or Subscribed label, shared with a show's own subscribe moment so its last frame
+ * matches. With [check] a 20dp check sits before the words.
+ */
 @Composable
-internal fun SubscriptionLabel(text: String, compact: Boolean, modifier: Modifier = Modifier, color: Color = Color.Unspecified) {
-    Text(
-        text = text,
-        style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
-        fontWeight = GoogleSansWeight.bold,
-        color = color,
-        textAlign = TextAlign.Center,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier,
-    )
+internal fun SubscriptionLabel(text: String, compact: Boolean, modifier: Modifier = Modifier, color: Color = Color.Unspecified, check: Boolean = false) {
+    val style = (if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge).copy(fontWeight = GoogleSansWeight.bold)
+    val label: @Composable (Modifier) -> Unit = { labelModifier ->
+        Text(
+            text = text,
+            style = style,
+            color = color,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = labelModifier,
+        )
+    }
+    if (!check) {
+        label(modifier)
+        return
+    }
+    // The check goes first when the words alone would be cut off.
+    val measurer = rememberTextMeasurer()
+    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+        val textWidth = remember(text, style) { measurer.measure(text, style, maxLines = 1).size.width }
+        val checkRoom = with(LocalDensity.current) { (SubscribedCheckSize + SubscribedCheckGap).roundToPx() }
+        if (!constraints.hasBoundedWidth || textWidth + checkRoom <= constraints.maxWidth) {
+            Row(horizontalArrangement = Arrangement.spacedBy(SubscribedCheckGap), verticalAlignment = Alignment.CenterVertically) {
+                val tint = if (color.isSpecified) color else LocalContentColor.current
+                Icon(Icons.Rounded.Check, contentDescription = null, tint = tint, modifier = Modifier.size(SubscribedCheckSize).testTag(SUBSCRIBED_CHECK_TAG))
+                label(Modifier)
+            }
+        } else {
+            label(Modifier)
+        }
+    }
 }
+
+private val SubscribedCheckSize = 20.dp
+private val SubscribedCheckGap = 6.dp
+
+internal const val SUBSCRIBED_CHECK_TAG = "subscribed_check"

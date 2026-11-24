@@ -2,12 +2,11 @@ package cx.aswin.boxlore.feature.onboarding
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -16,30 +15,37 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSearchField
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
-import cx.aswin.boxlore.core.model.artworkUrls
 
 /** A category chip on the onboarding search: [categoryValue] is the genre key sent to search, null for Trending. */
 data class SearchCategoryItem(
@@ -60,8 +66,14 @@ val SEARCH_CATEGORIES =
         SearchCategoryItem(R.string.onboarding_genre_business, "Business", Icons.Rounded.Work, Color(0xFFFFF3E0), Color(0xFFE65100)),
     )
 
+/**
+ * Onboarding search: trending shows by topic, or typed results, with the picks and Continue in one
+ * slim bar at the bottom. Where a pinned search box, topic chips and heading would leave the grid
+ * under one and a half rows (sideways phones, the Fold 8 cover with a pick, split-screen), the
+ * chips and heading scroll away with the shows. The results always scroll clear of the keyboard.
+ */
 @Composable
-@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
+@Suppress("LongParameterList")
 internal fun OnboardingSearchScreen(
     query: String,
     results: List<Podcast>,
@@ -81,561 +93,275 @@ internal fun OnboardingSearchScreen(
     onGenreSelect: (String?) -> Unit,
     isAiSideTrip: Boolean = false,
 ) {
-    Column(
-        modifier =
-        Modifier
-            .fillMaxSize()
-            .boxloreCardWidth(BoxloreCardFamily.Utility)
-            .background(MaterialTheme.colorScheme.surface)
-            .windowInsetsPadding(WindowInsets.statusBars)
-            .then(if (LocalBoxloreWindowLayout.current.usesTabletLayout) Modifier.imePadding() else Modifier),
-    ) {
-        // Prominent search bar in top row next to back button
-        Row(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    val window = LocalBoxloreWindowLayout.current
+    val tablet = window.usesTabletLayout
+    // On phones the keyboard covers the bar; the results scroll clear of it instead.
+    val keyboard = with(LocalDensity.current) { WindowInsets.ime.getBottom(this).toDp() }
+    val typing = !tablet && keyboard > 0.dp
+    val listBottom = OnboardingSearchListPadding + if (tablet) 0.dp else keyboard
+    var picksOpen by rememberSaveable { mutableStateOf(false) }
+    val picks = remember(subscribedIds, selectedPodcasts) {
+        LazyListKeyPolicy.deduplicateById(subscribedIds.mapNotNull { selectedPodcasts[it] }) { it.id }
+    }
+    // One scroll for the topic chips, pinned above the shows or scrolling with them in a short window.
+    val chips = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val width = onboardingSearchGridWidth(boxloreContentWidthDp(), tablet)
+        val columns = boxlorePosterColumns(window, width)
+        val shortPane = boxloreIsShortPane()
+        val compactHeader = shortPane || onboardingSearchHeaderCompact(width, maxHeight.value, columns, hasPicks = subscribedIds.isNotEmpty())
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .boxloreCardWidth(BoxloreCardFamily.Utility)
+                .background(MaterialTheme.colorScheme.surface)
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .then(if (tablet) Modifier.imePadding() else Modifier),
         ) {
-            IconButton(
-                onClick = {
-                    if (query.isNotEmpty()) {
-                        onQueryChange("")
-                    } else {
-                        onBack()
-                    }
-                },
-                modifier = Modifier.size(48.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = stringResource(R.string.onboarding_back),
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                modifier =
-                Modifier
-                    .weight(1f)
-                    .height(56.dp),
-                placeholder = {
-                    Text(
-                        text = stringResource(R.string.onboarding_search_placeholder),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                },
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyLarge,
-                colors =
-                OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                ),
-                shape =
-                androidx.compose.foundation.shape
-                    .RoundedCornerShape(percent = 50),
-                leadingIcon = {
-                    Icon(
-                        Icons.Rounded.Search,
-                        null,
-                        modifier = Modifier.size(22.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                },
-                trailingIcon = {
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = { onQueryChange("") }) {
-                            Icon(Icons.Rounded.Close, stringResource(R.string.onboarding_search_clear), modifier = Modifier.size(20.dp))
-                        }
-                    }
-                },
+            SearchBoxRow(query, onQueryChange, onBack)
+            if (query.isEmpty() && !compactHeader) SearchCategoryRow(selectedSearchGenre, onGenreSelect, chips)
+            SearchBody(
+                SearchBodyState(query, results, alsoFoundResults, isSearching, searchFailed, popularPodcasts, isPopularLoading, selectedSearchGenre, subscribedIds),
+                SearchLayout(columns, compactHeader, listBottom, trendingAsRows = shortPane, chips),
+                SearchBodyActions(onRetrySearch, onSubscribe, onGenreSelect),
+                Modifier.fillMaxWidth().weight(1f),
             )
-        }
-
-        // Compact category row directly below search bar
-        if (query.isEmpty()) {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 6.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                items(SEARCH_CATEGORIES) { category ->
-                    PillFilterChip(
-                        label = stringResource(category.labelRes),
-                        selected = selectedSearchGenre == category.categoryValue,
-                        onClick = { onGenreSelect(category.categoryValue) },
-                        icon = category.icon,
-                    )
-                }
-            }
-        }
-
-        when {
-            isSearching -> {
-                Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    BoxLoreLoader.Expressive(size = 100.dp)
-                }
-            }
-            query.isEmpty() -> {
-                // Discovery view: Trending shows
-                Column(
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                ) {
-                    val titleLabel = stringResource(SEARCH_CATEGORIES.find { it.categoryValue == selectedSearchGenre }?.labelRes ?: R.string.onboarding_search_trending)
-                    val sectionTitle =
-                        if (selectedSearchGenre == null) {
-                            stringResource(R.string.onboarding_search_trending_shows)
-                        } else {
-                            stringResource(R.string.onboarding_search_popular_in, titleLabel)
-                        }
-                    Text(
-                        text = sectionTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = GoogleSansWeight.bold,
-                        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 8.dp),
-                    )
-
-                    if (isPopularLoading) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().weight(1f),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            BoxLoreLoader.Expressive(size = 80.dp)
-                        }
-                    } else if (popularPodcasts.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().weight(1f),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(stringResource(R.string.onboarding_search_no_popular), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    } else {
-                        val distinctPopular = remember(popularPodcasts) {
-                            LazyListKeyPolicy.deduplicateById(popularPodcasts) { it.id }
-                        }
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(boxlorePosterColumns(LocalBoxloreWindowLayout.current, boxloreContentWidthDp().coerceAtMost(720f))),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            items(
-                                distinctPopular,
-                                key = { LazyListKeyPolicy.safeKey(it.id, prefix = "popular_show") }
-                            ) { podcast ->
-                                val isSubscribed = podcast.id in subscribedIds
-                                PopularPodcastGridItem(
-                                    podcast = podcast,
-                                    isSubscribed = isSubscribed,
-                                    onClick = { onSubscribe(podcast) },
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            results.isEmpty() && alsoFoundResults.isEmpty() && searchFailed -> {
-                OnboardingSearchFailed(onRetrySearch, Modifier.fillMaxWidth().weight(1f).padding(horizontal = 24.dp))
-            }
-            results.isEmpty() && alsoFoundResults.isEmpty() && !isSearching -> {
-                Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 24.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Rounded.SearchOff,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.onboarding_search_empty_title),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.onboarding_search_empty_body),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-            }
-            else -> {
-                val distinctResults = remember(results) {
-                    LazyListKeyPolicy.deduplicateById(results) { it.id }
-                }
-                val distinctAlsoFound =
-                    remember(alsoFoundResults, distinctResults) {
-                        val catalogIds = distinctResults.mapNotNull { it.id.trim().takeIf(String::isNotEmpty) }.toSet()
-                        val filtered = alsoFoundResults.filter { it.id.trim().takeIf(String::isNotEmpty) !in catalogIds }
-                        LazyListKeyPolicy.deduplicateById(filtered) { it.id }
-                    }
-                val listState = rememberLazyListState()
-                val pinSnapshot =
-                    ProgressiveSearchScrollLogic.Snapshot(
-                        query = query,
-                        topResultId = distinctResults.firstOrNull()?.id,
-                        hasAlsoFoundSection = distinctAlsoFound.isNotEmpty(),
-                    )
-                var previousPin by remember {
-                    mutableStateOf<ProgressiveSearchScrollLogic.Snapshot?>(null)
-                }
-                LaunchedEffect(pinSnapshot) {
-                    if (ProgressiveSearchScrollLogic.shouldPinToTop(previousPin, pinSnapshot)) {
-                        listState.scrollToItem(0)
-                    }
-                    previousPin = pinSnapshot
-                }
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    if (distinctResults.isNotEmpty() && distinctAlsoFound.isNotEmpty()) {
-                        item(key = "matches_header") {
-                            Text(
-                                text = stringResource(R.string.onboarding_search_matches),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = GoogleSansWeight.bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                            )
-                        }
-                    }
-                    items(
-                        distinctResults,
-                        key = { LazyListKeyPolicy.safeKey(it.id, prefix = "search_show") }
-                    ) { podcast ->
-                        SearchResultRow(
-                            podcast = podcast,
-                            isSubscribed = podcast.id in subscribedIds,
-                            onSubscribe = { onSubscribe(podcast) },
-                        )
-                    }
-                    if (distinctAlsoFound.isNotEmpty()) {
-                        item(key = "also_found_header") {
-                            Text(
-                                text = stringResource(R.string.onboarding_search_also_found),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = GoogleSansWeight.bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
-                            )
-                        }
-                        items(
-                            distinctAlsoFound,
-                            key = { LazyListKeyPolicy.safeKey(it.id, prefix = "also_show") }
-                        ) { podcast ->
-                            SearchResultRow(
-                                podcast = podcast,
-                                isSubscribed = podcast.id in subscribedIds,
-                                onSubscribe = { onSubscribe(podcast) },
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Done button panel at bottom with selected shows bar
-        if (subscribedIds.isNotEmpty()) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                tonalElevation = 2.dp,
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.navigationBars),
-            ) {
-                Column(
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 12.dp),
-                ) {
-                    Text(
-                        text = pluralStringResource(R.plurals.onboarding_search_selected_shows, subscribedIds.size, subscribedIds.size),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = GoogleSansWeight.bold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    val selectedPodcastsList = remember(subscribedIds, selectedPodcasts) {
-                        val list = subscribedIds.mapNotNull { selectedPodcasts[it] }
-                        LazyListKeyPolicy.deduplicateById(list) { it.id }
-                    }
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(vertical = 4.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        items(
-                            selectedPodcastsList,
-                            key = { LazyListKeyPolicy.safeKey(it.id, prefix = "selected_show") }
-                        ) { podcast ->
-                            Box(
-                                modifier = Modifier.size(56.dp),
-                            ) {
-                                OptimizedImage(
-                                    url = podcast.imageUrl,
-                                    fallbackUrls = podcast.artworkUrls(),
-                                    proxyWidth = 150,
-                                    contentDescription = podcast.title,
-                                    modifier =
-                                    Modifier
-                                        .fillMaxSize()
-                                        .clip(MaterialTheme.shapes.medium)
-                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                                )
-                                // Tiny custom circular close badge on top-right (avoids IconButton target size constraint)
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier =
-                                    Modifier
-                                        .align(Alignment.TopEnd)
-                                        .offset(x = 4.dp, y = (-4).dp)
-                                        .size(16.dp)
-                                        .background(
-                                            color = MaterialTheme.colorScheme.error,
-                                            shape = androidx.compose.foundation.shape.CircleShape,
-                                        ).clickable { onSubscribe(podcast) },
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Close,
-                                        contentDescription = stringResource(R.string.onboarding_search_remove),
-                                        tint = MaterialTheme.colorScheme.onError,
-                                        modifier = Modifier.size(10.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    if (isAiSideTrip) {
-                        Text(
-                            text = stringResource(R.string.onboarding_search_side_trip_note),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                    Button(
-                        onClick = onDone,
-                        modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = MaterialTheme.shapes.extraLarge,
-                    ) {
-                        Text(
-                            pluralStringResource(
-                                if (isAiSideTrip) R.plurals.onboarding_search_subscribe_continue_chat else R.plurals.onboarding_search_continue_with,
-                                subscribedIds.size,
-                                subscribedIds.size,
-                            ),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = GoogleSansWeight.bold,
-                        )
-                    }
-                }
+            if (subscribedIds.isNotEmpty() && !typing) {
+                SearchPicksBar(picks, subscribedIds.size, isAiSideTrip, onOpenPicks = { picksOpen = true }, onDone = onDone)
             }
         }
     }
+    LaunchedEffect(picks.isEmpty()) { if (picks.isEmpty()) picksOpen = false }
+    if (picksOpen && picks.isNotEmpty()) SearchPicksSheet(picks, onRemove = onSubscribe, onDismiss = { picksOpen = false })
 }
 
+/** Back (or clear the query) and the search box. */
 @Composable
-private fun PopularPodcastGridItem(
-    podcast: Podcast,
-    isSubscribed: Boolean,
-    onClick: () -> Unit,
-) {
-    Column(
-        modifier =
-        Modifier
-            .fillMaxWidth()
-            .boxloreCardWidth(BoxloreCardFamily.Poster)
-            .clip(MaterialTheme.shapes.large)
-            .expressiveClickable(onClick = onClick),
-    ) {
-        Box(
-            modifier =
-            Modifier
-                .aspectRatio(1f)
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.large),
-        ) {
-            OptimizedImage(
-                url = podcast.imageUrl,
-                fallbackUrls = podcast.artworkUrls(),
-                proxyWidth = 400,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-            )
-
-            // Subscribed indicator overlay
-            val containerColor =
-                if (isSubscribed) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
-                }
-            val contentColor =
-                if (isSubscribed) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
-
-            Surface(
-                shape = androidx.compose.foundation.shape.CircleShape,
-                color = containerColor,
-                contentColor = contentColor,
-                shadowElevation = 4.dp,
-                modifier =
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(8.dp)
-                    .size(32.dp),
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    Icon(
-                        imageVector = if (isSubscribed) Icons.Rounded.Check else Icons.Rounded.Add,
-                        contentDescription = stringResource(if (isSubscribed) R.string.onboarding_search_selected else R.string.onboarding_search_select),
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        Text(
-            text = podcast.title,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = GoogleSansWeight.bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 4.dp),
-        )
-        Text(
-            text = podcast.artist,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp),
-        )
-    }
-}
-
-@Composable
-private fun SearchResultRow(
-    podcast: Podcast,
-    isSubscribed: Boolean,
-    onSubscribe: () -> Unit,
-) {
+private fun SearchBoxRow(query: String, onQueryChange: (String) -> Unit, onBack: () -> Unit) {
+    val focus = LocalFocusManager.current
     Row(
-        modifier =
-        Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
-            .expressiveClickable(onClick = onSubscribe)
-            .padding(12.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        OptimizedImage(
-            url = podcast.imageUrl,
-            fallbackUrls = podcast.artworkUrls(),
-            proxyWidth = 400,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier =
-            Modifier
-                .size(56.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        IconButton(onClick = { if (query.isNotEmpty()) onQueryChange("") else onBack() }, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.onboarding_back))
+        }
+        BoxloreSearchField(
+            query = query,
+            onQueryChange = onQueryChange,
+            onSearch = { focus.clearFocus() },
+            placeholder = stringResource(R.string.onboarding_search_placeholder),
+            modifier = Modifier.weight(1f),
+            maxWidth = null,
         )
+    }
+}
 
-        Spacer(modifier = Modifier.width(14.dp))
+/** What a search shows under the box: typed results, the trending grid, a loader, or why there is nothing. */
+private class SearchBodyState(
+    val query: String,
+    val results: List<Podcast>,
+    val alsoFoundResults: List<Podcast>,
+    val isSearching: Boolean,
+    val searchFailed: Boolean,
+    val popularPodcasts: List<Podcast>,
+    val isPopularLoading: Boolean,
+    val selectedSearchGenre: String?,
+    val subscribedIds: Set<String>,
+)
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                podcast.title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = GoogleSansWeight.medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                podcast.artist,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+/**
+ * The grid's columns, whether the chips ride in the grid, and the room left under the lists. On
+ * short windows ([trendingAsRows]) the trending shows are set as result rows, several across, so
+ * a few rows of shows and their names show at once.
+ */
+private class SearchLayout(val columns: Int, val compactHeader: Boolean, val listBottom: Dp, val trendingAsRows: Boolean, val chips: LazyListState)
+
+private class SearchBodyActions(val onRetrySearch: () -> Unit, val onSubscribe: (Podcast) -> Unit, val onGenreSelect: (String?) -> Unit)
+
+@Composable
+private fun SearchBody(state: SearchBodyState, layout: SearchLayout, actions: SearchBodyActions, modifier: Modifier) {
+    val nothing = state.results.isEmpty() && state.alsoFoundResults.isEmpty()
+    when {
+        state.isSearching -> Box(modifier, contentAlignment = Alignment.Center) { BoxLoreLoader.Expressive(size = 100.dp) }
+        state.query.isEmpty() -> Column(modifier) {
+            if (!layout.compactHeader) SearchSectionTitle(state.selectedSearchGenre)
+            PopularShowsGrid(
+                shows = state.popularPodcasts,
+                loading = state.isPopularLoading,
+                cells = if (layout.trendingAsRows) GridCells.Adaptive(OnboardingSearchRowMinWidth) else GridCells.Fixed(layout.columns),
+                asRows = layout.trendingAsRows,
+                subscribedIds = state.subscribedIds,
+                onSubscribe = actions.onSubscribe,
+                bottomPadding = layout.listBottom,
+                header = if (layout.compactHeader) SearchGridHeader(state.selectedSearchGenre, actions.onGenreSelect, layout.chips) else null,
+                modifier = Modifier.fillMaxWidth().weight(1f),
             )
         }
+        // Centred above the keyboard, as the results lists keep clear of it, so Retry stays reachable.
+        nothing && state.searchFailed -> OnboardingSearchFailed(actions.onRetrySearch, modifier.padding(start = 24.dp, end = 24.dp, bottom = layout.listBottom))
+        nothing -> OnboardingSearchEmpty(modifier.padding(start = 24.dp, end = 24.dp, bottom = layout.listBottom))
+        else -> SearchResultsList(state.query, state.results, state.alsoFoundResults, state.subscribedIds, actions.onSubscribe, layout.listBottom, modifier)
+    }
+}
 
-        Spacer(modifier = Modifier.width(8.dp))
+/**
+ * Whether the search box, topic chips and heading would leave the poster grid under one and a half
+ * rows in a [heightDp]-tall window [widthDp] wide (the picks bar too, with [hasPicks]); then the
+ * chips and heading scroll with the shows instead of staying pinned.
+ */
+internal fun onboardingSearchHeaderCompact(widthDp: Float, heightDp: Float, columns: Int, hasPicks: Boolean): Boolean {
+    val cols = columns.coerceAtLeast(1)
+    val tile = (widthDp - PosterGridSides - PosterGridGap * (cols - 1)) / cols + PosterTextHeight
+    val viewport = heightDp - PinnedHeaderHeight - if (hasPicks) PicksBarHeight else NavigationAllowance
+    return viewport < tile * MinVisibleRows
+}
 
-        if (isSubscribed) {
-            FilledIconButton(
-                onClick = onSubscribe,
-                colors =
-                IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                ),
-                modifier = Modifier.size(36.dp),
-            ) {
-                Icon(
-                    Icons.Rounded.Check,
-                    contentDescription = stringResource(R.string.onboarding_search_selected),
-                    modifier = Modifier.size(18.dp),
-                )
-            }
+/** The grid's drawn width: tablets cap the page at a readable width; compact windows draw it edge to edge. */
+internal fun onboardingSearchGridWidth(contentWidthDp: Float, tablet: Boolean): Float =
+    if (tablet) contentWidthDp.coerceAtMost(OnboardingSearchMaxWidth) else contentWidthDp
+
+private const val PosterGridSides = 32f
+private const val PosterGridGap = 16f
+private const val PosterTextHeight = 46f
+private const val PinnedHeaderHeight = 196f
+private const val PicksBarHeight = 104f
+private const val NavigationAllowance = 24f
+private const val MinVisibleRows = 1.5f
+private const val OnboardingSearchMaxWidth = 720f
+internal val OnboardingSearchRowMinWidth = 280.dp
+private val OnboardingSearchListPadding = 8.dp
+
+@Composable
+internal fun SearchCategoryRow(selected: String?, onSelect: (String?) -> Unit, state: LazyListState = rememberLazyListState()) {
+    LazyRow(
+        state = state,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().testTag(SEARCH_CATEGORIES_TAG),
+    ) {
+        items(SEARCH_CATEGORIES) { category ->
+            PillFilterChip(
+                label = stringResource(category.labelRes),
+                selected = selected == category.categoryValue,
+                onClick = { onSelect(category.categoryValue) },
+                icon = category.icon,
+            )
+        }
+    }
+}
+
+@Composable
+internal fun SearchSectionTitle(selectedSearchGenre: String?) {
+    val category = SEARCH_CATEGORIES.find { it.categoryValue == selectedSearchGenre }
+    Text(
+        text = if (selectedSearchGenre == null || category == null) {
+            stringResource(R.string.onboarding_search_trending_shows)
         } else {
-            OutlinedIconButton(
-                onClick = onSubscribe,
-                modifier = Modifier.size(36.dp),
-            ) {
-                Icon(
-                    Icons.Rounded.Add,
-                    contentDescription = stringResource(R.string.onboarding_search_select),
-                    modifier = Modifier.size(18.dp),
-                )
+            stringResource(R.string.onboarding_search_popular_in, stringResource(category.labelRes))
+        },
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = GoogleSansWeight.bold,
+        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 8.dp).semantics { heading() },
+    )
+}
+
+@Composable
+@Suppress("LongParameterList")
+private fun SearchResultsList(
+    query: String,
+    results: List<Podcast>,
+    alsoFoundResults: List<Podcast>,
+    subscribedIds: Set<String>,
+    onSubscribe: (Podcast) -> Unit,
+    bottomPadding: Dp,
+    modifier: Modifier,
+) {
+    val distinctResults = remember(results) { LazyListKeyPolicy.deduplicateById(results) { it.id } }
+    val distinctAlsoFound = remember(alsoFoundResults, distinctResults) {
+        val catalogIds = distinctResults.mapNotNull { it.id.trim().takeIf(String::isNotEmpty) }.toSet()
+        val filtered = alsoFoundResults.filter { it.id.trim().takeIf(String::isNotEmpty) !in catalogIds }
+        LazyListKeyPolicy.deduplicateById(filtered) { it.id }
+    }
+    val listState = rememberLazyListState()
+    val pinSnapshot = ProgressiveSearchScrollLogic.Snapshot(
+        query = query,
+        topResultId = distinctResults.firstOrNull()?.id,
+        hasAlsoFoundSection = distinctAlsoFound.isNotEmpty(),
+    )
+    // Saved with the list's place, so a fold or display-size change doesn't count as new results.
+    var previousPin by rememberSaveable(stateSaver = PinSnapshotSaver) { mutableStateOf<ProgressiveSearchScrollLogic.Snapshot?>(null) }
+    LaunchedEffect(pinSnapshot) {
+        if (ProgressiveSearchScrollLogic.shouldPinToTop(previousPin, pinSnapshot)) listState.scrollToItem(0)
+        previousPin = pinSnapshot
+    }
+    LazyColumn(
+        state = listState,
+        modifier = modifier.testTag(SEARCH_RESULTS_TAG),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = bottomPadding),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (distinctResults.isNotEmpty() && distinctAlsoFound.isNotEmpty()) {
+            item(key = "matches_header") { SearchResultsHeading(R.string.onboarding_search_matches) }
+        }
+        items(distinctResults, key = { LazyListKeyPolicy.safeKey(it.id, prefix = "search_show") }) { podcast ->
+            SearchResultRow(podcast = podcast, isSubscribed = podcast.id in subscribedIds, onSubscribe = { onSubscribe(podcast) })
+        }
+        if (distinctAlsoFound.isNotEmpty()) {
+            item(key = "also_found_header") { SearchResultsHeading(R.string.onboarding_search_also_found) }
+            items(distinctAlsoFound, key = { LazyListKeyPolicy.safeKey(it.id, prefix = "also_show") }) { podcast ->
+                SearchResultRow(podcast = podcast, isSubscribed = podcast.id in subscribedIds, onSubscribe = { onSubscribe(podcast) })
             }
         }
     }
 }
+
+private val PinSnapshotSaver = listSaver<ProgressiveSearchScrollLogic.Snapshot?, Any?>(
+    save = { snapshot -> snapshot?.let { listOf(it.query, it.topResultId, it.hasAlsoFoundSection) }.orEmpty() },
+    restore = { saved -> if (saved.isEmpty()) null else ProgressiveSearchScrollLogic.Snapshot(saved[0] as String, saved[1] as String?, saved[2] as Boolean) },
+)
+
+@Composable
+private fun SearchResultsHeading(@StringRes text: Int) {
+    Text(
+        text = stringResource(text),
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = GoogleSansWeight.bold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp).semantics { heading() },
+    )
+}
+
+@Composable
+private fun OnboardingSearchEmpty(modifier: Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Rounded.SearchOff, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.onboarding_search_empty_title),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.onboarding_search_empty_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+internal const val SEARCH_GRID_TAG = "onboarding_search_grid"
+internal const val SEARCH_RESULTS_TAG = "onboarding_search_results"
+internal const val SEARCH_CATEGORIES_TAG = "onboarding_search_categories"
+internal const val SEARCH_SKELETON_TAG = "onboarding_search_skeleton"
+internal const val SEARCH_PICKS_BAR_TAG = "onboarding_search_picks_bar"
+internal const val SEARCH_PICKS_BUTTON_TAG = "onboarding_search_picks"
+internal const val SEARCH_PICKS_SHEET_TAG = "onboarding_search_picks_sheet"
 
 /** A show search that couldn't be read says so and offers Try again, never "No Podcasts Found". */
 @Composable

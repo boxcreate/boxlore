@@ -1,18 +1,24 @@
 package cx.aswin.boxlore.feature.info.branded
 
 import android.app.Application
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.feature.info.EpisodeSort
 import cx.aswin.boxlore.feature.info.branded.vergecast.VergecastPage
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformPage
 import cx.aswin.boxlore.feature.info.components.EpisodeToolbar
+import cx.aswin.boxlore.feature.info.components.SUBSCRIBED_CHECK_TAG
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -35,6 +41,8 @@ class BrandedSubscribeMomentTest {
         rule.setContent {
             val style = VergecastPage.style(darkColorScheme(), dark = true)
             CompositionLocalProvider(LocalBrandedPage provides ActiveBrandedPage(VergecastPage, style)) {
+                // A regular phone's width, where Subscribed has room for its check.
+                Box(Modifier.requiredWidth(412.dp)) {
                 EpisodeToolbar(
                     searchQuery = "",
                     onSearchChange = {},
@@ -47,10 +55,12 @@ class BrandedSubscribeMomentTest {
                     notificationsEnabled = true,
                     autoDownloadEnabled = true,
                 )
+                }
             }
         }
         rule.mainClock.advanceTimeBy(100)
         rule.onNodeWithContentDescription("Subscribe").assertExists()
+        rule.onNodeWithTag(SUBSCRIBED_CHECK_TAG, useUnmergedTree = true).assertDoesNotExist()
 
         subscribed = true
         Snapshot.sendApplyNotifications()
@@ -62,6 +72,8 @@ class BrandedSubscribeMomentTest {
         rule.mainClock.advanceTimeBy(1_400)
         rule.onNodeWithContentDescription("Episode notifications").assertExists()
         rule.onNodeWithContentDescription("Auto-download").assertExists()
+        // The moment ends on Subscribed with its check, the button's own settled label.
+        rule.onNodeWithTag(SUBSCRIBED_CHECK_TAG, useUnmergedTree = true).assertExists()
 
         // Unsubscribing never replays it.
         subscribed = false

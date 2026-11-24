@@ -38,6 +38,16 @@ class OnboardingSuggestionsLanesTest {
     }
 
     @Test
+    fun `a lane hidden for its repeats leaves its other shows to the lanes below`() {
+        fun lane(id: String, vararg shows: String) =
+            OnboardingSuggestionsLane(id, UiText.raw(id), UiText.raw(id), isCharts = false, podcasts = shows.map(::samplePodcast))
+        // The second lane keeps only 4 and 5 after the first, too few to show; the third still shows 4, 5 and 6.
+        val kept = OnboardingSuggestionsLanes.withoutRepeats(listOf(lane("a", "1", "2", "3"), lane("b", "1", "4", "5"), lane("c", "4", "5", "6")))
+        assertEquals(listOf("a", "c"), kept.map { it.id })
+        assertEquals(listOf("4", "5", "6"), kept.last().podcasts.map { it.id })
+    }
+
+    @Test
     fun `omits charts lane when empty`() {
         val lanes =
             OnboardingSuggestionsLanes.build(

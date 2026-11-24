@@ -99,7 +99,7 @@ private fun GlitchedLabel(elapsedMillis: () -> Float, labels: BrandedSubscribeLa
     ) {
         SplitCopy(elapsedMillis, labels, WaveformColors.GlitchRed, sign = 1f)
         SplitCopy(elapsedMillis, labels, WaveformColors.GlitchCyan, sign = -1f)
-        SubscriptionLabel(text = labels.subscribed, compact = labels.compact, color = color)
+        SubscriptionLabel(text = labels.subscribed, compact = labels.compact, color = color, check = labels.subscribedCheck)
     }
 }
 
@@ -107,6 +107,7 @@ private fun GlitchedLabel(elapsedMillis: () -> Float, labels: BrandedSubscribeLa
 private fun SplitCopy(elapsedMillis: () -> Float, labels: BrandedSubscribeLabels, color: Color, sign: Float) {
     SubscriptionLabel(
         text = labels.subscribed,
+        check = labels.subscribedCheck,
         compact = labels.compact,
         color = color,
         modifier = Modifier.graphicsLayer {

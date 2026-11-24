@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.home.logic
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.persistableArtworkUrl
+import cx.aswin.boxlore.core.model.text.ListeningTime
 import cx.aswin.boxlore.core.playback.PlaybackSession
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.SmartHeroItem
@@ -68,7 +69,7 @@ internal object HomeHeroLogic {
         val first = resumeList[0]
         try {
             val firstPodcast = sessionToPodcast(first, subs)
-            val timeLeft = ((first.durationMs - first.positionMs) / 60000).coerceAtLeast(1)
+            val timeLeft = ListeningTime.minutesLeft(first.positionMs, first.durationMs) ?: 1
             heroList.add(
                 SmartHeroItem(
                     type = HeroType.RESUME,
@@ -86,7 +87,7 @@ internal object HomeHeroLogic {
             val second = resumeList[1]
             try {
                 val secondPodcast = sessionToPodcast(second, subs)
-                val timeLeft = ((second.durationMs - second.positionMs) / 60000).coerceAtLeast(1)
+                val timeLeft = ListeningTime.minutesLeft(second.positionMs, second.durationMs) ?: 1
                 heroList.add(
                     SmartHeroItem(
                         type = HeroType.RESUME,

@@ -9,7 +9,7 @@
     <string name="onboarding_pick_at_least_one">Choisissez-en au moins 1</string>
     <string name="onboarding_select_at_least_one">Sélectionnez-en au moins 1</string>
     <string name="onboarding_select_all_that_apply">Sélectionnez toutes les réponses qui s’appliquent</string>
-    <string name="onboarding_target_genres">Genres associés (appuyez pour activer) :</string>
+    <string name="onboarding_target_genres">Genres associés</string>
     <string name="onboarding_genres_title">On fait connaissance ?</string>
     <string name="onboarding_genres_body">Choisissez les sujets qui vous plaisent</string>
     <string name="onboarding_subgenres_title">Allons un peu plus loin</string>
@@ -126,7 +126,7 @@
     <string name="onboarding_subgenre_national_politics">Politique nationale</string>
     <string name="onboarding_activity_commuting">Trajets</string>
     <string name="onboarding_activity_working">Travail</string>
-    <string name="onboarding_activity_meditating">Méditation / détente</string>
+    <string name="onboarding_activity_meditating">Détente</string>
     <string name="onboarding_activity_winding_down">Décompression</string>
     <string name="onboarding_activity_working_out">Sport</string>
     <string name="onboarding_activity_chores">Tâches ménagères</string>

@@ -23,7 +23,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * A show search that couldn't be read offers Try again, not "No Podcasts Found", through live phone,
+ * A show search that couldn't be read offers Try again, not "No shows found", through live phone,
  * tablet, split and short windows, and Try again asks once.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -80,7 +80,7 @@ class OnboardingSearchFailureTest {
             compose.runOnIdle { window.value = size }
             compose.waitForIdle()
             compose.onNodeWithText("Couldn’t search right now").assertIsDisplayed()
-            compose.onNodeWithText("No Podcasts Found").assertDoesNotExist()
+            compose.onNodeWithText("No shows found").assertDoesNotExist()
         }
         compose.onNodeWithText("Try again").performClick()
         assertEquals(1, retries)
@@ -90,7 +90,7 @@ class OnboardingSearchFailureTest {
     fun `a search that was read and found nothing still says no matches`() {
         failed.value = false
         render()
-        compose.onNodeWithText("No Podcasts Found").assertIsDisplayed()
+        compose.onNodeWithText("No shows found").assertIsDisplayed()
         compose.onNodeWithText("Try again").assertDoesNotExist()
     }
 }

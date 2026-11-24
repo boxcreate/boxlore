@@ -282,6 +282,24 @@ class HomeConnectedRailTest {
         composeRule.onNodeWithText("You’re all caught up").assertExists()
     }
 
+    /** Tablets used to show one heading in the corner of a large, empty panel. */
+    @Test fun `a caught-up Daily Mix on tablets centres its message in the panel and phones keep the heading`() {
+        state.value = Scenario(empty = true, width = 1_200, tablet = true)
+        render()
+        for (count in listOf(3, 14)) {
+            state.value = Scenario(empty = true, count = count, width = 1_200, tablet = true)
+            composeRule.waitForIdle()
+            val panel = bounds("home_shows_content_pane")
+            val message = bounds("home_mix_caught_up")
+            assertTrue("$count shows: the message leaves the panel", message.top >= panel.top - 0.5f && message.bottom <= panel.bottom + 0.5f)
+            assertEquals("$count shows: the message is centred across the panel", panel.center.x, message.center.x, 8f)
+        }
+        state.value = Scenario(empty = true)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home_mix_caught_up").assertDoesNotExist()
+        composeRule.onNodeWithText("You’re all caught up").assertExists()
+    }
+
     @Test fun `caught up collapse animates the same surface without moving selectors`() {
         render()
         composeRule.waitForIdle()
@@ -404,6 +422,25 @@ class HomeConnectedRailTest {
         composeRule.onNodeWithTag("home_show_selector_show-13", useUnmergedTree = true).assertExists()
         val picker = composeRule.onNodeWithTag("home_show_selectors", useUnmergedTree = true).fetchSemanticsNode()
         assertTrue(!picker.config.contains(SemanticsProperties.VerticalScrollAxisRange))
+    }
+
+    /**
+     * On large tablets the side cover picker could leave one cover alone on its last row (mix + 8 shows
+     * made 4+4+1 on an 800dp tablet and a half-open book), and the heading's arrow could sit past the
+     * box below it. Every row now holds at least two covers, and the heading ends where the box ends.
+     */
+    @Test fun `the sidebar picker never leaves a lone cover and the heading ends with the module`() {
+        state.value = Scenario(count = 8, width = 768, tablet = true)
+        render()
+        // An 800dp tablet's pane, a half-open book's window, a wide tablet past the 1,200dp cap, and back.
+        for (width in listOf(768, 718, 1_248, 768)) {
+            state.value = Scenario(count = 8, width = width, tablet = true)
+            composeRule.waitForIdle()
+            val tiles = (listOf("mix") + podcasts.take(8).map { it.id }).map { bounds("home_show_selector_$it") }
+            val rows = tiles.groupBy { Math.round(it.top) }.values.map { it.size }
+            assertTrue("$width: rows of $rows", rows.size > 1 && rows.none { it == 1 })
+            assertEquals("$width: heading end", bounds("home_your_shows_surface").right, bounds("home_your_shows_header").right, 0.5f)
+        }
     }
 
     @Test fun `large libraries keep a bounded lazy sidebar with every show reachable`() {

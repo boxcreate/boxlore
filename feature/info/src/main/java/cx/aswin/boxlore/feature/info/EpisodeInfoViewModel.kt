@@ -252,6 +252,26 @@ class EpisodeInfoViewModel(
         }
     }
 
+    private val lastLoad = EpisodeLoadRequests.LastLoad()
+
+    /** Try again after a failed load: the same request, which a finished error never covers. */
+    fun retry() {
+        val last = lastLoad.retryArguments() ?: return
+        with(last) {
+            loadEpisode(
+                episodeId,
+                episodeTitle,
+                episodeDescription,
+                episodeImageUrl,
+                episodeAudioUrl,
+                episodeDuration,
+                podcastId,
+                podcastTitle,
+                entryPointContext,
+            )
+        }
+    }
+
     fun loadEpisode(
         episodeId: String,
         episodeTitle: String = "",
@@ -264,7 +284,12 @@ class EpisodeInfoViewModel(
         entryPointContext: android.os.Bundle? = null,
     ) {
         // If we already have this episode loaded (or are loading it with at least as much to go on), don't reload.
-        if (EpisodeLoadRequests.isCovered(loadRequest, loadJob?.isActive == true, _uiState.value, episodeId, podcastId)) return
+        val covered = EpisodeLoadRequests.isCovered(loadRequest, loadJob?.isActive == true, _uiState.value, episodeId, podcastId)
+        val arguments = EpisodeLoadRequests.Arguments(
+            episodeId, episodeTitle, episodeDescription, episodeImageUrl, episodeAudioUrl, episodeDuration, podcastId, podcastTitle, entryPointContext,
+        )
+        lastLoad.record(arguments, covered)
+        if (covered) return
         loadJob?.cancel()
         loadRequest = EpisodeLoadRequests.Request(episodeId, podcastId)
         // A new episode stops the previous one's Try these episodes request straight away.

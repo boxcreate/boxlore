@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentHeightDp
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
@@ -59,6 +61,10 @@ private val PhotoTop = (-7).dp
 private val PhotoMaxWidth = 480.dp
 private val PhotoSideFade = 48.dp
 
+/** The photo's width on a regular phone, kept on wider phone screens that are not tall. */
+private val PhoneReferenceWidth = 412.dp
+private const val SHORT_PHONE_HEIGHT_DP = 760f
+
 /**
  * Her room: Apple's official show-page photo of Stephanie Soo in her red room, the show's wordmark
  * on the wall, emerging from the dark under the top bar and fading into the page below her lap.
@@ -68,7 +74,10 @@ private val PhotoSideFade = 48.dp
 internal fun RottenMangoHeader(podcast: Podcast, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) {
     val room = painterResource(R.drawable.rottenmango_room)
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        val photoWidth = min(maxWidth, PhotoMaxWidth)
+        // A wide phone screen that isn't tall (the Galaxy Z Fold 8 cover, a sideways phone) keeps a
+        // regular phone's photo, so the description and Subscribe stay as high as on a phone.
+        val shortWidePhone = !LocalBoxloreWindowLayout.current.usesTabletLayout && boxloreContentHeightDp() < SHORT_PHONE_HEIGHT_DP
+        val photoWidth = min(maxWidth, if (shortWidePhone) PhoneReferenceWidth else PhotoMaxWidth)
         val photoHeight = photoWidth * PHOTO_ASPECT
         Column(
             Modifier.fillMaxWidth().drawBehind { drawRoom(room, photoWidth, photoHeight) },

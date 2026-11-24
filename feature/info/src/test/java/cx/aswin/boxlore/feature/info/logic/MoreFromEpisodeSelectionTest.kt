@@ -53,4 +53,16 @@ class MoreFromEpisodeSelectionTest {
         assertTrue(selectMoreFromEpisodes(listOf(current), "current").isEmpty())
         assertTrue(selectMoreFromEpisodes(emptyList(), "current").isEmpty())
     }
+
+    @Test
+    fun `rows show their own picture, else their date, else their number`() {
+        val show = "https://images.example.invalid/show.jpg"
+        val own = TestFixtures.episode(id = "own", imageUrl = "https://images.example.invalid/own.jpg", publishedDate = 1_700_000_000L)
+        assertEquals(MoreFromArt.Image("https://images.example.invalid/own.jpg"), moreFromRowArt(own, show))
+        val cover = TestFixtures.episode(id = "cover", imageUrl = show, publishedDate = 1_700_000_000L)
+        assertEquals(MoreFromArt.Date(1_700_000_000L), moreFromRowArt(cover, show))
+        val numbered = TestFixtures.episode(id = "numbered", imageUrl = null).copy(episodeNumber = 14)
+        assertEquals(MoreFromArt.Number(14), moreFromRowArt(numbered, show))
+        assertEquals(MoreFromArt.ShowCover, moreFromRowArt(TestFixtures.episode(id = "bare"), show))
+    }
 }

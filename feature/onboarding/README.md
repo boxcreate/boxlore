@@ -9,23 +9,24 @@ Owns first-run onboarding: the Welcome screen, Echo (the AI-guided conversation 
 - `OnboardingScreen`: the whole flow, shown by `:app` on the `onboarding` route. It switches on `OnboardingUiState.currentStep` and calls `onComplete`, `onBack`, `onImportClick` and `onAppLanguageChosen`.
 - `OnboardingViewModel`: an `AndroidViewModel` built by `:app` from `PodcastRepository`, `SubscriptionRepository`, `UserPreferencesRepository` and an `appLanguageSuggestion`; it exposes `uiState`. `chooseAppLanguage` answers the language question (`AppLanguageQuestion`).
 - `markOnboardingCompletedSilent` and `generateRecommendationsFromOpml`: extensions the app calls to finish without the flow, or to hand imported shows to the similar-shows choice.
-- `OnboardingUiState`, `OnboardingStep` (`APP_LANGUAGE`, `WELCOME`, `GENRES`, `SUB_GENRES`, `ACTIVITY_PICKER`, `LENGTH_PICKER`, `SEARCH`, `AI_ONBOARDING`, `AI_SUGGESTIONS`) and `AiLoadingStage`: the flow's state.
+- `OnboardingUiState`, `OnboardingStep` (`APP_LANGUAGE`, `WELCOME`, `GENRES`, `SUB_GENRES`, `ACTIVITY_PICKER`, `LENGTH_PICKER`, `SEARCH`, `AI_ONBOARDING`, `AI_SUGGESTIONS`), `AiLoadingStage` and `OnboardingErrorKind`: the flow's state.
 - `ONBOARDING_GENRES` / `GenreItem` and `SEARCH_CATEGORIES` / `SearchCategoryItem`: the picker and search chip lists. Each item pairs a label resource with the English key sent to the server; keys never change.
 - Everything else, including every step screen, is `internal`.
 
 ## Flow
 
 - **Language** (`AppLanguageQuestionContent`, step `APP_LANGUAGE`): first, only while onboarding is unfinished, no App language was picked and the phone's languages or region suggest a translation (`AppLanguageMatcher`). The screen stays in English and names each language in itself: the suggested one as the main button, then English and the other translations, while the greeting above cycles through every language. System default is left to Settings. A pick moves on to Welcome and the app applies it at once; the activity's recreation keeps this view model, so nothing is lost. Echo's server text follows the app's language through `appLanguage` (below).
-- **Welcome** (`WelcomeScreen`): a cover reel, a rotating reply line and Echo peeking over the **Find shows for me** button; the actions start Echo, search, library import (handled by the app) or skip.
-- **Echo** (`AiOnboardingScreen` → `EchoOnboardingScreen`): one question per turn with fixed areas for the top bar, Echo, the question, its answers and a buttons-only footer. The screen never scrolls; `EchoLayout` picks a height tier from the space available.
+- **Opening hand-off**: the language question and Welcome share their panel and logo row (`OpeningPanel`; side by side through `OnboardingOpeningFrame` on windows wider than tall). A pick records how the panel and its greeting stood (`OpeningHandoff`, held in `OnboardingUiState` until Welcome has taken over or is left), the step changes without a slide while the choices fade, and once the picked language is in effect Welcome's panel settles from the question's while the greeting gives way to the covers and the ways in rise. With animations off Welcome shows at once.
+- **Welcome** (`WelcomeScreen`): a cover reel, a rotating reply line and Echo peeking over the **Find shows for me** button; the actions start Echo, search, library import (handled by the app) or skip. Portrait windows stack the cover panel above the rest, with covers that shrink only when the page would otherwise scroll; wider-than-tall windows put the panel beside the invitation and actions.
+- **Echo** (`AiOnboardingScreen` → `EchoOnboardingScreen`): one question per turn with fixed areas for the top bar, Echo, the question, its answers and a buttons-only footer. The screen never scrolls: the question gets its height first and `echoFitPlan` steps down only while the rest would overflow (today's `EchoLayout` tier, shorter answers then a smaller Echo and bubble, answers without icons, then the answers stacked with Something else beside the main button, beside Echo and the question on wide, short windows, and last Echo folded away).
 - The opening turn is app-owned and sends no request: the eight `EchoInitialTopic` answers plus **Something else**, a text box for free answers.
 - `EchoScreenModel` decides the screen kind (`EchoScreenKind`), footer actions, progress and Echo's pose as pure functions.
 - Finishing is always the listener's choice. `GuidedOnboardingLogic` caps a conversation at seven answers (`MAX_ANSWERS`) and offers the build nudge after four.
 - **Show deck**: after two answers the app asks for two to four taste-test cards (`EchoDeckLogic`). Reactions (`like`, `dislike`, `listen`, `unknown`) travel on later requests as `probeReactions`, at most twelve. **I already listen** also adds the show to the listener's picks. One deck per conversation, with one retry.
 - **Manual topics**: `GenrePickerScreen`, `SubGenrePickerScreen`, `ActivityPickerScreen` and `LengthPickerScreen`, limited by `OnboardingGenreLimits`.
-- **Search** (`OnboardingSearchScreen`): progressive typeahead through `searchPodcastsGrouped`, kept at the top by `ProgressiveSearchScrollLogic`; picks are followed at the handoff.
+- **Search** (`OnboardingSearchScreen`): progressive typeahead through `searchPodcastsGrouped`, kept at the top by `ProgressiveSearchScrollLogic`. Picks gather in the Continue bar, which opens them in a sheet, and are followed at the handoff.
 - **Similar-shows choice** (`SimilarShowsChoice`, `SimilarShowsChoiceContent`): after search or import the listener chooses **See similar shows** or **Go to Home** before any request is made. Import leads with Go to Home, search with See similar shows; a late answer after skipping is dropped (`acceptsResult`).
-- **Suggestions** (`AiSuggestionsScreen`, shared by every path): lanes of `SuggestionShowCard`s. Nothing starts selected except Echo's **Your picks** lane; `OnboardingSuggestionsPresentation` decides the origin (`SuggestionsOrigin`), loading state and what **Add N shows** counts.
+- **Suggestions** (`AiSuggestionsScreen`, shared by every path): lanes of `SuggestionShowCard`s, a row each on narrow windows and rows of cards (then **Show all**) on wide ones; no lane repeats a lane above it or the top of the charts (`OnboardingSuggestionsLanes.withoutRepeats`), and **Popular now** picks its country from a compact `RegionSegmentedSelector`. Nothing starts selected except Echo's **Your picks** lane; `OnboardingSuggestionsPresentation` decides the origin (`SuggestionsOrigin`), loading state and what **Add N shows** counts. A similar-shows request the API refuses for a skipped or failed human check says so (`OnboardingErrorKind.VerificationSkipped`) instead of blaming the connection.
 - Back restores the previous question with its answer still picked, cancels requests in flight, and from loaded Echo suggestions shows `EchoReadyStage`. **Change my answers** drops results and their picks (`OnboardingAiStart.withoutResults`).
 
 ## Client contracts
@@ -45,18 +46,21 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
   OnboardingViewModel{Ai,Deck,Genre,Search,SimilarShows}.kt
   Welcome*.kt                          # screen, cover reel, reply loop, entry timing, motion clock,
                                        #   Echo's eye script (WelcomeEchoIdle.kt)
+  OnboardingOpeningFrame.kt, OpeningHandoffMotion.kt  # shared opening panel, side-by-side frame, language-to-Welcome hand-off
   Echo{OnboardingScreen,TopBar,Conversation,Answers,FooterBar}.kt
-  EchoScreenModel.kt, EchoLayoutMetrics.kt, EchoMotion.kt, EchoPlatformMotion.kt, EchoMoments.kt
+  EchoScreenModel.kt, EchoLayoutMetrics.kt, EchoFitPlan.kt, EchoFitMeasure.kt  # tiers and the no-scroll fit order
+  EchoMotion.kt, EchoPlatformMotion.kt, EchoMoments.kt
   EchoInitialTopic.kt, EchoChoiceIcons.kt, EchoLanguageHint.kt, EchoPrivacyNotice.kt
   EchoRequestLifecycle.kt              # request jobs, question snapshots, EchoRequestPolicy
   EchoWaitMessages.kt                  # slow-request lines and countdowns
-  EchoShowDeck.kt, EchoDeckViews.kt, EchoDeckPhysics.kt, EchoShowPreview.kt  # deck state, views, clips
+  EchoShowDeck.kt, EchoDeckViews.kt, EchoDeckReactionLabels.kt, EchoDeckPhysics.kt, EchoShowPreview.kt  # deck state, views, answer labels, clips
   EchoPrism{Card,Layout,Foil,Support}.kt                                     # the deck's show card
   GuidedOnboardingLogic.kt, OnboardingAiStart.kt, OnboardingFallback.kt
   GenreOnboardingScreen.kt, OnboardingTopicCatalog.kt, OnboardingGenreLimits.kt, OnboardingCurriculumLogic.kt
-  SearchOnboardingScreen.kt, OnboardingSearchBackStep.kt, OnboardingShowSearchCombine.kt
+  SearchOnboardingScreen.kt, OnboardingSearchGrid.kt, OnboardingSearchPicks.kt  # search box, trending grid, picks bar and sheet
+  OnboardingSearchBackStep.kt, OnboardingShowSearchCombine.kt
   SimilarShowsChoice.kt, SimilarShowsChoiceView.kt
-  AiSuggestionsScreen.kt, AiSuggestionCards.kt, AiSuggestionIcons.kt
+  AiSuggestionsScreen.kt, AiSuggestionsFooter.kt, AiSuggestionCards.kt, AiSuggestionIcons.kt
   OnboardingSuggestionsLanes.kt, OnboardingSuggestionsPresentation.kt, OnboardingDiscoveryLocale.kt
   AiOnboardingScreen.kt                # delegates to EchoOnboardingScreen
   OnboardingAppLanguage.kt, OnboardingViewModelLanguage.kt, AppLanguageQuestionView.kt  # language question

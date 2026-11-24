@@ -9,26 +9,45 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldState
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import cx.aswin.boxlore.core.testing.SystemInsets
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
+import cx.aswin.boxlore.core.testing.walkWindows
+import cx.aswin.boxlore.feature.info.components.EPISODE_HERO_ART_TAG
+import cx.aswin.boxlore.feature.info.components.EPISODE_PAGE_SKELETON_TAG
+import cx.aswin.boxlore.feature.info.components.EPISODE_SKELETON_ART_TAG
+import cx.aswin.boxlore.feature.info.components.EPISODE_SKELETON_RAIL_TAG
 import cx.aswin.boxlore.feature.info.components.EpisodeLinkStatusTags
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -57,12 +76,14 @@ class EpisodeInfoAdaptiveTransitionTest {
     @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1_280, 800, false))
 
     private val window = mutableStateOf(COMPACT)
+    private val pane = mutableStateOf<BoxloreLayoutBounds?>(null)
     private val uiState = MutableStateFlow<EpisodeInfoUiState>(EpisodeInfoUiState.Loading)
     private val model = mock(EpisodeInfoViewModel::class.java)
     private val archived = MutableStateFlow(emptySet<String>())
     private lateinit var restoration: StateRestorationTester
     private val openedShows = mutableListOf<String>()
     private var backs = 0
+    private var routeTitle = ""
 
     @Test
     fun `finding the episode survives window changes and recreation without a second load`() {
@@ -124,9 +145,10 @@ class EpisodeInfoAdaptiveTransitionTest {
 
     @Test
     fun `a link to another of the episode's IDs shows the phone's download across window changes`() {
+        render()
+        // After the page's own stubs, which answer every other ID with "not downloaded".
         `when`(model.isDownloaded("-9")).thenReturn(flowOf(true))
         `when`(model.isDownloading("-9")).thenReturn(flowOf(false))
-        render()
         val episode = TestFixtures.episode(id = "-9", title = "Stored episode", podcastId = "920666", podcastTitle = "Curious world")
         uiState.value = EpisodeInfoUiState.Success(
             episode,
@@ -164,6 +186,272 @@ class EpisodeInfoAdaptiveTransitionTest {
         }
         recreate(FOLD_TABLETOP)
         assertTrue(labelled("Archived"))
+    }
+
+    @Test
+    fun `the top bar clears side system buttons and sits where the show page puts Back and Share`() {
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        showEpisode()
+        // The show page's top bar: 48dp buttons 4dp from each edge, so their centres are 28dp in.
+        assertEquals(28f, centreX(BACK), 0.5f)
+        assertEquals(BoxloreTestWindows.PHONE.widthDp - 28f, centreX(SHARE), 0.5f)
+
+        fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets.SIDEWAYS_3_BUTTON) }
+        fixture.compose.walkWindows(window, BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND) { size ->
+            if (size == BoxloreTestWindows.PHONE_LAND) {
+                val insets = SystemInsets.SIDEWAYS_3_BUTTON
+                assertTrue("Back clears the camera cutout", bounds(BACK).left.value >= insets.cutoutStart)
+                assertTrue("Share clears the side buttons", bounds(SHARE).right.value <= size.widthDp - insets.navEnd)
+            }
+        }
+        fixture.compose.onNodeWithContentDescription(SHARE).performClick()
+        fixture.compose.waitForIdle()
+        assertTrue("Share is tappable sideways and opens the sheet", shareSheetShown())
+    }
+
+    @Test
+    fun `in tabletop the lower half starts right at the top bar, and flat keeps the status bar`() {
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        showEpisode()
+        fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets.TABLETOP_STATUS) }
+        fixture.compose.waitForIdle()
+        val buttonTop = (64f - 48f) / 2
+        val lowerHalf = BoxloreLayoutBounds(0f, 336f, BoxloreTestWindows.FOLD_FLAT.widthDp, BoxloreTestWindows.FOLD_FLAT.heightDp)
+        listOf(
+            Triple(BoxloreTestWindows.FOLD_FLAT, null, SystemInsets.TABLETOP_STATUS.statusTop + buttonTop),
+            Triple(BoxloreTestWindows.FOLD_TABLETOP, lowerHalf, buttonTop),
+            Triple(BoxloreTestWindows.FOLD_FLAT, null, SystemInsets.TABLETOP_STATUS.statusTop + buttonTop),
+        ).forEach { (size, bounds, expectedTop) ->
+            fixture.compose.runOnIdle {
+                pane.value = bounds
+                window.value = size
+            }
+            fixture.compose.waitForIdle()
+            assertEquals("Back's top at $size", expectedTop, bounds(BACK).top.value, 0.5f)
+        }
+    }
+
+    @Test
+    fun `the hero changes form at the 600 and 480 gates and keeps the open title, and Play works after every step`() {
+        window.value = BoxloreTestWindows.PHONE
+        render()
+        showEpisode(LONG_TITLE)
+        val walk = arrayOf(
+            BoxloreTestWindows.PHONE_LAND,
+            BoxloreTestWindows.PHONE,
+            BoxloreTestWindows.W599_H900,
+            BoxloreTestWindows.W600_H900,
+            BoxloreTestWindows.W599_H900,
+            BoxloreTestWindows.W900_H479,
+            BoxloreTestWindows.W900_H480,
+            BoxloreTestWindows.W900_H479,
+            BoxloreTestWindows.PHONE,
+        )
+        fixture.compose.walkWindows(window, *walk) { size ->
+            val short = size.heightDp < 480f
+            if (short) assertPlayInside(size.heightDp, "Play is on the first screen at $size")
+            val rail = fixture.compose.onNodeWithTag(EpisodeInfoTags.RAIL).getBoundsInRoot()
+            if (short || size.widthDp >= 600f) {
+                assertTrue("the Play row stops at a comfortable width at $size", rail.right.value - rail.left.value <= 480.5f)
+            } else {
+                assertTrue("the phone Play row spans the page at $size", rail.right.value - rail.left.value > 480.5f || size.widthDp < 530f)
+            }
+        }
+
+        fixture.compose.onNodeWithContentDescription(FULL_TITLE).performClick()
+        fixture.compose.waitForIdle()
+        var plays = 0
+        fixture.compose.walkWindows(window, *walk) { size ->
+            assertTrue("the open title stays open at $size", labelled(SHOW_LESS))
+            // The Play row is its own list item, or inside the hero's end column on a wide page.
+            val twoColumn = size.widthDp >= 600f && size.heightDp >= 480f
+            fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey(if (twoColumn) "hero" else "rail")
+            fixture.compose.onNode(hasText(PLAY) and hasClickAction()).performScrollTo().performClick()
+            plays++
+            val calls = mockingDetails(model).invocations.count { it.method.name == "onMainActionClick" }
+            assertEquals("one play per tap at $size", plays, calls)
+            fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToIndex(0)
+        }
+    }
+
+    @Test
+    fun `in a tabletop half Play is on the first screen, and the page keeps its scroll through the fold`() {
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        showEpisode()
+        // Enough below the hero that the page can scroll in every layout.
+        val chapters = List(8) { cx.aswin.boxlore.core.model.Chapter(it * 300.0, "Chapter ${it + 1}") }
+        uiState.value = (uiState.value as EpisodeInfoUiState.Success).copy(chapters = chapters)
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToIndex(1)
+        fixture.compose.waitForIdle()
+        val lowerHalf = BoxloreLayoutBounds(0f, 336f, BoxloreTestWindows.FOLD_FLAT.widthDp, BoxloreTestWindows.FOLD_FLAT.heightDp)
+        listOf(BoxloreTestWindows.FOLD_TABLETOP to lowerHalf, BoxloreTestWindows.FOLD_FLAT to null).forEach { (size, bounds) ->
+            fixture.compose.runOnIdle {
+                pane.value = bounds
+                window.value = size
+            }
+            fixture.compose.waitForIdle()
+            assertTrue("the list stays scrolled at $size", listScroll() > 0f)
+        }
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToIndex(0)
+        fixture.compose.runOnIdle {
+            pane.value = lowerHalf
+            window.value = BoxloreTestWindows.FOLD_TABLETOP
+        }
+        fixture.compose.waitForIdle()
+        assertPlayInside(lowerHalf.height, "Play is on the first screen of the lower half")
+    }
+
+    @Test
+    fun `a page scrolled to the Play row keeps Play on screen when the cover moves beside the title and back`() {
+        window.value = BoxloreTestWindows.W599_H900
+        render()
+        showEpisode()
+        val chapters = List(8) { cx.aswin.boxlore.core.model.Chapter(it * 300.0, "Chapter ${it + 1}") }
+        uiState.value = (uiState.value as EpisodeInfoUiState.Success).copy(chapters = chapters)
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("rail")
+        fixture.compose.walkWindows(window, BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900) { size ->
+            assertPlayInside(size.heightDp, "Play is inside the page at $size")
+        }
+        // Scrolled deep into the hero, its foot still the first thing under the top bar and the Play row below it.
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("rail")
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, -40f) }
+        fixture.compose.waitForIdle()
+        fixture.compose.walkWindows(window, BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900) { size ->
+            assertPlayInside(size.heightDp, "Play is inside the page from a hero offset at $size")
+        }
+    }
+
+    @Test
+    fun `on a half-open fold filling the window the Play row stays off the hinge, and Play works after each step`() {
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        showEpisode(LONG_TITLE)
+        val hinge = BoxloreTestWindows.FOLD_TABLETOP.tabletopFold!!.bounds
+        var plays = 0
+        fixture.compose.walkWindows(window, BoxloreTestWindows.FOLD_TABLETOP, BoxloreTestWindows.FOLD_FLAT) { size ->
+            fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToIndex(0)
+            if (size.tabletopFold != null) {
+                val rail = fixture.compose.onNodeWithTag(EpisodeInfoTags.RAIL).getBoundsInRoot()
+                assertTrue("the Play row is clear of the hinge ($rail)", rail.bottom.value <= hinge.top || rail.top.value >= hinge.bottom)
+            }
+            fixture.compose.onNode(hasText(PLAY) and hasClickAction()).performScrollTo().performClick()
+            plays++
+            assertEquals("one play per tap at $size", plays, mockingDetails(model).invocations.count { it.method.name == "onMainActionClick" })
+        }
+    }
+
+    @Test
+    fun `an open Share sheet stays open through window changes, a reload and recreation`() {
+        window.value = BoxloreTestWindows.W599_H900
+        render()
+        showEpisode()
+        fixture.compose.onNodeWithContentDescription(SHARE).performClick()
+        fixture.compose.waitForIdle()
+        assertTrue(shareSheetShown())
+        fixture.compose.walkWindows(
+            window,
+            BoxloreTestWindows.W600_H900,
+            BoxloreTestWindows.W599_H900,
+            BoxloreWindowLayout(839f, 600f),
+            BoxloreWindowLayout(841f, 600f),
+            BoxloreWindowLayout(839f, 600f),
+            BoxloreTestWindows.FOLD_FLAT,
+            BoxloreTestWindows.FOLD_TABLETOP,
+            BoxloreTestWindows.FOLD_FLAT,
+        ) { size -> assertTrue("the sheet stays open at $size", shareSheetShown()) }
+
+        // A reload passes through Loading; the sheet doesn't close with the loaded page.
+        val loaded = uiState.value
+        uiState.value = EpisodeInfoUiState.Loading
+        fixture.compose.waitForIdle()
+        assertTrue("open while loading", shareSheetShown())
+        uiState.value = loaded
+        fixture.compose.waitForIdle()
+        assertTrue("open after loading", shareSheetShown())
+
+        recreate(BoxloreTestWindows.W600_H900)
+        assertTrue("open after recreation", shareSheetShown())
+    }
+
+    @Test
+    fun `the loading outline sits where the loaded page will, with Back working and no second load`() {
+        // The route already knows the title, so the outline draws it and the Play row starts where it stays.
+        routeTitle = LONG_TITLE
+        listOf(BoxloreTestWindows.PHONE, BoxloreTestWindows.SPLIT_HALF, BoxloreTestWindows.UPRIGHT_BOOK).forEach { size ->
+            window.value = size
+            uiState.value = EpisodeInfoUiState.Loading
+            if (size == BoxloreTestWindows.PHONE) render() else fixture.compose.waitForIdle()
+            val skeletonArt = fixture.compose.onNodeWithTag(EPISODE_SKELETON_ART_TAG, useUnmergedTree = true).getBoundsInRoot()
+            val skeletonRail = fixture.compose.onNodeWithTag(EPISODE_SKELETON_RAIL_TAG, useUnmergedTree = true).getBoundsInRoot()
+            showEpisode(LONG_TITLE)
+            val art = fixture.compose.onNodeWithTag(EPISODE_HERO_ART_TAG).getBoundsInRoot()
+            val rail = fixture.compose.onNodeWithTag(EpisodeInfoTags.RAIL).getBoundsInRoot()
+            assertEquals("art at $size", art, skeletonArt)
+            assertEquals("rail start at $size", rail.left.value, skeletonRail.left.value, 0.5f)
+            assertEquals("rail width at $size", rail.right.value - rail.left.value, skeletonRail.right.value - skeletonRail.left.value, 0.5f)
+            assertEquals("rail top at $size", rail.top.value, skeletonRail.top.value, 2f)
+        }
+
+        uiState.value = EpisodeInfoUiState.Loading
+        fixture.compose.walkWindows(window, BoxloreTestWindows.W599_H900, BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900) { size ->
+            fixture.compose.onNodeWithTag(EPISODE_PAGE_SKELETON_TAG, useUnmergedTree = true).assertExists()
+        }
+        val loads = mockingDetails(model).invocations.count { it.method.name == "loadEpisode" }
+        assertEquals("window changes while loading don't load again", 1, loads)
+        fixture.compose.onNodeWithContentDescription(BACK).performClick()
+        fixture.compose.waitForIdle()
+        assertEquals("Back works while loading", 1, backs)
+    }
+
+    @Test
+    fun `a load error offers Try again and Back in short windows and keeps them across the 600dp gate`() {
+        window.value = BoxloreTestWindows.PHONE_LAND
+        render()
+        uiState.value = EpisodeInfoUiState.Error
+        fixture.compose.waitForIdle()
+        var retries = 0
+        fixture.compose.walkWindows(
+            window,
+            BoxloreTestWindows.PHONE_LAND,
+            BoxloreTestWindows.SPLIT_HALF,
+            BoxloreTestWindows.W599_H900,
+            BoxloreTestWindows.W600_H900,
+            BoxloreTestWindows.W599_H900,
+        ) { size ->
+            fixture.compose.onNodeWithText("Couldn’t load this episode").assertExists()
+            fixture.compose.onNodeWithText(TRY_AGAIN).performScrollTo().performClick()
+            retries++
+            assertEquals("one retry per tap at $size", retries, mockingDetails(model).invocations.count { it.method.name == "retry" })
+        }
+        fixture.compose.onNodeWithText(BACK).performScrollTo().performClick()
+        fixture.compose.waitForIdle()
+        assertEquals(1, backs)
+    }
+
+    /** Play whole on screen: below the 64dp top bar, above [pageHeight], and actually drawn. */
+    private fun assertPlayInside(pageHeight: Float, message: String) {
+        val play = fixture.compose.onNode(hasText(PLAY) and hasClickAction()).getUnclippedBoundsInRoot()
+        assertTrue("$message ($play)", (play.bottom - play.top).value > 0f && play.top.value >= 64f && play.bottom.value <= pageHeight)
+    }
+
+    private fun listScroll(): Float =
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+
+    private fun shareSheetShown() = fixture.compose.onAllNodesWithText(SHARE_SHEET_TITLE).fetchSemanticsNodes().isNotEmpty()
+
+    private fun centreX(label: String) = bounds(label).let { (it.left.value + it.right.value) / 2 }
+
+    private fun bounds(label: String) = fixture.compose.onNodeWithContentDescription(label).getBoundsInRoot()
+
+    private fun showEpisode(title: String = "How we find our way home") {
+        val episode = TestFixtures.episode(id = LINK_ID, title = title, podcastId = "920666", podcastTitle = "Curious world")
+        uiState.value = EpisodeInfoUiState.Success(episode, "920666", "Curious world", relatedEpisodesLoading = false, similarEpisodesLoading = false)
+        fixture.compose.waitForIdle()
     }
 
     private fun labelled(label: String): Boolean =
@@ -212,30 +500,24 @@ class EpisodeInfoAdaptiveTransitionTest {
     }
 
     private fun render() {
-        `when`(model.uiState).thenReturn(uiState)
-        `when`(model.moreLikeThisOn).thenReturn(MutableStateFlow(false))
-        `when`(model.likedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
-        `when`(model.completedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
-        `when`(model.archivedEpisodeIds).thenReturn(archived)
-        `when`(model.queuedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
-        `when`(model.isDownloaded(LINK_ID)).thenReturn(flowOf(false))
-        `when`(model.isDownloading(LINK_ID)).thenReturn(flowOf(false))
-        `when`(model.showRemoveDownloadDialog).thenReturn(MutableStateFlow(false))
+        stubEpisodeInfoViewModel(model, uiState, moreLikeThisOn = false, archived = archived)
         fixture.prepare()
         fixture.compose.mainClock.autoAdvance = true
         restoration = StateRestorationTester(fixture.compose)
         restoration.setContent {
             val size = window.value
+            val bounds = pane.value
             CompositionLocalProvider(
                 LocalBoxloreWindowLayout provides size,
-                LocalBoxlorePaneWidth provides size.widthDp,
+                LocalBoxlorePaneWidth provides (bounds?.width ?: size.widthDp),
+                LocalBoxlorePaneBounds provides bounds,
             ) {
-                Box(Modifier.width(size.widthDp.dp).height(size.heightDp.dp)) {
+                Box(Modifier.width((bounds?.width ?: size.widthDp).dp).height((bounds?.height ?: size.heightDp).dp)) {
                     BoxLoreTheme(dynamicColor = false) {
                         Surface {
                             EpisodeInfoScreen(
                                 episodeId = LINK_ID,
-                                episodeTitle = "",
+                                episodeTitle = routeTitle,
                                 episodeDescription = "",
                                 episodeImageUrl = "",
                                 episodeAudioUrl = "",
@@ -258,6 +540,16 @@ class EpisodeInfoAdaptiveTransitionTest {
 
     private companion object {
         const val LINK_ID = "4503599627370500"
+        const val BACK = "Back"
+        const val SHARE = "Share episode"
+        const val TRY_AGAIN = "Try again"
+        const val SHARE_SHEET_TITLE = "Share this episode"
+        const val FULL_TITLE = "Show full title"
+        const val SHOW_LESS = "Show less"
+        const val PLAY = "Play"
+        const val LONG_TITLE = "How we find our way home again after a long winter away: memory, maps and the places that keep us, " +
+            "with stories from listeners in Lagos, Leipzig and Lisbon about the streets they still walk in their sleep, " +
+            "the kitchens they can still smell and the maps they drew from memory when they could not go back"
         val COMPACT = BoxloreWindowLayout(599f, 800f)
         val TABLET = BoxloreWindowLayout(1_280f, 800f)
         val FOLD_FLAT = BoxloreWindowLayout(673f, 841f)

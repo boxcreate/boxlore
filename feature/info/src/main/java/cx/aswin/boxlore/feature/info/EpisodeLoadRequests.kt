@@ -13,6 +13,31 @@ internal object EpisodeLoadRequests {
     /** What a page load was asked for: the episode ID and the show the caller named ("" for none). */
     data class Request(val episodeId: String, val podcastId: String)
 
+    /** Everything one page load was given, kept whole so Try again repeats exactly that load. */
+    data class Arguments(
+        val episodeId: String,
+        val episodeTitle: String,
+        val episodeDescription: String,
+        val episodeImageUrl: String,
+        val episodeAudioUrl: String,
+        val episodeDuration: Int,
+        val podcastId: String,
+        val podcastTitle: String,
+        val entryPointContext: android.os.Bundle?,
+    )
+
+    /** The last load the page actually started; a skipped (covered) request never replaces it. */
+    class LastLoad {
+        private var last: Arguments? = null
+
+        fun record(arguments: Arguments, covered: Boolean) {
+            if (!covered) last = arguments
+        }
+
+        /** What Try again loads, or null before any load started. */
+        fun retryArguments(): Arguments? = last
+    }
+
     /**
      * True when a new request for [episodeId] adds nothing to the [previous] one: the page already
      * shows the episode, or the previous load of the same ID is still running (or ended on "not
