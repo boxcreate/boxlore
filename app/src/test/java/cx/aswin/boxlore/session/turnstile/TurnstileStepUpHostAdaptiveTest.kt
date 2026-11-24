@@ -3,7 +3,6 @@ package cx.aswin.boxlore.session.turnstile
 import android.app.Application
 import android.content.Context
 import android.view.View
-import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
@@ -30,6 +29,7 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.network.session.TurnstileResult
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers

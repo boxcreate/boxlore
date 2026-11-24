@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -16,13 +18,17 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
 import cx.aswin.boxlore.core.designsystem.component.AppLoreNavigationActionSize
@@ -32,7 +38,9 @@ import cx.aswin.boxlore.core.designsystem.component.appMiniPlayerTopOffset
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository.Announcement
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.core.testing.TestFixtures
@@ -47,14 +55,6 @@ import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetLayout
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetScaffold
 import cx.aswin.boxlore.navigation.rememberTabletDetailNavigation
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.test.isDialog
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository.Announcement
 import cx.aswin.boxlore.session.turnstile.CHALLENGE_CARD_TAG
 import cx.aswin.boxlore.session.turnstile.TurnstileStepUpSheet
 import cx.aswin.boxlore.ui.announcement.InAppAnnouncementDialog
@@ -142,7 +142,6 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         }
     }
 
-
     /** The import options over Home: on wide windows Home shows beside the import column today. */
     @Test fun importSelector() = render("import-selector", include = !isRailOnlySize, rootTag = "import_page") {
         Box(Modifier.fillMaxSize()) {
@@ -223,7 +222,8 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
             }
         }
         golden.compose.onNodeWithTag(SHELL_TAG).assertExists()
-        if (size.width <= 412 && size.height >= 800 && size.fontScale == 1f && size.posture.isEmpty() && size.locale == PhoneGoldenConfiguration(1, 1, false).locale) {
+        val plainPhone = size.posture.isEmpty() && size.fontScale == 1f && size.locale == PhoneGoldenConfiguration(1, 1, false).locale
+        if (plainPhone && size.width <= 412 && size.height >= 800) {
             golden.captureSequence("mini-player-long-title", frames = 24, stepMs = 1_000) { playing.value = true }
             golden.compose.runOnIdle { playing.value = false }
             golden.captureSequence("mini-player-long-title", frames = 6, stepMs = 1_000, reducedMotion = true) { playing.value = true }
@@ -371,13 +371,14 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         private val RAIL_SIZES = listOf("de", "fr", "en-rXA").flatMap { locale ->
             listOf(1f, 1.3f).map { scale -> PhoneGoldenConfiguration(800, 1_280, false, fontScale = scale, locale = locale) }
         }
+
         /** Small phones some shell fixtures add: 360x800 in English and in German with 130% text. */
         private val PHONE_EXTRA_SIZES = listOf(
             PhoneGoldenConfiguration(360, 800, false),
             PhoneGoldenConfiguration(360, 800, false, fontScale = 1.3f, locale = "de"),
         )
         private const val LONG_TITLE = "The long way round: how curiosity, patience and a few wrong turns led us to the best stories"
-        private val UPDATE_NOTES = "## Improved\n\n- Smoother playback when you switch between shows.\n- The library keeps your place when you rotate the screen.\n\n## Fixed\n\n- Downloads no longer stall on slow networks."
+        private const val UPDATE_NOTES = "## Improved\n\n- Smoother playback when you switch between shows.\n- The library keeps your place when you rotate the screen.\n\n## Fixed\n\n- Downloads no longer stall on slow networks."
         private val RAIL_REFERENCE_SIZES = listOf(PhoneGoldenConfiguration(800, 1_280, false), PhoneGoldenConfiguration(932, 650, false, locale = "de"))
 
         @JvmStatic

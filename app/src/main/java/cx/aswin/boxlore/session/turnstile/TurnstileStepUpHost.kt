@@ -43,13 +43,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.echo.EchoBeat
 import cx.aswin.boxlore.core.designsystem.echo.EchoCharacter
 import cx.aswin.boxlore.core.designsystem.echo.EchoFace
 import cx.aswin.boxlore.core.designsystem.echo.EchoGaze
 import cx.aswin.boxlore.core.designsystem.echo.EchoIdle
-import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.layout.boxloreAvailableHeightDp
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight

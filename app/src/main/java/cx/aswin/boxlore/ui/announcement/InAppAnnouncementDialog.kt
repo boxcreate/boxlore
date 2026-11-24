@@ -38,9 +38,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,8 +51,8 @@ import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.analytics.AnnouncementRef
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
-import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog as Dialog
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository.Announcement
 import cx.aswin.boxlore.ui.NativeDialogSystemBars
 import cx.aswin.boxlore.updates.ReleaseNotesMarkdown

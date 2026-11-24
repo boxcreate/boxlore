@@ -8,30 +8,30 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.isDialog
-import androidx.compose.ui.test.onAllNodesWithTag
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.unit.height
-import androidx.compose.ui.unit.width
-import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
-import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
-import cx.aswin.boxlore.core.testing.BoxloreTestWindows
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -89,7 +89,9 @@ class AppUpdatesPanelTest {
             var lookups = 0
             val again = UpdateChecker(
                 UpdateSource { if (lookups++ == 0) UpdateLookup(UpdateOffer(29, "0.0.29", updateManifest())) else awaitCancellation() },
-                MemoryUpdateStore(), 28, 34,
+                MemoryUpdateStore(),
+                28,
+                34,
             )
             runBlocking { again.check() }
             val recheck = AppUpdates(again, false, installer(), scope).apply { open() }
@@ -108,7 +110,15 @@ class AppUpdatesPanelTest {
         try {
             val checker = UpdateChecker(UpdateSource { UpdateLookup(UpdateOffer(29, "0.0.29", updateManifest())) }, MemoryUpdateStore(), 28, 34)
             runBlocking { checker.check() }
-            val updates = AppUpdates(checker, false, installer { onState -> onState(ApkInstallState(ApkInstallStage.DOWNLOADING, 0.4f)); awaitCancellation() }, scope)
+            val updates = AppUpdates(
+                checker,
+                false,
+                installer { onState ->
+                onState(ApkInstallState(ApkInstallStage.DOWNLOADING, 0.4f))
+                awaitCancellation()
+            },
+                scope
+            )
             updates.open(checkNow = false)
             showPanel(updates)
             val panel = composeRule.onNode(isDialog()).getUnclippedBoundsInRoot()

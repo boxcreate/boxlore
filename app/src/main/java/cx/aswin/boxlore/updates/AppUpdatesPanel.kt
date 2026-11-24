@@ -68,9 +68,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
 import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog as Dialog
 import cx.aswin.boxlore.core.designsystem.links.openLink
+import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
 import cx.aswin.boxlore.ui.NativeDialogSystemBars
 
 @Composable
