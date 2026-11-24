@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.info
 
+import android.Manifest
 import android.app.Application
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -9,6 +10,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
@@ -18,8 +20,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
@@ -45,8 +50,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -101,32 +108,127 @@ class ShowPageAdaptiveLayoutTest {
     }
 
     @Test
-    fun `the header takes its form from the page's own size and keeps the open description both ways`() {
+    fun `the header takes its form from the page's own size and keeps the full title, description and lock explanation both ways`() {
+        // Long enough to collapse in every form; locked, so the open card shows the lock line.
+        page.uiState.value = success().copy(podcast = page.podcast.copy(title = VERY_LONG_TITLE, isLocked = true))
         page.render()
         cover(SHOW_HEADER_STACKED_TAG, 180f)
+        compose.onNodeWithContentDescription(FULL_TITLE).performClick()
         compose.onNodeWithText(page.podcast.description!!.take(20), substring = true).performClick()
+        compose.onNodeWithTag(LOCKED_FEED_ROW_TAG).performClick()
+        compose.onNodeWithText(LOCKED_TITLE).assertExists()
         val walk = arrayOf(
             BoxloreTestWindows.PHONE_LAND to (SHOW_HEADER_HORIZONTAL_TAG to 112f),
             BoxloreTestWindows.PHONE to (SHOW_HEADER_STACKED_TAG to 180f),
+            BoxloreTestWindows.PHONE_LAND to (SHOW_HEADER_HORIZONTAL_TAG to 112f),
+            BoxloreTestWindows.PHONE to (SHOW_HEADER_STACKED_TAG to 180f),
             BoxloreTestWindows.COVER_443 to (SHOW_HEADER_STACKED_TAG to 152f),
-            BoxloreTestWindows.W900_H479 to (SHOW_HEADER_HORIZONTAL_TAG to 112f),
-            BoxloreTestWindows.W900_H480 to (SHOW_HEADER_HORIZONTAL_TAG to 208f),
-            BoxloreTestWindows.W900_H479 to (SHOW_HEADER_HORIZONTAL_TAG to 112f),
+            W599_H479 to (SHOW_HEADER_HORIZONTAL_TAG to 112f),
+            W599_H480 to (SHOW_HEADER_STACKED_TAG to 152f),
+            W599_H479 to (SHOW_HEADER_HORIZONTAL_TAG to 112f),
             BoxloreTestWindows.W599_H900 to (SHOW_HEADER_STACKED_TAG to 180f),
             BoxloreTestWindows.W600_H900 to (SHOW_HEADER_HORIZONTAL_TAG to 208f),
             BoxloreTestWindows.W599_H900 to (SHOW_HEADER_STACKED_TAG to 180f),
+            // A wide page under 600dp tall keeps the small cover, so its first screen isn't all header.
+            W900_H599 to (SHOW_HEADER_HORIZONTAL_TAG to 112f),
+            W900_H600 to (SHOW_HEADER_HORIZONTAL_TAG to 208f),
+            W900_H599 to (SHOW_HEADER_HORIZONTAL_TAG to 112f),
+            BoxloreTestWindows.W900_H479 to (SHOW_HEADER_HORIZONTAL_TAG to 112f),
         )
         walk.forEach { (size, expected) ->
             page.resize(size)
             compose.onNodeWithTag(PODCAST_INFO_EPISODE_LIST_TAG).performScrollToIndex(0)
             cover(expected.first, expected.second)
-            // The open description shows the creator's picks in every form.
+            // The open description shows the creator's picks, the full title stays open and the
+            // locked-feed explanation stays up in every form.
             compose.onNodeWithText("History Snacks").assertExists()
+            compose.onNodeWithContentDescription(SHOW_LESS).assertExists()
+            compose.onNodeWithText(LOCKED_TITLE).assertExists()
         }
-        // Sideways, Subscribe is on the first screen.
+    }
+
+    @Test
+    fun `Subscribe and the first episode come up the page when the header sits beside the cover`() {
+        // Sideways and on a 600x480 window, Subscribe is on the first screen.
+        page.window.value = BoxloreTestWindows.PHONE_LAND
+        page.render()
+        listOf(BoxloreTestWindows.PHONE_LAND, BoxloreWindowLayout(600f, 480f)).forEach { size ->
+            page.resize(size)
+            compose.onNodeWithTag(PODCAST_INFO_EPISODE_LIST_TAG).performScrollToIndex(0)
+            assertTrue("Subscribe on the first screen at $size", page.bounds(hasTestTag(SUBSCRIBE_BUTTON_TAG)).bottom <= size.heightDp)
+        }
+        // On a portrait tablet the first episode starts well up the page, not under a centred header.
+        page.resize(BoxloreTestWindows.TABLET_PORTRAIT)
+        compose.onNodeWithTag(PODCAST_INFO_EPISODE_LIST_TAG).performScrollToIndex(0)
+        val firstEpisodeTop = page.bounds(hasText("Episode 0")).top
+        assertTrue("first episode at $firstEpisodeTop", firstEpisodeTop <= FIRST_EPISODE_MAX_TOP)
+    }
+
+    @Test
+    fun `beside the cover the chips start at the title's edge and scroll out to the page's edge`() {
+        // A show whose chips fit: they start under the title, not centred in the column.
+        page.uiState.value = success().copy(
+            podcast = page.podcast.copy(title = "History", fundingUrl = null, fundingMessage = null),
+            episodes = page.episodes.map { it.copy(persons = null) },
+        )
+        page.window.value = BoxloreTestWindows.PHONE_LAND
+        page.render()
+        val titleLeft = page.bounds(hasText("History") and isHeading()).left
+        val chipsLeft = chipBounds().minOf { it.left }
+        assertEquals(titleLeft, chipsLeft, 0.5f)
+
+        // A long row scrolls out to the page's edge, ending 16dp in, clear of side buttons too.
+        page.uiState.value = PodcastInfoUiState.Success(page.podcast, page.episodes, isSubscribed = true, hasMoreEpisodes = false)
+        compose.runOnUiThread { applyFakeSystemInsets(compose.activity, SystemInsets.SIDEWAYS_3_BUTTON) }
+        val endInset = SystemInsets.SIDEWAYS_3_BUTTON.navEnd
+        listOf(BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.SPLIT_HALF).forEach { size ->
+            page.resize(size)
+            compose.onNodeWithTag(PODCAST_INFO_EPISODE_LIST_TAG).performScrollToIndex(0)
+            // To the row's very end.
+            compose.onNodeWithTag(METADATA_CHIPS_ROW_TAG).performSemanticsAction(SemanticsActions.ScrollBy) { it(10_000f, 0f) }
+            val lastRight = page.bounds(hasTestTag(METADATA_ACTION_CHIP_TAG) and hasText(page.podcast.fundingMessage!!)).right
+            assertEquals("the row's end at $size", size.widthDp - endInset - 16f, lastRight, 0.5f)
+        }
+    }
+
+    @Test
+    fun `beside the cover the top bar fills and the floating title shows before the large title slides under it`() {
+        page.window.value = BoxloreTestWindows.PHONE_LAND
+        page.render()
+        val scroll = { compose.onNodeWithTag(PODCAST_INFO_EPISODE_LIST_TAG).performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, with(compose.density) { 24.dp.toPx() }) } }
+        val floatingTop = { page.bounds(hasText(page.podcast.title) and isHeading().not()).top }
+        scroll()
+        assertTrue("floating title in the bar sideways (${floatingTop()})", floatingTop() < TOP_BAR_HEIGHT)
+        // The centred phone header keeps today's pace: the floating title waits for the cover to pass.
+        page.resize(BoxloreTestWindows.PHONE)
+        compose.onNodeWithTag(PODCAST_INFO_EPISODE_LIST_TAG).performScrollToIndex(0)
+        scroll()
+        assertTrue("floating title below the bar on a phone (${floatingTop()})", floatingTop() >= TOP_BAR_HEIGHT)
         page.resize(BoxloreTestWindows.PHONE_LAND)
         compose.onNodeWithTag(PODCAST_INFO_EPISODE_LIST_TAG).performScrollToIndex(0)
-        assertTrue(page.bounds(hasTestTag(SUBSCRIBE_BUTTON_TAG)).bottom <= BoxloreTestWindows.PHONE_LAND.heightDp)
+        scroll()
+        assertTrue("floating title in the bar sideways again (${floatingTop()})", floatingTop() < TOP_BAR_HEIGHT)
+    }
+
+    @Test
+    fun `the selection bar reserves the navigation bar only when the pane reaches it`() {
+        // Within the test window's 800dp height, so the page gets the height it asks for.
+        val window = BoxloreWindowLayout(412f, 780f)
+        val nav = SystemInsets(navBottom = 48)
+        val pane = BoxloreLayoutBounds(0f, 0f, window.widthDp, window.heightDp - 100f)
+        page.window.value = window
+        page.pane.value = pane
+        page.render()
+        compose.runOnUiThread { applyFakeSystemInsets(compose.activity, nav) }
+        compose.onNodeWithTag(PODCAST_INFO_EPISODE_LIST_TAG).performScrollToNode(hasText("Episode 0"))
+        compose.onNodeWithText("Episode 0").performTouchInput { longClick() }
+        val gapIn = { height: Float -> height - page.bounds(hasContentDescription(PLAY_SELECTED)).bottom }
+        val abovePane = gapIn(pane.height)
+        page.resize(window, null)
+        val atBottom = gapIn(window.heightDp)
+        assertEquals("the nav bar is reserved only at the window's bottom", nav.navBottom.toFloat(), atBottom - abovePane, 0.5f)
+        page.resize(window, pane)
+        assertEquals(abovePane, gapIn(pane.height), 0.5f)
     }
 
     @Test
@@ -168,7 +270,8 @@ class ShowPageAdaptiveLayoutTest {
         // The release chip (worked out off the main thread) reads in sentence case: this show's last
         // episode is long past. The genre shows its translated name.
         compose.waitUntil(5_000) { compose.onAllNodes(hasText("No new episodes")).fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("Society", substring = true).assertExists()
+        compose.onNode(hasText("Society")).assertExists()
+        compose.onAllNodes(hasText("Society & Culture", substring = true)).assertCountEquals(0)
         compose.onNodeWithTag(METADATA_CHIPS_ROW_TAG).performScrollToNode(hasText(page.podcast.fundingMessage!!))
         assertTrue(page.bounds(hasText(page.podcast.fundingMessage!!), unmerged = true).width <= 240f)
     }
@@ -187,7 +290,14 @@ class ShowPageAdaptiveLayoutTest {
         // The locked-feed explanation stays open through recreation.
         compose.onNodeWithTag(LOCKED_FEED_ROW_TAG).performClick()
         page.restoration.emulateSavedInstanceStateRestore()
-        compose.onNodeWithText("Feed locked").assertExists()
+        compose.onNodeWithText(LOCKED_TITLE).assertExists()
+        compose.onNodeWithText(OK).performClick()
+
+        // With no description the picks always show, so the card has no arrow to open.
+        page.uiState.value = success().copy(podcast = page.podcast.copy(description = "", isLocked = true))
+        compose.waitForIdle()
+        compose.onNodeWithText("History Snacks").assertExists()
+        compose.onNodeWithTag(DESCRIPTION_CHEVRON_TAG, useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
@@ -256,18 +366,26 @@ class ShowPageAdaptiveLayoutTest {
     }
 
     @Test
-    fun `the RSS question stays open through recreation`() {
-        page.uiState.value = (page.uiState.value as PodcastInfoUiState.Success).copy(
-            podcast = page.podcast.copy(sourceType = Podcast.SOURCE_RSS, feedUrl = "https://feeds.example/f.xml"),
-        )
+    fun `the RSS question stays open through recreation and consents only to the feed link it showed`() {
+        shadowOf(compose.activity.application).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        page.uiState.value = success().copy(podcast = page.podcast.copy(sourceType = Podcast.SOURCE_RSS, feedUrl = DISCLOSED_FEED))
         page.render()
         compose.onNodeWithTag(PODCAST_INFO_EPISODE_LIST_TAG).performScrollToIndex(1)
         compose.onNodeWithContentDescription("Episode notifications").performClick()
-        compose.onNodeWithText("Turn on episode notifications?").assertExists()
+        compose.onNodeWithText(RSS_QUESTION).assertExists()
         page.restoration.emulateSavedInstanceStateRestore()
-        compose.onNodeWithText("Turn on episode notifications?").assertExists()
+        compose.onNodeWithText(RSS_QUESTION).assertExists()
         compose.onNodeWithText("Keep notifications off").performClick()
-        compose.onNodeWithText("Turn on episode notifications?").assertDoesNotExist()
+        compose.onNodeWithText(RSS_QUESTION).assertDoesNotExist()
+
+        // Asked again; the feed link changes behind the open question, then the page is recreated.
+        compose.onNodeWithContentDescription("Episode notifications").performClick()
+        page.uiState.value = success().copy(podcast = page.podcast.copy(sourceType = Podcast.SOURCE_RSS, feedUrl = "https://feeds.example/moved.xml"))
+        page.restoration.emulateSavedInstanceStateRestore()
+        compose.onNode(hasText(RSS_CONFIRM) and hasClickAction()).performClick()
+        compose.waitForIdle()
+        verify(page.model, times(1)).toggleNotifications(true, DISCLOSED_FEED)
+        verify(page.model, never()).toggleNotifications(true, "https://feeds.example/moved.xml")
     }
 
     private fun cover(tag: String, size: Float) {
@@ -277,11 +395,39 @@ class ShowPageAdaptiveLayoutTest {
 
     private fun stateIs(value: String) = SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, value)
 
+    private fun success() = page.uiState.value as PodcastInfoUiState.Success
+
+    /** Every header chip on screen. */
+    private fun chipBounds() = (
+        compose.onAllNodes(hasTestTag(METADATA_INFO_CHIP_TAG), useUnmergedTree = true).fetchSemanticsNodes() +
+            compose.onAllNodes(hasTestTag(METADATA_ACTION_CHIP_TAG), useUnmergedTree = true).fetchSemanticsNodes()
+        ).map { it.boundsInRoot.let { px -> with(compose.density) { androidx.compose.ui.geometry.Rect(px.left.toDp().value, px.top.toDp().value, px.right.toDp().value, px.bottom.toDp().value) } } }
+
     private companion object {
         const val BACK = "Back"
         const val SHARE = "Share show"
         const val MORE = "More options"
         const val SORT = "Sort and view"
         const val HIDE_COMPLETED = "Hide completed episodes"
+        const val FULL_TITLE = "Show full title"
+        const val SHOW_LESS = "Show less"
+        const val LOCKED_TITLE = "Feed locked"
+        const val OK = "Got it"
+        const val PLAY_SELECTED = "Play selected episodes"
+        const val RSS_QUESTION = "Turn on episode notifications?"
+        const val RSS_CONFIRM = "Enable for public feed"
+        const val DISCLOSED_FEED = "https://feeds.example/f.xml"
+        const val VERY_LONG_TITLE = "Stuff You Missed in History Class: the long-form edition, with listener mail, book picks and " +
+            "recipes unearthed from the archive every single week"
+
+        /** The top bar without a status bar: the floating title is inside it once it shows. */
+        const val TOP_BAR_HEIGHT = 64f
+
+        /** 800x1280: the top bar, the two-column header and the toolbar fit above it. */
+        const val FIRST_EPISODE_MAX_TOP = 460f
+        val W599_H479 = BoxloreWindowLayout(599f, 479f)
+        val W599_H480 = BoxloreWindowLayout(599f, 480f)
+        val W900_H599 = BoxloreWindowLayout(900f, 599f)
+        val W900_H600 = BoxloreWindowLayout(900f, 600f)
     }
 }

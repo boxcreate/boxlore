@@ -72,5 +72,8 @@ class PodcastInfoMetadataChipsLogicTest {
         // A listener's own tag is never swapped for a translation, even when it names a genre.
         assertEquals(GenreChipLabel.Name(null, "History"), genreChipLabel("History", custom = true, canEdit = true))
         assertEquals(GenreChipLabel.Name(null, "Cozy mysteries"), genreChipLabel("Cozy mysteries", custom = false, canEdit = true))
+        // Change genre's preview names the genre as the page's chip does.
+        assertEquals(catalog, genrePreviewLabel("Society & Culture", typed = false))
+        assertEquals(genreChipLabel("History", custom = true, canEdit = true), genrePreviewLabel("History", typed = true))
     }
 }

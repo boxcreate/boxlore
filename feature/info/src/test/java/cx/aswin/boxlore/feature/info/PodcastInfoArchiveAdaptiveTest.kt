@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
@@ -39,15 +40,20 @@ import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.core.testing.TestFixtures
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.anyBoolean
 import org.mockito.Mockito.anyList
 import org.mockito.Mockito.anyString
 import org.mockito.Mockito.doAnswer
+import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 import org.robolectric.annotation.Config
@@ -76,6 +82,20 @@ class PodcastInfoArchiveAdaptiveTest {
     private val model = mock(PodcastInfoViewModel::class.java)
     private val archiveCalls = mutableListOf<Triple<List<String>, Boolean, Boolean>>()
     private lateinit var restoration: StateRestorationTester
+
+    /** The show page as a destination the listener can leave and come back to, as navigation keeps it. */
+    private val onShowPage = mutableStateOf(true)
+    private val savingForRecreationInApp = savingForRecreation
+
+    // StateRestorationTester recreates the page in place: tell the page each save is a recreation,
+    // as an activity's configuration change would.
+    @Before fun emulateRecreationSaves() {
+        savingForRecreation = { true }
+    }
+
+    @After fun restoreSaving() {
+        savingForRecreation = savingForRecreationInApp
+    }
 
     @Test
     fun `archived episodes stay hidden and Show archived lists them, marked, across window changes and recreation`() {
@@ -161,6 +181,52 @@ class PodcastInfoArchiveAdaptiveTest {
         fixture.compose.onNodeWithText("Undo").performClick()
         fixture.compose.waitForIdle()
         assertEquals(listOf(Triple(listOf("e0"), true, false), Triple(listOf("e0"), false, true)), archiveCalls)
+    }
+
+    @Test
+    fun `a restored Archive Undo brings back every archived episode, even ones Select all found past the loaded list`() {
+        // Found in review: after recreation, Undo looked only in the loaded list, leaving the rest archived.
+        val older = List(5) { index ->
+            TestFixtures.episode(id = "old$index", title = "Older $index", podcastId = "1", podcastTitle = podcast.title, publishedDate = 1_600_000_000L - index * 86_400L)
+        }
+        runBlocking {
+            doReturn(PodcastEpisodeSelectionWindow(episodes + older, newestFirst = true)).`when`(model).loadEpisodeSelectionWindow(ArgumentMatchers.any())
+        }
+        render()
+        fixture.compose.onNodeWithText("Episode 0").performTouchInput { longClick() }
+        fixture.compose.onNodeWithContentDescription("More selection options").performClick()
+        fixture.compose.onNodeWithText("Select all episodes").performClick()
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithContentDescription("More selection options").performClick()
+        fixture.compose.onNodeWithText("Archive selected episodes").performClick()
+        fixture.compose.waitForIdle()
+        val archivedIds = archiveCalls.single().first
+        assertTrue("the archive reached past the loaded list", archivedIds.containsAll(older.map(Episode::id)))
+
+        recreate(FOLD_FLAT)
+        fixture.compose.onNodeWithText("Undo").performClick()
+        fixture.compose.waitForIdle()
+        assertEquals(Triple(archivedIds.sorted(), false, true), archiveCalls.last().let { Triple(it.first.sorted(), it.second, it.third) })
+    }
+
+    @Test
+    fun `leaving the page and coming back while Undo is on offer doesn't offer it again`() {
+        savingForRecreation = savingForRecreationInApp
+        render()
+        fixture.compose.onNodeWithText("Episode 0").performTouchInput { longClick() }
+        fixture.compose.onNodeWithContentDescription("More selection options").performClick()
+        fixture.compose.onNodeWithText("Archive selected episodes").performClick()
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithText("Archived 1 episode").assertExists()
+
+        // Open an episode, then Back, inside the Undo's time.
+        fixture.compose.runOnIdle { onShowPage.value = false }
+        fixture.compose.waitForIdle()
+        fixture.compose.runOnIdle { onShowPage.value = true }
+        fixture.compose.waitForIdle()
+        listed("Episode 2")
+        fixture.compose.onNodeWithText("Archived 1 episode").assertDoesNotExist()
+        assertEquals(1, archiveCalls.size)
     }
 
     @Test
@@ -261,7 +327,10 @@ class PodcastInfoArchiveAdaptiveTest {
             CompositionLocalProvider(LocalBoxloreWindowLayout provides size, LocalBoxlorePaneWidth provides size.widthDp) {
                 Box(Modifier.width(size.widthDp.dp).height(size.heightDp.dp)) {
                     BoxLoreTheme(dynamicColor = false) {
-                        Surface { PodcastInfoScreen("1", model, {}, { _, _, _ -> }, {}, {}) }
+                        val destinations = rememberSaveableStateHolder()
+                        Surface {
+                            if (onShowPage.value) destinations.SaveableStateProvider("show") { PodcastInfoScreen("1", model, {}, { _, _, _ -> }, {}, {}) }
+                        }
                     }
                 }
             }

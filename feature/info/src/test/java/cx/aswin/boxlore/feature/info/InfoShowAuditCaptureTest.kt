@@ -2,8 +2,11 @@ package cx.aswin.boxlore.feature.info
 
 import android.app.Application
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -17,6 +20,9 @@ import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
@@ -27,6 +33,7 @@ import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -118,6 +125,77 @@ class InfoShowAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         openDescription()
         clickInView(golden.compose.onNodeWithText(text(R.string.podcast_info_locked_label)))
     }) { page(model(success(podcast = richPodcast.copy(isLocked = true)))) }
+
+    @Test fun showSortMenu() = render("show-sort-menu", allWindows = true, action = {
+        toolbarControl(text(R.string.podcast_info_sort_and_view)).performClick()
+        settle()
+    }) { page(model(success().copy(currentSort = EpisodeSort.OLDEST))) }
+
+    @Test fun showSearchPlayed() = search("show-search-played") { state ->
+        state.copy(searchQuery = "Un", searchResults = state.episodes.filter { it.title.startsWith("Un") || it.title.startsWith("The") })
+    }
+
+    @Test fun showSearchOpen() = only(SEARCH_OPEN_SIZES) {
+        render("show-search-open", action = {
+            toolbarControl(text(R.string.podcast_info_search)).performClick()
+            settle()
+        }) { page(model(success())) }
+    }
+
+    @Test fun showAddGenre() = render("show-add-genre") { page(model(success(podcast = richPodcast.copy(genre = "Podcast")))) }
+
+    @Test fun showRichScrolled() = render("show-rich-scrolled", action = {
+        list().performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, with(golden.compose.density) { 60.dp.toPx() }) }
+        settle()
+    }) { page(model(success())) }
+
+    @Test fun showTooltipMore() = only(TOOLTIP_SIZES) {
+        render("show-tooltip-more", allWindows = true, action = {
+            golden.compose.onNodeWithContentDescription(text(R.string.podcast_info_more_options)).performTouchInput { longClick() }
+            settle()
+        }) { page(model(success())) }
+    }
+
+    /** Frames of a live resize across a header gate: the header swaps form with no blank frame. */
+    @Test fun showResize() {
+        val (from, to) = RESIZES[golden.configuration.toString()] ?: return assumeTrue("resize sizes only", false)
+        val size = mutableStateOf(from)
+        golden.prepare()
+        golden.setContent {
+            BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
+                val window = size.value
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides window, LocalBoxlorePaneWidth provides window.widthDp) {
+                    Surface(Modifier.size(window.widthDp.dp, window.heightDp.dp)) { page(model(success())) }
+                }
+            }
+        }
+        golden.compose.mainClock.advanceTimeBy(1_600)
+        golden.compose.waitForIdle()
+        golden.captureSequence("show-resize-${from.widthDp.toInt()}x${from.heightDp.toInt()}", frames = 4, stepMs = STEP_MS) { size.value = to }
+    }
+
+    /** Frames of following a show: Subscribe turns into Subscribed with its check. */
+    @Test fun showSubscribeMoment() = only(SUBSCRIBE_SIZES) {
+        val state = MutableStateFlow<PodcastInfoUiState>(success(subscribed = false))
+        golden.prepare()
+        golden.setContent(foldSafeViewport = true) {
+            BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) { Surface(Modifier.fillMaxSize()) { page(model(state)) } }
+        }
+        golden.compose.mainClock.advanceTimeBy(1_600)
+        golden.compose.waitForIdle()
+        list().performScrollToIndex(0)
+        settle()
+        // The follow lands as the ViewModel reports it: Subscribe turns into Subscribed.
+        golden.captureSequence("show-subscribe", frames = 4, stepMs = STEP_MS) {
+            state.value = (state.value as PodcastInfoUiState.Success).copy(isSubscribed = true)
+        }
+    }
+
+    /** Runs [capture] only at the named [sizes]; other sizes skip it. */
+    private fun only(sizes: Set<String>, capture: () -> Unit) {
+        assumeTrue("captured at ${sizes.joinToString()} only", golden.configuration.toString() in sizes)
+        capture()
+    }
 
     /** Opens the description card, which then shows the lock notice and the creator's picks. */
     private fun openDescription() {
@@ -308,9 +386,31 @@ class InfoShowAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         private const val SETTLE_STEPS = 8
         private const val STEP_MS = 100L
 
+        private val SEARCH_OPEN_SIZES = setOf("360x800-light-fs130-de", "412x915-light")
+        private val TOOLTIP_SIZES = setOf("1280x800-light")
+        private val SUBSCRIBE_SIZES = setOf("412x915-light", "800x1280-light")
+
+        /** The capture size each resize sequence runs at, and the window it starts and ends in. */
+        private val RESIZES = mapOf(
+            "600x960-light" to (BoxloreWindowLayout(599f, 960f) to BoxloreWindowLayout(600f, 960f)),
+            "900x600-light" to (BoxloreWindowLayout(900f, 599f) to BoxloreWindowLayout(900f, 600f)),
+            "600x480-light" to (BoxloreWindowLayout(599f, 479f) to BoxloreWindowLayout(599f, 480f)),
+        )
+
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
         fun configurations(): List<Array<Any>> =
-            PhoneGoldenConfiguration.auditMatrix(extra = listOf(PhoneGoldenConfiguration(360, 800, false)))
+            PhoneGoldenConfiguration.auditMatrix(
+                extra = listOf(
+                    PhoneGoldenConfiguration(360, 800, false),
+                    PhoneGoldenConfiguration(360, 800, false, fontScale = 1.3f, locale = "de"),
+                    PhoneGoldenConfiguration(900, 600, false),
+                    // Dark: the cover backdrop behind the header's text and chips, and the sheets.
+                    PhoneGoldenConfiguration(412, 915, true),
+                    PhoneGoldenConfiguration(915, 412, true),
+                    PhoneGoldenConfiguration(800, 1_280, true),
+                    PhoneGoldenConfiguration(1_280, 800, true),
+                ),
+            )
     }
 }
