@@ -116,6 +116,11 @@ class EchoPrismLayoutTest {
             assertFalse("the name is cut in a ${w}x$h slot ($plan)", plan.titleCut)
             assertTrue("the card is taller than a ${w}x$h slot", plan.height <= h)
         }
+        // A slot too short for the tag and the whole name drops the tag before it cuts the name.
+        val noTag = plan("AAAAAAAA BBBBBBBB CCCCCCCC DDDDDDDD EEEEEEEE FFFFFFFF", 272, 70)
+        assertFalse("the name is cut without its tag ($noTag)", noTag.titleCut)
+        assertFalse(noTag.showTag)
+        assertTrue(noTag.height <= 70)
         // Only a slot smaller than any whole name cuts it, and then with no art and no pitch.
         val tiny = plan(name, 120, 60, pitch = pitch)
         if (tiny.titleCut) {

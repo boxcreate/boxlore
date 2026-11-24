@@ -215,6 +215,13 @@ internal object EchoPrismLayout {
                 val plan = PrismPlan(true, width, 0, size, box.lines, false, frame + row(0, box.height), CompactHookSizes.last(), showHook = false)
                 if (plan.height <= maxHeight) return plan
             }
+            // Before the name is cut, the tag gives way: the whole name alone, at any size that fits.
+            for (size in (CompactTightSizes + LastResortSizes).distinct()) {
+                val box = measure.title(title, size, inner)
+                if (frame + box.height <= maxHeight) {
+                    return PrismPlan(true, width, 0, size, box.lines, false, frame + box.height, CompactHookSizes.last(), showHook = false, showTag = false)
+                }
+            }
             val fit = nameFit(0, tight = true)
             val lineHeight = fit.box.height / fit.box.lines.coerceAtLeast(1)
             // The tag gives way too when it leaves no room for a line of the name.
