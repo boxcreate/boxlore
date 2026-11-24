@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -58,6 +59,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -377,7 +379,15 @@ internal fun TypingHeader(state: FeedbackUiState, actions: FeedbackComposeAction
         ) {
             FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_navigate_back), actions.onBack)
             if (showTitle) {
-                Text(title, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                // Steps down a little before it shortens, so regular phones keep the whole title.
+                Text(
+                    title,
+                    style = style,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    autoSize = TextAutoSize.StepBased(minFontSize = FEEDBACK_TYPING_TITLE_MIN_SIZE, maxFontSize = style.fontSize),
+                    modifier = Modifier.weight(1f),
+                )
             } else {
                 Spacer(Modifier.weight(1f))
             }
@@ -430,6 +440,9 @@ internal const val FEEDBACK_TYPING_HEADER_TAG = "feedback_typing_header"
 
 /** Below this header width a title that would be cut is left out; the type pill and the page already say what it is. */
 private val FEEDBACK_TYPING_TITLE_ROOM = 400.dp
+
+/** The typing header's title steps down to this size before it shortens with "…". */
+private val FEEDBACK_TYPING_TITLE_MIN_SIZE = 18.sp
 
 /** The typing header's fixed parts: the row's side padding, Back and the pill's end padding. */
 private val FEEDBACK_TYPING_ROW_CHROME = 68.dp

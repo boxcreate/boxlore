@@ -125,14 +125,17 @@ class FeedbackComposePartsTest {
     // Regression: the title gave way on regular phones too, so English listeners lost "Share your thoughts".
     @Config(qualifiers = "en-w412dp-h915dp-mdpi")
     @Test
-    fun `on a regular phone in English the typing header keeps its title on one row`() {
+    fun `on a regular phone in English the typing header keeps its whole title on one row`() {
         val actions = FeedbackComposeActions({}, {}, {}, {}, {}, {}, {}, {}, {})
         compose.setContent {
             BoxLoreTheme(dynamicColor = false) {
                 androidx.compose.foundation.layout.Box(Modifier.width(412.dp)) { TypingHeader(FeedbackUiState(message = "Hello"), actions) }
             }
         }
-        compose.onNodeWithText(text(R.string.feedback_form_title)).assertExists()
+        val layouts = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText(text(R.string.feedback_form_title), useUnmergedTree = true).fetchSemanticsNode()
+            .config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+        assertFalse("the whole title shows", layouts.last().isLineEllipsized(0))
         val header = compose.onNodeWithTag(FEEDBACK_TYPING_HEADER_TAG).fetchSemanticsNode().boundsInRoot
         assertTrue("header height ${header.height}", header.height <= 64f)
     }
