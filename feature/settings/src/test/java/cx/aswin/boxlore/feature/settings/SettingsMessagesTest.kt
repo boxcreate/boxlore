@@ -25,7 +25,8 @@ import org.robolectric.shadows.ShadowToast
 class SettingsMessagesTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
-    @Test @Config(sdk = [34])
+    @Test
+    @Config(sdk = [34])
     fun `copying the privacy ID on Android 13 and later leaves the confirmation to the system`() {
         copyDeletionId(context, "privacy-id-1")
 
@@ -33,7 +34,8 @@ class SettingsMessagesTest {
         assertNull(ShadowToast.getLatestToast())
     }
 
-    @Test @Config(sdk = [32])
+    @Test
+    @Config(sdk = [32])
     fun `copying the privacy ID before Android 13 still confirms it`() {
         copyDeletionId(context, "privacy-id-1")
 
