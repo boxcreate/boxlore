@@ -40,7 +40,7 @@
     <string name="briefing_cancel_hide">Ne plus masquer le Brief</string>
     <string name="briefing_listen_minutes">~%1$d min d’écoute</string>
     <string name="briefing_remaining_minutes">~%1$d min restantes</string>
-    <string name="briefing_hide_today_title">Masquer le brief du jour ?</string>
+    <string name="briefing_hide_today_title">Masquer le Brief du jour ?</string>
     <string name="briefing_hide_today_description">Il reviendra avec la prochaine édition quotidienne.</string>
     <string name="briefing_hide_today">Masquer aujourd’hui</string>
     <string name="briefing_always_hide">Toujours masquer le Brief</string>

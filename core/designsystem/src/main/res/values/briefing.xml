@@ -39,7 +39,7 @@
     <string name="briefing_cancel_hide">Cancel hiding the Brief</string>
     <string name="briefing_listen_minutes">~%1$dm listen</string>
     <string name="briefing_remaining_minutes">~%1$dm left</string>
-    <string name="briefing_hide_today_title">Hide today’s brief?</string>
+    <string name="briefing_hide_today_title">Hide today’s Brief?</string>
     <string name="briefing_hide_today_description">It will return with the next daily edition.</string>
     <string name="briefing_hide_today">Hide today</string>
     <string name="briefing_always_hide">Always hide the Brief</string>

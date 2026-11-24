@@ -4,7 +4,7 @@
     <string name="briefing_screen_previous_story">Sujet précédent</string>
     <string name="briefing_screen_next_story">Sujet suivant</string>
     <string name="briefing_screen_stories_loading">Chargement des sujets…</string>
-    <string name="briefing_screen_stories_unavailable">Le texte du sujet n’est pas disponible. Vous pouvez quand même écouter le brief.</string>
+    <string name="briefing_screen_stories_unavailable">Le texte du sujet n’est pas disponible. Vous pouvez quand même écouter le Brief.</string>
     <string name="briefing_screen_listen_further">Pour aller plus loin</string>
     <string name="briefing_screen_time_left">%1$s restantes</string>
     <plurals name="briefing_screen_listen_minutes">

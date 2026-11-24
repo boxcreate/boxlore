@@ -88,7 +88,7 @@ class DailyBriefingCardTest {
         val headline = compose.onNodeWithText(chapters.first().title, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         assertEquals(number.center.y, headline.center.y, 1f)
         compose.onNodeWithContentDescription("Hide the Brief").performClick()
-        compose.onNodeWithText("Hide today’s brief?").assertIsDisplayed()
+        compose.onNodeWithText("Hide today’s Brief?").assertIsDisplayed()
         assertEquals(0, hide)
         compose.onNodeWithText("Always hide the Brief").performClick()
         compose.onNodeWithText("Always hide the Brief?").assertIsDisplayed()

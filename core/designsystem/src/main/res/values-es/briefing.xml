@@ -40,7 +40,7 @@
     <string name="briefing_cancel_hide">No ocultar The Brief</string>
     <string name="briefing_listen_minutes">~%1$d min de escucha</string>
     <string name="briefing_remaining_minutes">Quedan ~%1$d min</string>
-    <string name="briefing_hide_today_title">¿Ocultar el resumen de hoy?</string>
+    <string name="briefing_hide_today_title">¿Ocultar The Brief de hoy?</string>
     <string name="briefing_hide_today_description">Volverá con la próxima edición diaria.</string>
     <string name="briefing_hide_today">Ocultar hoy</string>
     <string name="briefing_always_hide">Ocultar siempre The Brief</string>
