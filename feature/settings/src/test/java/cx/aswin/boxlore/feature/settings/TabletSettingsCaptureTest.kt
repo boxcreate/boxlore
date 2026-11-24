@@ -23,6 +23,7 @@ import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.echo.LocalEchoMotion
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.BoxLoreUser
+import cx.aswin.boxlore.core.model.HiddenShow
 import cx.aswin.boxlore.core.network.SupportApi
 import cx.aswin.boxlore.core.network.model.SupportConversationResponse
 import cx.aswin.boxlore.core.network.model.SupportListResponse
@@ -73,6 +74,7 @@ import cx.aswin.boxlore.feature.settings.pages.AutoBackupPage
 import cx.aswin.boxlore.feature.settings.pages.AutoBackupUiState
 import cx.aswin.boxlore.feature.settings.pages.CustomThemeEditor
 import cx.aswin.boxlore.feature.settings.pages.DownloadsSettingsPage
+import cx.aswin.boxlore.feature.settings.pages.HiddenShowsControl
 import cx.aswin.boxlore.feature.settings.pages.LibraryBackupActions
 import cx.aswin.boxlore.feature.settings.pages.LibraryDiscoveryPreferences
 import cx.aswin.boxlore.feature.settings.pages.LibrarySettingsPage
@@ -81,6 +83,7 @@ import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsActions
 import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsPage
 import cx.aswin.boxlore.feature.settings.pages.RecommendationsSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.SettingsHub
+import cx.aswin.boxlore.feature.settings.pages.SettingsHubAccount
 import cx.aswin.boxlore.feature.settings.pages.SignedInAuthRepository
 import cx.aswin.boxlore.feature.settings.pages.SupportDevelopmentPage
 import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
@@ -208,7 +211,7 @@ class TabletSettingsCaptureTest(private val scene: String, configuration: PhoneG
             "hub-end" -> scrollTo(hasText(string(R.string.settings_check_for_updates)))
             // Turning off asks first; the question is the subject (before it existed, the plain page).
             "smart-off-confirm" -> tap(fixture.compose.onAllNodes(hasText(string(R.string.settings_smart_downloads_enable))).onFirst())
-            "sync-import" -> scrollTo(hasText(string(R.string.settings_sync_import_title)))
+            "sync-import" -> scrollTo(hasText(string(R.string.settings_sync_import_footer)))
             "feedback-more-menu" -> tap(fixture.compose.onAllNodes(hasContentDescription(string(R.string.feedback_more_options))).onFirst())
             "feedback-typing", "feedback-typing-menu" -> {
                 tap(fixture.compose.onNode(hasTestTag(FEEDBACK_MESSAGE_TAG)))
@@ -273,7 +276,7 @@ class TabletSettingsCaptureTest(private val scene: String, configuration: PhoneG
 
         /** Scrolled pages, dialogs, menus and the Support worlds: the sizes where they change most. */
         private val STATE_SCENES = listOf(
-            "hub-end", "sync-import", "logs-dialog", "delete-account-dialog", "feedback-more-menu", "feedback-typing-menu", "smart-off-confirm",
+            "hub-end", "hub-signed-out", "hub-signed-in", "sync-import", "appearance-language", "recommendations-hidden", "logs-dialog", "delete-account-dialog", "feedback-more-menu", "feedback-typing-menu", "smart-off-confirm",
             "support-neon", "support-orbit", "support-alchemy", "support-abyss", "support-sky",
         )
         private val STATE_SIZES = setOf(
@@ -305,7 +308,7 @@ class TabletSettingsCaptureTest(private val scene: String, configuration: PhoneG
                 val base = sizes.filter { !it.dark && it.auditKey !in LARGE_TEXT_SIZES }
                 return AUDIT_SCENES.flatMap { scene -> base.map { arrayOf<Any>(scene, it) } } +
                     STATE_SCENES.flatMap { scene -> sizes.filter { !it.dark && it.auditKey in STATE_SIZES }.map { arrayOf<Any>(scene, it) } } +
-                    LARGE_TEXT_SCENES.flatMap { scene -> sizes.filter { it.auditKey in LARGE_TEXT_SIZES && it.auditKey !in STATE_SIZES }.map { arrayOf<Any>(scene, it) } } +
+                    LARGE_TEXT_SCENES.flatMap { scene -> sizes.filter { it.auditKey in LARGE_TEXT_SIZES }.map { arrayOf<Any>(scene, it) } } +
                     DARK_SCENES.flatMap { scene -> sizes.filter { it.dark && it.auditKey in DARK_SIZES }.map { arrayOf<Any>(scene, it) } }
             }
             return AFTER_SCENES.flatMap { scene ->
@@ -365,10 +368,11 @@ private class LoadingSupportApi(private val conversationLoads: Boolean) : Suppor
 
 @Suppress("CyclomaticComplexMethod") // One branch per scene.
 private fun captureDestination(scene: String): ProfileSettingsDestination = when (scene) {
-    "hub", "hub-end" -> ProfileSettingsDestination.Hub
+    "hub", "hub-end", "hub-signed-out", "hub-signed-in" -> ProfileSettingsDestination.Hub
     "sync", "sync-signed-in", "sync-import" -> ProfileSettingsDestination.SyncAndBackups
     "library" -> ProfileSettingsDestination.Library
-    "recommendations" -> ProfileSettingsDestination.Recommendations
+    "recommendations", "recommendations-hidden" -> ProfileSettingsDestination.Recommendations
+    "appearance-language" -> ProfileSettingsDestination.AppearanceLanguage
     "appearance" -> ProfileSettingsDestination.Appearance
     "appearance-home" -> ProfileSettingsDestination.AppearanceHome
     "navigation" -> ProfileSettingsDestination.AppearanceNavigation
@@ -391,7 +395,7 @@ private fun CaptureSettingsPage(destination: ProfileSettingsDestination, scene: 
     val appearance = AppearanceSettings()
     val playback = PlaybackSettings()
     when (destination) {
-        ProfileSettingsDestination.Hub -> SettingsHub(onBack = {}, onNavigate = {}, onCheckForUpdates = {})
+        ProfileSettingsDestination.Hub -> SettingsHub(onBack = {}, onNavigate = {}, onCheckForUpdates = {}, account = captureHubAccount(scene))
         ProfileSettingsDestination.SyncAndBackups -> SyncAndBackupsPage(
             if (scene == "sync-signed-in") CAPTURE_EMAIL else null,
             if (scene == "sync-signed-in") CloudSyncUiStatus.Success(1_765_789_500_000L) else CloudSyncUiStatus.Idle,
@@ -404,7 +408,12 @@ private fun CaptureSettingsPage(destination: ProfileSettingsDestination, scene: 
             ),
         )
         ProfileSettingsDestination.Library -> LibrarySettingsPage(LibraryDiscoveryPreferences("us", listOf("en"), {}, {}), {}, {})
-        ProfileSettingsDestination.Recommendations -> RecommendationsSettingsPage(DiscoverySections(), { _, _ -> }, {})
+        ProfileSettingsDestination.Recommendations -> RecommendationsSettingsPage(
+            DiscoverySections(),
+            { _, _ -> },
+            {},
+            hiddenShows = if (scene == "recommendations-hidden") HiddenShowsControl(CAPTURE_HIDDEN_SHOWS) else HiddenShowsControl(),
+        )
         ProfileSettingsDestination.Appearance, ProfileSettingsDestination.Theme -> AppearanceSettingsPage(appearance.state, appearance.actions, {}, {})
         ProfileSettingsDestination.AppearanceHome,
         ProfileSettingsDestination.AppearanceShowPages,
@@ -433,6 +442,19 @@ private fun CaptureSettingsPage(destination: ProfileSettingsDestination, scene: 
 }
 
 private const val CAPTURE_EMAIL = "a.listener.with.a.long.address@example.test"
+
+/** The hub's account line: signed out, or signed in with a long address while a sync runs. */
+private fun captureHubAccount(scene: String): SettingsHubAccount? = when (scene) {
+    "hub-signed-out" -> SettingsHubAccount(null, CloudSyncUiStatus.Idle)
+    "hub-signed-in" -> SettingsHubAccount(CAPTURE_EMAIL, CloudSyncUiStatus.Syncing)
+    else -> null
+}
+
+/** Hidden shows with and without artwork, one with a long title. */
+private val CAPTURE_HIDDEN_SHOWS = listOf(
+    HiddenShow(id = "1", title = "The Daily", imageUrl = "https://example.test/artwork/daily.jpg"),
+    HiddenShow(id = "2", title = "A Very Long Podcast Title About Everything That Happened This Week"),
+)
 
 @Composable
 private fun CaptureDownloadsOrWearOs(destination: ProfileSettingsDestination) {
