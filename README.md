@@ -10,7 +10,7 @@
 <!-- download-play:end -->
 &nbsp;&nbsp;
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.32.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.33.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
 <!-- download-apk:end -->
 &nbsp;&nbsp;
 <!-- download-obtainium:start -->
@@ -63,9 +63,18 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.33` · 2026-11-24
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.33 date=2026-11-24 -->
 <b>✨ Highlights:</b>
 <ul align="left">
-<li>boxlore now has an Android TV app: browse charts and your shows, pick up where you left off, and keep listening as one episode leads to the next.</li>
+<li>Your curiosity now goes wherever you go: boxlore runs on Android TV and Wear OS with or without your phone, and works better in Android Auto. Casting has a new look and fewer glitches, and the boxlore.in web app is open to everyone (beta).</li>
+<li>And it fits every screen: the boxlore app and boxlore.in now adapt to phones turned sideways, foldables, tablets and split screen. The new layouts are in beta, so if anything looks off, tell us with Send feedback.</li>
 </ul>
 <b>🆕 New:</b>
 <ul align="left">
@@ -131,83 +140,6 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>On Android 13 and later, copying your privacy ID, a link or your logs no longer shows a second "copied" message on top of Android's own.</li>
 <li>Lore cards no longer cut off their question on folded or sideways screens; long text scrolls instead.</li>
 <li>Explore's More genres sheet stays open when you rotate, unfold or resize the window, and a mood collection that couldn't load now offers Try again.</li>
-</ul>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.32` · 2026-11-20
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.32 date=2026-11-20 -->
-<b>✨ Highlights:</b>
-<ul align="left">
-<li>boxlore is now on Wear OS. Play, stream and download episodes on your watch, with or without your phone. <a href="https://github.com/boxcreate/boxlore/pull/1256"><img src="https://img.shields.io/badge/PR-1256-6750A4?style=flat-square" alt="PR #1256" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
-</ul>
-<b>🆕 New:</b>
-<ul align="left">
-<li>Send to watch on an episode's page downloads it to your watch. <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
-<li>A tile and a watch-face shortcut resume your last episode in one tap. <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
-<li>Sign in on your watch with one tap from your phone. <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
-<li>On your watch, a show's page now says when its episodes are loading or couldn't load, with Try again, and gets a fresh list from your phone when the one it has is old.</li>
-<li>Hide a show everywhere from the menu on its page. boxlore stops suggesting it on Home, Explore, Lore, Smart Queue and Android Auto. Unhide it from the same menu or in LeaveMeAlone.</li>
-<li>Give a show its own speed in Playback for this show, in the menu on its page. After that, changing the speed in the player while that show plays updates its own speed.</li>
-<li>Trim silence skips quiet gaps in episodes. Turn it on in Settings › Playback or the player's speed controls, or just for one show in Playback for this show. It doesn't work while casting.</li>
-<li>Episode titles only shows a show's episodes as a short list of titles. Turn it on from the menu on a show's page or in Settings › Appearance › Show pages.</li>
-<li>Archive episodes you don't plan to hear, like trailers: on a show's page, long-press to select them, then Archive in the menu. They leave your lists without being marked as played, and you can bring them back any time.</li>
-<li>Make playlists in Library from the shows you follow, or start from one boxlore suggests, like News or True crime. Each takes turns between its shows’ newest episodes, or plays newest first or one show at a time, picks up new episodes by itself, and keeps its place.</li>
-<li>boxlore now comes in Spanish, Brazilian Portuguese, German and French. It follows your phone's language, and you can pick another in Settings › Appearance › App language.</li>
-<li>boxlore can now back up your library automatically, daily or weekly, to a folder you choose, ready for apps like Syncthing. Turn it on in Settings › Cloud Sync & Backups.</li>
-</ul>
-<b>⚡ Improved:</b>
-<ul align="left">
-<li>Sharing a show or episode now sends a card that looks like the boxlore player, in colours from its artwork, with the episode's length and date or how often the show posts, and the share sheet shows the card before you send it. Episodes shared from a moment show where they start, and the message is now just the name and the link.</li>
-<li>Home screen widgets have a new look with rounder shapes. The players now show how far you are and how much time is left, and the skip buttons show your own skip lengths.</li>
-<li>The Your Shows widget is now a grid of artwork. Choose whole covers or shapes in Settings › Appearance › Widgets.</li>
-<li>See every boxlore widget and add it to your home screen from Settings › Appearance › Widgets.</li>
-<li>On Home, a show you listen to oldest first now picks up exactly where you left off, even deep into a long series, and skips trailers. Daily mix suggests the same next episode.</li>
-<li>Android Auto has a new layout. Home shows what you're midway through, then large blocks for New episodes, Your shows, Daily mix, Downloads and more, with Continue, New and Shows one tap away as tabs.</li>
-<li>In Android Auto, tapping an episode in New episodes, Daily mix, Downloads, Liked or Drive picks keeps playing down that list, and an episode you resume is followed by your queue.</li>
-<li>Android Auto lists now update when you queue, download, like or follow something on your phone, and opening New episodes or Shows in the car checks your shows for new episodes.</li>
-<li>In Android Auto, your last episode is ready on the car's screen as soon as you connect, so one tap resumes it.</li>
-<li>If you installed boxlore from GitHub or another store, it now shows you the one Android Auto setting that puts it on your car's screen, the first time you use it in the car.</li>
-</ul>
-<b>🐛 Fixed:</b>
-<ul align="left">
-<li>Widgets that follow your phone's light and dark mode now switch with it, even when boxlore isn't open.</li>
-<li>The Your Shows and New Episodes widgets now count your whole library instead of stopping at 50.</li>
-<li>While an episode plays, the Your Shows and New Episodes widgets and your Library use less battery.</li>
-<li>While an episode plays, boxlore syncs your place in it every few minutes instead of every few seconds, so it uses less battery and data. Pausing, switching episodes or leaving boxlore still syncs it straight away.</li>
-<li>With a large listening history, boxlore no longer slows down or closes when your phone gets its connection back.</li>
-<li>On Home, a show you've heard every episode of now lists its latest episodes instead of an empty list, and a show whose episodes can't load lets you try again.</li>
-<li>On Home, tapping a show in Your shows now checks it for new episodes, even if boxlore checked it a few hours ago.</li>
-<li>In Android Auto, artwork loads faster, and every episode has a picture, in lists and in the queue: one with no image of its own shows its show's cover.</li>
-<li>In Android Auto, tapping something that can't be played no longer stops what you're listening to.</li>
-<li>In Android Auto, skipping forward or back no longer sends the list you're browsing back to the top.</li>
-<li>In Android Auto, Shows no longer stops at 50 of the shows you follow.</li>
-<li>Casting no longer closes boxlore when your queue has an episode your Cast device can't stream, such as one from a feed on your home network. Those episodes stay in your queue but are skipped on the Cast device.</li>
-<li>After you listen on another device, Play on the mini player now starts the episode it shows, at the right spot, instead of an older one from your queue.</li>
-<li>When boxlore fills your queue from the show you're playing, or offers to continue it, it now picks the episodes right after yours, even deep into a long show you don't follow, instead of jumping hundreds of episodes ahead.</li>
-<li>Downloaded episodes now show their chapters and transcript straight away, even offline or on a weak connection. Chapters and transcripts that can't load now stop trying instead of loading forever.</li>
-<li>Smart Downloads no longer downloads episodes you've already finished, a show you listen to oldest first gets its next episode, and Sync Now checks your shows for new episodes before it picks what to download.</li>
-<li>A download you start that fails now stays in Downloads, marked as failed, with Download Again, instead of disappearing.</li>
-<li>Auto-downloads checked in the background stay on schedule when one show's feed can't be read, so new episodes from your other shows still arrive on time.</li>
-<li>For you in Explore no longer reloads again and again while your account syncs. It refreshes when the shows you follow or your languages change, and when your picks get old.</li>
-<li>When a show search or Explore's Top chart can't load, boxlore now says so and lets you try again, instead of saying no shows were found or ending the chart early. This includes searching for shows while you set up boxlore.</li>
-<li>Picked for you on Home and For you in Explore now start from the shows you've played or followed most recently, not the first ones from A to Z, and leave out shows you follow, even in a large library.</li>
-<li>In Lore, Check for new cards now looks much further through the deck, so it finds new cards past the first few pages.</li>
-<li>If you follow a lot of shows, New Episodes no longer misses new episodes from some of them, and pulling down on New Episodes checks all your shows (up to 200), not just a few.</li>
-<li>Some shows listed their episodes without dates and out of order, said they had ended, and their new episodes never reached New Episodes. They now show their dates, newest first, and new episodes arrive as usual.</li>
-<li>The Brief opens as soon as it's ready, even when its stories are slow to load. They appear when they arrive.</li>
-<li>New episode notifications from different shows no longer replace each other or open the wrong show. Each show gets its own notification, grouped together, for up to 16 shows at a time.</li>
-<li>On a show's page, Mark all as played and Mark all as unplayed now change every episode, not just the newest 200. If the episodes can't load, nothing changes and boxlore tells you.</li>
-<li>Marking a whole show as played no longer makes episodes of your other shows, or ones you played long ago, look unplayed or lose their progress, on your phone or in Android Auto. Episodes you'd already finished stay in Listening history, the show no longer jumps to the top of Your shows or Most listened, and your recommendations keep following what you listen to. Marking the show unplayed again no longer fills today's Listening history with episodes you never played.</li>
-<li>On a show's page where you allowed feed checks, a check that fails now says Couldn't update instead of Up to date, and pulling down tells you when the feed couldn't be read.</li>
-<li>On a show's page, adding selected episodes to your queue now adds as many as fit and tells you when your queue is full, instead of silently leaving the rest out.</li>
-<li>When boxlore can't read a long show's own feed, searching that show now looks through up to 11,000 of its episodes instead of the newest 1,000, and says so when there are more. If the search can't run, the page says so and lets you try again instead of showing no matches.</li>
-<li>On a show page, episodes that don't load are tried again and then show Try again, instead of the list just ending. Select all on a long show selects every episode or says it couldn't.</li>
-<li>After you sign in on a new phone, every show you follow now gets its name and artwork. Some used to stay as “Loading...” with no artwork.</li>
-<li>Restoring a full library backup no longer drops shows you added by RSS feed when their feed can't be reached. They come back with your listening history, and their episodes load once the feed responds.</li>
-<li>Importing a large library from another podcast app no longer stops partway. Shows boxlore can't add right away are added later while boxlore is open.</li>
 </ul>
 <!-- release-whats-new:end -->
 
