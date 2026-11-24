@@ -295,12 +295,16 @@ def validate_raw_uri_payloads(artifact: Path, root: Path, names: set[str], modul
     return len([name for name in names if name.startswith("raw/")])
 
 
-def validate_resources(artifact: Path, root: Path, aapt2: Path) -> int:
-    expected = {"font/google_sans_flex_variable"}
-    expected.update("drawable/" + p.stem for p in (root / "core/designsystem/src/main/res/drawable").glob("pod_cover_*"))
-    if len(expected) < 2:
-        raise ValueError("Dynamic onboarding resource inventory is missing")
-    expected.update(literal_uri_resources(root))
+def validate_resources(artifact: Path, root: Path, aapt2: Path, modules: list[Path] | None = None,
+                       onboarding: bool = True) -> int:
+    """Resource names looked up at runtime must stay in the APK's table; the onboarding inventory is the phone's."""
+    expected = set()
+    if onboarding:
+        expected.add("font/google_sans_flex_variable")
+        expected.update("drawable/" + p.stem for p in (root / "core/designsystem/src/main/res/drawable").glob("pod_cover_*"))
+        if len(expected) < 2:
+            raise ValueError("Dynamic onboarding resource inventory is missing")
+    expected.update(literal_uri_resources(root, modules))
     result = subprocess.run([str(aapt2), "dump", "resources", str(artifact)], capture_output=True, text=True, check=True)
     present = set(re.findall(r"\b(?:[\w.]+:)?((?:drawable|font|raw)/[\w]+)", result.stdout))
     missing = sorted(expected - present)
@@ -349,9 +353,9 @@ def main() -> int:
                         raise ValueError("APK installer code packaged in Play bundle: " + name)
             counts["raw_uri_payloads"] = validate_raw_uri_payloads(
                 artifact, root, literal_uri_resources(root, modules), modules)
-            # The onboarding covers and font are the phone's; the TV and watch apps don't ship them.
-            if app == "app" and artifact.suffix == ".apk":
-                counts["dynamic_resources"] = validate_resources(artifact, root, sdk_tool("aapt2", sdk))
+            if artifact.suffix == ".apk":
+                counts["dynamic_resources"] = validate_resources(
+                    artifact, root, sdk_tool("aapt2", sdk), modules, onboarding=profile.full_inventory)
             counts.update(dex_classes=len(dex), dex_bytes=size, artifact_bytes=artifact.stat().st_size)
             report[artifact.name] = counts
             print(f"{artifact.name}: release contracts passed {json.dumps(counts, sort_keys=True)}")

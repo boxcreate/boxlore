@@ -389,6 +389,16 @@ Class #4 -
                     "stdout": "font/google_sans_flex_variable drawable/pod_cover_0"})()):
                 with self.assertRaisesRegex(ValueError, "raw/chime"):
                     check.validate_resources(root / "app.apk", root, Path("aapt2"))
+            # The TV and watch apps check their own literal names, without the phone's onboarding inventory.
+            source = root / "tv/src/main/java/example"
+            source.mkdir(parents=True)
+            (source / "Cover.kt").write_text('val cover = "android.resource://$packageName/drawable/tv_cover"')
+            with patch.object(check.subprocess, "run", return_value=type("Output", (), {"stdout": "raw/chime"})()):
+                with self.assertRaisesRegex(ValueError, "drawable/tv_cover"):
+                    check.validate_resources(root / "tv.apk", root, Path("aapt2"), [root / "tv"], onboarding=False)
+            with patch.object(check.subprocess, "run", return_value=type("Output", (), {"stdout": "drawable/tv_cover"})()):
+                self.assertEqual(1, check.validate_resources(root / "tv.apk", root, Path("aapt2"), [root / "tv"],
+                                                             onboarding=False))
 
     def test_publication_and_release_dry_run_are_guarded(self):
         """Full R8 verification gates publication; the dry run checks every release PR before merging."""
