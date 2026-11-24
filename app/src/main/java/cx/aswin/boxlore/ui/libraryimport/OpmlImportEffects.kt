@@ -3,8 +3,6 @@ package cx.aswin.boxlore.ui.libraryimport
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
@@ -16,10 +14,12 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** Runs OPML / JSON library import work when [importTriggerKey] changes. */
-@Composable
-fun OpmlImportEffects(
-    importTriggerKey: Long,
+/**
+ * Runs the OPML work [opmlImportState] asks for: parsing and subscribing for [OpmlImportState.Parsing],
+ * marking shows played for [OpmlImportState.Completing]. [LibraryImportViewModel] calls it, so the
+ * work outlives the activity being recreated.
+ */
+internal suspend fun runOpmlImportStep(
     opmlImportState: OpmlImportState,
     onStateChange: (OpmlImportState) -> Unit,
     context: Context,
@@ -27,133 +27,130 @@ fun OpmlImportEffects(
     playbackRepository: PlaybackRepository,
     podcastRepository: PodcastRepository,
 ) {
-    LaunchedEffect(importTriggerKey) {
-        if (importTriggerKey == 0L) return@LaunchedEffect
-        val state = opmlImportState
-        if (state is OpmlImportState.Parsing) {
-            val uri = state.uri
-            withContext(Dispatchers.IO) {
-                var parsed = false
-                try {
-                    val inputStream = context.contentResolver.openInputStream(uri)
-                    if (inputStream == null) {
-                        AnalyticsHelper.trackOnboardingImportFailed(
-                            "opml",
-                            LibraryBackupAnalyticsErrors.FILE_OPEN_FAILED,
-                        )
-                        onStateChange(OpmlImportState.Error(ImportFailure.FileUnreadable))
-                        return@withContext
-                    }
-                    val backupManager =
-                        LibraryBackupManager(
-                            subscriptionRepository,
-                            playbackRepository,
-                            podcastRepository,
-                            context = context,
-                        )
-                    val feeds = backupManager.parseOpmlFeeds(inputStream)
-                    inputStream.close()
-                    parsed = true
-
-                    if (feeds.isEmpty()) {
-                        AnalyticsHelper.trackOnboardingImportFailed(
-                            "opml",
-                            LibraryBackupAnalyticsErrors.NO_FEEDS,
-                        )
-                        onStateChange(
-                            OpmlImportState.Error(ImportFailure.NoFeeds),
-                        )
-                        return@withContext
-                    }
-
-                    onStateChange(
-                        OpmlImportState.Importing(
-                            currentFeedTitle = feeds.first().title,
-                            progress = 0f,
-                            currentCount = 0,
-                            totalCount = feeds.size,
-                            importedPodcasts = emptyList(),
-                        ),
+    val state = opmlImportState
+    if (state is OpmlImportState.Parsing) {
+        val uri = state.uri
+        withContext(Dispatchers.IO) {
+            var parsed = false
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                if (inputStream == null) {
+                    AnalyticsHelper.trackOnboardingImportFailed(
+                        "opml",
+                        LibraryBackupAnalyticsErrors.FILE_OPEN_FAILED,
                     )
-
-                    // Paced under the API's rate limits; outlines it still couldn't answer for are finished later.
-                    val report =
-                        backupManager.importOpmlFeeds(feeds) { index, feed, imported ->
-                            onStateChange(
-                                OpmlImportState.Importing(
-                                    currentFeedTitle = feed.title,
-                                    progress = index.toFloat() / feeds.size,
-                                    currentCount = index,
-                                    totalCount = feeds.size,
-                                    importedPodcasts = imported,
-                                ),
-                            )
-                        }
-                    trackOpmlImportOutcome(report)
-                    onStateChange(opmlImportOutcome(report))
-                } catch (e: Exception) {
-                    if (e is CancellationException) throw e
-                    Log.e("OPML_IMPORT", "Error during parsing/importing", e)
-                    val code =
-                        LibraryBackupAnalyticsErrors.fromThrowable(
-                            e,
-                            LibraryBackupAnalyticsErrors.IMPORT_FAILED,
-                        )
-                    AnalyticsHelper.trackOnboardingImportFailed("opml", code)
-                    AnalyticsHelper.trackBackupRestoreResult(
-                        action = "import",
-                        success = false,
-                        format = "opml",
-                        errorMessage = code,
-                    )
-                    onStateChange(OpmlImportState.Error(opmlFailureFor(parsed)))
+                    onStateChange(OpmlImportState.Error(ImportFailure.FileUnreadable))
+                    return@withContext
                 }
-            }
-        } else if (state is OpmlImportState.Completing) {
-            withContext(Dispatchers.IO) {
-                try {
-                    val backupManager =
-                        LibraryBackupManager(
-                            subscriptionRepository,
-                            playbackRepository,
-                            podcastRepository,
-                            context = context,
-                        )
-                    val total = state.podcastsToMark.size
-                    // Only shows read in full count as marked: one whose pages ran out is left partly marked.
-                    var fullyMarked = 0
-                    for (index in state.podcastsToMark.indices) {
-                        val podcast = state.podcastsToMark[index]
+                val backupManager =
+                    LibraryBackupManager(
+                        subscriptionRepository,
+                        playbackRepository,
+                        podcastRepository,
+                        context = context,
+                    )
+                val feeds = backupManager.parseOpmlFeeds(inputStream)
+                inputStream.close()
+                parsed = true
+
+                if (feeds.isEmpty()) {
+                    AnalyticsHelper.trackOnboardingImportFailed(
+                        "opml",
+                        LibraryBackupAnalyticsErrors.NO_FEEDS,
+                    )
+                    onStateChange(
+                        OpmlImportState.Error(ImportFailure.NoFeeds),
+                    )
+                    return@withContext
+                }
+
+                onStateChange(
+                    OpmlImportState.Importing(
+                        currentFeedTitle = feeds.first().title,
+                        progress = 0f,
+                        currentCount = 0,
+                        totalCount = feeds.size,
+                        importedPodcasts = emptyList(),
+                    ),
+                )
+
+                // Paced under the API's rate limits; outlines it still couldn't answer for are finished later.
+                val report =
+                    backupManager.importOpmlFeeds(feeds) { index, feed, imported ->
                         onStateChange(
-                            OpmlImportState.Completing(
-                                progress = index.toFloat() / total,
-                                currentShowTitle = podcast.title,
-                                podcastsToMark = state.podcastsToMark,
-                                totalImportedCount = state.totalImportedCount,
-                                importedPodcasts = state.importedPodcasts,
-                                pendingCount = state.pendingCount,
+                            OpmlImportState.Importing(
+                                currentFeedTitle = feed.title,
+                                progress = index.toFloat() / feeds.size,
+                                currentCount = index,
+                                totalCount = feeds.size,
+                                importedPodcasts = imported,
                             ),
                         )
-                        if (backupManager.markAllEpisodesCompleted(podcast)) fullyMarked++
                     }
+                trackOpmlImportOutcome(report)
+                onStateChange(opmlImportOutcome(report))
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Log.e("OPML_IMPORT", "Error during parsing/importing", e)
+                val code =
+                    LibraryBackupAnalyticsErrors.fromThrowable(
+                        e,
+                        LibraryBackupAnalyticsErrors.IMPORT_FAILED,
+                    )
+                AnalyticsHelper.trackOnboardingImportFailed("opml", code)
+                AnalyticsHelper.trackBackupRestoreResult(
+                    action = "import",
+                    success = false,
+                    format = "opml",
+                    errorMessage = code,
+                )
+                onStateChange(OpmlImportState.Error(opmlFailureFor(parsed)))
+            }
+        }
+    } else if (state is OpmlImportState.Completing) {
+        withContext(Dispatchers.IO) {
+            try {
+                val backupManager =
+                    LibraryBackupManager(
+                        subscriptionRepository,
+                        playbackRepository,
+                        podcastRepository,
+                        context = context,
+                    )
+                val total = state.podcastsToMark.size
+                // Only shows read in full count as marked: one whose pages ran out is left partly marked.
+                var fullyMarked = 0
+                for (index in state.podcastsToMark.indices) {
+                    val podcast = state.podcastsToMark[index]
                     onStateChange(
-                        OpmlImportState.Success(
-                            importedCount = state.totalImportedCount,
-                            completedCount = fullyMarked,
-                            isJson = false,
+                        OpmlImportState.Completing(
+                            progress = index.toFloat() / total,
+                            currentShowTitle = podcast.title,
+                            podcastsToMark = state.podcastsToMark,
+                            totalImportedCount = state.totalImportedCount,
                             importedPodcasts = state.importedPodcasts,
                             pendingCount = state.pendingCount,
                         ),
                     )
-                } catch (e: Exception) {
-                    if (e is CancellationException) throw e
-                    Log.e("OPML_IMPORT", "Error marking completed", e)
-                    AnalyticsHelper.trackOnboardingImportFailed(
-                        "opml",
-                        LibraryBackupAnalyticsErrors.MARK_COMPLETED_FAILED,
-                    )
-                    onStateChange(OpmlImportState.Error(ImportFailure.MarkingStopped))
+                    if (backupManager.markAllEpisodesCompleted(podcast)) fullyMarked++
                 }
+                onStateChange(
+                    OpmlImportState.Success(
+                        importedCount = state.totalImportedCount,
+                        completedCount = fullyMarked,
+                        isJson = false,
+                        importedPodcasts = state.importedPodcasts,
+                        pendingCount = state.pendingCount,
+                    ),
+                )
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Log.e("OPML_IMPORT", "Error marking completed", e)
+                AnalyticsHelper.trackOnboardingImportFailed(
+                    "opml",
+                    LibraryBackupAnalyticsErrors.MARK_COMPLETED_FAILED,
+                )
+                onStateChange(OpmlImportState.Error(ImportFailure.MarkingStopped))
             }
         }
     }
