@@ -2,18 +2,18 @@
 <resources>
     <!-- The show page: its menus, chips, sheets, dialogs and messages. -->
     <!-- Show-page chip: the show has not released an episode for over a year. Short chip text. -->
-    <string name="podcast_info_frequency_inactive">Inativo / Encerrado</string>
+    <string name="podcast_info_frequency_inactive">Sem episódios novos</string>
     <!-- Show-page chip: no episode for over six months. -->
-    <string name="podcast_info_frequency_hiatus">Em hiato</string>
+    <string name="podcast_info_frequency_hiatus">Em pausa</string>
     <!-- Show-page chip: the show is taking a break between seasons. -->
     <string name="podcast_info_frequency_between_seasons">Entre temporadas</string>
     <!-- Show-page chip: how often the show releases episodes. Short chip text. -->
-    <string name="podcast_info_frequency_daily">Episódios diários</string>
+    <string name="podcast_info_frequency_daily">Todo dia</string>
     <string name="podcast_info_frequency_multi_weekly">Várias vezes por semana</string>
-    <string name="podcast_info_frequency_weekly">Episódios semanais</string>
+    <string name="podcast_info_frequency_weekly">Toda semana</string>
     <string name="podcast_info_frequency_biweekly">A cada 2 semanas</string>
-    <string name="podcast_info_frequency_monthly">Episódios mensais</string>
-    <string name="podcast_info_frequency_occasionally">Episódios ocasionais</string>
+    <string name="podcast_info_frequency_monthly">Todo mês</string>
+    <string name="podcast_info_frequency_occasionally">De vez em quando</string>
     <!-- Show-page chip: the show releases every week, usually on this weekday. -->
     <string name="podcast_info_frequency_weekly_sunday">Semanal, aos domingos</string>
     <string name="podcast_info_frequency_weekly_monday">Semanal, às segundas</string>
@@ -51,6 +51,10 @@
     <string name="podcast_info_locked_ok">Entendi</string>
     <!-- Heading over the shows the show's creator recommends (its podroll). -->
     <string name="podcast_info_podroll_title">Indicações do criador</string>
+    <plurals name="podcast_info_podroll_count">
+        <item quantity="one">O criador indica %d podcast</item>
+        <item quantity="other">O criador indica %d podcasts</item>
+    </plurals>
     <!-- Screen-reader label for the show page's share button. -->
     <string name="podcast_info_share">Compartilhar podcast</string>
     <!-- Screen-reader label for the show page's overflow menu button. -->
@@ -59,8 +63,12 @@
     <string name="podcast_info_mark_all_played">Marcar todos como ouvidos</string>
     <string name="podcast_info_mark_all_unplayed">Marcar todos como não ouvidos</string>
     <string name="podcast_info_hide_completed">Ocultar episódios concluídos</string>
-    <string name="podcast_info_show_full_episodes">Mostrar episódios completos</string>
-    <string name="podcast_info_show_titles_only">Mostrar só os títulos</string>
+    <string name="podcast_info_sort_and_view">Ordenar e exibir</string>
+    <string name="podcast_info_sort_newest">Mais recentes primeiro</string>
+    <string name="podcast_info_sort_oldest">Mais antigos primeiro</string>
+    <string name="podcast_info_show_archived_none">Mostrar episódios arquivados</string>
+    <string name="podcast_info_episode_titles_only">Só os títulos dos episódios</string>
+    <string name="podcast_info_add_genre">Adicionar gênero</string>
     <!-- Menu item and sheet title: this show's own speed, trim silence and skips. -->
     <string name="podcast_info_playback_for_show">Reprodução deste podcast</string>
     <string name="podcast_info_change_genre">Mudar etiqueta / gênero</string>

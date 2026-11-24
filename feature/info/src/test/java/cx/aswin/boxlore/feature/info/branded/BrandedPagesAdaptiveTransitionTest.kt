@@ -57,6 +57,7 @@ import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyPage
 import cx.aswin.boxlore.feature.info.branded.rottenmango.RottenMangoPage
 import cx.aswin.boxlore.feature.info.branded.sherlock.SherlockPage
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformPage
+import cx.aswin.boxlore.feature.info.components.infoReadingSide
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
 import cx.aswin.boxlore.feature.info.stubArchive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -279,8 +280,10 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
                 if (page.spotlightIsCard) {
                     assertEquals("A card sits in the middle at $size", leftGap, rightGap, 1f)
                 } else {
-                    // An open spotlight keeps the page's start edge, lined up with the list above and below.
-                    assertTrue("An open spotlight starts at the page edge at $size, was $leftGap in", leftGap <= 16.5f)
+                    // An open spotlight keeps the page's start edge, lined up with the list above and below;
+                    // on a tablet that edge is the reading column's, inside the full-width list.
+                    val column = if (size.usesTabletLayout) infoReadingSide((list.right - list.left)).value else 0f
+                    assertTrue("An open spotlight starts at the page edge at $size, was $leftGap in", leftGap - column <= 16.5f)
                 }
             }
             // The spotlight on screen holds the newest episode, and the list never repeats it.

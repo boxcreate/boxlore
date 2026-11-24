@@ -10,9 +10,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Article
@@ -23,16 +24,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.catalog.genreLabelRes
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.links.openLink
@@ -44,6 +51,7 @@ import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.PodcastGenres
 import cx.aswin.boxlore.core.model.isTrailer
 import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.info.EpisodeSort
@@ -351,8 +359,16 @@ private fun PodcastMetadataChip(
         BrandedMetadataChip(branded, label, icon, onClick, genre, leadingIcon)
         return
     }
-    val container = if (genre) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh
+    // Information (how often it releases, the feed's kind) is outlined; chips that do something are filled.
+    val informational = onClick == null
+    val container = when {
+        genre -> MaterialTheme.colorScheme.secondaryContainer
+        informational && LocalSolidInfoChips.current -> MaterialTheme.colorScheme.surfaceContainerLow
+        informational -> Color.Transparent
+        else -> MaterialTheme.colorScheme.surfaceContainerHigh
+    }
     val foreground = if (genre) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+    val border = if (informational && !genre) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
     val content: @Composable () -> Unit = {
         Row(
             Modifier.heightIn(min = 36.dp).padding(horizontal = 12.dp, vertical = 6.dp),
@@ -364,13 +380,15 @@ private fun PodcastMetadataChip(
             } else if (icon != null) {
                 Icon(icon, null, Modifier.size(16.dp))
             }
-            Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = GoogleSansWeight.medium)
+            // A long label (a support message) ends in "…" on its own chip instead of taking the row.
+            Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = GoogleSansWeight.medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
+    val chip = Modifier.widthIn(max = MetadataChipMaxWidth).testTag(if (informational) METADATA_INFO_CHIP_TAG else METADATA_ACTION_CHIP_TAG)
     if (onClick != null) {
-        Surface(onClick = onClick, shape = ExpressiveShapes.Pill, color = container, contentColor = foreground, content = content)
+        Surface(onClick = onClick, modifier = chip, shape = ExpressiveShapes.Pill, color = container, contentColor = foreground, content = content)
     } else {
-        Surface(shape = ExpressiveShapes.Pill, color = container, contentColor = foreground, content = content)
+        Surface(modifier = chip, shape = ExpressiveShapes.Pill, color = container, contentColor = foreground, border = border, content = content)
     }
 }
 
@@ -406,16 +424,33 @@ private fun BrandedMetadataChip(
             } else if (icon != null) {
                 Icon(icon, null, Modifier.size(style.iconSize), tint = if (genre) style.genreIcon else style.icon)
             }
-            Text(label, style = textStyle, maxLines = 1)
+            Text(label, style = textStyle, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
+    val chip = Modifier.widthIn(max = MetadataChipMaxWidth)
     if (onClick != null) {
-        Surface(onClick = onClick, shape = style.shape, color = container, contentColor = foreground, border = border, content = content)
+        Surface(onClick = onClick, modifier = chip, shape = style.shape, color = container, contentColor = foreground, border = border, content = content)
     } else {
-        Surface(shape = style.shape, color = container, contentColor = foreground, border = border, content = content)
+        Surface(modifier = chip, shape = style.shape, color = container, contentColor = foreground, border = border, content = content)
     }
 }
 
+/** The widest one chip gets, so a long support message can't push the others away. */
+internal val MetadataChipMaxWidth = 240.dp
+
+internal const val METADATA_CHIPS_ROW_TAG = "podcast_info_chips_row"
+internal const val METADATA_INFO_CHIP_TAG = "podcast_info_info_chip"
+internal const val METADATA_ACTION_CHIP_TAG = "podcast_info_action_chip"
+
+/** Information chips over the cover backdrop get a solid container, so their text stays readable on any cover. */
+private val LocalSolidInfoChips = staticCompositionLocalOf { false }
+
+/**
+ * The header's chips in one row that scrolls. They sit centred while they fit, or from the start
+ * when [alignStart] (beside the cover, under the title). [listState] keeps the row's scroll when
+ * the header changes form. [solidInfoChips] gives information chips a solid container.
+ */
+@Suppress("LongParameterList")
 @Composable
 internal fun PodcastInfoMetadataChipsRow(
     podcast: Podcast,
@@ -424,27 +459,61 @@ internal fun PodcastInfoMetadataChipsRow(
     frequencyData: Pair<UiText, ImageVector>?,
     onEditGenre: (() -> Unit)? = null,
     onPlayTrailer: (Episode) -> Unit,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    /** A followed show: a missing genre offers Add genre. */
+    canEditGenre: Boolean = onEditGenre != null,
+    listState: LazyListState = rememberLazyListState(),
+    alignStart: Boolean = false,
+    solidInfoChips: Boolean = false,
 ) {
     val context = LocalContext.current
     val medium = resolveDisplayMedium(podcast)
-    // Chips sit centred while they fit; a branded header keeps them off its margins and lets a long row
-    // scroll to the screen edge.
     val branded = LocalBrandedPage.current != null
+    val chips = podcastInfoChips(podcast, sortedPersons, trailerEpisode, medium, frequencyData, onEditGenre.takeIf { canEditGenre } to onEditGenre, onPlayTrailer, context)
 
-    LazyRow(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        contentPadding = PaddingValues(horizontal = if (branded) 16.dp else 0.dp),
-        modifier = if (branded) Modifier.fillMaxWidth().height(BrandedChipRowHeight) else Modifier.fillMaxWidth(),
-    ) {
-        podcastIdentityChips(podcast, frequencyData, onEditGenre)
-
-        items(sortedPersons) { person ->
-            CompactPersonChip(person = person, onClick = { openPersonLink(context, person) })
+    // A long row keeps off the page's margins at rest and scrolls to the page's edge, so it reads
+    // as a row that scrolls rather than one cut off.
+    CompositionLocalProvider(LocalSolidInfoChips provides solidInfoChips) {
+        LazyRow(
+            state = listState,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp, if (alignStart) Alignment.Start else Alignment.CenterHorizontally),
+            contentPadding = contentPadding,
+            modifier = (if (branded) Modifier.fillMaxWidth().height(BrandedChipRowHeight) else Modifier.fillMaxWidth()).then(modifier).testTag(METADATA_CHIPS_ROW_TAG),
+        ) {
+            items(chips.size) { index -> chips[index]() }
         }
+    }
+}
 
-        trailerAndMediumChips(trailerEpisode, medium, onPlayTrailer)
-        fundingChip(podcast, context)
+/** The show's chips in order: how it is published, its genre, people, a trailer, its kind, Support. */
+// One builder for the whole row, fed by the header that owns these values.
+@Suppress("LongParameterList", "kotlin:S107")
+private fun podcastInfoChips(
+    podcast: Podcast,
+    sortedPersons: List<Person>,
+    trailerEpisode: Episode?,
+    medium: String?,
+    frequencyData: Pair<UiText, ImageVector>?,
+    /** The genre chip's tap when the listener may add a genre, then its tap in every case. */
+    editGenre: Pair<(() -> Unit)?, (() -> Unit)?>,
+    onPlayTrailer: (Episode) -> Unit,
+    context: android.content.Context,
+): List<@Composable () -> Unit> = buildList {
+    if (podcast.isRss) add { RssFeedChip() }
+    if (frequencyData != null) add { UpdateFrequencyChip(frequencyData) }
+    genreChip(podcast, editGenre)?.let { add(it) }
+    sortedPersons.forEach { person -> add { CompactPersonChip(person = person, onClick = { openPersonLink(context, person) }) } }
+    if (trailerEpisode != null) add { PlayTrailerChip(onClick = { onPlayTrailer(trailerEpisode) }) }
+    if (!medium.isNullOrEmpty() && medium != "podcast") add { MediumChip(medium) }
+    if (podcast.fundingUrl != null) {
+        add {
+            FundingChip(
+                fundingMessage = podcast.fundingMessage,
+                onClick = { podcast.fundingUrl?.let { context.openLink(Uri.parse(it)) } },
+            )
+        }
     }
 }
 
@@ -463,55 +532,49 @@ private fun openPersonLink(
     context.openLink(Uri.parse(href))
 }
 
-private fun LazyListScope.podcastIdentityChips(
-    podcast: Podcast,
-    frequencyData: Pair<UiText, ImageVector>?,
-    onEditGenre: (() -> Unit)? = null,
-) {
-    if (podcast.isRss) {
-        item { RssFeedChip() }
-    }
-    if (frequencyData != null) {
-        item { UpdateFrequencyChip(frequencyData) }
-    }
-    val effective = podcast.effectiveGenre
-    if (effective.isNotEmpty()) {
-        val icon = GenreIcons.findIcon(podcast.customGenreIcon)
-            ?: genreIconFor(effective)
-        item {
-            GenreChip(
-                genre = effective,
-                icon = icon,
-                onClick = onEditGenre,
-            )
+/** The genre chip, or null when the show has none to show. [editGenre] as in [podcastInfoChips]. */
+private fun genreChip(podcast: Podcast, editGenre: Pair<(() -> Unit)?, (() -> Unit)?>): (@Composable () -> Unit)? {
+    val (addGenre, onEditGenre) = editGenre
+    return when (val label = genreChipLabel(podcast.effectiveGenre, custom = !podcast.customGenre.isNullOrBlank(), canEdit = addGenre != null)) {
+        GenreChipLabel.None -> null
+        GenreChipLabel.AddGenre -> {
+            { GenreChip(genre = stringResource(R.string.podcast_info_add_genre), icon = Icons.Rounded.Add, onClick = addGenre) }
+        }
+        is GenreChipLabel.Name -> {
+            {
+                val icon = GenreIcons.findIcon(podcast.customGenreIcon) ?: genreIconFor(podcast.effectiveGenre)
+                GenreChip(genre = label.res?.let { stringResource(it) } ?: label.raw, icon = icon, onClick = onEditGenre)
+            }
         }
     }
 }
 
-private fun LazyListScope.trailerAndMediumChips(
-    trailerEpisode: Episode?,
-    medium: String?,
-    onPlayTrailer: (Episode) -> Unit,
-) {
-    if (trailerEpisode != null) {
-        item { PlayTrailerChip(onClick = { onPlayTrailer(trailerEpisode) }) }
-    }
-    if (!medium.isNullOrEmpty() && medium != "podcast") {
-        item { MediumChip(medium) }
-    }
+/** What the show page's genre chip says. */
+internal sealed interface GenreChipLabel {
+    /** No chip: the show has no real genre and the listener can't set one. */
+    data object None : GenreChipLabel
+
+    /** A followed show with no real genre: the chip offers to add one. */
+    data object AddGenre : GenreChipLabel
+
+    /** The genre's translated name ([res]), or the text as written ([raw]) for a tag boxlore doesn't know or the listener typed. */
+    data class Name(val res: Int?, val raw: String) : GenreChipLabel
 }
 
-private fun LazyListScope.fundingChip(
-    podcast: Podcast,
-    context: android.content.Context,
-) {
-    if (podcast.fundingUrl == null) return
-    item {
-        FundingChip(
-            fundingMessage = podcast.fundingMessage,
-            onClick = {
-                podcast.fundingUrl?.let { context.openLink(Uri.parse(it)) }
-            },
-        )
-    }
+/**
+ * The genre chip for [effective] (the listener's own tag when [custom], else the catalog's). A
+ * blank or placeholder genre offers Add genre when [canEdit] (a followed show), else no chip. A
+ * listener's tag is never replaced by a translation.
+ */
+internal fun genreChipLabel(effective: String, custom: Boolean, canEdit: Boolean): GenreChipLabel = when {
+    effective.isBlank() || PodcastGenres.isPlaceholder(effective) -> if (canEdit) GenreChipLabel.AddGenre else GenreChipLabel.None
+    custom -> GenreChipLabel.Name(null, effective)
+    else -> GenreChipLabel.Name(genreLabelRes(effective), effective)
 }
+
+/**
+ * The Change genre sheet's preview chip for [effective]: the name the show page's chip shows for
+ * it, translated for a catalog genre and as written when the listener [typed] the tag.
+ */
+internal fun genrePreviewLabel(effective: String, typed: Boolean): GenreChipLabel.Name =
+    GenreChipLabel.Name(if (typed) null else genreLabelRes(effective), effective)

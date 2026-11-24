@@ -51,8 +51,6 @@ class SharedHostUsageTest {
             replacement = "the shared menu in :core:designsystem",
             skipDesignSystem = true,
             allowed = mapOf(
-                "feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeSelectionToolbar.kt" to 1,
-                "feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/PodcastInfoChrome.kt" to 1,
                 "feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/pages/supportworlds/SupportWorldDebugMenu.kt" to 1,
             ),
         ),
@@ -61,7 +59,6 @@ class SharedHostUsageTest {
             replacement = "the shared snackbar host in :core:designsystem",
             skipDesignSystem = true,
             allowed = mapOf(
-                "feature/info/src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoScreen.kt" to 1,
             ),
         ),
     )

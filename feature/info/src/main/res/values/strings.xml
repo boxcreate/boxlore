@@ -112,12 +112,11 @@
     <string name="episode_archive_undo">Undo</string>
     <string name="episode_archived">Archived</string>
     <string name="podcast_info_show_archived">Show archived episodes (%d)</string>
-    <string name="podcast_info_hide_archived">Hide archived episodes</string>
     <string name="episode_selection_failed">Couldn’t load every episode. Check your connection and try again.</string>
     <string name="episode_selection_too_long">This show has too many episodes to select them all.</string>
     <string name="subscribe_to_edit_genre">Subscribe to the show to edit genre</string>
     <string name="genre_visibility_hint">Visible on this podcast page, Subscriptions filters, and folders.</string>
-    <string name="genre_edit_placeholder">Click to set custom tag</string>
+    <string name="genre_edit_placeholder">Tap to set a custom tag</string>
     <string name="episode_info_episode_from_show">%1$s, from %2$s</string>
     <string name="podcast_info_load_error">Couldn’t load this podcast</string>
     <!-- Under "Couldn’t load this episode" or "Couldn’t load this podcast"; Try again (podcast_info_retry) and Back sit below it. -->
@@ -138,13 +137,15 @@
     <string name="podcast_info_search_in_show">Search episodes in %1$s</string>
     <string name="podcast_info_close_search">Close episode search</string>
     <string name="podcast_info_clear_search">Clear search</string>
-    <string name="podcast_info_no_search_results">No matching episodes. Try another title or keyword.</string>
     <!-- %1$s is the number of episodes searched, already formatted for the language (1,000). -->
     <plurals name="podcast_info_search_newest_only">
         <item quantity="one">Searched only the newest %1$s episode of this show.</item>
         <item quantity="other">Searched only the newest %1$s episodes of this show.</item>
     </plurals>
     <string name="podcast_info_search_failed">Couldn’t search this show’s episodes. Check your connection.</string>
+    <!-- A search found nothing: the card's title, then what to try. -->
+    <string name="podcast_info_no_matches_title">No matching episodes</string>
+    <string name="podcast_info_no_matches_body">Try another title or keyword.</string>
     <string name="podcast_info_missing_offer">Missing episodes?</string>
     <string name="podcast_info_missing_fetching">Updating…</string>
     <string name="podcast_info_missing_updated">Up to date</string>

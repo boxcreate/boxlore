@@ -43,7 +43,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
@@ -123,7 +122,6 @@ internal fun EpisodeTitleRow(
                     fontWeight = GoogleSansWeight.bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    lineHeight = 20.sp,
                 )
                 Spacer(Modifier.height(2.dp))
                 EpisodeTitleRowDetails(episode, state)
@@ -212,7 +210,7 @@ private fun EpisodeTitleRowDetails(episode: Episode, state: EpisodeTitleRowState
                 highlightIndex = 1,
                 highlight = timeHighlight?.let { SpanStyle(color = it, fontFamily = highlightFamily) },
             ),
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

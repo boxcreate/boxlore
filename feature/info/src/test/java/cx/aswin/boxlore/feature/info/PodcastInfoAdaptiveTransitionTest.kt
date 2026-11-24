@@ -21,7 +21,6 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasParent
 import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -64,6 +63,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -159,7 +159,7 @@ class PodcastInfoAdaptiveTransitionTest {
         // Search ignores hide-completed; closing it returns to the filtered list with the same sort.
         fixture.compose.onNodeWithContentDescription("Close episode search").performClick()
         fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(0)
-        fixture.compose.onNodeWithContentDescription("Sort episodes").performClick()
+        openViewChoice("Oldest first")
         // Rows: hero, toolbar, then e0..e11 and e13 onwards because e12 is completed and hidden.
         fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(RESULT_ROW + 11)
         acrossWindowChanges {
@@ -288,7 +288,7 @@ class PodcastInfoAdaptiveTransitionTest {
         }
         acrossWindowChanges { assertTrue((uiState.value as PodcastInfoUiState.Success).isMarkingAll) }
 
-        fixture.compose.onNodeWithContentDescription("More Options").performClick()
+        fixture.compose.onNodeWithContentDescription("More options").performClick()
         fixture.compose.onNodeWithText("Mark all as played").assertIsNotEnabled()
         fixture.compose.onNodeWithText("Mark all as unplayed").assertIsNotEnabled()
         fixture.compose.onNodeWithText("Mark all as played").performClick()
@@ -716,7 +716,8 @@ class PodcastInfoAdaptiveTransitionTest {
             recreate(host)
             fixture.compose.onNodeWithText("Use app defaults").assertExists()
 
-            fixture.compose.onNode(isToggleable() and hasParent(hasText("Use app defaults"))).performClick()
+            // The whole row is the switch.
+            fixture.compose.onNode(isToggleable() and hasText("Use app defaults")).performClick()
             toggles += 1
             verify(model, times(toggles)).setUseAppPlaybackDefaults(anyBoolean())
             exitSheet(exit, host)
@@ -897,9 +898,11 @@ class PodcastInfoAdaptiveTransitionTest {
         fixture.compose.onNodeWithContentDescription("Play selected episodes").performClick()
         assertEquals(listOf(listOf("e9", "e11")), playedIds())
 
-        // The menu brings the full cards back at the same place, and its label follows the choice.
-        openMenuItem("Show full episodes")
+        // Sort and view (on the list's toolbar) brings the full cards back; its row says whether titles only is on.
+        openViewChoice("Episode titles only")
+        assertFalse("titles only is off", fixture.compose.menuRowChecked("Episode titles only"))
         verify(model, times(1)).toggleEpisodeTitlesOnly()
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(RESULT_ROW + 9)
         val fullCards = {
             fixture.compose.onNodeWithText("Episode 9").assertIsDisplayed()
             titleRows(shown = false)
@@ -907,8 +910,9 @@ class PodcastInfoAdaptiveTransitionTest {
         acrossWindowChanges(fullCards)
         recreate(TABLET)
         fullCards()
-        openMenuItem("Show titles only")
+        openViewChoice("Episode titles only")
         verify(model, times(2)).toggleEpisodeTitlesOnly()
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(RESULT_ROW + 9)
         acrossWindowChanges {
             fixture.compose.onNodeWithText("Episode 9").assertIsDisplayed()
             titleRows(shown = true)
@@ -927,10 +931,12 @@ class PodcastInfoAdaptiveTransitionTest {
             fixture.compose.onNodeWithTag(EPISODE_SKELETON_TAG).assertDoesNotExist()
         }
         fixture.compose.runOnIdle { uiState.update { state -> (state as PodcastInfoUiState.Success).copy(isLoadingMore = false) } }
-        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(0)
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(1)
         fixture.compose.onNodeWithContentDescription("Search episodes").performClick()
         searchField().performTextInput("Episode 1")
         val results = {
+            // The field is the list's second item: bring it back before reading it.
+            fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(1)
             searchField().assert(hasText("Episode 1"))
             fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasText("Episode 14"))
             fixture.compose.onNodeWithText("Episode 14").assertIsDisplayed()
@@ -1102,8 +1108,16 @@ class PodcastInfoAdaptiveTransitionTest {
     private fun androidx.compose.ui.test.junit4.ComposeTestRule.onAllNodesWithTextCount(text: String): Int =
         onAllNodes(hasText(text)).fetchSemanticsNodes().size
 
+    /** Picks [label] in the sort button's Sort and view menu (a choice closes it; an on/off row keeps it open). */
+    private fun openViewChoice(label: String) {
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(1)
+        fixture.compose.onNodeWithContentDescription("Sort and view").performClick()
+        fixture.compose.onNodeWithText(label).performClick()
+        fixture.compose.waitForIdle()
+    }
+
     private fun openMenuItem(label: String) {
-        fixture.compose.onNodeWithContentDescription("More Options").performClick()
+        fixture.compose.onNodeWithContentDescription("More options").performClick()
         fixture.compose.onNodeWithText(label).performClick()
         fixture.compose.waitForIdle()
     }
@@ -1303,7 +1317,7 @@ class PodcastInfoAdaptiveTransitionTest {
         const val HIDE_MESSAGE = "boxlore won’t suggest it on Home, Explore, Lore or in Smart Queue. You can still find it with Find a show and unhide it here or in LeaveMeAlone."
         const val HIDE_SUBSCRIBED_MESSAGE = "This also unsubscribes you from it. boxlore won’t suggest it on Home, Explore, Lore or in Smart Queue. You can still find it with Find a show and unhide it here or in LeaveMeAlone."
         const val SEARCH_FAILED = "Couldn’t search this show’s episodes. Check your connection."
-        const val NO_MATCHES = "No matching episodes. Try another title or keyword."
+        const val NO_MATCHES = "No matching episodes"
         const val SEARCHED_NEWEST = "Searched only the newest 11,000 episodes of this show."
         val ALERT_EXITS = listOf(Exit.CONFIRM, Exit.CANCEL, Exit.BACK, Exit.OUTSIDE)
         val SELECTION_ACTIONS = listOf(

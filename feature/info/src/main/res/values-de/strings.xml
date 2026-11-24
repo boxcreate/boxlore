@@ -110,7 +110,6 @@
     <string name="episode_archive_undo">Rückgängig</string>
     <string name="episode_archived">Archiviert</string>
     <string name="podcast_info_show_archived">Archivierte Folgen anzeigen (%d)</string>
-    <string name="podcast_info_hide_archived">Archivierte Folgen ausblenden</string>
     <string name="episode_selection_failed">Nicht alle Folgen konnten geladen werden. Prüf deine Verbindung und versuch es noch mal.</string>
     <string name="episode_selection_too_long">Dieser Podcast hat zu viele Folgen, um alle auszuwählen.</string>
     <string name="subscribe_to_edit_genre">Abonniere den Podcast, um das Genre zu bearbeiten</string>
@@ -135,13 +134,14 @@
     <string name="podcast_info_search_in_show">Folgen in %1$s durchsuchen</string>
     <string name="podcast_info_close_search">Folgensuche schließen</string>
     <string name="podcast_info_clear_search">Suche leeren</string>
-    <string name="podcast_info_no_search_results">Keine passenden Folgen. Versuch einen anderen Titel oder ein anderes Stichwort.</string>
     <!-- %1$s is the number of episodes searched, already formatted for the language (1,000). -->
     <plurals name="podcast_info_search_newest_only">
         <item quantity="one">Nur die neueste Folge dieses Podcasts wurde durchsucht.</item>
         <item quantity="other">Nur die neuesten %1$s Folgen dieses Podcasts wurden durchsucht.</item>
     </plurals>
     <string name="podcast_info_search_failed">Die Folgen dieses Podcasts konnten nicht durchsucht werden. Prüf deine Verbindung.</string>
+    <string name="podcast_info_no_matches_title">Keine passenden Folgen</string>
+    <string name="podcast_info_no_matches_body">Versuch einen anderen Titel oder ein anderes Stichwort.</string>
     <string name="podcast_info_missing_offer">Fehlende Folgen?</string>
     <string name="podcast_info_missing_fetching">Wird aktualisiert…</string>
     <string name="podcast_info_missing_updated">Auf dem neuesten Stand</string>
