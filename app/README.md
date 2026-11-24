@@ -17,6 +17,7 @@
 
 - `AppContainer` is created once in `BoxLoreApplication.onCreate` and wires every repository in the [object graph order](../ARCHITECTURE.md#identity-and-storage).
 - `ui/rememberOnboardingViewModel` keeps the one `OnboardingViewModel` in the activity's `ViewModelStore`, so every onboarding flow shares it and it is cleared when the activity finishes; never create it with `remember`.
+- `ui/rememberLibraryImportViewModel` and `ui/rememberShellPendingDialogs` keep the library import overlay (`LibraryImportViewModel`: its state, source and running import) and the pending Lore queue question (`ShellPendingDialogs`) in the same store, so a recreation keeps them; never create them with `remember`.
 - The one `PlaybackRepository` is built lazily. Cast state waits in `DeferredCastSessionState` until it exists, so widget, worker and notification starts never build playback on the main thread.
 - The container gives core modules ports instead of reverse dependencies: `feedTelemetry` for feed events, `rolloutSwitches`, and a `DownloadServiceLauncherHolder` that starts `MediaDownloadService`.
 - `onCreate` order: API sessions first, then the Coil image loader (before widgets and services), Media3 Cast from `BoxLoreCastOptionsProvider`, the shared `UserPreferencesRepository`, the container and its holders. PostHog starts later in the background (`PostHogStartup`), after `AnalyticsHelper.initPolicy`.
@@ -115,7 +116,7 @@ src/debug/        App Check debug provider, ADB-only notification preview receiv
 ## Threading / lifecycle
 
 - `AppContainer`, `StartupWorkGate`, the updater and sync coordinators are application-scoped; long work runs on IO.
-- Composition, navigation, import and player overlay state are Activity-scoped. Activity start and stop tell the shared `PlaybackRepository` whether to poll UI position.
+- Composition, navigation and player overlay state are Activity-scoped. The import overlay's state and any running import live in `LibraryImportViewModel` in the activity's `ViewModelStore`, so recreation keeps them; the pending Lore queue question is held the same way. Activity start and stop tell the shared `PlaybackRepository` whether to poll UI position.
 - Background audio, notifications, Cast and the MediaSession stay owned by `BoxLorePlaybackService`.
 - Widget transport calls hop to `Dispatchers.Main.immediate` before touching the MediaController; update UI actions are serialized on the main thread.
 
