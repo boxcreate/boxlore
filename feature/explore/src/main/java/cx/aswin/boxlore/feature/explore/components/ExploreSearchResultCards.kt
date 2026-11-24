@@ -24,14 +24,15 @@ import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.feature.explore.R
 
-/** Search keeps the first episode featured and the remaining results in their original grid order. */
+/** Search keeps the first episode featured and the remaining results in their original grid order; each names its show. */
 @Composable
 internal fun ExploreSearchEpisodeCard(episode: Episode, featured: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     FeedMediaCard(
         imageUrl = episode.imageUrl.orEmpty(),
         fallbackImageUrls = listOf(episode.podcastImageUrl),
         title = episode.title,
-        subtitle = null,
+        // Answers to a question come from many shows, so each card says which.
+        subtitle = episode.podcastTitle?.takeIf { it.isNotBlank() },
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         presentation = if (featured) FeedMediaCardPresentation.ExpressiveFeatured else FeedMediaCardPresentation.ExpressivePoster,
@@ -58,7 +59,8 @@ internal fun ExploreSearchEpisodeCard(episode: Episode, featured: Boolean, onCli
 /** Standalone icons and solid-theme text follow the same hierarchy as Explore's feed. */
 @Composable
 internal fun ExploreSearchSectionHeader(title: String, icon: ImageVector, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    // Every results section has the same rhythm: 24dp above its header, 8dp below.
+    Row(modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
         Text(
             title,

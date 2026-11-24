@@ -1,5 +1,15 @@
 package cx.aswin.boxlore.feature.explore
 
+/**
+ * How far a skipped or queued card flies: past the window's edge from its centred place (half the
+ * window, half the card and a margin), and never less than the 1500px phones have always used, so
+ * portrait phones keep today's motion and wide windows never show a card vanishing mid-screen.
+ */
+internal fun loreExitDistancePx(containerWidthPx: Float, cardWidthPx: Float, marginPx: Float): Float =
+    maxOf(LORE_MIN_EXIT_PX, containerWidthPx / 2 + cardWidthPx / 2 + marginPx)
+
+internal const val LORE_MIN_EXIT_PX = 1500f
+
 /** Cards drawn behind the active one. */
 internal const val LoreDeckDepth = 2
 

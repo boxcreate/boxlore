@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.feature.explore.logic.ExploreChromeScrollLogic
 import kotlin.math.roundToInt
 
@@ -64,7 +65,7 @@ internal fun ExploreFloatingHeader(
         onExpandedHeightChanged(with(density) { (searchHeight + selectorsHeight).toDp() } + 24.dp)
     }
     val backing = MaterialTheme.colorScheme.surfaceContainerLow
-    Column(modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Column(modifier.boxloreHorizontalSafePadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Column(
             Modifier.fillMaxWidth().testTag("explore_header_container").clip(RoundedCornerShape(32.dp))
                 .drawBehind {

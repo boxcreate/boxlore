@@ -6,6 +6,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -50,7 +52,8 @@ class ExploreSearchResultsTest {
         composeRule.onNodeWithText("Also found").assertIsDisplayed()
         composeRule.onNodeWithText("Show 2").assertIsDisplayed().performClick()
         assertEquals(1, composeRule.onAllNodesWithText("Show 1").fetchSemanticsNodes().size)
-        composeRule.onNodeWithText("Host 0").assertDoesNotExist()
+        // Results are list rows that name who makes each show.
+        composeRule.onNodeWithText("Host 0", useUnmergedTree = true).assertIsDisplayed()
         assertEquals(
             listOf(listOf("show_0", "explore_search", "All", 0), listOf("show_1", "explore_search", "All", 1), listOf("show_2", "explore_search_also_found", "All", 2)),
             showTaps,
@@ -80,12 +83,14 @@ class ExploreSearchResultsTest {
         composeRule.onNodeWithText("Related shows").assertIsDisplayed()
         composeRule.onNodeWithText("Show 0").assertIsDisplayed().performClick()
         val showBounds = composeRule.onNodeWithText("Show 0").getUnclippedBoundsInRoot()
-        val featured = composeRule.onNodeWithText("Episode 0").getUnclippedBoundsInRoot()
+        val featured = composeRule.onNode(hasClickAction() and hasText("Episode 0")).getUnclippedBoundsInRoot()
         composeRule.onNodeWithText("Episode 0").assertIsDisplayed().performClick()
         composeRule.onNodeWithText("Episode 1").assertIsDisplayed().performClick()
         composeRule.onNodeWithText("54 min").assertIsDisplayed()
-        composeRule.onNodeWithText("Parent show 1").assertDoesNotExist()
-        assertTrue((showBounds.right - showBounds.left).value <= 104f)
+        // Each answer names its show under the title.
+        composeRule.onNodeWithText("Parent show 1").assertIsDisplayed()
+        // A 104dp cover plus the rounded press area around it.
+        assertTrue((showBounds.right - showBounds.left).value <= 116f)
         assertTrue((featured.right - featured.left).value > 300f)
         assertEquals(listOf(listOf("show_0", "explore_search_concept", "All", 0)), showTaps)
         assertEquals(listOf("ep_0", "ep_1"), episodeTaps.map { it.first.id })
@@ -150,6 +155,22 @@ class ExploreSearchResultsTest {
         assertTrue(bounds.left.value >= 0f && bounds.right.value <= 360f)
         assertEquals(listOf("ep_0", "ep_1"), episodeTaps.map { it.first.id })
         assertEquals(SearchTab.EPISODES, state.value.searchTab)
+    }
+
+    @Test fun `Ask anything sections share one rhythm and the related show press is rounded`() {
+        semantic()
+        show()
+        val rail = composeRule.onNodeWithText("Show 0").getUnclippedBoundsInRoot()
+        val header = composeRule.onNodeWithText("Episodes").getUnclippedBoundsInRoot()
+        val first = composeRule.onNodeWithText("Episode 0").getUnclippedBoundsInRoot()
+        assertTrue("the rail comes first", rail.bottom < header.top)
+        assertTrue("the Episodes header has room above it", (header.top - rail.bottom).value >= 24f)
+        assertTrue("the first episode follows its header closely", (first.top - header.bottom).value in 0f..40f)
+        composeRule.onNodeWithText("Show 0").performClick()
+        assertEquals(listOf(listOf("show_0", "explore_search_concept", "All", 0)), showTaps)
+        // The first cover lines up with the episode cards' edge; its press area reaches into the margin.
+        val cover = composeRule.onNodeWithContentDescription("Show 0", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(first.left.value, cover.left.value, 1f)
     }
 
     private fun semantic() {

@@ -9,6 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -18,6 +20,16 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.COVER_443
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.COVER_475
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.PHONE
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.PHONE_LAND
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.TABLET
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.W599_H900
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.W600_H900
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.W841
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.W900_H479
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows.W900_H480
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.core.testing.TestFixtures
@@ -33,7 +45,7 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [33], application = Application::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ExploreGridResizeTest {
-    @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1_280, 800, false))
+    @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1_280, 960, false))
     private val window = mutableStateOf(BoxloreWindowLayout(599f, 800f))
     private val shows = List(120) {
         TestFixtures.podcast(id = "$it", title = "Show $it", imageUrl = PhoneGoldenRule.ARTWORK_URL)
@@ -56,6 +68,56 @@ class ExploreGridResizeTest {
         assertAnchorAcrossWindowChanges("Show 36")
         fixture.compose.onNodeWithText("Show 36").performClick()
         assertEquals(listOf(listOf("36", "explore_vibe", "All", 36)), taps)
+    }
+
+    @Test
+    fun `browse uses the app's poster columns and keeps its place across compact and tablet windows`() {
+        window.value = PHONE
+        render(ExploreUiState.Success(trending = shows, selectedTab = 0, hasForYou = false))
+        fixture.compose.onNodeWithTag("explore_feed_0").performScrollToIndex(30)
+        val steps = listOf(
+            PHONE to 2, COVER_443 to 2, COVER_475 to 2, BoxloreWindowLayout(540f, 860f) to 3, W599_H900 to 3,
+            W600_H900 to null, W599_H900 to 3,
+            PHONE_LAND to 5, PHONE to 2, W900_H479 to 5, W900_H480 to null, W900_H479 to 5, PHONE to 2,
+            // Short wide windows, where a 150dp adaptive grid would fit one column fewer.
+            BoxloreWindowLayout(800f, 360f) to 5, PHONE to 2, BoxloreWindowLayout(640f, 360f) to 4, PHONE to 2,
+        )
+        for ((size, columns) in steps) {
+            fixture.compose.runOnIdle { window.value = size }
+            fixture.compose.runOnUiThread { Snapshot.sendApplyNotifications() }
+            fixture.compose.waitForIdle()
+            // Index 30 is "Show 29" (the heading and the featured first show come before the grid).
+            fixture.compose.onNodeWithText("Show 29").assertIsDisplayed()
+            if (columns != null) assertEquals("$size", columns, postersInRowOf("Show 29"))
+        }
+    }
+
+    @Test
+    fun `Find a show results are rows in one, two or three columns and keep their place across resizes`() {
+        window.value = PHONE
+        render(ExploreUiState.Success(searchQuery = "space", isSearching = true, searchResults = shows))
+        fixture.compose.onNodeWithTag("explore_feed_1").performScrollToIndex(30)
+        val steps = listOf(PHONE to 1, W600_H900 to 2, W841 to 3, TABLET to 3, PHONE to 1, W599_H900 to 1, W600_H900 to 2, W599_H900 to 1)
+        for ((size, columns) in steps) {
+            fixture.compose.runOnIdle { window.value = size }
+            fixture.compose.runOnUiThread { Snapshot.sendApplyNotifications() }
+            fixture.compose.waitForIdle()
+            fixture.compose.onNodeWithText("Show 30").assertIsDisplayed()
+            // Rows name who makes each show.
+            fixture.compose.onAllNodesWithText("Test Artist", useUnmergedTree = true).onFirst().assertIsDisplayed()
+            assertEquals("$size", columns, postersInRowOf("Show 30"))
+        }
+        fixture.compose.onNodeWithText("Show 30").performClick()
+        assertEquals(listOf(listOf("30", "explore_search", "All", 30)), taps)
+    }
+
+    /** How many posters share the row of [title], counting the visible shows around it. */
+    private fun postersInRowOf(title: String): Int {
+        val top = fixture.compose.onNodeWithText(title).fetchSemanticsNode().boundsInRoot.top
+        return (15..45).count { index ->
+            val nodes = fixture.compose.onAllNodesWithText("Show $index").fetchSemanticsNodes()
+            nodes.any { kotlin.math.abs(it.boundsInRoot.top - top) < 1f }
+        }
     }
 
     private fun assertAnchorAcrossWindowChanges(title: String) {

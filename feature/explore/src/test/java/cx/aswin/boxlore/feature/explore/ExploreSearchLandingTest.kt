@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
@@ -21,6 +24,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -31,15 +35,21 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.feature.explore.components.ExploreBrowseChromeState
 import cx.aswin.boxlore.feature.explore.components.ExploreEpisodesSearchIdleState
 import cx.aswin.boxlore.feature.explore.components.ExploreFloatingHeader
 import cx.aswin.boxlore.feature.explore.components.SearchTabSelector
+import cx.aswin.boxlore.feature.explore.components.conceptExampleIcon
 import cx.aswin.boxlore.feature.explore.logic.ConceptSearchIdleLogic
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -85,6 +95,23 @@ class ExploreSearchLandingTest {
         composeRule.onNodeWithText("Search for a show").assertIsDisplayed()
         composeRule.onNodeWithText("Enter a show name in the search field.").assertIsDisplayed()
         composeRule.onNodeWithText("Explore collections").assertDoesNotExist()
+    }
+
+    @Test fun `the search box hint says what to type in each mode`() {
+        show()
+        fun hint(text: String) = composeRule.onAllNodes(hasText(text), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        assertTrue("browsing", hint("Search podcasts"))
+        composeRule.onNode(hasSetTextAction()).performClick()
+        assertTrue("Find a show", hint("Search by show name"))
+        composeRule.onNode(hasText("Ask anything") and isSelectable()).performClick()
+        assertTrue("Ask anything", hint("Ask about any topic"))
+        assertTrue("no second Ask anything in the box", !hint("Search podcasts"))
+    }
+
+    @Test fun `each example has its own icon and none looks like the Ask anything tab`() {
+        val icons = ConceptSearchIdleLogic.examples.indices.map { conceptExampleIcon(it) }
+        assertEquals(icons.size, icons.toSet().size)
+        assertTrue(Icons.Rounded.AutoAwesome !in icons)
     }
 
     @Test fun `both search headings and their hints align to the center of the feed`() {
@@ -171,6 +198,58 @@ class ExploreSearchLandingTest {
         assertEquals(ConceptSearchIdleLogic.examples.map { it.query }, queries)
     }
 
+    @Test fun `the hint fits on one line at large text in English`() = assertHintsFit()
+
+    @Test
+    @Config(sdk = [33], qualifiers = "de-w360dp-h900dp-mdpi")
+    fun `the hint fits on one line at large text in German`() = assertHintsFit()
+
+    @Test
+    @Config(sdk = [33], qualifiers = "fr-w360dp-h900dp-mdpi")
+    fun `the hint fits on one line at large text in French`() = assertHintsFit()
+
+    @Test
+    @Config(sdk = [33], qualifiers = "pt-rBR-w360dp-h900dp-mdpi")
+    fun `the hint fits on one line at large text in Brazilian Portuguese`() = assertHintsFit()
+
+    /** At 360dp and 130% text, both search modes' hints show in full. */
+    private fun assertHintsFit() {
+        show(fontScale = 1.3f, window = BoxloreWindowLayout(360f, 900f))
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        composeRule.onNode(hasSetTextAction()).performClick()
+        assertFits(context.getString(R.string.explore_search_placeholder_shows))
+        composeRule.onNode(hasText(context.getString(R.string.explore_search_episodes)) and isSelectable()).performClick()
+        assertFits(context.getString(R.string.explore_search_placeholder_questions))
+    }
+
+    private fun assertFits(hint: String) {
+        val node = composeRule.onNode(hasText(hint), useUnmergedTree = true).fetchSemanticsNode()
+        val layouts = mutableListOf<TextLayoutResult>()
+        node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+        val layout = layouts.single()
+        assertEquals("$hint stays on one line", 1, layout.lineCount)
+        assertTrue("$hint isn't cut off", !layout.isLineEllipsized(0) && layout.getLineRight(0) <= layout.size.width + 0.5f)
+    }
+
+    @Test
+    @Config(sdk = [33], qualifiers = "w1600dp-h1000dp-mdpi")
+    fun `tablet examples sit in two columns under the search box, never past its end`() {
+        val window = mutableStateOf(BoxloreTestWindows.TABLET)
+        show(windowState = window)
+        composeRule.onNode(hasSetTextAction()).performClick()
+        composeRule.onNode(hasText("Ask anything") and isSelectable()).performClick()
+        for ((size, columns) in listOf(BoxloreTestWindows.TABLET to 2, BoxloreTestWindows.DESKTOP to 2, BoxloreTestWindows.PHONE to 1, BoxloreTestWindows.TABLET to 2)) {
+            composeRule.runOnIdle { window.value = size }
+            composeRule.waitForIdle()
+            val rows = (0 until 6).map { composeRule.onNodeWithTag("concept_suggestion_$it").getUnclippedBoundsInRoot() }
+            assertEquals("$size", columns, rows.map { it.left.value.roundToInt() }.toSet().size)
+            val field = composeRule.onNode(hasSetTextAction()).getUnclippedBoundsInRoot()
+            // The field sits 6dp inside the header's rounded container; the examples line up with the container.
+            assertTrue("$size: examples end by the search box's end", rows.maxOf { it.right.value } <= field.right.value + 8f)
+            assertTrue("$size: examples start under the search box", rows.minOf { it.left.value } >= field.left.value - 8f)
+        }
+    }
+
     private fun assertCentered(text: String) {
         val bounds = composeRule.onNodeWithText(text).getUnclippedBoundsInRoot()
         assertEquals(180f, (bounds.left.value + bounds.right.value) / 2f, 1f)
@@ -230,9 +309,22 @@ class ExploreSearchLandingTest {
         }
     }
 
-    private fun show() {
+    private fun show(
+        fontScale: Float = 1f,
+        window: BoxloreWindowLayout = BoxloreWindowLayout.Unspecified,
+        windowState: androidx.compose.runtime.State<BoxloreWindowLayout>? = null,
+    ) {
         composeRule.setContent {
+            val size = windowState?.value ?: window
+            CompositionLocalProvider(
+                LocalDensity provides Density(LocalDensity.current.density, fontScale),
+                LocalBoxloreWindowLayout provides size,
+                LocalBoxlorePaneWidth provides size.widthDp,
+            ) {
             BoxLoreTheme(dynamicColor = false) {
+                // A given window is the space the page gets; the unspecified one keeps the host's size.
+                val space = if (size == BoxloreWindowLayout.Unspecified) Modifier else Modifier.requiredSize(size.widthDp.dp, size.heightDp.dp)
+                Box(space) {
                 ExploreContent(
                     uiState = state.value,
                     onSearchQueryChanged = {
@@ -250,6 +342,8 @@ class ExploreSearchLandingTest {
                     },
                     onClearVibe = { state.value = state.value.copy(currentVibe = null) },
                 )
+                }
+            }
             }
         }
     }

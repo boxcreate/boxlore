@@ -55,6 +55,8 @@ Announcement title:
 - On tablets, announcements now open as one card over a dimmed screen instead of a card inside a second frame.
 - The updates page now shows one loading indicator at a time, and its buttons match the rest of boxlore.
 - When a new episode starts, the mini player now shows its whole title once, then settles back to one line.
+- Explore's Top charts now number each show and read as a ranked list on tablets, Find a show results are an easy-to-scan list that says who makes each show, and Ask anything results name each episode's show.
+- Lore now opens on a card-shaped placeholder, says how long each episode is and sits centred on tall tablets. Lore history is grouped by day, with filters for queued and skipped cards.
 
 ## Fixed
 
@@ -84,3 +86,5 @@ Announcement title:
 - Tapping Start Lore queue now always starts your Lore queue, and the "Start a Lore queue?" question stays open when you change the text or display size.
 - When your phone is in dark mode, boxlore no longer flashes purple as it opens.
 - On Android 13 and later, copying your privacy ID, a link or your logs no longer shows a second "copied" message on top of Android's own.
+- Lore cards no longer cut off their question on folded or sideways screens; long text scrolls instead.
+- Explore's More genres sheet stays open when you rotate, unfold or resize the window, and a mood collection that couldn't load now offers Try again.

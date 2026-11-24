@@ -37,5 +37,20 @@ internal object ConceptSearchIdleLogic {
                 query = "how money actually works",
                 label = R.string.explore_concept_example_money,
             ),
+            ConceptSearchExample(
+                query = "why do we dream",
+                label = R.string.explore_concept_example_dreams,
+            ),
+            ConceptSearchExample(
+                query = "how were the egyptian pyramids built",
+                label = R.string.explore_concept_example_pyramids,
+            ),
         )
+
+    /** Four examples on short phones and the Fold cover; all six on tall phones and tablets. */
+    fun visibleExampleCount(contentHeightDp: Float, usesTabletLayout: Boolean): Int =
+        if (usesTabletLayout || contentHeightDp >= TALL_HEIGHT_DP) examples.size else SHORT_COUNT
+
+    private const val TALL_HEIGHT_DP = 800f
+    private const val SHORT_COUNT = 4
 }

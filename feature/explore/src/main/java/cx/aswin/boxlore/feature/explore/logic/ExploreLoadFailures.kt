@@ -15,6 +15,8 @@ internal data class ExploreLoadFailures(
     val showSearch: Boolean = false,
     val topChart: Boolean = false,
     val nextTopChartPage: Boolean = false,
+    /** A mood collection's shows couldn't be read: its page offers Try again instead of "nothing here". */
+    val topic: Boolean = false,
 ) {
     /**
      * Scrolling near the end may load the next chart page only while nothing failed: a failed chart

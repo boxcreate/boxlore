@@ -13,7 +13,7 @@ Used by `:app` navigation:
 - `ExploreScreen` / `ExploreViewModel`: the `explore` route. The ViewModel takes the initial `category` and `tab` route arguments.
 - `ExploreScreen.searchRequested` / `onSearchRequestHandled`: set by the shell when the Explore tab is tapped again on Explore. Search opens focused (closing an open topic first; an open search keeps its query and mode), and the request is handled once.
 - `LearnScreen` / `LearnViewModel`: the Lore deck on the `learn` route. The screen receives the app's shared `PlaybackRepository` and an `onQueueEpisode` callback; it never creates playback objects.
-- `LearnHistoryScreen` / `LearnHistoryViewModel`: Lore history on `learn/history`, with restore, remove and clear all.
+- `LearnHistoryScreen` / `LearnHistoryViewModel`: Lore history on `learn/history`, grouped by day (`LearnHistoryGrouping`) with All, Queued and Skipped filters, and restore, remove and clear all.
 - `LearnCuriosityHistoryStore`: Lore history and dismissed IDs, stored through `BoxcastPrefs`. The app creates it per route and passes it to `LearnViewModel`.
 - `LearnCuriosityCard`: the curiosity card UI model, mapped from network DTOs and history entries.
 
@@ -23,16 +23,16 @@ Used by `:app` navigation:
 - The first tab is For You unless Appearance **Default tabs** says Top, a genre category is given (always Top), or the route names `tab` (`trending`, `top`, `for_you`). `ExploreDefaultTab.resolveIndex` in `:core:prefs` decides.
 - With the **Picked for you** switch off (`DiscoverySections.pickedForYou`), Explore shows Top alone with no switcher and makes no recommendations request; a fetch already running cannot publish.
 - For You reads the same recommendations payload as Home: it hydrates from the shared `BoxcastPrefs` cache, refreshes through `PodcastRepository.getHomeRecommendations` with region and content languages, and writes the cache back. A failed request keeps the picks already shown.
-- Top shows charts (**Top charts**) or a genre's top shows. A chart or chart page that couldn't be read shows **Try again**, and a failed page never ends the chart (`ExploreTopChartPaging`). The genre row (`ExploreGenreSelector`) shows All and the top genres, with **More** opening the full list.
-- Mood topics (`ExploreVibeChipRow`, titles from `CuratedMoods`) open a topic destination loaded with `getCuratedPodcasts` for the listener's region and languages. Back, toolbar or predictive, returns to the saved browse position.
+- Top shows charts (**Top charts**) or a genre's top shows, each numbered by its place; on tablets the number 1 leads and the rest are ranked rows in two or three columns (`ExploreChartRow`). A chart or chart page that couldn't be read shows **Try again**, and a failed page never ends the chart (`ExploreTopChartPaging`). The genre row (`ExploreGenreSelector`) shows All and the top genres, with **More** opening the rest; the sheet stays open across window changes. Genre tags use the translated genre name and never show the placeholder.
+- Mood topics (`ExploreVibeChipRow`, titles from `CuratedMoods`) open a topic destination loaded with `getCuratedPodcastsOrNull` for the listener's region and languages; a topic that couldn't be read shows **Try again** (`ExploreRetry.TOPIC`). Back, toolbar or predictive, returns to the saved browse position.
 - The header collapses as the feed scrolls down and returns on upward scroll, at the top or on a mode change (`ExploreChromeScrollLogic`); the For You / Top switcher stays visible.
 - Cards are the shared discovery cards from `:core:designsystem`; list keys go through `LazyListKeyPolicy` so duplicates never collide.
 
 ## Search
 
-- **Find a show** searches show titles as you type after a short debounce. Catalog matches arriving later are prepended, and the grid stays pinned to the top (`ProgressiveSearchScrollLogic` in `:core:designsystem`); results split into **Matches** and **Also found**.
+- **Find a show** searches show titles as you type after a short debounce. Catalog matches arriving later are prepended, and the grid stays pinned to the top (`ProgressiveSearchScrollLogic` in `:core:designsystem`); results split into **Matches** and **Also found** and show as list rows with the show's maker (`ExploreShowResultRow`), in one, two or three columns by window width.
 - **Ask anything** searches shows and episodes by meaning. It waits longer before sending, so partial queries are not sent, and shows one complete result set behind a loader: a **Related shows** rail, then episodes.
-- The search landing lists **Explore collections** for Find a show and fixed example questions for Ask anything (`ConceptSearchIdleLogic`). Empty and no-match states explain what to try; a show search that couldn't be read shows **Try again** instead (`ExploreLoadFailures`).
+- The search landing lists **Explore collections** for Find a show and fixed example questions for Ask anything (`ConceptSearchIdleLogic`): four on short windows, six on tall phones and tablets. Empty and no-match states explain what to try; a show search that couldn't be read shows **Try again** instead (`ExploreLoadFailures`).
 - Search mode and open search state survive resizing across the tablet gates.
 
 ## Lore
@@ -41,7 +41,7 @@ Used by `:app` navigation:
 - Swiping left skips a card; swiping right adds its episode to the queue. Both are recorded in history (`LearnHistoryAction.DISMISS` / `QUEUE`).
 - Ranking feedback records each card shown, every queue, and a skip only after the card stayed on screen long enough to be read.
 - Card buttons mirror the swipes: the source row opens the show or details; the bottom row has Skip, Play/Pause and Add to queue. Play starts the episode with the `LEARN` entry point, or toggles it when it is already playing.
-- Cards show their full question, explanation and show name; `LoreCardText` shrinks spacing first, then headings to a floor, and never clips.
+- Cards show their full question, explanation, show name and episode length; `LoreCardText` shrinks spacing first, then headings to a floor, and scrolls the text when even that doesn't fit, so it never clips.
 - Card and page colours come from the cover. `LoreArtworkAccentStore`, owned by the ViewModel, prepares upcoming cards' colours ahead, and `LoreAccentTransition` blends the page colour with the swipe.
 - Cards behind the active one move toward the next pose as it is swiped, so advancing the deck never snaps (`LoreDeckMotion`). Swipe cues (`LoreSwipeFeedback`) are decorative; the labelled buttons remain the accessible actions.
 - Restoring a history entry puts the card back into the deck the next time Lore resumes.
@@ -52,12 +52,13 @@ Used by `:app` navigation:
 src/main/java/cx/aswin/boxlore/feature/explore/
   ExploreScreen*.kt, ExploreViewModel.kt  Explore route
   ExploreFeaturedRows.kt                  featured rows on browse and search
+  ExploreSearchGridItems.kt               Find a show and Ask anything results
   LearnScreen.kt, LearnViewModel.kt, LearnPagination.kt
-  LearnHistoryScreen.kt, LearnHistoryViewModel.kt
+  LearnHistory*.kt                        Lore history: screen, rows, day groups, ViewModel
   LearnCuriosityCard.kt, LearnCuriosityHistoryStore.kt
   CuriosityCardStack.kt, SwipeableCardState.kt
-  Lore*.kt                                card text, colours, deck motion, swipe cues,
-                                          control feedback, player clearance
+  Lore*.kt                                deck header, card text and placeholder, colours,
+                                          deck motion, swipe cues, control feedback, player clearance
   components/   browse headers, cards, genre and tab selectors, search results and
                 suggestions, topic results and transition, skeletons, empty states
   logic/        pure decisions: browse, tab pager, header scroll, shared recommendations,
@@ -85,7 +86,7 @@ src/main/res/values/strings.xml
 - This module owns no storage files. Through `:core:prefs` it uses `BoxcastPrefs` keys `cached_recommendations` (shared with Home), `learn_curiosity_history` and `dismissed_curiosities`, and DataStore keys `explore_default_tab` and `discovery_picked_for_you`.
 - Network DTOs map to feature UI models before entering UI state; episode and show IDs come from core modules.
 - Pager tab IDs `0` (Top) and `1` (For You) and the route's `tab` values are stable.
-- Compose test tags used by JVM tests: `explore_browse_pager`, `explore_feed_<tab>`, `explore_header_container`, `explore_search_switcher`, `explore_search_loading`, `explore_topic_toolbar`, `explore_topic_back`, `explore_topic_search`, `lore_active_card`.
+- Compose test tags used by JVM tests: `explore_browse_pager`, `explore_feed_<tab>`, `explore_header_container`, `explore_search_switcher`, `explore_search_loading`, `explore_topic_toolbar`, `explore_topic_back`, `explore_topic_search`, `explore_rank_badge`, `explore_taste_badge`, `lore_active_card`, `lore_deck_header`, `lore_card_skeleton`, `learn_history_row`.
 - Page views (`TrackScreenView`): `explore` and `learn`, then `explore_top`, `explore_for_you`, `explore_search_shows`, `explore_search_episodes`, `explore_topic`, `learn_history` and `learn_history_clear_confirmation`. For You impressions and taps are separate events. See [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 
 ## Testing notes

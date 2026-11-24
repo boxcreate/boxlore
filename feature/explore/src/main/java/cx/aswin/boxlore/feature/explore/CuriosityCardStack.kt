@@ -40,9 +40,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
-import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreVisibleWindowSize
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.artworkDeepShade
@@ -89,22 +87,18 @@ fun CuriosityCardStack(
     }
     // A fourth card waits hidden behind the deck and fades into third place during a swipe.
     val visibleCards = questions.take(LoreDeckDepth + 1)
+    // The card is centred and at most 520dp wide, so this carries it fully past the window's edge.
+    val windowWidth = boxloreVisibleWindowSize().width
+    val exitDistancePx = with(LocalDensity.current) {
+        loreExitDistancePx(windowWidth.toPx(), minOf(windowWidth, 520.dp).toPx(), LoreExitMargin.toPx())
+    }
 
-    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
-    Box(
-        modifier = modifier
-            .boxloreCardWidth(BoxloreCardFamily.Reading, maximumWidthDp = 520f)
-            .then(if (tablet) Modifier.wrapContentHeight(Alignment.Top).heightIn(max = 640.dp) else Modifier)
-            .fillMaxSize()
-            .widthIn(max = 520.dp)
-            .padding(bottom = 28.dp),
-        contentAlignment = Alignment.TopCenter
-    ) {
+    LoreDeckFrame(modifier) { short ->
         visibleCards.asReversed().forEach { card ->
             key(card.episodeId) {
                 val depth = visibleCards.indexOf(card)
                 val isActive = depth == 0
-                val cardModifier = deckCardModifier(card, depth, swipeProgress, swipeState, swipeThresholdPx)
+                val cardModifier = deckCardModifier(card, depth, swipeProgress, swipeState, swipeThresholdPx, exitDistancePx)
                 val isCurrent = playerState.currentEpisode?.id == card.episodeId
 
                 CuriosityCardContent(
@@ -114,10 +108,11 @@ fun CuriosityCardStack(
                     isCurrentlyLoading = isCurrent && playerState.isLoading,
                     accentColor = artworkAccentColors[card.artworkSources]?.let { Color(it) } ?: accentColor,
                     interactive = isActive && swipeState.phase != LoreSwipePhase.Exiting,
+                    tight = short,
                     modifier = cardModifier,
                     onAction = { action ->
                         if (isActive && swipeState.phase != LoreSwipePhase.Exiting) {
-                            routeCardAction(action, card, swipeState, onCardAction)
+                            routeCardAction(action, card, swipeState, exitDistancePx, onCardAction)
                         }
                     }
                 )
@@ -131,16 +126,20 @@ fun CuriosityCardStack(
     }
 }
 
+/** Room past the window's edge before a leaving card is dropped (its tilt and shadow clear it). */
+private val LoreExitMargin = 48.dp
+
 /** Skip and Add to queue leave the deck the same way a swipe does; other actions run directly. */
 private fun routeCardAction(
     action: CardAction,
     card: LearnCuriosityCard,
     swipeState: SwipeableCardState,
+    exitDistancePx: Float,
     onCardAction: (CardAction, LearnCuriosityCard) -> Unit,
 ) {
     when (action) {
-        CardAction.Dismiss -> swipeState.swipe(SwipeDirection.Left)
-        CardAction.Queue -> swipeState.swipe(SwipeDirection.Right)
+        CardAction.Dismiss -> swipeState.swipe(SwipeDirection.Left, exitDistancePx)
+        CardAction.Queue -> swipeState.swipe(SwipeDirection.Right, exitDistancePx)
         else -> onCardAction(action, card)
     }
 }
@@ -151,6 +150,7 @@ private fun BoxScope.deckCardModifier(
     swipeProgress: State<Float>,
     swipeState: SwipeableCardState,
     swipeThresholdPx: Float,
+    exitDistancePx: Float,
 ): Modifier = if (depth > 0) {
     // The waiting card is hidden, so screen readers skip it until it joins the deck.
     val hidden = if (depth > LoreDeckDepth) Modifier.clearAndSetSemantics {} else Modifier
@@ -176,15 +176,15 @@ private fun BoxScope.deckCardModifier(
                 .coerceIn(-2.5f, 2.5f)
             cameraDistance = 12f * density
         }
-        .pointerInput(card.episodeId) {
+        .pointerInput(card.episodeId, exitDistancePx) {
             detectHorizontalDragGestures(
                 onDragStart = { swipeState.beginDrag() },
                 onDragEnd = {
                     val offsetX = swipeState.offset.value.x
                     if (offsetX > swipeThresholdPx) {
-                        swipeState.swipe(SwipeDirection.Right)
+                        swipeState.swipe(SwipeDirection.Right, exitDistancePx)
                     } else if (offsetX < -swipeThresholdPx) {
-                        swipeState.swipe(SwipeDirection.Left)
+                        swipeState.swipe(SwipeDirection.Left, exitDistancePx)
                     } else {
                         swipeState.reset()
                     }
@@ -223,6 +223,7 @@ internal fun loreOnAccent(accent: Color): Color {
  * Play in the middle and Add to queue on the right. Tapping the card or Details opens the episode.
  */
 @Composable
+@Suppress("LongParameterList") // The card, its playback state, its look and its one action callback.
 private fun CuriosityCardContent(
     daily: LearnCuriosityCard,
     isCurrentEpisode: Boolean,
@@ -230,6 +231,7 @@ private fun CuriosityCardContent(
     isCurrentlyLoading: Boolean,
     accentColor: Color,
     interactive: Boolean = true,
+    tight: Boolean = false,
     onAction: (CardAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -291,13 +293,14 @@ private fun CuriosityCardContent(
                     accentColor = accentColor,
                     enabled = interactive,
                     compactSpacing = compactSpacing,
+                    tight = tight,
                     onPodcast = { onAction(CardAction.PodcastClick) },
                     onDetails = { onAction(CardAction.Click) },
                 )
                 LoreCardTextWithFooter(
                     question = daily.question,
                     explanation = daily.explanation,
-                    footerHeight = loreActionBarHeight(compactSpacing) + loreActionBarPadding(compactSpacing) * 2,
+                    footerHeight = loreActionBarHeight(compactSpacing) + loreActionBarPadding(compactSpacing, tight) * 2,
                     lift = if (compactSpacing) 6.dp else 10.dp,
                     modifier = Modifier.fillMaxWidth().weight(1f),
                 ) {
@@ -308,6 +311,7 @@ private fun CuriosityCardContent(
                         accentColor = accentColor,
                         enabled = interactive,
                         compactSpacing = compactSpacing,
+                        tight = tight,
                         onAction = onAction,
                     )
                 }
@@ -326,6 +330,7 @@ private fun LoreCardSource(
     accentColor: Color,
     enabled: Boolean,
     compactSpacing: Boolean,
+    tight: Boolean,
     onPodcast: () -> Unit,
     onDetails: () -> Unit,
 ) {
@@ -337,7 +342,7 @@ private fun LoreCardSource(
     val detailsLabel = stringResource(R.string.lore_action_details)
     Row(
         modifier = Modifier.fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = if (compactSpacing) 8.dp else 12.dp)
+            .padding(start = if (tight) 8.dp else 16.dp, end = if (tight) 8.dp else 16.dp, top = if (compactSpacing) 8.dp else 12.dp)
             .height(height),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
@@ -372,8 +377,10 @@ private fun LoreCardSource(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                // How long the episode is comes first, so it shows whole; a long title shortens instead.
+                val minutes = loreDurationMinutes(daily.duration)
                 Text(
-                    text = daily.episodeTitle,
+                    text = if (minutes == null) daily.episodeTitle else "${stringResource(R.string.explore_duration_minutes, minutes)} · ${daily.episodeTitle}",
                     style = MaterialTheme.typography.labelMedium,
                     color = Color.White.copy(alpha = 0.66f),
                     maxLines = 1,
@@ -403,12 +410,16 @@ private fun LoreCardSource(
 }
 
 /** The source row's height. */
-private fun loreBarHeight(compactSpacing: Boolean) = if (compactSpacing) 48.dp else 52.dp
+internal fun loreBarHeight(compactSpacing: Boolean) = if (compactSpacing) 48.dp else 52.dp
 
 /** The action bar is taller than the source row, so Play and its neighbours are easy targets. */
-private fun loreActionBarHeight(compactSpacing: Boolean) = if (compactSpacing) 52.dp else 60.dp
+internal fun loreActionBarHeight(compactSpacing: Boolean) = if (compactSpacing) 52.dp else 60.dp
 
-private fun loreActionBarPadding(compactSpacing: Boolean) = if (compactSpacing) 8.dp else 10.dp
+internal fun loreActionBarPadding(compactSpacing: Boolean, tight: Boolean = false) = when {
+    tight -> 4.dp
+    compactSpacing -> 8.dp
+    else -> 10.dp
+}
 
 private val ActionBarInnerCorner = 8.dp
 
@@ -418,6 +429,7 @@ private val ActionBarInnerCorner = 8.dp
  * are fully round, inner joins tight.
  */
 @Composable
+@Suppress("LongParameterList") // Playback state, look and spacing of one connected button group.
 private fun LoreCardActionBar(
     isCurrentEpisode: Boolean,
     isPlaying: Boolean,
@@ -425,6 +437,7 @@ private fun LoreCardActionBar(
     accentColor: Color,
     enabled: Boolean,
     compactSpacing: Boolean,
+    tight: Boolean,
     onAction: (CardAction) -> Unit,
 ) {
     val height = loreActionBarHeight(compactSpacing)
@@ -434,7 +447,7 @@ private fun LoreCardActionBar(
     val sideWidth = height + 12.dp
     Row(
         modifier = Modifier.fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = loreActionBarPadding(compactSpacing))
+            .padding(horizontal = if (tight) 8.dp else 16.dp, vertical = loreActionBarPadding(compactSpacing, tight))
             .height(height),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {

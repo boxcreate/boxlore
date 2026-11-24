@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.Work
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -47,8 +48,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -60,6 +63,9 @@ import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.feature.explore.R
+
+/** Related show covers in Ask anything. */
+private val RelatedShowCover = 104.dp
 
 /** Cap for By-concept podcast-vector rail — keep episodes as the primary feed. */
 private const val RELATED_SHOWS_RAIL_MAX = 8
@@ -86,23 +92,24 @@ fun ExploreRelatedShowsRail(
             icon = Icons.Rounded.Podcasts,
         )
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            // The items' own 6dp padding makes up the rest of the 12dp gap.
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
             contentPadding = PaddingValues(bottom = 4.dp),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().outsetBy(RelatedShowPressPadding),
         ) {
             itemsIndexed(
                 railItems,
                 key = { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "related_show") }
             ) { index, podcast ->
-                // Clickable without a clip shape — clipping the whole column was eating title glyphs
-                // at the bottom-left of the rounded bounds.
+                // The press follows a rounded shape; the inner padding keeps the caption clear of its corners.
                 Column(
                     modifier =
                     Modifier
-                        .width(104.dp)
-                        .expressiveClickable {
+                        .width(RelatedShowCover + RelatedShowPressPadding * 2)
+                        .expressiveClickable(shape = RoundedCornerShape(16.dp)) {
                             onPodcastClick(podcast, index)
-                        },
+                        }
+                        .padding(RelatedShowPressPadding),
                 ) {
                     OptimizedImage(
                         url = podcast.imageUrl,
@@ -120,12 +127,11 @@ fun ExploreRelatedShowsRail(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = podcast.title,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = GoogleSansWeight.semiBold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 2.dp),
                     )
                 }
             }
@@ -237,6 +243,7 @@ fun ExploreVibeChipRow(
 /**
  * Connected topic shortcuts: strong standalone icons, curved outer ends and tight inner corners.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ExploreVibeChip(
     vibe: Pair<String, String>,
@@ -248,12 +255,17 @@ fun ExploreVibeChip(
     val icon = remember(vibe.first) { vibeCatcherIcon(vibe.first) }
     FilledTonalButton(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 52.dp).widthIn(max = 248.dp),
-        shape = RoundedCornerShape(
-            topStart = if (first) 26.dp else 8.dp,
-            bottomStart = if (first) 26.dp else 8.dp,
-            topEnd = if (last) 26.dp else 8.dp,
-            bottomEnd = if (last) 26.dp else 8.dp,
+        // As tall as a genre chip, so the header keeps its height when swiping between For you and Top.
+        modifier = modifier.heightIn(min = 48.dp).widthIn(max = 248.dp),
+        // Connected outer curves at rest; tighter corners while pressed, like boxlore's other button groups.
+        shapes = ButtonDefaults.shapes(
+            shape = RoundedCornerShape(
+                topStart = if (first) 24.dp else 8.dp,
+                bottomStart = if (first) 24.dp else 8.dp,
+                topEnd = if (last) 24.dp else 8.dp,
+                bottomEnd = if (last) 24.dp else 8.dp,
+            ),
+            pressedShape = RoundedCornerShape(12.dp),
         ),
         colors = ButtonDefaults.filledTonalButtonColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -295,4 +307,15 @@ internal fun moodIconForId(moodId: String): androidx.compose.ui.graphics.vector.
     "history_buff" -> Icons.Rounded.AccountBalance
     "mystery_thriller" -> Icons.Rounded.Visibility
     else -> Icons.Rounded.AutoAwesome
+}
+
+/** The related show's press area around its cover; the rail reaches into the margin by as much, so covers line up with the page. */
+private val RelatedShowPressPadding = 6.dp
+
+/** Lays the content out [outset] wider on each side, so its edge items' padding sits in the margin. */
+private fun Modifier.outsetBy(outset: Dp): Modifier = layout { measurable, constraints ->
+    if (!constraints.hasBoundedWidth) return@layout measurable.measure(constraints).let { layout(it.width, it.height) { it.place(0, 0) } }
+    val extra = outset.roundToPx()
+    val placeable = measurable.measure(constraints.copy(minWidth = constraints.minWidth + extra * 2, maxWidth = constraints.maxWidth + extra * 2))
+    layout(constraints.maxWidth, placeable.height) { placeable.place(-extra, 0) }
 }

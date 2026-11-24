@@ -1,25 +1,20 @@
 package cx.aswin.boxlore.feature.explore
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -29,7 +24,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -37,15 +31,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
-import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.components.BoxloreScrollableCenteredColumn
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
@@ -53,6 +45,7 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreConfigurationWindowSize
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
@@ -81,6 +74,9 @@ fun LearnScreen(
     val windowSize = loreTabletPaneSize(LocalBoxloreWindowLayout.current, LocalBoxlorePaneBounds.current)
         ?: boxloreConfigurationWindowSize()
     val compactSpacing = windowSize.width < 360.dp || windowSize.height < 720.dp
+    // The gap above the deck and the deck's sides, tighter in small windows.
+    val deckGap = if (compactSpacing) 8.dp else 16.dp
+    val deckSides = if (compactSpacing) 12.dp else 20.dp
     val uiState by viewModel.uiState.collectAsState()
     val stablePlayerState = remember(playbackRepository) {
         playbackRepository.playerState
@@ -190,106 +186,86 @@ fun LearnScreen(
                     .navigationBarsPadding()
                     .lorePlayerClearance(bottomContentPadding + 16.dp, playerState.currentEpisode != null)
             ) {
-                when (val state = uiState) {
-                    is LearnUiState.Loading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            BoxLoreLoader.Expressive(size = 64.dp)
-                        }
-                    }
-                    is LearnUiState.CaughtUp -> {
-                        LoreStateCard(
-                            accentColor = accentTransition.color,
-                            title = stringResource(R.string.lore_caught_up_title),
-                            description = stringResource(R.string.lore_caught_up_body)
-                        ) {
-                            FilledTonalButton(
-                                onClick = viewModel::refresh,
-                                shape = CircleShape
-                            ) {
-                                Text(stringResource(R.string.lore_check_new_cards))
-                            }
-                            TextButton(onClick = onNavigateToHistory) {
-                                Text(stringResource(R.string.lore_open_history))
-                            }
-                        }
-                    }
-                    is LearnUiState.Success -> {
-                        val visibleCard = state.questionsStack.firstOrNull()
-                        LaunchedEffect(visibleCard?.episodeId) {
-                            visibleCard?.let(viewModel::trackCardVisible)
-                        }
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .statusBarsPadding(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Box(
+                // One header for every state, so the logo and History never move when the state changes.
+                // On tablets the header and deck sit together in the middle of a tall pane.
+                val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        // Clear of a sideways phone's camera and buttons; the colour halo still reaches the edge.
+                        .boxloreHorizontalSafePadding(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = if (tablet) Arrangement.Center else Arrangement.Top,
+                ) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    LoreDeckHeader(
+                        accentColor = accentTransition.color,
+                        onNavigateToHistory = onNavigateToHistory,
+                        compactSpacing = compactSpacing,
+                    )
+                    when (val state = uiState) {
+                        is LearnUiState.Loading -> {
+                            // A card-shaped placeholder in the first card's exact place.
+                            Spacer(modifier = Modifier.height(deckGap))
+                            LoreCardSkeleton(
+                                accentColor = fallbackAccent,
                                 modifier = Modifier
-                                    .boxloreCardWidth(BoxloreCardFamily.Reading, maximumWidthDp = 560f)
                                     .fillMaxWidth()
-                                    .padding(horizontal = 20.dp, vertical = if (compactSpacing) 0.dp else 4.dp)
+                                    .weight(1f, fill = !tablet)
+                                    .padding(horizontal = deckSides)
+                            )
+                        }
+                        is LearnUiState.CaughtUp -> {
+                            LoreStatePanel(
+                                tablet = tablet,
+                                compactSpacing = compactSpacing,
+                                title = stringResource(R.string.lore_caught_up_title),
+                                description = stringResource(R.string.lore_caught_up_body),
                             ) {
-                                LoreLogo(
-                                    accentColor = accentTransition.color,
-                                    modifier = Modifier.height(34.dp).align(Alignment.Center)
-                                )
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    tonalElevation = 2.dp,
-                                    modifier = Modifier.align(Alignment.CenterEnd)
+                                FilledTonalButton(
+                                    onClick = viewModel::refresh,
+                                    shape = CircleShape
                                 ) {
-                                    IconButton(onClick = onNavigateToHistory) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.History,
-                                            contentDescription = stringResource(R.string.lore_history),
-                                            tint = MaterialTheme.colorScheme.onSurface
-                                        )
-                                    }
+                                    Text(stringResource(R.string.lore_check_new_cards))
+                                }
+                                TextButton(onClick = onNavigateToHistory) {
+                                    Text(stringResource(R.string.lore_open_history))
                                 }
                             }
-
-                            Spacer(modifier = Modifier.height(if (compactSpacing) 8.dp else 16.dp))
+                        }
+                        is LearnUiState.Success -> {
+                            val visibleCard = state.questionsStack.firstOrNull()
+                            LaunchedEffect(visibleCard?.episodeId) {
+                                visibleCard?.let(viewModel::trackCardVisible)
+                            }
+                            Spacer(modifier = Modifier.height(deckGap))
                             CuriosityCardStack(
                                 questions = state.questionsStack,
                                 swipeState = swipeState,
                                 playerState = playerState,
-                                onCardAction = { action, card ->
-                                    val actionName = when (action) {
-                                        CardAction.Dismiss -> "dismiss"
-                                        CardAction.Queue -> "queue"
-                                        CardAction.Play -> "play"
-                                        CardAction.Click -> "info"
-                                        CardAction.PodcastClick -> "podcast"
-                                    }
-                                    handleLearnCardAction(actionName, card)
-                                },
+                                onCardAction = { action, card -> handleLearnCardAction(action.loreActionName(), card) },
                                 accentColor = fallbackAccent,
                                 artworkAccentColors = artworkColors,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .weight(1f)
-                                    .padding(horizontal = if (compactSpacing) 12.dp else 20.dp)
+                                    .weight(1f, fill = !tablet)
+                                    .padding(horizontal = deckSides)
                             )
                         }
-                    }
-                    is LearnUiState.Error -> {
-                        LoreStateCard(
-                            accentColor = accentTransition.color,
-                            title = stringResource(R.string.lore_error_title),
-                            description = state.message.asString()
-                        ) {
-                            FilledTonalButton(
-                                onClick = viewModel::refresh,
-                                shape = CircleShape
+                        is LearnUiState.Error -> {
+                            LoreStatePanel(
+                                tablet = tablet,
+                                compactSpacing = compactSpacing,
+                                title = stringResource(R.string.lore_error_title),
+                                description = state.message.asString(),
                             ) {
-                                Text(stringResource(R.string.explore_try_again))
+                                FilledTonalButton(
+                                    onClick = viewModel::refresh,
+                                    shape = CircleShape
+                                ) {
+                                    Text(stringResource(R.string.explore_try_again))
+                                }
                             }
                         }
                     }
@@ -297,6 +273,15 @@ fun LearnScreen(
             }
         }
     }
+}
+
+/** The name a card action goes by in the screen's handler and in analytics. */
+private fun CardAction.loreActionName(): String = when (this) {
+    CardAction.Dismiss -> "dismiss"
+    CardAction.Queue -> "queue"
+    CardAction.Play -> "play"
+    CardAction.Click -> "info"
+    CardAction.PodcastClick -> "podcast"
 }
 
 /** Keep playback action branching out of the screen layout; reuse the injected player. */
@@ -330,23 +315,48 @@ private fun playLoreEpisode(
     }
 }
 
+/**
+ * Lore's caught-up and failed panels: centred under the header when they fit, scrolling when the
+ * window is too short, so their buttons are never cut off and pull to refresh still works.
+ */
+/**
+ * Caught up and error panels. On tablets they take the deck's frame, after the same gap, so the
+ * header stays exactly where it is for the cards; on every window they stay as narrow as the header.
+ */
 @Composable
-private fun LoreStateCard(
-    accentColor: State<Color>,
+private fun ColumnScope.LoreStatePanel(
+    tablet: Boolean,
+    compactSpacing: Boolean,
     title: String,
     description: String,
+    content: @Composable () -> Unit,
+) {
+    if (tablet) {
+        Spacer(modifier = Modifier.height(if (compactSpacing) 8.dp else 16.dp))
+        LoreDeckFrame(
+            Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .padding(horizontal = if (compactSpacing) 12.dp else 20.dp),
+        ) { _ ->
+            LoreStateCard(title, description, Modifier.fillMaxSize(), content)
+        }
+    } else {
+        LoreStateCard(title, description, Modifier.weight(1f).widthIn(max = LoreHeaderMaxWidth), content)
+    }
+}
+
+@Composable
+private fun LoreStateCard(
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    BoxloreScrollableCenteredColumn(
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
     ) {
-        LoreLogo(accentColor, Modifier.height(38.dp))
-        Spacer(modifier = Modifier.height(28.dp))
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -378,16 +388,6 @@ private fun LoreStateCard(
             }
         }
     }
-}
-
-@Composable
-private fun LoreLogo(accentColor: State<Color>, modifier: Modifier = Modifier) {
-    Image(
-        painter = painterResource(id = cx.aswin.boxlore.core.designsystem.R.drawable.logo_lore),
-        contentDescription = stringResource(R.string.lore_name),
-        colorFilter = ColorFilter.tint(accentColor.value),
-        modifier = modifier,
-    )
 }
 
 private fun trackLearnCardAction(

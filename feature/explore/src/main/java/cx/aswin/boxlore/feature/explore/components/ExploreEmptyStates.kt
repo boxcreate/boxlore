@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.explore.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,24 +9,28 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSearchFieldMaxWidth
+import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.explore.R
 
@@ -108,7 +111,11 @@ internal fun ExploreEpisodesSearchIdleState(onExampleClick: (String) -> Unit, mo
 
 @Composable
 private fun ConceptSearchLanding(title: String, subtitle: String, onExampleClick: (String) -> Unit, modifier: Modifier) {
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    // In the search box's column (start-aligned, at most 720dp), so the examples line up under the box they fill in.
+    Column(
+        modifier.fillMaxWidth().wrapContentWidth(Alignment.Start).widthIn(max = BoxloreSearchFieldMaxWidth).fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         ExploreSearchLandingHeader(title, subtitle)
         ConceptQuestionList(onExampleClick)
     }
@@ -124,19 +131,16 @@ fun ExploreRecommendationsEmptyState(
             .padding(horizontal = 16.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
+        // boxlore's rounded "cookie" badge in the theme colour, as Lore history's empty state has.
+        Surface(
+            shape = ExpressiveShapes.Cookie6,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(64.dp).testTag(EXPLORE_TASTE_BADGE_TAG),
         ) {
-            Icon(
-                imageVector = Icons.Rounded.AutoAwesome,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(36.dp)
-            )
+            Box(contentAlignment = Alignment.Center) {
+                Icon(imageVector = Icons.Rounded.AutoAwesome, contentDescription = null, modifier = Modifier.size(36.dp))
+            }
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
@@ -155,3 +159,5 @@ fun ExploreRecommendationsEmptyState(
         )
     }
 }
+
+internal const val EXPLORE_TASTE_BADGE_TAG = "explore_taste_badge"

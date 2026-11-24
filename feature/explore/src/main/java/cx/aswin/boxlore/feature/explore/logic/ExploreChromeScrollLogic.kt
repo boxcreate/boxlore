@@ -11,4 +11,12 @@ internal object ExploreChromeScrollLogic {
 
     fun fraction(offset: Float, range: Float): Float =
         if (offset.isFinite() && range.isFinite() && range > 0f) (offset / range).coerceIn(0f, 1f) else 0f
+
+    /**
+     * Space under search results: clear of the keyboard when it is up (its inset already includes
+     * the navigation bar), otherwise of the bottom chrome, plus a little breathing room.
+     */
+    fun searchBottomPaddingDp(imeBottomDp: Float, chromeBottomDp: Float): Float = maxOf(imeBottomDp, chromeBottomDp) + SEARCH_END_ROOM_DP
+
+    private const val SEARCH_END_ROOM_DP = 24f
 }

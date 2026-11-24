@@ -52,6 +52,8 @@ internal fun LazyStaggeredGridScope.exploreTopicResults(
     loading: Boolean,
     onBack: () -> Unit,
     onPodcastClick: (Podcast, Int) -> Unit,
+    failed: Boolean = false,
+    onRetry: () -> Unit = {},
 ) {
     item(key = "topic_heading", span = StaggeredGridItemSpan.FullLine) {
         ExploreTopicHeading(title)
@@ -60,18 +62,24 @@ internal fun LazyStaggeredGridScope.exploreTopicResults(
         loading && podcasts.isEmpty() -> items(6, key = { "topic_loading_$it" }) { index ->
             Box(Modifier.testTag("topic_loading_$index")) { ExploreBrowseCardSkeleton(featured = false) }
         }
+        failed && podcasts.isEmpty() -> item(key = "topic_failed", span = StaggeredGridItemSpan.FullLine) {
+            ExploreLoadFailedState(
+                title = stringResource(R.string.explore_topic_failed_title),
+                onRetry = onRetry,
+                modifier = Modifier.padding(vertical = 24.dp),
+            )
+        }
         podcasts.isEmpty() -> item(key = "topic_empty", span = StaggeredGridItemSpan.FullLine) {
             Column(
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 32.dp),
+                Modifier.fillMaxWidth().padding(vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    stringResource(R.string.explore_topic_empty),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                ExploreSearchLandingHeader(
+                    title = stringResource(R.string.explore_topic_empty),
+                    subtitle = stringResource(R.string.explore_topic_empty_body),
                 )
-                FilledTonalButton(onClick = onBack) {
+                FilledTonalButton(onClick = onBack, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.explore_back_to_browse))
                 }
             }

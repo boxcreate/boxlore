@@ -58,7 +58,8 @@ class SwipeableCardState(
         dragX += dragAmount.x
     }
 
-    fun swipe(direction: SwipeDirection) {
+    /** Flies the card off by [distancePx] in [direction], then reports the swipe. */
+    fun swipe(direction: SwipeDirection, distancePx: Float = LORE_MIN_EXIT_PX) {
         if (disposed || phase == LoreSwipePhase.Exiting) return
         val from = offset.value.x
         // A button action starts the same exit as a swipe, so the page colour blends along with it.
@@ -69,7 +70,7 @@ class SwipeableCardState(
             animatedX.snapTo(from)
             phase = LoreSwipePhase.Exiting
             animatedX.animateTo(
-                if (direction == SwipeDirection.Left) -1500f else 1500f,
+                if (direction == SwipeDirection.Left) -distancePx else distancePx,
                 spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
             )
             if (!disposed) onSwiped(direction)

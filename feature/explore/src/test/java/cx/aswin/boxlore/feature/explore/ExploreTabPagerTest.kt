@@ -2,10 +2,13 @@ package cx.aswin.boxlore.feature.explore
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -16,6 +19,7 @@ import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.unit.Density
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -138,6 +142,35 @@ class ExploreTabPagerTest {
         }
         assertTrue(selections.isEmpty())
     }
+
+    @Test fun `swiping between For you and Top never moves the header or the feed, at any text size`() {
+        val fontScale = mutableFloatStateOf(1f)
+        state.value = state.value.copy(
+            // A long mood that wraps at large text, and a German one.
+            suggestedVibes = listOf("learn" to "Learn something new", "feel_good" to "Etwas Neues über die Welt erfahren", "morning_news" to "What's happening"),
+        )
+        show { content ->
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale.floatValue)) { content() }
+        }
+        for (scale in listOf(1f, 1.3f)) {
+            composeRule.runOnIdle { fontScale.floatValue = scale }
+            composeRule.onNode(hasText("For you") and isSelectable()).performClick()
+            val forYouHeader = headerHeight()
+            val forYouFirst = composeRule.onNodeWithText("Recommendation 0").getUnclippedBoundsInRoot().top
+            composeRule.onNodeWithTag("explore_browse_pager").performTouchInput { swipeLeft() }
+            composeRule.onNodeWithText("Top").assertIsSelected()
+            assertEquals("header at $scale", forYouHeader, headerHeight(), 0.5f)
+            // The feeds start under the same header: Top's heading sits where For you's first card did.
+            val topFirst = composeRule.onNodeWithText("Top show 0").getUnclippedBoundsInRoot().top
+            composeRule.onNodeWithTag("explore_browse_pager").performTouchInput { swipeRight() }
+            assertEquals("header back at $scale", forYouHeader, headerHeight(), 0.5f)
+            assertEquals("For you's feed back at $scale", forYouFirst.value, composeRule.onNodeWithText("Recommendation 0").getUnclippedBoundsInRoot().top.value, 0.5f)
+            assertTrue(topFirst.value > 0f)
+        }
+    }
+
+    private fun headerHeight(): Float = composeRule.onNodeWithTag("explore_header_container").getUnclippedBoundsInRoot().let { (it.bottom - it.top).value }
 
     private fun show(wrap: @Composable (@Composable () -> Unit) -> Unit = { it() }) {
         composeRule.setContent {
