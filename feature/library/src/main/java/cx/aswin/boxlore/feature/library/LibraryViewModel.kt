@@ -154,13 +154,25 @@ class LibraryViewModel(
         _showSortOrder.value = sortOrder
     }
 
-    val folders: StateFlow<List<SubscriptionFolder>> =
+    /** The folders, or null until the folder store has answered once. */
+    private val loadedFolders: StateFlow<List<SubscriptionFolder>?> =
         folderRepository?.folders
             ?.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList(),
-            ) ?: MutableStateFlow<List<SubscriptionFolder>>(emptyList()).asStateFlow()
+                initialValue = null,
+            ) ?: MutableStateFlow<List<SubscriptionFolder>?>(emptyList()).asStateFlow()
+
+    val folders: StateFlow<List<SubscriptionFolder>> =
+        loadedFolders
+            .map { it.orEmpty() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), loadedFolders.value.orEmpty())
+
+    /** False until the folders have loaded once, so a screen doesn't mistake "not loaded yet" for "no folders". */
+    val foldersLoaded: StateFlow<Boolean> =
+        loadedFolders
+            .map { it != null }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), loadedFolders.value != null)
 
     init {
         viewModelScope.launch {

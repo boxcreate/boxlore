@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.library
 
 import android.app.Application
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasSetTextAction
@@ -16,17 +17,20 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.feature.library.subscriptions.ContextMenuKey
 import cx.aswin.boxlore.feature.library.subscriptions.MoveShowKey
 import cx.aswin.boxlore.feature.library.subscriptions.ReorderMode
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionsScreenState
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.mockingDetails
+import org.mockito.Mockito.`when`
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
@@ -115,6 +119,54 @@ class LibraryStateRestorationTest {
         assertNull(state.contextMenu)
         assertNull(state.moveShow)
         assertEquals("news", state.confirmDeleteFolderId)
+    }
+
+    @Test
+    fun `folder targets wait for the folders when the shows load first after a restart`() {
+        val waiting = SubscriptionsScreenState(
+            contextMenu = ContextMenuKey(ContextMenuKey.Kind.FolderPodcast, "news", "show-3"),
+            reorderMode = ReorderMode.FolderShows("news", "Nachrichten-Ecke"),
+            tempFolderOrder = listOf("show-11", "show-3"),
+            addShowsFolderId = "news",
+        )
+        waiting.dropMissing(folders = null, podcasts = fixtures.podcasts)
+        assertEquals(ContextMenuKey(ContextMenuKey.Kind.FolderPodcast, "news", "show-3"), waiting.contextMenu)
+        assertEquals(ReorderMode.FolderShows("news", "Nachrichten-Ecke"), waiting.reorderMode)
+        assertEquals(listOf("show-11", "show-3"), waiting.tempFolderOrder)
+        assertEquals("news", waiting.addShowsFolderId)
+
+        // Once the folders are in, a folder that really went away still closes its targets.
+        waiting.dropMissing(folders = fixtures.folders.filter { it.id != "news" }, podcasts = fixtures.podcasts)
+        assertNull(waiting.contextMenu)
+        assertEquals(ReorderMode.Inactive, waiting.reorderMode)
+        assertNull(waiting.addShowsFolderId)
+    }
+
+    @Test
+    fun `an open folder menu survives a restart where the shows load before the folders`() {
+        val restorer = StateRestorationTester(compose)
+        val folders = MutableStateFlow<List<SubscriptionFolder>>(emptyList())
+        val foldersLoaded = MutableStateFlow(false)
+        val restarted = fixtures.viewModel(fixtures.loaded(), folders = emptyList())
+        `when`(restarted.folders).thenReturn(folders)
+        `when`(restarted.foldersLoaded).thenReturn(foldersLoaded)
+        val vm = mutableStateOf(fixtures.viewModel(fixtures.loaded()))
+        restorer.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreTestWindows.PHONE) {
+                BoxLoreTheme(dynamicColor = false) { SubscriptionsScreen(vm.value, onBack = {}, onPodcastClick = {}, onExploreClick = {}) }
+            }
+        }
+        compose.onNodeWithText("Nachrichten-Ecke").performTouchInput { longClick() }
+        compose.onNodeWithText("Delete folder").assertExists()
+
+        vm.value = restarted
+        restorer.emulateSavedInstanceStateRestore()
+        compose.waitForIdle()
+        folders.value = fixtures.folders
+        foldersLoaded.value = true
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Delete folder").assertExists()
     }
 
     @Test

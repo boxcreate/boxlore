@@ -8,15 +8,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -24,10 +28,16 @@ import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.SystemInsets
 import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
+import cx.aswin.boxlore.feature.library.playlists.NewPlaylistDraft
+import cx.aswin.boxlore.feature.library.playlists.PlaylistPagesState
+import cx.aswin.boxlore.feature.library.playlists.PlaylistsContent
 import cx.aswin.boxlore.feature.library.subscriptions.EditFolderActions
 import cx.aswin.boxlore.feature.library.subscriptions.EditFolderDraft
 import cx.aswin.boxlore.feature.library.subscriptions.EditFolderPage
 import cx.aswin.boxlore.feature.library.subscriptions.EditFolderShows
+import cx.aswin.boxlore.feature.library.subscriptions.FolderEditorPage
+import cx.aswin.boxlore.feature.library.subscriptions.FolderPagesState
+import cx.aswin.boxlore.feature.library.subscriptions.NewFolderDraft
 import cx.aswin.boxlore.feature.library.subscriptions.folderCoversMaxWidth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -38,6 +48,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowDialog
 
 /**
  * Library's pages on sideways phones, wide compact windows and tablets: controls stay clear of side
@@ -91,6 +102,57 @@ class LibraryLayoutAdaptiveTest {
         for ((name, rect) in listOf("Save" to save, "Play all" to play, "Close" to close)) {
             assertTrue("$name ($rect) clear of the cutout", rect.left >= 32f)
             assertTrue("$name ($rect) clear of the side buttons", rect.right <= width - 48f)
+        }
+    }
+
+    @Test
+    fun `Subscriptions' docked tab switcher stays clear of a sideways phone's cutout and side buttons`() {
+        // Tall enough that the header shows at first; the insets are a sideways phone's.
+        window.value = BoxloreWindowLayout(915f, 560f)
+        show(SystemInsets.SIDEWAYS_3_BUTTON) {
+            SubscriptionsScreen(fixtures.viewModel(fixtures.loaded()), onBack = {}, onPodcastClick = {}, onExploreClick = {})
+        }
+        val switcher = bounds(SUBSCRIPTIONS_TAB_SWITCHER_TAG)
+        assertTrue("switcher ($switcher) clear of the cutout", switcher.left >= 32f)
+        assertTrue("switcher ($switcher) clear of the side buttons", switcher.right <= window.value.widthDp - 48f)
+    }
+
+    @Test
+    @Config(qualifiers = "w915dp-h412dp-mdpi")
+    fun `editors in their own window keep Save, Next and Create playlist clear of a sideways phone's cutout and side buttons`() {
+        val editor = mutableStateOf("edit")
+        show {
+            when (editor.value) {
+                "edit" -> FolderEditorPage(remember { FolderPagesState().apply { openEdit(fixtures.folders[2]) } }, fixtures.folderPagesData, fixtures.noFolderActions)
+                "new" -> FolderEditorPage(
+                    remember { FolderPagesState().apply { openNewFolder() }.also { it.newFolderDraft = NewFolderDraft(pickedIds = listOf("show-1", "show-2")) } },
+                    fixtures.folderPagesData,
+                    fixtures.noFolderActions,
+                )
+                else -> PlaylistsContent(
+                    playlists = fixtures.playlists,
+                    state = remember {
+                        PlaylistPagesState(newDraft = NewPlaylistDraft(step = NewPlaylistDraft.FINISH, pickedIds = listOf("show-1", "show-2"), name = "Morning mix", nameEdited = true))
+                    },
+                    actions = fixtures.noPlaylistActions,
+                    onBack = {},
+                )
+            }
+        }
+        for ((step, button) in listOf("edit" to "Save", "new" to "Next", "playlist" to "Create playlist")) {
+            compose.runOnIdle { editor.value = step }
+            compose.waitForIdle()
+            compose.runOnUiThread {
+                ShadowDialog.getShownDialogs().forEach { dialog ->
+                    dialog.window?.decorView?.let { ViewCompat.dispatchApplyWindowInsets(it, SystemInsets.SIDEWAYS_3_BUTTON.toWindowInsets()) }
+                }
+            }
+            compose.waitForIdle()
+            val width = compose.onAllNodes(isRoot()).fetchSemanticsNodes().last().size.width
+            val rect = compose.onAllNodesWithText(button).fetchSemanticsNodes().last().boundsInRoot
+            assertTrue("$step: $button ($rect) clear of the cutout", rect.left >= 32f)
+            assertTrue("$step: $button ($rect) clear of the side buttons in a $width wide window", rect.right <= width - 48f)
+            assertTrue("$step: $button ($rect) under the status bar", rect.top >= 24f)
         }
     }
 

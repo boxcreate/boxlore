@@ -13,9 +13,17 @@ import cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.feature.library.playlists.PlaylistCreateRequest
+import cx.aswin.boxlore.feature.library.playlists.PlaylistDetailActions
 import cx.aswin.boxlore.feature.library.subscriptions.AutoOrganizeLook
+import cx.aswin.boxlore.feature.library.subscriptions.ContextMenuTarget
 import cx.aswin.boxlore.feature.library.subscriptions.FolderInterSort
 import cx.aswin.boxlore.feature.library.subscriptions.FolderIntraSort
+import cx.aswin.boxlore.feature.library.subscriptions.FolderMembershipChange
+import cx.aswin.boxlore.feature.library.subscriptions.FolderPagesActions
+import cx.aswin.boxlore.feature.library.subscriptions.FolderPagesData
+import cx.aswin.boxlore.feature.library.subscriptions.FolderShowMove
+import cx.aswin.boxlore.feature.library.subscriptions.ReorderMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import org.mockito.Mockito.mock
@@ -139,10 +147,53 @@ internal object LibraryCaptureFixtures {
         `when`(vm.folderManualOrder).thenReturn(MutableStateFlow(emptyList()))
         `when`(vm.intraFolderSort).thenReturn(MutableStateFlow(FolderIntraSort.Inherit))
         `when`(vm.folders).thenReturn(MutableStateFlow(folders))
+        `when`(vm.foldersLoaded).thenReturn(MutableStateFlow(true))
         `when`(vm.subscriptionsTabStyle).thenReturn(MutableStateFlow(tabStyle))
         `when`(vm.downloadsSortOrder).thenReturn(MutableStateFlow(DownloadsSortOrder.RECENT))
         `when`(vm.showSortOrder).thenReturn(MutableStateFlow(ShowSortOrder.NEWEST))
         return vm
+    }
+
+    /** Folder pages' data for this listener: smart order, auto-organize on with the default look. */
+    val folderPagesData = FolderPagesData(
+        podcasts = podcasts,
+        folders = folders,
+        sort = SubscriptionSort.SmartRank,
+        smartOrderIds = podcasts.map { it.id },
+        intraFolderSort = FolderIntraSort.Inherit,
+        autoOrganizeOn = true,
+        autoOrganizeLook = AutoOrganizeLook(),
+        reorderMode = ReorderMode.Inactive,
+    )
+
+    /** Folder page actions that do nothing. */
+    val noFolderActions = object : FolderPagesActions {
+        override fun openShow(podcastId: String) = Unit
+        override fun showMenu(target: ContextMenuTarget) = Unit
+        override fun addShows(folder: cx.aswin.boxlore.core.model.SubscriptionFolder) = Unit
+        override fun openSort() = Unit
+        override fun setReorderMode(mode: ReorderMode) = Unit
+        override fun saveFolderOrder(folderId: String, orderedIds: List<String>) = Unit
+        override fun deleteFolder(folder: cx.aswin.boxlore.core.model.SubscriptionFolder) = Unit
+        override fun createFolder(params: FolderSaveParams, podcastIds: List<String>, move: FolderShowMove?) = Unit
+        override fun updateFolder(folder: cx.aswin.boxlore.core.model.SubscriptionFolder) = Unit
+        override fun changeMembership(podcastId: String, change: FolderMembershipChange) = Unit
+        override fun turnOnAutoOrganize(look: AutoOrganizeLook) = Unit
+        override fun turnOffAutoOrganize() = Unit
+        override fun setAutoOrganizeLook(look: AutoOrganizeLook) = Unit
+        override fun applyLookToGenreFolders(look: AutoOrganizeLook) = Unit
+    }
+
+    /** Playlist page actions that do nothing. */
+    val noPlaylistActions = object : PlaylistDetailActions {
+        override fun open(playlistId: String) = Unit
+        override fun create(request: PlaylistCreateRequest) = Unit
+        override fun rename(playlistId: String, name: String) = Unit
+        override fun delete(playlistId: String) = Unit
+        override fun play() = Unit
+        override fun setPlayback(mix: PlaylistMix, perShowLimit: Int?) = Unit
+        override fun addShows(podcastIds: List<String>) = Unit
+        override fun removeShow(show: PlaylistShow) = Unit
     }
 
     fun smartDownloadPrefs(enabled: Boolean = true): UserPreferencesRepository {

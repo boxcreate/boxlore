@@ -85,18 +85,28 @@ internal class SubscriptionsScreenState(
         tempRootOrder = emptyList()
     }
 
-    /** Drops targets whose folder or show no longer exists, so their sheet or question closes quietly. */
-    fun dropMissing(folders: List<SubscriptionFolder>, podcasts: List<Podcast>) {
-        val folderIds = folders.mapTo(HashSet()) { it.id }
+    /**
+     * Drops targets whose folder or show no longer exists, so their sheet or question closes quietly.
+     * [folders] is null while the folders haven't loaded yet: then only the shows are checked, and
+     * folder targets (and a folder's reorder with its unsaved order) wait.
+     */
+    fun dropMissing(folders: List<SubscriptionFolder>?, podcasts: List<Podcast>) {
         val podcastIds = podcasts.mapTo(HashSet()) { it.id }
+        dropMissingShows(podcastIds)
+        if (folders == null) return
+        val folderIds = folders.mapTo(HashSet()) { it.id }
         if (contextMenu?.resolve(folders, podcasts) == null) contextMenu = null
         if (addShowsFolderId != null && addShowsFolderId !in folderIds) addShowsFolderId = null
-        moveShow?.let { move ->
-            if (move.podcastId !in podcastIds || (move.fromFolderId != null && move.fromFolderId !in folderIds)) moveShow = null
-        }
+        if (moveShow?.fromFolderId?.let { it !in folderIds } == true) moveShow = null
         if (confirmDeleteFolderId != null && confirmDeleteFolderId !in folderIds) confirmDeleteFolderId = null
-        if (confirmUnsubscribeId != null && confirmUnsubscribeId !in podcastIds) confirmUnsubscribeId = null
         (reorderMode as? ReorderMode.FolderShows)?.let { mode -> if (mode.folderId !in folderIds) endReorder() }
+    }
+
+    /** Drops the targets whose show is gone; these don't need the folders. */
+    private fun dropMissingShows(podcastIds: Set<String>) {
+        if (contextMenu?.podcastId?.let { it !in podcastIds } == true) contextMenu = null
+        if (moveShow?.podcastId?.let { it !in podcastIds } == true) moveShow = null
+        if (confirmUnsubscribeId != null && confirmUnsubscribeId !in podcastIds) confirmUnsubscribeId = null
     }
 
     companion object {

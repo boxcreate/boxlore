@@ -45,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -56,6 +57,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -75,6 +77,7 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreMiniPlayerVisible
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -122,6 +125,7 @@ import cx.aswin.boxlore.feature.library.subscriptions.latestQueueMessage
 import cx.aswin.boxlore.feature.library.subscriptions.rememberFolderPagesState
 import cx.aswin.boxlore.feature.library.subscriptions.rememberSubscriptionsScreenState
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 val LocalLastSeenEpisodes = compositionLocalOf<Map<String, String>> { emptyMap() }
@@ -167,6 +171,7 @@ fun SubscriptionsScreen(
         val folderManualOrder by viewModel.folderManualOrder.collectAsStateWithLifecycle()
         val intraFolderSort by viewModel.intraFolderSort.collectAsStateWithLifecycle()
         val folders by viewModel.folders.collectAsStateWithLifecycle()
+        val foldersLoaded by viewModel.foldersLoaded.collectAsStateWithLifecycle()
         val subscriptionsTabStyle by viewModel.subscriptionsTabStyle.collectAsStateWithLifecycle()
         var showSortSheet by screenState::sortSheetOpen
         val folderPages = rememberFolderPagesState()
@@ -176,8 +181,9 @@ fun SubscriptionsScreen(
         var confirmAutoOrganizeOff by screenState::confirmAutoOrganizeOff
         val loadedPodcasts = (uiState as? LibraryUiState.Success)?.subscribedPodcasts
         // Open targets are kept by ID and looked up in today's data; one that went away closes quietly.
-        LaunchedEffect(loadedPodcasts, folders) {
-            if (loadedPodcasts != null) screenState.dropMissing(folders, loadedPodcasts)
+        // Folder targets wait for the folders: after the app was closed in the background the shows can load first.
+        LaunchedEffect(loadedPodcasts, folders, foldersLoaded) {
+            if (loadedPodcasts != null) screenState.dropMissing(folders.takeIf { foldersLoaded }, loadedPodcasts)
         }
         val contextMenuTarget = screenState.contextMenu?.resolve(folders, loadedPodcasts.orEmpty())
         val selectedFolderForShowSelection = screenState.addShowsFolderId?.let { id -> folders.firstOrNull { it.id == id } }
@@ -191,8 +197,14 @@ fun SubscriptionsScreen(
         val shortPane = boxloreIsShortPane()
         // In a short window the whole header (bar and docked tabs) scrolls away with the list.
         val shortHeaderBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+        // A short window starts with that header tucked away, so the shows come first; scrolling up brings it back.
+        LaunchedEffect(shortPane) {
+            if (shortPane && !screenState.isSearchActive) {
+                val limit = snapshotFlow { shortHeaderBehavior.state.heightOffsetLimit }.first { it > -Float.MAX_VALUE && it < 0f }
+                shortHeaderBehavior.state.heightOffset = limit
+            }
+        }
         val keyboard = LocalSoftwareKeyboardController.current
-        val twoPane = false
 
         val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val navigationStyle = LocalNavigationStyle.current
@@ -365,7 +377,7 @@ fun SubscriptionsScreen(
 
                         val latestCount = successState?.subscribedPodcasts?.count { it.latestEpisode != null } ?: 0
 
-                        if (!isFloatingTabs && !twoPane) {
+                        if (!isFloatingTabs) {
                             ExpressiveTabSwitcher(
                                 tabs = listOf(stringResource(R.string.library_tab_shows), stringResource(R.string.library_tab_new_episodes)),
                                 selectedIndex = pagerState.currentPage,
@@ -375,7 +387,8 @@ fun SubscriptionsScreen(
                                         pagerState.animateScrollToPage(index)
                                     }
                                 },
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                // Clear of a sideways phone's cutout and side buttons, like the bar above it.
+                                modifier = Modifier.boxloreHorizontalSafePadding().padding(horizontal = 16.dp, vertical = 6.dp).testTag(SUBSCRIPTIONS_TAB_SWITCHER_TAG)
                             )
                         }
                     }
@@ -946,3 +959,6 @@ private fun Modifier.collapseWith(state: TopAppBarState): Modifier = clipToBound
     val offset = state.heightOffset.roundToInt().coerceIn(-placeable.height, 0)
     layout(placeable.width, placeable.height + offset) { placeable.place(0, offset) }
 }
+
+/** Test tag for Subscriptions' docked Shows / New Episodes switcher. */
+internal const val SUBSCRIPTIONS_TAB_SWITCHER_TAG = "subscriptions_tab_switcher"
