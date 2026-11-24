@@ -67,4 +67,7 @@
     </plurals>
     <string name="settings_smart_downloads_size_mb">%1$s MB</string>
     <string name="settings_smart_downloads_size_gb">%1$s GB</string>
+    <string name="settings_smart_downloads_off_title">¿Desactivar Descargas inteligentes?</string>
+    <string name="settings_smart_downloads_off_body">Los episodios que guardaron las Descargas inteligentes se quitarán de este dispositivo. Tus otras descargas se quedan.</string>
+    <string name="settings_smart_downloads_off_confirm">Desactivar y quitar</string>
 </resources>

@@ -206,6 +206,8 @@ class TabletSettingsCaptureTest(private val scene: String, configuration: PhoneG
     private fun interact() {
         when (scene) {
             "hub-end" -> scrollTo(hasText(string(R.string.settings_check_for_updates)))
+            // Turning off asks first; the question is the subject (before it existed, the plain page).
+            "smart-off-confirm" -> tap(fixture.compose.onAllNodes(hasText(string(R.string.settings_smart_downloads_enable))).onFirst())
             "sync-import" -> scrollTo(hasText(string(R.string.settings_sync_import_title)))
             "feedback-more-menu" -> tap(fixture.compose.onAllNodes(hasContentDescription(string(R.string.feedback_more_options))).onFirst())
             "feedback-typing", "feedback-typing-menu" -> {
@@ -361,6 +363,7 @@ private class LoadingSupportApi(private val conversationLoads: Boolean) : Suppor
     override suspend fun photo(id: String): Response<ResponseBody> = awaitCancellation()
 }
 
+@Suppress("CyclomaticComplexMethod") // One branch per scene.
 private fun captureDestination(scene: String): ProfileSettingsDestination = when (scene) {
     "hub", "hub-end" -> ProfileSettingsDestination.Hub
     "sync", "sync-signed-in", "sync-import" -> ProfileSettingsDestination.SyncAndBackups
@@ -383,6 +386,7 @@ private fun captureDestination(scene: String): ProfileSettingsDestination = when
 }
 
 @Composable
+@Suppress("CyclomaticComplexMethod") // One branch per page.
 private fun CaptureSettingsPage(destination: ProfileSettingsDestination, scene: String) {
     val appearance = AppearanceSettings()
     val playback = PlaybackSettings()
