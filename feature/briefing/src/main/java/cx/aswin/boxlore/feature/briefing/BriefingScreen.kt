@@ -458,7 +458,7 @@ private fun BriefingSourcesSheet(briefing: Briefing, onDismiss: () -> Unit) {
                     Surface(onClick = {
                         AnalyticsHelper.trackDailyBriefingInteraction("source_clicked", briefing.region, briefing.date, mapOf("source_title" to source.title, "source_url" to source.url))
                         uriHandler.openUri(source.url)
-                    }, color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                    }, color = MaterialTheme.colorScheme.surfaceContainerHigh, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
                         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(getDomainName(source.url), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
