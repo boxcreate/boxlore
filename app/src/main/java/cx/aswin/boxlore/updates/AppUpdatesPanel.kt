@@ -37,7 +37,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -219,7 +218,9 @@ private fun UpdateStatusContent(status: UpdateCheckStatus, onCheck: () -> Unit, 
         FilledTonalButton(onClick = onCheck, enabled = !checking, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (checking) {
-                    BoxLoreLoader.CircularWavy(size = 20.dp, color = LocalContentColor.current, modifier = Modifier.testTag(UPDATES_CHECK_LOADER_TAG))
+                    // In the brand colour: the button is disabled while checking, and its faded content
+                    // colour would make the loader look switched off too.
+                    BoxLoreLoader.CircularWavy(size = 20.dp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.testTag(UPDATES_CHECK_LOADER_TAG))
                 } else {
                     Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
                 }
