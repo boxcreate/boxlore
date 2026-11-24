@@ -36,9 +36,8 @@ Announcement title:
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.
 - On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.
-- Explore's Top charts now number each show, and genre tags appear in your app's language. Ask anything results name the show each episode comes from.
-- Lore now opens on a card-shaped placeholder, says how long each episode is, and sits centred on tall tablet screens.
-- Lore history is now grouped by day, with filters for queued and skipped cards.
+- Explore's Top charts now number each show and read as a ranked list on tablets, Find a show results are an easy-to-scan list that says who makes each show, and Ask anything results name each episode's show.
+- Lore now opens on a card-shaped placeholder, says how long each episode is and sits centred on tall tablets. Lore history is grouped by day, with filters for queued and skipped cards.
 
 ## Fixed
 
