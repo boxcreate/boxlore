@@ -116,7 +116,7 @@
     <string name="episode_selection_too_long">This show has too many episodes to select them all.</string>
     <string name="subscribe_to_edit_genre">Subscribe to the show to edit genre</string>
     <string name="genre_visibility_hint">Visible on this podcast page, Subscriptions filters, and folders.</string>
-    <string name="genre_edit_placeholder">Click to set custom tag</string>
+    <string name="genre_edit_placeholder">Tap to set a custom tag</string>
     <string name="episode_info_episode_from_show">%1$s, from %2$s</string>
     <string name="podcast_info_load_error">Couldn’t load this podcast</string>
     <!-- Under "Couldn’t load this episode" or "Couldn’t load this podcast"; Try again (podcast_info_retry) and Back sit below it. -->

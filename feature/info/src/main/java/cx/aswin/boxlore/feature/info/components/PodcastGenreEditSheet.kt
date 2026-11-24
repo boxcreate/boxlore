@@ -124,6 +124,7 @@ internal fun PodcastGenreEditSheet(
 
             GenreEditLivePreview(
                 effectiveGenre = editState.effectiveGenre,
+                typed = editState.typed,
                 effectiveIcon = editState.effectiveIcon,
                 catalogGenre = catalogGenre,
                 isCustomized = editState.isCustomized,
@@ -170,6 +171,8 @@ internal fun PodcastGenreEditSheet(
 
 private data class GenreEditState(
     val effectiveGenre: String,
+    /** The listener typed the tag, so it shows as written. */
+    val typed: Boolean,
     val effectiveIcon: ImageVector,
     val canReset: Boolean,
     val canSave: Boolean,
@@ -197,6 +200,7 @@ private fun resolveGenreEditState(
 
     return GenreEditState(
         effectiveGenre = effectiveGenre,
+        typed = trimmed.isNotEmpty(),
         effectiveIcon = effectiveIcon,
         canReset = canReset,
         canSave = canSave,
@@ -262,6 +266,7 @@ private fun GenreEditTopBar(
 @Composable
 private fun GenreEditLivePreview(
     effectiveGenre: String,
+    typed: Boolean,
     effectiveIcon: ImageVector,
     catalogGenre: String,
     isCustomized: Boolean,
@@ -298,8 +303,10 @@ private fun GenreEditLivePreview(
                     }
                 }
 
+                // The name the show page's chip shows: translated for a catalog genre, as typed for a tag.
+                val label = genrePreviewLabel(effectiveGenre, typed)
                 GenreChip(
-                    genre = effectiveGenre,
+                    genre = label.res?.let { stringResource(it) } ?: label.raw,
                     icon = effectiveIcon,
                 )
             }

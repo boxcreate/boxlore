@@ -570,3 +570,10 @@ internal fun genreChipLabel(effective: String, custom: Boolean, canEdit: Boolean
     custom -> GenreChipLabel.Name(null, effective)
     else -> GenreChipLabel.Name(genreLabelRes(effective), effective)
 }
+
+/**
+ * The Change genre sheet's preview chip for [effective]: the name the show page's chip shows for
+ * it, translated for a catalog genre and as written when the listener [typed] the tag.
+ */
+internal fun genrePreviewLabel(effective: String, typed: Boolean): GenreChipLabel.Name =
+    GenreChipLabel.Name(if (typed) null else genreLabelRes(effective), effective)

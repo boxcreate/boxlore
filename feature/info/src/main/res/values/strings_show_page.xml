@@ -7,13 +7,13 @@
     <string name="podcast_info_frequency_hiatus">On a break</string>
     <!-- Show-page chip: the show is taking a break between seasons. -->
     <string name="podcast_info_frequency_between_seasons">Between seasons</string>
-    <!-- Show-page chip: how often the show releases episodes. Short chip text. -->
-    <string name="podcast_info_frequency_daily">Releases daily</string>
+    <!-- Show-page chip, beside a calendar icon: how often the show releases episodes. Short chip text. -->
+    <string name="podcast_info_frequency_daily">Daily</string>
     <string name="podcast_info_frequency_multi_weekly">Several times a week</string>
-    <string name="podcast_info_frequency_weekly">Releases weekly</string>
-    <string name="podcast_info_frequency_biweekly">Releases every 2 weeks</string>
-    <string name="podcast_info_frequency_monthly">Releases monthly</string>
-    <string name="podcast_info_frequency_occasionally">Releases occasionally</string>
+    <string name="podcast_info_frequency_weekly">Weekly</string>
+    <string name="podcast_info_frequency_biweekly">Every 2 weeks</string>
+    <string name="podcast_info_frequency_monthly">Monthly</string>
+    <string name="podcast_info_frequency_occasionally">Occasionally</string>
     <!-- Show-page chip: the show releases every week, usually on this weekday. -->
     <string name="podcast_info_frequency_weekly_sunday">Weekly on Sundays</string>
     <string name="podcast_info_frequency_weekly_monday">Weekly on Mondays</string>
@@ -125,7 +125,7 @@
     <string name="genre_edit_fallback_genre">Podcast</string>
     <string name="genre_edit_close">Close</string>
     <!-- Title of the sheet that changes a show's genre tag and its icon. -->
-    <string name="genre_edit_title">Tag &amp; Icon</string>
+    <string name="genre_edit_title">Tag &amp; icon</string>
     <string name="genre_edit_reset">Reset</string>
     <string name="genre_edit_save">Save</string>
     <string name="genre_edit_live_preview">Live preview</string>

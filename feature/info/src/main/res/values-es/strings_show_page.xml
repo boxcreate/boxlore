@@ -3,12 +3,12 @@
     <string name="podcast_info_frequency_inactive">Sin episodios nuevos</string>
     <string name="podcast_info_frequency_hiatus">En pausa</string>
     <string name="podcast_info_frequency_between_seasons">Entre temporadas</string>
-    <string name="podcast_info_frequency_daily">Episodios diarios</string>
+    <string name="podcast_info_frequency_daily">Cada día</string>
     <string name="podcast_info_frequency_multi_weekly">Varias veces por semana</string>
-    <string name="podcast_info_frequency_weekly">Episodios semanales</string>
+    <string name="podcast_info_frequency_weekly">Cada semana</string>
     <string name="podcast_info_frequency_biweekly">Cada 2 semanas</string>
-    <string name="podcast_info_frequency_monthly">Episodios mensuales</string>
-    <string name="podcast_info_frequency_occasionally">Episodios ocasionales</string>
+    <string name="podcast_info_frequency_monthly">Cada mes</string>
+    <string name="podcast_info_frequency_occasionally">De vez en cuando</string>
     <string name="podcast_info_frequency_weekly_sunday">Semanal, los domingos</string>
     <string name="podcast_info_frequency_weekly_monday">Semanal, los lunes</string>
     <string name="podcast_info_frequency_weekly_tuesday">Semanal, los martes</string>

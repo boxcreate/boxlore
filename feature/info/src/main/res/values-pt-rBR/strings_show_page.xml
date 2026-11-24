@@ -8,12 +8,12 @@
     <!-- Show-page chip: the show is taking a break between seasons. -->
     <string name="podcast_info_frequency_between_seasons">Entre temporadas</string>
     <!-- Show-page chip: how often the show releases episodes. Short chip text. -->
-    <string name="podcast_info_frequency_daily">Episódios diários</string>
+    <string name="podcast_info_frequency_daily">Todo dia</string>
     <string name="podcast_info_frequency_multi_weekly">Várias vezes por semana</string>
-    <string name="podcast_info_frequency_weekly">Episódios semanais</string>
+    <string name="podcast_info_frequency_weekly">Toda semana</string>
     <string name="podcast_info_frequency_biweekly">A cada 2 semanas</string>
-    <string name="podcast_info_frequency_monthly">Episódios mensais</string>
-    <string name="podcast_info_frequency_occasionally">Episódios ocasionais</string>
+    <string name="podcast_info_frequency_monthly">Todo mês</string>
+    <string name="podcast_info_frequency_occasionally">De vez em quando</string>
     <!-- Show-page chip: the show releases every week, usually on this weekday. -->
     <string name="podcast_info_frequency_weekly_sunday">Semanal, aos domingos</string>
     <string name="podcast_info_frequency_weekly_monday">Semanal, às segundas</string>
