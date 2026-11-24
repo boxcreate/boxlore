@@ -33,11 +33,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -75,8 +77,9 @@ internal class TurnstilePageHolder(
     private val whenDrawn: (View, () -> Unit) -> Unit = { page, onDrawn -> page.post(onDrawn) },
 ) {
     private var view: View? = null
+    private var cardSize: IntSize? = null
 
-    /** False from the moment the page is moved into a card until it has drawn there. */
+    /** False from the moment the page is moved into a card, or its card changes size, until it has drawn there. */
     var drawn by mutableStateOf(false)
         private set
 
@@ -90,6 +93,7 @@ internal class TurnstilePageHolder(
     fun attachToCard(context: Context): View {
         val page = attach(context)
         drawn = false
+        cardSize = null
         // Asked once the page is in the card's window: WebView reports drawing only while attached.
         page.addOnAttachStateChangeListener(
             object : View.OnAttachStateChangeListener {
@@ -102,6 +106,19 @@ internal class TurnstilePageHolder(
             },
         )
         return page
+    }
+
+    /**
+     * The page's size in its card. A drawn page redraws at a new size, so the loader returns until it
+     * has; the page itself is never reloaded.
+     */
+    fun cardResized(size: IntSize) {
+        val previous = cardSize
+        cardSize = size
+        val page = view ?: return
+        if (previous == null || previous == size || !drawn) return
+        drawn = false
+        whenDrawn(page) { if (view === page) drawn = true }
     }
 
     fun release() {
@@ -154,7 +171,10 @@ internal fun TurnstileStepUpHost(
         }
     } else {
         TurnstileStepUpSheet(onSkip = { controller.cancel(attempt) }, loading = !holder.drawn) {
-            AndroidView(factory = holder::attachToCard, modifier = Modifier.fillMaxWidth().height(72.dp).testTag(CHALLENGE_PAGE_TAG))
+            AndroidView(
+                factory = holder::attachToCard,
+                modifier = Modifier.fillMaxWidth().height(72.dp).onSizeChanged(holder::cardResized).testTag(CHALLENGE_PAGE_TAG),
+            )
         }
     }
 }
@@ -166,8 +186,8 @@ internal fun TurnstileStepUpHost(
  *
  * The phone sheet opens fully rather than half way, Echo shrinks when the space the check has (the
  * window, or one half of a half-open fold) is under [CHECK_SHORT_WINDOW_DP] tall (landscape phones,
- * short resizable windows, a tabletop half), and the content scrolls when it still doesn't fit, so
- * the check and Skip are always reachable. While [loading], a small loader sits in the card behind
+ * short resizable windows, a tabletop half), Skip moves up beside Echo's line there, and the content
+ * scrolls when it still doesn't fit, so the check and Skip are always reachable. While [loading], a small loader sits in the card behind
  * the not-yet-drawn check.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -192,10 +212,12 @@ internal fun TurnstileStepUpSheet(onSkip: () -> Unit, loading: Boolean = false, 
                 )
                 Text(
                     text = stringResource(R.string.session_check_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = GoogleSansWeight.semiBold,
+                    // Echo's own lines in onboarding use this weight.
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
                     modifier = Modifier.weight(1f).semantics { heading() },
                 )
+                // Short spaces have no room for a row of its own under the check.
+                if (short) CheckSkipButton(onSkip)
             }
             Text(
                 text = stringResource(R.string.session_check_body),
@@ -218,10 +240,15 @@ internal fun TurnstileStepUpSheet(onSkip: () -> Unit, loading: Boolean = false, 
                     challenge()
                 }
             }
-            TextButton(onClick = onSkip, modifier = Modifier.align(Alignment.End)) {
-                Text(stringResource(R.string.session_check_skip))
-            }
+            if (!short) CheckSkipButton(onSkip, Modifier.align(Alignment.End))
         }
+    }
+}
+
+@Composable
+private fun CheckSkipButton(onSkip: () -> Unit, modifier: Modifier = Modifier) {
+    TextButton(onClick = onSkip, modifier = modifier) {
+        Text(stringResource(R.string.session_check_skip))
     }
 }
 

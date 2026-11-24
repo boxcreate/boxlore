@@ -270,13 +270,21 @@ class TurnstileStepUpHostAdaptiveTest {
             val echo = compose.onNodeWithTag(CHECK_ECHO_TAG).getUnclippedBoundsInRoot()
             assertEquals("Echo at $next", echoSize, (echo.right - echo.left).value, 0.5f)
             compose.onNodeWithText("Skip").assertIsDisplayed()
+            if (next == BoxloreTestWindows.FOLD_TABLETOP) {
+                // The whole of Skip and the check fit in the panel in the top half, with no scrolling.
+                val panel = compose.onNodeWithTag(EXPANDED_PANEL_TAG).getUnclippedBoundsInRoot()
+                listOf(compose.onNodeWithText("Skip"), compose.onNodeWithTag(CHALLENGE_CARD_TAG)).forEach { node ->
+                    val bounds = node.getUnclippedBoundsInRoot()
+                    assertTrue("$bounds inside the panel $panel", bounds.top >= panel.top && bounds.bottom <= panel.bottom)
+                }
+            }
             assertSame("the same page at $next", page, created.single())
             assertFalse("$next: a window change is not a skip", result.isCompleted)
         }
     }
 
     @Test
-    fun `the card shows a loader until the check has drawn, and a resize never rebuilds the page`() {
+    fun `the card shows a loader until the check has drawn, again after a resize, and a resize never rebuilds the page`() {
         holdDrawing = true
         window.value = BoxloreTestWindows.PHONE
         render()
@@ -290,14 +298,20 @@ class TurnstileStepUpHostAdaptiveTest {
         compose.mainClock.advanceTimeBy(1_000)
         compose.onNodeWithTag(CHALLENGE_LOADER_TAG).assertDoesNotExist()
 
+        // A wider phone sheet: the same presentation, so the page is not moved, but it redraws.
         compose.runOnIdle { window.value = BoxloreTestWindows.COVER_443 }
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onNodeWithTag(CHALLENGE_LOADER_TAG).assertExists()
+        compose.runOnIdle { heldDraws.removeAt(0).invoke() }
         compose.mainClock.advanceTimeBy(1_000)
         compose.onNodeWithTag(CHALLENGE_LOADER_TAG).assertDoesNotExist()
         assertEquals(1, created.size)
+        assertTrue("no draw left waiting", heldDraws.isEmpty())
     }
 
     private companion object {
         const val TITLE = "I’m the only robot allowed in this chat."
+        const val EXPANDED_PANEL_TAG = "expanded_sheet_panel"
         const val BODY = "Tap the box so Cloudflare can check you’re human, then I’ll keep finding shows for you."
     }
 }
