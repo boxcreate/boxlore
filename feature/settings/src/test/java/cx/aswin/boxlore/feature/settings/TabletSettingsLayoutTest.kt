@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -32,6 +34,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -40,6 +43,7 @@ import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
+import cx.aswin.boxlore.feature.settings.pages.AccountPageScaffold
 import cx.aswin.boxlore.feature.settings.pages.AppearanceActions
 import cx.aswin.boxlore.feature.settings.pages.AppearanceUiState
 import org.junit.Assert.assertEquals
@@ -260,8 +264,15 @@ class TabletSettingsLayoutTest {
                 val size = window.value
                 CompositionLocalProvider(LocalBoxloreWindowLayout provides size) {
                     Box(Modifier.requiredSize(size.widthDp.dp, size.heightDp.dp)) {
-                        AdaptiveSettingsLayout(selected.value, SettingsScreenConfig(onBack = {}, onResetAnalytics = {}), { selected.value = it }) {
-                            SettingsScaffold("Page title", {}) { Text("Row 0", modifier = Modifier.fillMaxWidth().testTag("row")) }
+                        AdaptiveSettingsLayout(selected.value, SettingsScreenConfig(onBack = {}, onResetAnalytics = {}), { selected.value = it }) { current ->
+                            // Account & sync has its own frame; the others share SettingsScaffold.
+                            if (current == ProfileSettingsDestination.Account) {
+                                AccountPageScaffold(onBack = {}, isOnboarding = false, scroll = rememberScrollState()) {
+                                    Text("Row 0", modifier = Modifier.fillMaxWidth().testTag("row"))
+                                }
+                            } else {
+                                SettingsScaffold("Page title", {}) { Text("Row 0", modifier = Modifier.fillMaxWidth().testTag("row")) }
+                            }
                         }
                     }
                 }
@@ -275,14 +286,26 @@ class TabletSettingsLayoutTest {
         val pageTitle = fixture.compose.onNodeWithText("Page title").fetchSemanticsNode().boundsInRoot.height
         val listTitle = fixture.compose.onNodeWithText("Settings").fetchSemanticsNode().boundsInRoot.height
         assertTrue("page title ($pageTitle) is larger than the list title ($listTitle)", pageTitle > listTitle)
+        val pageTitleSize = titleFontSize("Page title")
         fixture.compose.runOnIdle { selected.value = ProfileSettingsDestination.Account }
         settle()
-        assertEquals(row.width, fixture.compose.onNodeWithTag("row").fetchSemanticsNode().boundsInRoot.width, 1f)
+        // Sync opens Account & sync: same column, same start and the same title size, so nothing jumps.
+        val accountRow = fixture.compose.onNodeWithTag("row").fetchSemanticsNode().boundsInRoot
+        assertEquals(row.width, accountRow.width, 1f)
+        assertEquals(row.left, accountRow.left, 1f)
+        assertEquals(pageTitleSize, titleFontSize(text(R.string.account_page_title)), 0.01f)
         for (size in listOf(BoxloreTestWindows.TABLET, BoxloreTestWindows.TABLET_PORTRAIT, BoxloreTestWindows.TABLET)) {
             fixture.compose.runOnIdle { window.value = size }
             settle()
             assertEquals(ProfileSettingsDestination.Account, selected.value)
         }
+    }
+
+    private fun titleFontSize(title: String): Float {
+        val layouts = mutableListOf<TextLayoutResult>()
+        fixture.compose.onNodeWithText(title, useUnmergedTree = true).fetchSemanticsNode()
+            .config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+        return layouts.last().layoutInput.style.fontSize.value
     }
 
     private fun renderIn(window: androidx.compose.runtime.MutableState<BoxloreWindowLayout>, onCheckForUpdates: (() -> Unit)? = null) {

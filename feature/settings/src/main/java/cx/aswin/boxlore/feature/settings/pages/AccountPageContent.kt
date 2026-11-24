@@ -87,12 +87,26 @@ internal fun AccountPageScaffold(
     bottomBar: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    // Beside the tablet category list the page starts by the list, as wide as the other pages, with
+    // the same heavier title they have there.
+    val split = LocalSettingsSplitPane.current
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         modifier = Modifier.testTag(if (isOnboarding) "account_onboarding_page" else "account_settings_page"),
         topBar = {
             TopAppBar(
-                title = { if (!isOnboarding) Text(stringResource(R.string.account_page_title), style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                modifier = if (split) Modifier.padding(start = SETTINGS_SPLIT_PAGE_START).widthIn(max = SETTINGS_PAGE_MAX_WIDTH) else Modifier,
+                title = {
+                    if (!isOnboarding) {
+                        Text(
+                            stringResource(R.string.account_page_title),
+                            style = if (split) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleLarge,
+                            fontWeight = if (split) GoogleSansWeight.semiBold else null,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                },
                 navigationIcon = { IconButton(onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.account_back)) } },
                 actions = {
                     if (showNotNow) {
@@ -110,15 +124,13 @@ internal fun AccountPageScaffold(
             }
         },
     ) { padding ->
-        // Beside the tablet category list the page starts by the list, as wide as the other pages.
-        val split = LocalSettingsSplitPane.current
         Box(
             Modifier.fillMaxSize().padding(padding).imePadding().then(if (split) Modifier.padding(start = SETTINGS_SPLIT_PAGE_START) else Modifier),
             contentAlignment = if (split) Alignment.TopStart else Alignment.TopCenter,
         ) {
             Column(
                 modifier = Modifier.widthIn(max = if (split) SETTINGS_PAGE_MAX_WIDTH else 600.dp).fillMaxWidth().verticalScroll(scroll).navigationBarsPadding()
-                    .padding(horizontal = 20.dp).padding(top = 4.dp, bottom = if (isOnboarding) 24.dp else 104.dp),
+                    .padding(horizontal = if (split) 16.dp else 20.dp).padding(top = 4.dp, bottom = if (isOnboarding) 24.dp else 104.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 content = content,
             )
