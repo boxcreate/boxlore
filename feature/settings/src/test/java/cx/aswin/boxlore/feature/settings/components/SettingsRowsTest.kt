@@ -33,6 +33,7 @@ import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
 import cx.aswin.boxlore.feature.settings.feedback.FeedbackDiagnosticsRow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -70,6 +71,23 @@ class SettingsRowsTest {
         assertEquals(ToggleableState.On, compose.onNode(isToggleable()).fetchSemanticsNode().config[SemanticsProperties.ToggleableState])
         // Only the row reacts; the switch inside has no click of its own.
         assertEquals(1, compose.onAllNodes(hasClickAction()).fetchSemanticsNodes().size)
+    }
+
+    // Regression: with their own clicks removed, the radio and switch lost their 48dp box and title-only
+    // rows (the App language list) shrank below a list row's height.
+    @Test fun `title-only choice and switch rows keep a full row's height`() {
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                Column {
+                    SettingsChoiceRow(title = "Deutsch", selected = true, onClick = {}, modifier = Modifier.testTag("choice"))
+                    SettingsSwitchRow(title = "Download in the background", checked = false, onCheckedChange = {}, modifier = Modifier.testTag("switch"))
+                }
+            }
+        }
+        for (tag in listOf("choice", "switch")) {
+            val height = compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot.height
+            assertTrue("$tag row is $height tall", height >= 72f)
+        }
     }
 
     @Test fun `a choice row is one radio button with its state, and a tap anywhere picks it once`() {

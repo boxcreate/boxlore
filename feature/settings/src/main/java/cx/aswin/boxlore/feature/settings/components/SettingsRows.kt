@@ -28,6 +28,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -390,6 +391,8 @@ internal fun SettingsSwitchRow(
             Switch(
                 checked = checked,
                 onCheckedChange = null,
+                // Without its own click the switch loses its 48dp box; keep it so rows keep their height.
+                modifier = Modifier.minimumInteractiveComponentSize(),
             )
         },
     )
@@ -462,6 +465,8 @@ internal fun SettingsChoiceRow(
         RadioButton(
             selected = selected,
             onClick = null,
+            // Keeps the radio's 48dp box (and the row's height) without a second click target.
+            modifier = Modifier.minimumInteractiveComponentSize(),
         )
     }
 }
