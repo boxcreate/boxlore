@@ -120,7 +120,7 @@ class DailyBriefingCardTest {
         try {
             fontScale.value = 1.3f
             render()
-            compose.onNodeWithContentDescription("Hide briefing").performClick()
+            compose.onNodeWithContentDescription("Hide the Brief").performClick()
             assertPairFillsCard("hide today")
             compose.onNodeWithTag("home_brief_always_hide", useUnmergedTree = true).performClick()
             assertPairFillsCard("always hide")
