@@ -161,7 +161,9 @@ fun DownloadedEpisodesScreen(
         topBar = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 if (isSelectionMode) {
+                    // The same width as the list and its normal header, so Close and Delete don't jump to the window edge.
                     TopAppBar(
+                        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                         title = {
                             Text(
                                 text = pluralStringResource(R.plurals.library_selected_count_title, selectedPodcastIds.size, selectedPodcastIds.size),

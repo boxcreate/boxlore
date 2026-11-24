@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -50,7 +51,9 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.rememberNewEpisodeBadgeShimmerBrush
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.boxloreCombinedClickable as combinedClickable
@@ -90,6 +93,8 @@ internal fun PinnedEnlargedFolderCard(
     val shape = RoundedCornerShape(24.dp)
     val folderIcon = GenreIcons.folderIconOrFallback(folder.icon)
     val slots = calculateFolderSlots(podcasts, folder.displaySize)
+    // Wide windows stop covers at poster size, so an enlarged folder is never taller than the window.
+    val coversMaxWidth = folderCoversMaxWidth(folder.displaySize.spanCols)
 
     val dragScale by animateFloatAsState(
         targetValue = if (isDragging) 1.04f else 1f,
@@ -104,7 +109,8 @@ internal fun PinnedEnlargedFolderCard(
         shape = shape,
         color = MaterialTheme.colorScheme.surfaceContainer,
         shadowElevation = dragElevation,
-        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility)
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Grid)
+            .then(if (coversMaxWidth != null && !LocalBoxloreWindowLayout.current.usesTabletLayout) Modifier.widthIn(max = coversMaxWidth + FolderCardPadding * 2) else Modifier)
             .then(dragModifier)
             .fillMaxWidth()
             .graphicsLayer {
@@ -127,7 +133,7 @@ internal fun PinnedEnlargedFolderCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
+                .padding(FolderCardPadding),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             PinnedFolderHeader(
@@ -150,6 +156,7 @@ internal fun PinnedEnlargedFolderCard(
                     folder = folder,
                     actions = actions,
                     lastSeenEpisodes = lastSeenEpisodes,
+                    modifier = if (coversMaxWidth != null) Modifier.widthIn(max = coversMaxWidth) else Modifier,
                     isReordering = isReordering,
                 )
             }
@@ -258,6 +265,22 @@ private fun PinnedFolderHeader(
         )
     }
 }
+
+/**
+ * How wide an enlarged folder's covers may be: poster size (208dp) each on tablets and on compact
+ * windows wider than a phone (sideways phones, wide split halves); null keeps phones and the
+ * Galaxy Z Fold 8 cover filling the row.
+ */
+@Composable
+internal fun folderCoversMaxWidth(columns: Int): Dp? {
+    val wide = LocalBoxloreWindowLayout.current.usesTabletLayout || boxloreContentWidthDp() > PHONE_MAX_WIDTH_DP
+    return if (wide) FolderCoverMaxWidth * columns + FolderCoverGap * (columns - 1) else null
+}
+
+private const val PHONE_MAX_WIDTH_DP = 430f
+private val FolderCoverMaxWidth = 208.dp
+private val FolderCoverGap = 8.dp
+private val FolderCardPadding = 12.dp
 
 /**
  * Grid of directly clickable covers inside an enlarged folder card.

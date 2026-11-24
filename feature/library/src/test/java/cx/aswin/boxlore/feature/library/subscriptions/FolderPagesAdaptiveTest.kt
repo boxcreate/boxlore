@@ -32,6 +32,8 @@ import cx.aswin.boxlore.feature.library.FolderSaveParams
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -164,6 +166,28 @@ class FolderPagesAdaptiveTest {
             assertEquals("Drive", created.single().first.name)
             assertNull(state.editor)
         }
+    }
+
+    /** The show picker's cover width with the editor filling a [step]-sized window (the dialog is the window). */
+    private fun pickerCoverWidth(step: BoxloreWindowLayout): Float {
+        window.value = step
+        compose.setContent { pages() }
+        compose.runOnIdle { state.openNewFolder() }
+        return compose.onNode(hasContentDescription("Alpha Radio, in Commute") and hasClickAction()).fetchSemanticsNode().boundsInRoot.width
+    }
+
+    @Test
+    @Config(qualifiers = "w412dp-h915dp-mdpi")
+    fun `the show picker keeps three covers across a phone`() {
+        assertEquals((412f - 32f - 20f) / 3f, pickerCoverWidth(BoxloreTestWindows.PHONE), 1f)
+    }
+
+    @Test
+    @Config(qualifiers = "w915dp-h412dp-mdpi")
+    fun `the show picker packs five or more covers across a sideways phone`() {
+        val width = pickerCoverWidth(BoxloreTestWindows.PHONE_LAND)
+        // Three covers would be 281dp each.
+        assertTrue("$width", width <= (915f - 32f - 40f) / 5f + 1f)
     }
 
     @Test

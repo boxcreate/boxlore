@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -60,6 +61,8 @@ fun BoxScope.PlayAllFab(
         modifier = modifier
             .align(Alignment.BottomEnd)
             .then(if (tablet) Modifier else Modifier.adaptivePlayerOverlayOffset(isMiniPlayerVisible = isPlayerActive))
+            // Clear of a side navigation bar or camera cutout on a sideways phone.
+            .boxloreHorizontalSafePadding()
             .padding(bottom = bottomPadding, end = 16.dp)
             .expressiveClickable(
                 feedback = ExpressivePressFeedback.Control,

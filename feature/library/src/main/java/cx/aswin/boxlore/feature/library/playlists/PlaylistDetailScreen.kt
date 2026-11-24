@@ -78,6 +78,7 @@ import cx.aswin.boxlore.core.designsystem.components.PlaylistCopy
 import cx.aswin.boxlore.core.designsystem.components.PlaylistCover
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
@@ -247,6 +248,7 @@ internal fun PlaylistDetailContent(
                 else -> BoxWithConstraints(Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxSize()) {
                     // The list's 16dp sides and the rows' 4dp sides.
                     val columns = playlistShowColumns(maxWidth - 40.dp)
+                    val tileSize = playlistShowTileSize(maxWidth - 40.dp, boxloreContentWidthDp())
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize().testTag(PLAYLIST_DETAIL_TAG),
@@ -254,7 +256,7 @@ internal fun PlaylistDetailContent(
                     ) {
                         item(key = "header", contentType = "header") { PlaylistHeader(ready, actions, onOpenSettings = { settingsOpen = true }) }
                         comingUp(ready.comingUp)
-                        shows(ready, columns, onAdd = { state.openAddShows(ready.playlist.id) }, onRemove = actions::removeShow)
+                        shows(ready, columns, tileSize, onAdd = { state.openAddShows(ready.playlist.id) }, onRemove = actions::removeShow)
                     }
                 }
             }
@@ -387,7 +389,7 @@ private fun episodeLine(episode: Episode): String {
     return if (show.isBlank()) length else "$show · $length"
 }
 
-private fun LazyListScope.shows(ready: PlaylistDetailState.Ready, columns: Int, onAdd: () -> Unit, onRemove: (PlaylistShow) -> Unit) {
+private fun LazyListScope.shows(ready: PlaylistDetailState.Ready, columns: Int, tileSize: Dp, onAdd: () -> Unit, onRemove: (PlaylistShow) -> Unit) {
     item(key = "shows", contentType = "section") {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { Section(PlaylistDetailCopy.SHOWS) }
@@ -400,18 +402,18 @@ private fun LazyListScope.shows(ready: PlaylistDetailState.Ready, columns: Int, 
     // One lazy row of covers per item, so a playlist with many shows only builds the rows on screen.
     items(ready.shows.chunked(columns), key = { row -> "show_row:${row.first().podcastId}" }, contentType = { "show_row" }) { row ->
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 7.dp), horizontalArrangement = Arrangement.spacedBy(ShowTileGap)) {
-            row.forEach { show -> key(show.podcastId) { ShowTile(show, onRemove = { onRemove(show) }) } }
+            row.forEach { show -> key(show.podcastId) { ShowTile(show, tileSize, onRemove = { onRemove(show) }) } }
         }
     }
 }
 
 /** A show in the playlist: its cover with a remove button, its title, and why it's skipped when it is. */
 @Composable
-private fun ShowTile(show: PlaylistShow, onRemove: () -> Unit) {
+private fun ShowTile(show: PlaylistShow, size: Dp, onRemove: () -> Unit) {
     val skipped = PlaylistDetailCopy.skipped(show)
-    Column(Modifier.width(ShowTileSize), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Box(Modifier.size(ShowTileSize)) {
-            Box(Modifier.alpha(if (skipped != null) SKIPPED_ALPHA else 1f)) { Artwork(show.imageUrl, fallback = null, size = ShowTileSize, corner = 20.dp) }
+    Column(Modifier.width(size), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.size(size)) {
+            Box(Modifier.alpha(if (skipped != null) SKIPPED_ALPHA else 1f)) { Artwork(show.imageUrl, fallback = null, size = size, corner = 20.dp) }
             Surface(
                 onClick = onRemove,
                 shape = CircleShape,
@@ -451,6 +453,19 @@ private val ShowTileGap = 12.dp
 
 /** How many show covers fit across [width] on a playlist's page (at least one). */
 internal fun playlistShowColumns(width: Dp): Int = ((width + ShowTileGap) / (ShowTileSize + ShowTileGap)).toInt().coerceAtLeast(1)
+
+/**
+ * A show cover's size on a playlist's page: 100dp on phones (windows up to 430dp); on wider
+ * windows the covers grow (up to 140dp) to fill the row instead of leaving an empty strip.
+ */
+internal fun playlistShowTileSize(rowWidth: Dp, windowWidthDp: Float): Dp {
+    if (windowWidthDp <= PHONE_MAX_WIDTH_DP) return ShowTileSize
+    val columns = playlistShowColumns(rowWidth)
+    return ((rowWidth - ShowTileGap * (columns - 1)) / columns).coerceIn(ShowTileSize, ShowTileMaxSize)
+}
+
+private const val PHONE_MAX_WIDTH_DP = 430f
+private val ShowTileMaxSize = 140.dp
 
 /** The playback chrome under a playlist page (mini player, floating navigation), which its list and snackbars stay above. */
 @Composable

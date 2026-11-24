@@ -58,6 +58,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -193,7 +194,7 @@ internal fun PlaylistsContent(
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.padding(bottom = boxloreContentBottomPadding(bottomPadding))) },
         topBar = {
             LargeTopAppBar(
-                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
+                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Grid),
                 title = { LibraryLargeTitle(PlaylistsCopy.TITLE, scrollBehavior.state.collapsedFraction, header) },
                 expandedHeight = header.expandedHeight(),
                 navigationIcon = {
@@ -222,7 +223,7 @@ internal fun PlaylistsContent(
                 else -> LazyVerticalGrid(
                     columns = PlaylistGridCells,
                     state = gridState,
-                    modifier = Modifier.fillMaxSize().testTag(PLAYLISTS_GRID_TAG),
+                    modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Grid).fillMaxSize().testTag(PLAYLISTS_GRID_TAG),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = boxloreContentBottomPadding(bottomPadding)),
                     horizontalArrangement = Arrangement.spacedBy(PlaylistGridSpacing),
                     verticalArrangement = Arrangement.spacedBy(PlaylistGridSpacing),
@@ -385,17 +386,21 @@ internal fun PlaylistEditorDialogs(
 }
 
 /**
- * The Playlists grid's columns: small cards, three across on any phone, and roomier cards once the
- * grid is tablet-wide (tablets, unfolded foldables, phones in landscape), so cards never shrink to stamps.
+ * The Playlists grid's columns: three across on every phone, the Galaxy Z Fold 8 cover and split
+ * halves (cards grow with the window), and roomier cards once the grid is tablet-wide (tablets,
+ * unfolded foldables, phones in landscape), so cards never shrink to stamps as the window grows.
  */
 internal object PlaylistGridCells : GridCells {
     override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
-        val minWidth = if (availableSize.toDp() < PlaylistWideGrid) PlaylistCardMinWidth else PlaylistCardWideMinWidth
-        return with(GridCells.Adaptive(minWidth)) { calculateCrossAxisCellSizes(availableSize, spacing) }
+        val cells = if (isPlaylistWideGrid(availableSize.toDp())) GridCells.Adaptive(PlaylistCardWideMinWidth) else GridCells.Fixed(PHONE_COLUMNS)
+        return with(cells) { calculateCrossAxisCellSizes(availableSize, spacing) }
     }
 }
 
-private val PlaylistCardMinWidth = 100.dp
+/** From this grid width Playlists uses wide cards, and New playlist becomes the grid's first card. */
+internal fun isPlaylistWideGrid(gridWidth: Dp): Boolean = gridWidth >= PlaylistWideGrid
+
+private const val PHONE_COLUMNS = 3
 private val PlaylistCardWideMinWidth = 152.dp
 private val PlaylistWideGrid = 568.dp
 internal val PlaylistGridSpacing = 10.dp

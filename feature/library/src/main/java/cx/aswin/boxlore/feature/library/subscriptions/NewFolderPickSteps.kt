@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -49,6 +50,8 @@ import cx.aswin.boxlore.core.designsystem.icon.findExactGenreIconKey
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.feature.library.R
 
 /** Step 1 of New folder for picked shows and for one genre. */
@@ -67,24 +70,29 @@ internal fun PickShowsContent(
         val query = draft.search.trim()
         if (query.isEmpty()) data.podcasts else data.podcasts.filter { it.title.contains(query, ignoreCase = true) }
     }
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        item(key = "pick_header", span = { GridItemSpan(maxLineSpan) }) { header() }
-        item(key = "pick_search", span = { GridItemSpan(maxLineSpan) }) {
-            ShowSearchField(query = draft.search, onQueryChange = { onDraftChange(draft.copy(search = it)) })
-        }
-        items(shown, key = { it.id }) { podcast ->
-            PickableCover(
-                podcast = podcast,
-                picked = podcast.id in draft.pickedIds,
-                otherFolder = folderNameByShow[podcast.id],
-                onToggle = { onDraftChange(NewFolderFlowLogic.togglePick(draft, podcast.id)) },
-            )
+    // Three across on phones and the Fold 8 cover; wider windows (and wide editor panels) pack as many
+    // covers as fit, like the Shows grid. Measured in the editor itself, which is a framed panel on tablets.
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val columns = boxlorePosterColumns(LocalBoxloreWindowLayout.current, maxWidth.value, compactColumns = 3, gapDp = 10f)
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            item(key = "pick_header", span = { GridItemSpan(maxLineSpan) }) { header() }
+            item(key = "pick_search", span = { GridItemSpan(maxLineSpan) }) {
+                ShowSearchField(query = draft.search, onQueryChange = { onDraftChange(draft.copy(search = it)) })
+            }
+            items(shown, key = { it.id }) { podcast ->
+                PickableCover(
+                    podcast = podcast,
+                    picked = podcast.id in draft.pickedIds,
+                    otherFolder = folderNameByShow[podcast.id],
+                    onToggle = { onDraftChange(NewFolderFlowLogic.togglePick(draft, podcast.id)) },
+                )
+            }
         }
     }
 }

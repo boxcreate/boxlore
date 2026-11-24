@@ -28,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -46,6 +47,8 @@ import cx.aswin.boxlore.feature.library.LibraryPlaybackLayout
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.library.PlayAllFab
 import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.library.libraryGridWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
@@ -82,11 +85,14 @@ internal data class ShowsTabConfig(
     val folderManualOrder: List<String> = emptyList(),
     val intraFolderSort: FolderIntraSort = FolderIntraSort.Inherit,
     val smartOrderIds: List<String> = emptyList(),
+    /** On tablets, room under the last row for the floating tab selector (0 when the tabs are docked). */
+    val floatingTabsClearance: Dp = 0.dp,
 )
 
 internal data class ShowsGridConfig(
     val reorderMode: ReorderMode,
     val pinnedPodcastIds: Set<String>,
+    val floatingTabsClearance: Dp = 0.dp,
 ) {
     val isFoldersReordering: Boolean get() = reorderMode is ReorderMode.Folders
     val isRootReordering: Boolean get() = reorderMode is ReorderMode.RootShows
@@ -222,6 +228,7 @@ internal fun ShowsTabContent(
     val gridConfig = ShowsGridConfig(
         reorderMode = config.reorderMode,
         pinnedPodcastIds = config.pinnedPodcastIds,
+        floatingTabsClearance = config.floatingTabsClearance,
     )
 
     if (config.isGridView) {
@@ -268,12 +275,12 @@ private fun ShowsReorderableGrid(
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(boxlorePosterColumns(LocalBoxloreWindowLayout.current, boxloreContentWidthDp(), compactColumns = 3, gapDp = 12f)),
+        columns = GridCells.Fixed(boxlorePosterColumns(LocalBoxloreWindowLayout.current, libraryGridWidthDp(), compactColumns = 3, gapDp = 12f)),
         state = gridState,
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 180.dp, top = 8.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = showsBottomPadding(gridConfig.floatingTabsClearance), top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Grid).fillMaxSize(),
     ) {
         item(key = ShowsGenreHeaderKey, span = { GridItemSpan(maxLineSpan) }) {
             Box(
@@ -355,7 +362,7 @@ private fun ShowsReorderableList(
 
     LazyColumn(
         state = listState,
-        contentPadding = PaddingValues(bottom = 180.dp, top = 8.dp),
+        contentPadding = PaddingValues(bottom = showsBottomPadding(gridConfig.floatingTabsClearance), top = 8.dp),
         modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize(),
     ) {
         item(key = ShowsGenreHeaderKey) {
@@ -683,3 +690,13 @@ private fun LatestEpisodeListRow(
         LatestEpisodeSwipeRow(onAction = { action -> onSwipeAction(action, episode, podcast) }, content = row)
     }
 }
+
+/**
+ * Room under the Shows grid or list: 180dp on phones for the floating bar and mini player; on
+ * tablets just the mini player (where it covers this pane) and the floating tab selector.
+ */
+@Composable
+private fun showsBottomPadding(floatingTabsClearance: Dp): Dp =
+    if (LocalBoxloreWindowLayout.current.usesTabletLayout) boxloreContentBottomPadding(PHONE_SHOWS_BOTTOM) + floatingTabsClearance else PHONE_SHOWS_BOTTOM
+
+private val PHONE_SHOWS_BOTTOM = 180.dp

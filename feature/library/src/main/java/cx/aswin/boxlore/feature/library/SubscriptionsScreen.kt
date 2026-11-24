@@ -430,6 +430,7 @@ fun SubscriptionsScreen(
                                             },
                                             intraFolderSort = intraFolderSort,
                                             smartOrderIds = success.smartOrderIds,
+                                            floatingTabsClearance = if (isFloatingTabs) discoveryTabSwitcherHeight() + 16.dp else 0.dp,
                                         ),
                                         actions = ShowsTabActions(
                                             onExploreClick = onExploreClick,
