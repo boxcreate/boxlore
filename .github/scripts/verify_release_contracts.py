@@ -11,6 +11,7 @@ import re
 import subprocess
 import xml.etree.ElementTree as ET
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 
 from release_classfile import ClassFile, load_project_classes
@@ -30,6 +31,7 @@ WORK_BASES = {"androidx/work/ListenableWorker", "androidx/work/Worker", "android
 INPUT_MERGERS = {"androidx/work/OverwritingInputMerger", "androidx/work/ArrayCreatingInputMerger"}
 API = APP_PREFIX + "core/network/BoxLoreApi"
 API_V2 = APP_PREFIX + "core/network/BoxLoreApiV2"
+WATCH_ACCOUNT_API = APP_PREFIX + "core/network/WatchAccountApi"
 APIS = (API, API_V2)
 HTTP_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "HTTP")
 DEBUG_ONLY = {"com/google/firebase/appcheck/debug/DebugAppCheckProviderFactory",
@@ -38,6 +40,43 @@ DEBUG_ONLY = {"com/google/firebase/appcheck/debug/DebugAppCheckProviderFactory",
 DEBUG_ONLY.add(APP_PREFIX + "testing/AnnouncementTestReceiver")
 WIDGET_MODELS = {APP_PREFIX + "feature/widgets/" + name for name in
                  ("NowPlayingWidgetSnapshot", "LibraryWidgetSnapshot", "WidgetShowRow", "WidgetEpisodeRow")}
+
+
+@dataclass(frozen=True)
+class Profile:
+    """What R8 must keep in one app.
+
+    The phone pins its whole inventory: every worker, both Room databases, stored JSON, legacy services,
+    widgets and the installer. The TV and watch apps share the phone's API and models but not its
+    storage, so their workers, databases and type tokens are checked only when R8 keeps them.
+    """
+
+    apis: tuple[str, ...]
+    marker: str
+    full_inventory: bool
+
+
+PROFILES = {
+    "app": Profile(APIS, APP_PREFIX + "LegacyWorkerFactory", full_inventory=True),
+    "tv": Profile(APIS, APP_PREFIX + "tv/MainActivity", full_inventory=False),
+    "wear": Profile((*APIS, WATCH_ACCOUNT_API), APP_PREFIX + "wear/MainActivity", full_inventory=False),
+}
+PROJECT_DEPENDENCY_RE = re.compile(r"^\s*(?:api|implementation)\(projects\.([\w.]+)\)", re.MULTILINE)
+
+
+def module_closure(root: Path, app: str) -> list[Path]:
+    """The app's module and every project module it ships, following api and implementation lines."""
+    pending, seen = [app], set()
+    while pending:
+        path = pending.pop()
+        if path in seen:
+            continue
+        build = root / path / "build.gradle.kts"
+        if not build.is_file():
+            raise ValueError(f"Project module missing: {path}")
+        seen.add(path)
+        pending.extend(name.replace(".", "/") for name in PROJECT_DEPENDENCY_RE.findall(build.read_text(encoding="utf-8")))
+    return [root / app, *(root / path for path in sorted(seen - {app}))]
 
 
 def referenced_classes(signature: str) -> set[str]:
@@ -99,14 +138,19 @@ def manifest_constructors(path: Path) -> dict[str, str]:
 
 
 def validate_contracts(classes: dict[str, ClassFile], dex: dict[str, DexClass],
-                       mapping: dict[str, str], manifest: dict[str, str]) -> dict[str, int]:
+                       mapping: dict[str, str], manifest: dict[str, str],
+                       profile: Profile = PROFILES["app"]) -> dict[str, int]:
     failures = []
+    full = profile.full_inventory
     for name in DEBUG_ONLY:
         if mapping.get(name, name) in dex:
             failures.append(f"Debug-only component packaged in release: {name}")
 
     def actual(name: str) -> DexClass | None:
         return dex.get(mapping.get(name, name))
+
+    def kept(name: str) -> bool:
+        return full or actual(name) is not None
 
     def constructor(name: str, signature: str) -> None:
         item = actual(name)
@@ -116,25 +160,28 @@ def validate_contracts(classes: dict[str, ClassFile], dex: dict[str, DexClass],
         if item is None or not any(m.name == "<init>" and m.descriptor == expected and m.access & 1 for m in item.methods):
             failures.append(f"Missing public constructor {name}{signature}")
 
-    workers = {n for n in classes if inherits(n, WORK_BASES, classes) and not classes[n].access & 0x0400}
-    if not workers:
+    workers = {n for n in classes if inherits(n, WORK_BASES, classes) and not classes[n].access & 0x0400 and kept(n)}
+    if full and not workers:
         raise ValueError("No project workers found before R8")
     for name in workers:
         constructor(name, "(Landroid/content/Context;Landroidx/work/WorkerParameters;)V")
-    for name in INPUT_MERGERS:
+    mergers = {n for n in INPUT_MERGERS if kept(n)}
+    for name in mergers:
         constructor(name, "()V")
     for name, signature in manifest.items():
         constructor(name, signature)
-    legacy = {n for n in classes if n.startswith(APP_PREFIX + "core/data/service/") and "$" not in n}
+    legacy = {n for n in classes if full and n.startswith(APP_PREFIX + "core/data/service/") and "$" not in n}
     for name in legacy:
         constructor(name, "()V")
-    databases = {n for n in classes if inherits(n, {"androidx/room/RoomDatabase"}, classes) and n.endswith("_Impl")}
-    if len(databases) < 2:
+    # Room builds a database by name from its generated _Impl, so a database R8 keeps needs its _Impl.
+    databases = {n for n in classes if inherits(n, {"androidx/room/RoomDatabase"}, classes) and n.endswith("_Impl")
+                 and kept(classes[n].super_name)}
+    if full and len(databases) < 2:
         raise ValueError("Both generated Room implementations must be present before R8")
     for name in databases:
         constructor(name, "()V")
 
-    graph = json_graph(GSON_ROOTS, classes)
+    graph = json_graph(GSON_ROOTS if full else set(), classes)
     field_count = 0
     for name in sorted(graph):
         source, target = classes[name], actual(name)
@@ -159,14 +206,14 @@ def validate_contracts(classes: dict[str, ClassFile], dex: dict[str, DexClass],
             if not any(m.name == "<init>" and m.descriptor == "()V" and m.access & 1 for m in target.methods):
                 failures.append(f"Gson default-value constructor removed: {name}")
 
-    tokens = {n for n in classes if inherits(n, {"com/google/gson/reflect/TypeToken"}, classes)}
+    tokens = {n for n in classes if inherits(n, {"com/google/gson/reflect/TypeToken"}, classes) and kept(n)}
     for name in tokens:
         item = actual(name)
         if item is None or item.signature != mapped_signature(classes[name].signature, mapping):
             failures.append(f"Gson TypeToken generic signature lost: {name}")
 
     api_methods = []
-    for api_name in APIS:
+    for api_name in profile.apis:
         api, api_dex = classes.get(api_name), actual(api_name)
         if api is None or api_dex is None:
             failures.append(f"Retrofit API removed: {api_name}")
@@ -182,7 +229,8 @@ def validate_contracts(classes: dict[str, ClassFile], dex: dict[str, DexClass],
             if "RuntimeVisibleParameterAnnotations" in member.attributes and not api_dex.parameter_annotations.get(member.name):
                 failures.append(f"Retrofit parameter annotations lost: {api_name}.{member.name}")
     serializer_roots = set().union(*(referenced_classes(m.signature) for m in api_methods)) if api_methods else set()
-    serializers = json_graph({n for n in serializer_roots if n.startswith(APP_PREFIX)} | WIDGET_MODELS, classes)
+    serializers = json_graph({n for n in serializer_roots if n.startswith(APP_PREFIX)} | (WIDGET_MODELS if full else set()),
+                             classes)
     serializer_count = 0
     for name in serializers:
         companion_name = name + "$Companion"
@@ -197,7 +245,7 @@ def validate_contracts(classes: dict[str, ClassFile], dex: dict[str, DexClass],
             failures.append(f"Dynamic serializer Companion field missing: {name}")
     if failures:
         raise ValueError("\n".join(failures))
-    return {"workers": len(workers), "input_mergers": len(INPUT_MERGERS), "manifest_entrypoints": len(manifest),
+    return {"workers": len(workers), "input_mergers": len(mergers), "manifest_entrypoints": len(manifest),
             "legacy_components": len(legacy), "room_databases": len(databases), "gson_models": len(graph),
             "json_fields": field_count, "type_tokens": len(tokens), "api_methods": len(api_methods),
             "dynamic_serializers": serializer_count}
@@ -210,10 +258,14 @@ def sdk_tool(name: str, sdk: Path) -> Path:
     return max(candidates, key=lambda p: tuple(int(v) for v in re.findall(r"[0-9]+", p.parent.name)))
 
 
-def literal_uri_resources(root: Path) -> set[str]:
+def phone_modules(root: Path) -> list[Path]:
+    return [root / "app", *sorted((root / "core").glob("*")), *sorted((root / "feature").glob("*"))]
+
+
+def literal_uri_resources(root: Path, modules: list[Path] | None = None) -> set[str]:
     """Named resource URIs are runtime lookups, invisible to code/resource shrinking."""
     names = set()
-    modules = [root / "app", *sorted((root / "core").glob("*")), *sorted((root / "feature").glob("*"))]
+    modules = phone_modules(root) if modules is None else modules
     pattern = re.compile(r'android\.resource://[^"\r\n]+/((?:raw|drawable|font)/[a-z0-9_]+)')
     for module in modules:
         for variant in ("main", "release"):
@@ -222,9 +274,9 @@ def literal_uri_resources(root: Path) -> set[str]:
     return names
 
 
-def validate_raw_uri_payloads(artifact: Path, root: Path, names: set[str]) -> int:
+def validate_raw_uri_payloads(artifact: Path, root: Path, names: set[str], modules: list[Path] | None = None) -> int:
     """Check actual audio bytes in APK and AAB, not only a resource-table name."""
-    modules = [root / "app", *sorted((root / "core").glob("*")), *sorted((root / "feature").glob("*"))]
+    modules = phone_modules(root) if modules is None else modules
     with zipfile.ZipFile(artifact) as archive:
         for name in sorted(n for n in names if n.startswith("raw/")):
             sources = []
@@ -243,12 +295,16 @@ def validate_raw_uri_payloads(artifact: Path, root: Path, names: set[str]) -> in
     return len([name for name in names if name.startswith("raw/")])
 
 
-def validate_resources(artifact: Path, root: Path, aapt2: Path) -> int:
-    expected = {"font/google_sans_flex_variable"}
-    expected.update("drawable/" + p.stem for p in (root / "core/designsystem/src/main/res/drawable").glob("pod_cover_*"))
-    if len(expected) < 2:
-        raise ValueError("Dynamic onboarding resource inventory is missing")
-    expected.update(literal_uri_resources(root))
+def validate_resources(artifact: Path, root: Path, aapt2: Path, modules: list[Path] | None = None,
+                       onboarding: bool = True) -> int:
+    """Resource names looked up at runtime must stay in the APK's table; the onboarding inventory is the phone's."""
+    expected = set()
+    if onboarding:
+        expected.add("font/google_sans_flex_variable")
+        expected.update("drawable/" + p.stem for p in (root / "core/designsystem/src/main/res/drawable").glob("pod_cover_*"))
+        if len(expected) < 2:
+            raise ValueError("Dynamic onboarding resource inventory is missing")
+    expected.update(literal_uri_resources(root, modules))
     result = subprocess.run([str(aapt2), "dump", "resources", str(artifact)], capture_output=True, text=True, check=True)
     present = set(re.findall(r"\b(?:[\w.]+:)?((?:drawable|font|raw)/[\w]+)", result.stdout))
     missing = sorted(expected - present)
@@ -264,35 +320,42 @@ def main() -> int:
     parser.add_argument("--sdk", type=Path)
     parser.add_argument("--report", type=Path)
     parser.add_argument("--app-variant", choices=("release", "playRelease"), default="release")
+    parser.add_argument("--module", choices=tuple(PROFILES), default="app",
+                        help="the app to check: the phone (app), Android TV (tv) or Wear OS (wear)")
     args = parser.parse_args()
+    if args.module != "app" and args.app_variant != "release":
+        parser.error("--app-variant playRelease is the phone's Play build; the TV and watch apps have release only")
     root = args.root.resolve()
     sdk = args.sdk or Path(os.environ.get("ANDROID_SDK_ROOT") or os.environ.get("ANDROID_HOME") or "")
     try:
-        variant = args.app_variant
+        app, profile, variant = args.module, PROFILES[args.module], args.app_variant
         task_variant = variant[0].upper() + variant[1:]
-        classes = load_project_classes(root, variant)
-        mapping = read_mapping(root / f"app/build/outputs/mapping/{variant}/mapping.txt")
-        manifest_path = root / f"app/build/intermediates/merged_manifests/{variant}/process{task_variant}Manifest/AndroidManifest.xml"
+        modules = phone_modules(root) if profile.full_inventory else module_closure(root, app)
+        classes = load_project_classes(root, variant, app, modules, profile.marker)
+        mapping = read_mapping(root / f"{app}/build/outputs/mapping/{variant}/mapping.txt")
+        manifest_path = root / f"{app}/build/intermediates/merged_manifests/{variant}/process{task_variant}Manifest/AndroidManifest.xml"
         manifest = manifest_constructors(manifest_path)
         permission = "android.permission.REQUEST_INSTALL_PACKAGES"
         permissions = {item.get("{http://schemas.android.com/apk/res/android}name") for item in ET.parse(manifest_path).getroot().iter("uses-permission")}
         if any(item.get("{http://schemas.android.com/apk/res/android}name") == "cx.aswin.boxlore.ISOLATED_UPDATE_TEST" for item in ET.parse(manifest_path).getroot().iter("meta-data")):
             raise ValueError("Isolated test build cannot be published")
-        if variant == "playRelease" and permission in permissions:
+        if app == "app" and variant == "playRelease" and permission in permissions:
             raise ValueError("Play bundle must not request APK installation permission")
-        if variant == "release" and permission not in permissions:
+        if app == "app" and variant == "release" and permission not in permissions:
             raise ValueError("Direct APK installer permission is missing")
         report = {}
         for artifact in args.artifacts:
             dex, size = inspect_archive(artifact, sdk_tool("dexdump", sdk))
-            counts = validate_contracts(classes, dex, mapping, manifest)
-            if variant == "playRelease":
+            counts = validate_contracts(classes, dex, mapping, manifest, profile)
+            if app == "app" and variant == "playRelease":
                 for name in (APP_PREFIX + "updates/DirectApkInstaller", APP_PREFIX + "updates/ApkFileDownloader"):
                     if mapping.get(name, name) in dex:
                         raise ValueError("APK installer code packaged in Play bundle: " + name)
-            counts["raw_uri_payloads"] = validate_raw_uri_payloads(artifact, root, literal_uri_resources(root))
+            counts["raw_uri_payloads"] = validate_raw_uri_payloads(
+                artifact, root, literal_uri_resources(root, modules), modules)
             if artifact.suffix == ".apk":
-                counts["dynamic_resources"] = validate_resources(artifact, root, sdk_tool("aapt2", sdk))
+                counts["dynamic_resources"] = validate_resources(
+                    artifact, root, sdk_tool("aapt2", sdk), modules, onboarding=profile.full_inventory)
             counts.update(dex_classes=len(dex), dex_bytes=size, artifact_bytes=artifact.stat().st_size)
             report[artifact.name] = counts
             print(f"{artifact.name}: release contracts passed {json.dumps(counts, sort_keys=True)}")

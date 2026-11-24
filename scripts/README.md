@@ -157,7 +157,7 @@ Each write is a transaction on the `feedUrl` leaf that commits only while the le
 
 ### Release artifact contract guard
 
-The release workflow runs `.github/scripts/verify_release_contracts.py` after optimized APK/AAB builds and before either publication path uploads artifacts. It compares pre-R8 project classes with optimized DEX using Android SDK `dexdump`, checks dynamic resource names with `aapt2`, and verifies named raw-resource payloads in both artifacts. Literal resource URIs are discovered from main/release Kotlin sources, including notification sounds. Run locally after `assembleRelease bundlePlayRelease`:
+The release workflow runs `.github/scripts/verify_release_contracts.py` on the phone, Wear OS and TV apps' optimized APKs and bundles before either publication path uploads artifacts. Each app has a profile (`--module app|wear|tv`): the phone pins its whole storage and update inventory, while Wear OS and TV load only the modules they ship and check their workers, databases and TypeTokens only when R8 keeps them. It compares pre-R8 project classes with optimized DEX using Android SDK `dexdump`, checks dynamic resource names with `aapt2`, and verifies named raw-resource payloads in both artifacts. Literal resource URIs are discovered from main/release Kotlin sources, including notification sounds. Run locally after the phone's `assembleRelease bundlePlayRelease` and each other app's `assembleRelease bundleRelease`:
 
 ```sh
 python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> \
@@ -166,9 +166,11 @@ python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> \
 python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> --app-variant playRelease \
   --report app/build/reports/play-release-contracts.json \
   app/build/outputs/bundle/playRelease/app-playRelease.aab
+python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> --module tv \
+  tv/build/outputs/apk/release/tv-release.apk tv/build/outputs/bundle/release/tv-release.aab
 ```
 
-`release_classfile.py` reads compiled JVM contracts; `release_dex.py` reads optimized contracts and R8 class names. `test_release_contracts.py` covers missing/private constructors, persisted names, nested JSON graphs, field/default changes, generic erasure, annotations, serializers, resource loss, and workflow wiring. These fast tests run in PR CI. The **Release dry run** exercises the real optimizer without release credentials on every release PR, and on any branch from Actions → Release dry run → Run workflow. It does not publish a release or send notifications. See [optimized-release validation](../docs/TESTING.md#optimized-release-validation) for scope and manual acceptance.
+`release_classfile.py` reads compiled JVM contracts; `release_dex.py` reads optimized contracts and R8 class names. `test_release_contracts.py` covers missing/private constructors, persisted names, nested JSON graphs, field/default changes, generic erasure, annotations, serializers, resource loss, the Wear OS and TV profiles and module lists, and workflow wiring. These fast tests run in PR CI. The **Release dry run** exercises the real optimizer without release credentials on every release PR, and on any branch from Actions → Release dry run → Run workflow. It does not publish a release or send notifications. See [optimized-release validation](../docs/TESTING.md#optimized-release-validation) for scope and manual acceptance.
 
 Artifact builds set up the SDK through the shared [`android-setup`](../.github/actions/android-setup/action.yml) action, which requests `platform-tools` explicitly (the pinned setup action's default also requests the removed `tools` package and fails before compilation) and retries `sdkmanager`, whose downloads fail now and then. The workflow regression check covers the release dry run and the signed build.
 

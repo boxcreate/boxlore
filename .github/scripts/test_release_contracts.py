@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import re
 import struct
 import sys
 import tempfile
@@ -168,6 +169,34 @@ class ContractTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Retrofit API removed: .*BoxLoreApiV2"):
             self.validate()
 
+    def test_tv_and_watch_check_only_what_r8_keeps_but_still_their_apis(self):
+        for name in [self.worker, *check.INPUT_MERGERS, *(n for n in self.dex if n.endswith("_Impl"))]:
+            self.dex.pop(name)
+        self.dex[self.model].fields[0].name = "a"
+        with self.assertRaisesRegex(ValueError, "Missing public constructor .*fcm/TestWorker"):
+            self.validate()
+        result = check.validate_contracts(self.source, self.dex, {}, {}, check.PROFILES["tv"])
+        self.assertEqual((0, 0, 0, 1), (result["workers"], result["room_databases"], result["json_fields"],
+                                        result["dynamic_serializers"]))
+        with self.assertRaisesRegex(ValueError, "Retrofit API removed: .*WatchAccountApi"):
+            check.validate_contracts(self.source, self.dex, {}, {}, check.PROFILES["wear"])
+        self.dex[check.API].annotations = {}
+        with self.assertRaisesRegex(ValueError, "Retrofit endpoint annotation lost"):
+            check.validate_contracts(self.source, self.dex, {}, {}, check.PROFILES["tv"])
+
+    def test_a_database_r8_keeps_needs_its_generated_class_on_tv_and_watch(self):
+        database = check.APP_PREFIX + "core/rss/FeedDatabase"
+        self.source[database] = ClassFile(database, "androidx/room/RoomDatabase", 0x401, [], [constructor()], "")
+        self.source[database + "_Impl"] = ClassFile(database + "_Impl", database, 1, [], [constructor()], "")
+        self.dex[database] = DexClass(database, "androidx/room/RoomDatabase")
+        self.source[check.WATCH_ACCOUNT_API], self.dex[check.WATCH_ACCOUNT_API] = self.source[check.API], self.dex[check.API]
+        for profile in ("tv", "wear"):
+            with self.subTest(profile=profile):
+                with self.assertRaisesRegex(ValueError, "Missing public constructor .*core/rss/FeedDatabase_Impl"):
+                    check.validate_contracts(self.source, self.dex, {}, {}, check.PROFILES[profile])
+        self.dex.pop(database)
+        check.validate_contracts(self.source, self.dex, {}, {}, check.PROFILES["tv"])
+
     def test_obfuscated_annotation_names_are_valid(self):
         self.dex[check.API].annotations["getEpisode"] = ["VISIBILITY_RUNTIME Lab;"]
         self.dex[check.API_V2].annotations["getPodcast"] = ["VISIBILITY_RUNTIME Lab;"]
@@ -306,6 +335,20 @@ Class #4 -
                 (directory / "Sound.kt").write_text('val sound = "android.resource://$packageName/raw/' + variant + '_chime"')
             self.assertEqual({"raw/main_chime", "raw/release_chime"}, check.literal_uri_resources(root))
 
+    def test_tv_and_watch_load_only_the_modules_they_ship(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            builds = {"tv": "implementation(projects.core.network)\n    api(projects.core.model)",
+                      "core/network": "implementation(projects.core.model)", "core/model": "", "core/database": "",
+                      "feature/home": ""}
+            for path, text in builds.items():
+                (root / path).mkdir(parents=True)
+                (root / path / "build.gradle.kts").write_text("dependencies {\n    " + text + "\n}\n")
+            self.assertEqual([root / "tv", root / "core/model", root / "core/network"], check.module_closure(root, "tv"))
+            (root / "tv/build.gradle.kts").write_text("dependencies {\n    implementation(projects.core.gone)\n}\n")
+            with self.assertRaisesRegex(ValueError, "Project module missing: core/gone"):
+                check.module_closure(root, "tv")
+
     def test_named_notification_sound_payload_required_in_apk_and_bundle(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -347,18 +390,34 @@ Class #4 -
                     "stdout": "font/google_sans_flex_variable drawable/pod_cover_0"})()):
                 with self.assertRaisesRegex(ValueError, "raw/chime"):
                     check.validate_resources(root / "app.apk", root, Path("aapt2"))
+            # The TV and watch apps check their own literal names, without the phone's onboarding inventory.
+            source = root / "tv/src/main/java/example"
+            source.mkdir(parents=True)
+            (source / "Cover.kt").write_text('val cover = "android.resource://$packageName/drawable/tv_cover"')
+            with patch.object(check.subprocess, "run", return_value=type("Output", (), {"stdout": "raw/chime"})()):
+                with self.assertRaisesRegex(ValueError, "drawable/tv_cover"):
+                    check.validate_resources(root / "tv.apk", root, Path("aapt2"), [root / "tv"], onboarding=False)
+            with patch.object(check.subprocess, "run", return_value=type("Output", (), {"stdout": "drawable/tv_cover"})()):
+                self.assertEqual(1, check.validate_resources(root / "tv.apk", root, Path("aapt2"), [root / "tv"],
+                                                             onboarding=False))
 
     def test_publication_and_release_dry_run_are_guarded(self):
         """Full R8 verification gates publication; the dry run checks every release PR before merging."""
         root = Path(__file__).resolve().parents[2]
         workflow = (root / ".github/workflows/changelog-on-merge.yml").read_text()
-        self.assertEqual(2, workflow.count("python3 .github/scripts/verify_release_contracts.py"))
+        self.assertEqual(3, workflow.count("python3 .github/scripts/verify_release_contracts.py"))
         blocks = workflow.split("- name: Verify optimized release contracts")[1:]
         self.assertEqual(1, len(blocks))
         self.assertIn("app-release.apk", blocks[0][:500])
         self.assertIn("app-playRelease.aab", blocks[0][:650])
+        watch_and_tv = blocks[0].split("- name:")[0]
+        for wiring in ("modules=(wear)", "modules+=(tv)", '--module "$module"', "$module-release.apk", "$module-release.aab"):
+            self.assertIn(wiring, watch_and_tv)
         dry_run = (root / ".github/workflows/release-contracts.yml").read_text()
         self.assertIn("app-release-unsigned.apk", dry_run)
+        self.assertIn("for module in wear tv; do", dry_run)
+        self.assertGreaterEqual(int(re.search(r"timeout-minutes: (\d+)", dry_run).group(1)), 60)
+        self.assertIn('--module "$module"', dry_run)
         self.assertIn("uploadCrashlyticsMappingFileRelease", dry_run)
         self.assertIn("--app-variant playRelease", dry_run)
         self.assertIn("workflow_dispatch:", dry_run)
