@@ -58,7 +58,7 @@ class CastRoutePickerLogicTest {
         assertEquals(
             UiText.res(R.string.player_cast_connected),
             castRouteSubtitle(
-                isSelected = true,
+                isConnected = true,
                 isConnecting = true,
                 description = "Living room TV",
             ),
@@ -66,7 +66,7 @@ class CastRoutePickerLogicTest {
         assertEquals(
             UiText.res(R.string.player_cast_connecting),
             castRouteSubtitle(
-                isSelected = false,
+                isConnected = false,
                 isConnecting = true,
                 description = "Living room TV",
             ),
@@ -74,7 +74,7 @@ class CastRoutePickerLogicTest {
         assertEquals(
             UiText.raw("Living room TV"),
             castRouteSubtitle(
-                isSelected = false,
+                isConnected = false,
                 isConnecting = false,
                 description = "Living room TV",
             ),
@@ -82,7 +82,7 @@ class CastRoutePickerLogicTest {
         assertEquals(
             UiText.res(R.string.player_cast_ready),
             castRouteSubtitle(
-                isSelected = false,
+                isConnected = false,
                 isConnecting = false,
                 description = null,
             ),
@@ -90,31 +90,35 @@ class CastRoutePickerLogicTest {
     }
 
     @Test
-    fun connectionCompletesWhenTheChosenRouteIsSelectedAndTheCastSessionIsActive() {
-        assertTrue(
-            isCastConnectionComplete(
-                pendingRouteId = "bedroom",
-                routeId = "bedroom",
-                isSelected = true,
-                hasActiveCastSession = true,
-            ),
-        )
-        assertFalse(
-            isCastConnectionComplete(
-                pendingRouteId = "bedroom",
-                routeId = "living-room",
-                isSelected = true,
-                hasActiveCastSession = true,
-            ),
-        )
-        assertFalse(
-            isCastConnectionComplete(
-                pendingRouteId = "bedroom",
-                routeId = "bedroom",
-                isSelected = true,
-                hasActiveCastSession = false,
-            ),
-        )
+    fun `a picked TV finishes connecting once its Cast session connects`() {
+        // Regression: the sheet waited for the picked row to report itself selected, which never
+        // happens with media transfer on, so it stayed on "Connecting…" while the TV played.
+        val livingRoom = ConnectedCastDevice(id = "living-room-id", name = "Living room TV")
+
+        assertEquals(CastPickProgress.CONNECTING, castPickProgress(deviceIdAtPick = null, connected = null, startFailed = false))
+        assertEquals(CastPickProgress.CONNECTED, castPickProgress(deviceIdAtPick = null, connected = livingRoom, startFailed = false))
+    }
+
+    @Test
+    fun `switching TVs waits for the new one and a failed start ends the wait`() {
+        val livingRoom = ConnectedCastDevice(id = "living-room-id", name = "Living room TV")
+        val bedroom = ConnectedCastDevice(id = "bedroom-id", name = "Bedroom TV")
+
+        assertEquals(CastPickProgress.CONNECTING, castPickProgress(deviceIdAtPick = livingRoom.id, connected = livingRoom, startFailed = false))
+        assertEquals(CastPickProgress.CONNECTING, castPickProgress(deviceIdAtPick = livingRoom.id, connected = null, startFailed = false))
+        assertEquals(CastPickProgress.CONNECTED, castPickProgress(deviceIdAtPick = livingRoom.id, connected = bedroom, startFailed = false))
+        assertEquals(CastPickProgress.FAILED, castPickProgress(deviceIdAtPick = livingRoom.id, connected = null, startFailed = true))
+    }
+
+    @Test
+    fun `the connected TV is the row with the session's Cast device`() {
+        val livingRoom = ConnectedCastDevice(id = "living-room-id", name = "Living room TV")
+
+        assertTrue(isConnectedCastRoute(routeDeviceId = "living-room-id", routeName = "Living room TV", connected = livingRoom))
+        assertFalse(isConnectedCastRoute(routeDeviceId = "bedroom-id", routeName = "Living room TV", connected = livingRoom))
+        // A row without a Cast device falls back to its name.
+        assertTrue(isConnectedCastRoute(routeDeviceId = null, routeName = "Living room TV", connected = livingRoom))
+        assertFalse(isConnectedCastRoute(routeDeviceId = "living-room-id", routeName = "Living room TV", connected = null))
     }
 
     @Test

@@ -159,4 +159,14 @@
     <plurals name="account_sync_minutes_ago"><item quantity="one">Sincronizado há %d min</item><item quantity="many">Sincronizado há %d min</item><item quantity="other">Sincronizado há %d min</item></plurals>
     <plurals name="account_sync_hours_ago"><item quantity="one">Sincronizado há %d h</item><item quantity="many">Sincronizado há %d h</item><item quantity="other">Sincronizado há %d h</item></plurals>
     <plurals name="account_sync_days_ago"><item quantity="one">Sincronizado há %d dia</item><item quantity="many">Sincronizado há %d dias</item><item quantity="other">Sincronizado há %d dias</item></plurals>
+    <string name="account_tv_sign_in">Entrar em uma TV</string>
+    <string name="account_tv_instruction">Abra o boxlore na sua TV, escolha Entrar e digite o código que aparece.</string>
+    <string name="account_tv_code">Código da TV</string>
+    <string name="account_tv_own_tv_only">Só digite um código da sua própria TV. Essa TV recebe seus programas e o que você ouve.</string>
+    <string name="account_tv_confirm">Entrar na TV</string>
+    <string name="account_tv_done">Pronto</string>
+    <string name="account_tv_signed_in">Sua TV está conectada. Seus programas aparecem nela em alguns segundos.</string>
+    <string name="account_tv_wrong_code">Esse código não funcionou. Confira na sua TV ou gere um novo lá.</string>
+    <string name="account_tv_sign_in_first">Primeiro confirme seu e-mail neste celular.</string>
+    <string name="account_tv_no_connection">Não foi possível conectar ao boxlore. Verifique sua conexão e tente de novo.</string>
 </resources>

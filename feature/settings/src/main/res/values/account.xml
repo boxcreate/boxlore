@@ -159,4 +159,15 @@
     <plurals name="account_sync_minutes_ago"><item quantity="one">Synced %d min ago</item><item quantity="other">Synced %d min ago</item></plurals>
     <plurals name="account_sync_hours_ago"><item quantity="one">Synced %d hr ago</item><item quantity="other">Synced %d hr ago</item></plurals>
     <plurals name="account_sync_days_ago"><item quantity="one">Synced %d day ago</item><item quantity="other">Synced %d days ago</item></plurals>
+    <!-- Signing boxlore on a TV in to this account with the code the TV shows. -->
+    <string name="account_tv_sign_in">Sign in on a TV</string>
+    <string name="account_tv_instruction">Open boxlore on your TV, choose Sign in, and enter the code it shows.</string>
+    <string name="account_tv_code">TV code</string>
+    <string name="account_tv_own_tv_only">Only enter a code from your own TV. That TV gets your shows and listening.</string>
+    <string name="account_tv_confirm">Sign in TV</string>
+    <string name="account_tv_done">Done</string>
+    <string name="account_tv_signed_in">Your TV is signed in. Your shows appear on it in a few seconds.</string>
+    <string name="account_tv_wrong_code">That code didn\'t work. Check it on your TV, or get a new one there.</string>
+    <string name="account_tv_sign_in_first">Verify your email on this phone first.</string>
+    <string name="account_tv_no_connection">Couldn\'t reach boxlore. Check your connection and try again.</string>
 </resources>

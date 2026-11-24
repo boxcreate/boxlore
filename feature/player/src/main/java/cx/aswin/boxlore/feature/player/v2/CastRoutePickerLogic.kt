@@ -46,22 +46,51 @@ internal fun shouldShowCastRoute(
 ): Boolean = isEnabled && !isDefault && !isBluetooth && matchesSelector
 
 internal fun castRouteSubtitle(
-    isSelected: Boolean,
+    isConnected: Boolean,
     isConnecting: Boolean,
     description: String?,
 ): UiText = when {
-    isSelected -> UiText.res(R.string.player_cast_connected)
+    isConnected -> UiText.res(R.string.player_cast_connected)
     isConnecting -> UiText.res(R.string.player_cast_connecting)
     !description.isNullOrBlank() -> UiText.raw(description)
     else -> UiText.res(R.string.player_cast_ready)
 }
 
-internal fun isCastConnectionComplete(
-    pendingRouteId: String?,
-    routeId: String,
-    isSelected: Boolean,
-    hasActiveCastSession: Boolean,
-): Boolean = pendingRouteId == routeId && isSelected && hasActiveCastSession
+/** The Cast device this phone has a connected session with. */
+internal data class ConnectedCastDevice(val id: String, val name: String?)
+
+/** Where the device the listener picked in the Cast sheet stands. */
+internal enum class CastPickProgress { CONNECTING, CONNECTED, FAILED }
+
+/**
+ * Follows the Cast session, not MediaRouter's selection: with media transfer on (every Android
+ * version boxlore runs on), MediaRouter selects a separate group route for the device, so the row
+ * the listener picked never reports itself selected. A pick made while casting to another device
+ * ([deviceIdAtPick]) waits until the session is on a different device.
+ */
+internal fun castPickProgress(
+    deviceIdAtPick: String?,
+    connected: ConnectedCastDevice?,
+    startFailed: Boolean,
+): CastPickProgress = when {
+    connected != null && connected.id != deviceIdAtPick -> CastPickProgress.CONNECTED
+    startFailed -> CastPickProgress.FAILED
+    else -> CastPickProgress.CONNECTING
+}
+
+/**
+ * Whether a device row is the one this phone casts to: by the row's Cast device ID, or by name
+ * when the row carries no Cast device.
+ */
+internal fun isConnectedCastRoute(
+    routeDeviceId: String?,
+    routeName: String,
+    connected: ConnectedCastDevice?,
+): Boolean = when {
+    connected == null -> false
+    routeDeviceId != null -> routeDeviceId == connected.id
+    else -> routeName == connected.name
+}
 
 internal fun resolveCastButtonTint(
     enabled: Boolean,

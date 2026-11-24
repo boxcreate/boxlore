@@ -35,6 +35,13 @@ internal object AutoArtworkSourceStore {
      * [saved] says what the disk holds.
      */
     private val attempted: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
+    /**
+     * Saved sources read ahead off the main thread by [preload], for [peek]. A key is the hash of its
+     * source, so an entry never goes stale, even after a prune drops it from disk.
+     */
+    private val preloaded = ConcurrentHashMap<String, String>()
+    private val preloadStarted = AtomicBoolean(false)
     private val persistExecutor =
         Executors.newSingleThreadExecutor { runnable ->
             Thread(runnable, "auto-artwork-prefs").apply { isDaemon = true }
@@ -115,6 +122,25 @@ internal object AutoArtworkSourceStore {
         }.onFailure { Log.w(TAG, "Unable to prune artwork sources", it) }
     }
 
+    /** Reads every saved source into memory on the background thread, once per process, for [peek]. */
+    fun preload(context: Context) {
+        if (!preloadStarted.compareAndSet(false, true)) return
+        val appContext = context.applicationContext
+        persistExecutor.execute {
+            runCatching {
+                appContext.getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE).all.forEach { (key, value) ->
+                    if (value is String) preloaded.putIfAbsent(key, value)
+                }
+            }.onFailure { Log.w(TAG, "Unable to preload artwork sources", it) }
+        }
+    }
+
+    /**
+     * The source for [key] from memory only, for the main thread: never reads the disk or waits on a
+     * save or prune. Saved sources are found once [preload] has read them.
+     */
+    fun peek(key: String): String? = memory[key] ?: saved[key] ?: preloaded[key]
+
     /** The source for [key]: one being saved right now is visible at once, ahead of what is on disk. */
     fun get(context: Context, key: String,): String? = memory[key] ?: savedValue(context, key)
 
@@ -140,6 +166,8 @@ internal object AutoArtworkSourceStore {
         memory.clear()
         saved.clear()
         attempted.clear()
+        preloaded.clear()
+        preloadStarted.set(false)
     }
 
     /** Test-only: wait for queued prefs commits to finish. */

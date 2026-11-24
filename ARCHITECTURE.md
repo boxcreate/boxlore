@@ -18,7 +18,7 @@ These values are part of the shipping product. Renames or recreations break upgr
 
 | Concern | Contract |
 | :--- | :--- |
-| `applicationId` | `cx.aswin.boxlore`, shared by `:app` and the Wear OS app `:wear`, which must also carry the same signature |
+| `applicationId` | `cx.aswin.boxlore`, shared by `:app`, the Wear OS app `:wear` and the TV app `:tv`, which must also carry the same signature |
 | Code packages / Android namespaces | `cx.aswin.boxlore.*` |
 | SharedPreferences **files** | Opened as `boxlore_*`; `PrefsFileMigrator` copies from legacy `boxcast_*` when needed. **Key** strings inside those files stay stable. |
 | DataStore | File name `user_preferences`; the API session uses its own file `boxlore_api_session` (`:core:network`), excluded from backup and device transfer |
@@ -47,7 +47,7 @@ These values are part of the shipping product. Renames or recreations break upgr
 :core:designsystem | :core:testing | :core:support | :core:wearlink
 :feature:home | :feature:settings | :feature:history | :feature:player | :feature:info | :feature:explore
 :feature:library | :feature:onboarding | :feature:briefing | :feature:widgets
-:wear
+:wear | :tv
 ```
 
 On disk, the folder path matches the Gradle id (`core/playback` → `:core:playback`).
@@ -84,6 +84,7 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:feature:briefing` | Daily briefing screen | [`feature/briefing/README.md`](feature/briefing/README.md) |
 | `:feature:widgets` | Home-screen Now Playing, compact bar, playback-control, subscriptions, and new-episodes widgets (RemoteViews) | [`feature/widgets/README.md`](feature/widgets/README.md) |
 | `:wear` | The Wear OS app: watch screens, the watch's own player, downloads, saved library and API session. A second application under the phone app's application ID; depends only on `:core:network`, `:core:rss`, `:core:model` and `:core:wearlink`, and nothing depends on it | [`wear/README.md`](wear/README.md) |
+| `:tv` | The Android TV and Google TV app: TV screens, remote navigation and focus, the TV's own player, saved library and API session, the TV banner and its own release. A third application under the phone app's application ID; depends only on `:core:network`, `:core:rss` and `:core:model`, and nothing depends on it | [`tv/README.md`](tv/README.md) |
 
 ### Core package roots
 
@@ -114,7 +115,13 @@ flowchart TB
     onboarding[:feature:onboarding]
     briefing[:feature:briefing]
     widgets[:feature:widgets]
+    settings[:feature:settings]
+    history[:feature:history]
   end
+  wear[:wear]
+  tv[:tv]
+  wearlink[:core:wearlink]
+  auth[:core:auth]
   playback[:core:playback]
   catalog[:core:catalog]
   rss[:core:rss]
@@ -172,6 +179,19 @@ flowchart TB
   database --> model
   design --> model
   network --> model
+  network --> auth
+  auth --> model
+  app --> auth
+  settings --> auth
+  app --> wearlink
+  wearlink --> network
+  wear --> wearlink
+  wear --> network
+  wear --> rss
+  wear --> model
+  tv --> network
+  tv --> rss
+  tv --> model
 ```
 
 The primary runtime stack is **playback → catalog → prefs / domain / database / network / model**.

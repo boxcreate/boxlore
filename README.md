@@ -63,12 +63,22 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>✨ Highlights:</b>
+<ul align="left">
+<li>boxlore now has an Android TV app: browse charts and your shows, pick up where you left off, and keep listening as one episode leads to the next.</li>
+</ul>
+<b>🆕 New:</b>
+<ul align="left">
+<li>To bring your shows to your TV, open Cloud Sync & Backups on your phone, choose Sign in on a TV, and enter the code your TV shows.</li>
+</ul>
 <b>⚡ Improved:</b>
 <ul align="left">
 <li>The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.</li>
 <li>The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.</li>
 <li>In Android Auto, a show's page now lists its episodes from newest to oldest. Episodes you've started stay in their place and show the time left.</li>
 <li>Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.</li>
+<li>On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.</li>
+<li>On a phone turned sideways, more show posters fit in each row, and the bottom bar and mini player stay clear of the navigation buttons and camera.</li>
 </ul>
 <b>🐛 Fixed:</b>
 <ul align="left">
@@ -76,7 +86,13 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Importing an OPML file that lists a show twice now adds every show in the file in one go.</li>
 <li>When you use boxlore on more than one device, one that was offline or signed out no longer sets your progress or likes back to an older point, and devices that showed different progress now agree.</li>
 <li>Shows you unfollow on another device or on your watch are now cleared from this phone's saved shows, just as when you unfollow them here.</li>
+<li>Casting to a TV or speaker no longer leaves your phone on "Connecting…" once the episode is playing there. The device list now shows which one you're casting to.</li>
+<li>Reopening boxlore while it's casting no longer pauses the episode on your TV, jumps it back or resets its speed.</li>
+<li>An episode boxlore picked up where you left off now shows its cover when you cast it to a TV, instead of a placeholder.</li>
 <li>Turning your phone sideways and back, unfolding it or resizing boxlore's window no longer opens the full player by itself.</li>
+<li>Sheets and dialogs now scroll on short screens, like the Galaxy Z Fold cover screen and phones turned sideways, so their last button stays in reach.</li>
+<li>Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.</li>
+<li>Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.</li>
 </ul>
 <!-- release-upcoming:end -->
 
