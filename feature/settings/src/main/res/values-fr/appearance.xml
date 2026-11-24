@@ -115,4 +115,5 @@
     <string name="settings_theme_look_custom">Personnalisé</string>
     <string name="settings_theme_look_custom_description">Choisissez vos couleurs et le style du fond.</string>
     <string name="settings_theme_section_title">Thème</string>
+    <string name="settings_navigation_tablet_note">Le style de la barre et le flou s’affichent quand boxlore utilise la barre du bas, par exemple sur l’écran externe ou dans une fenêtre étroite.</string>
 </resources>

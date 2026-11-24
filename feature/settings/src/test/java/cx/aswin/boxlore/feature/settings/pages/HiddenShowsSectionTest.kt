@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -84,6 +85,8 @@ class HiddenShowsSectionTest {
         compose.onNodeWithText("Curious world").performScrollTo().assertIsDisplayed()
         // A show hidden before its name was known still has a row.
         compose.onNodeWithText("Unknown show").performScrollTo().assertIsDisplayed()
+        // Every row has the shared artwork, which draws boxlore's mark when the show has none.
+        assertEquals(2, compose.onAllNodesWithTag(HIDDEN_SHOW_ART_TAG, useUnmergedTree = true).fetchSemanticsNodes().size)
 
         compose.onNodeWithContentDescription("Unhide Curious world").performScrollTo().performClick()
         compose.onNodeWithText("Curious world").assertDoesNotExist()

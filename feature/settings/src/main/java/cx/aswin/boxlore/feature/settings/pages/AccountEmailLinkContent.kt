@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,6 +26,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.auth.EmailLinkSignInStatus
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.feature.settings.R
 
@@ -50,7 +50,7 @@ internal fun ColumnScope.AccountSigningInContent() {
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    LinearProgressIndicator(Modifier.fillMaxWidth().testTag("account_signing_in"))
+    BoxLoreLoader.LinearWavy(Modifier.fillMaxWidth().testTag("account_signing_in"))
     AccountEcho(syncing = true, modifier = Modifier.align(Alignment.CenterHorizontally).size(AccountLinkEchoSize))
 }
 

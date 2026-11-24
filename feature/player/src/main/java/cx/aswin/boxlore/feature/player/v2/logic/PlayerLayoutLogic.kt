@@ -8,7 +8,9 @@ import cx.aswin.boxlore.feature.player.v2.HeroDimensions
 
 internal data class ResponsiveHeroLayout(
     val isCompact: Boolean,
-    val dimensions: HeroDimensions
+    val dimensions: HeroDimensions,
+    /** Space above the cover: 6dp on short windows growing to 14dp, in step with the cover. */
+    val topSpacing: Dp = if (isCompact) 6.dp else 14.dp,
 )
 
 internal fun calculateResponsiveHeroLayout(
@@ -17,10 +19,14 @@ internal fun calculateResponsiveHeroLayout(
     isVideo: Boolean
 ): ResponsiveHeroLayout {
     val isCompact = maxHeight < 620.dp
-    val availableHeight = maxHeight * (if (isCompact) 0.28f else 0.34f)
+    // The cover's share of the height grows smoothly between short and tall windows, so windows of
+    // almost the same height (Galaxy Z Fold 8 cover) never get covers 40dp apart.
+    val growth = ((maxHeight - HERO_GROWTH_START) / (HERO_GROWTH_END - HERO_GROWTH_START)).coerceIn(0f, 1f)
+    val availableHeight = maxHeight * (0.28f + 0.06f * growth)
+    val topSpacing = lerp(6.dp, 14.dp, growth)
     if (!isVideo) {
         val size = min(maxWidth * 0.68f, availableHeight).coerceAtLeast(138.dp)
-        return ResponsiveHeroLayout(isCompact, HeroDimensions(size, size))
+        return ResponsiveHeroLayout(isCompact, HeroDimensions(size, size), topSpacing)
     }
     val targetWidth = maxWidth * 0.95f - 48.dp
     val targetHeight = targetWidth * (9f / 16f)
@@ -29,7 +35,41 @@ internal fun calculateResponsiveHeroLayout(
     } else {
         HeroDimensions(targetWidth, targetHeight)
     }
-    return ResponsiveHeroLayout(isCompact, dimensions)
+    return ResponsiveHeroLayout(isCompact, dimensions, topSpacing)
+}
+
+/**
+ * Phones held sideways ([shortPane], wider than tall, not a tablet layout) put the cover and title
+ * beside the seekbar, play controls and quick actions, so all of them show without scrolling. Windows
+ * under [SIDEWAYS_MIN_WIDTH_DP] (sideways split-screen halves) keep the single scrolling column,
+ * since two columns there would be too narrow for the play controls and the quick actions.
+ */
+internal fun usesSidewaysPhoneColumns(widthDp: Float, heightDp: Float, tabletLayout: Boolean, shortPane: Boolean): Boolean =
+    !tabletLayout && shortPane && widthDp > heightDp && widthDp >= SIDEWAYS_MIN_WIDTH_DP
+
+/** Sideways phones with less than [SIDEWAYS_TIGHT_HEIGHT_DP] under the system bars use smaller controls and gaps. */
+internal fun usesTightSidewaysControls(visibleHeight: Dp): Boolean = visibleHeight < SIDEWAYS_TIGHT_HEIGHT_DP.dp
+
+/** The cover beside the controls: as tall as the column allows after the title, within its width. */
+internal fun sidewaysHeroSize(columnWidth: Dp, columnHeight: Dp): Dp =
+    min(columnWidth * 0.68f, columnHeight - SIDEWAYS_TITLE_ROOM).coerceIn(96.dp, 280.dp)
+
+private const val SIDEWAYS_MIN_WIDTH_DP = 600f
+private const val SIDEWAYS_TIGHT_HEIGHT_DP = 400f
+private val SIDEWAYS_TITLE_ROOM = 104.dp
+private val HERO_GROWTH_START = 560.dp
+private val HERO_GROWTH_END = 680.dp
+
+/**
+ * The Cast panel's size on phones: the cover square while it has room for the device row, volume and
+ * buttons; otherwise at least that tall and a little wider, never past the column ([maxWidth] less
+ * its 24dp sides).
+ */
+internal fun castHeroDimensions(art: HeroDimensions, maxWidth: Dp, canControlVolume: Boolean): HeroDimensions {
+    val minimum = if (canControlVolume) 200.dp else 150.dp
+    if (art.height >= minimum) return art
+    val width = min(maxOf(art.width, 240.dp), maxWidth - 48.dp)
+    return HeroDimensions(width, minimum)
 }
 
 internal data class PlayerSheetGeometryValues(

@@ -1,34 +1,33 @@
 package cx.aswin.boxlore.feature.onboarding
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Bookmark
@@ -36,9 +35,8 @@ import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Grain
 import androidx.compose.material.icons.rounded.LibraryAddCheck
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,29 +49,33 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.RegionSegmentedSelector
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -120,27 +122,25 @@ internal data class SuggestionsCallbacks(
 @Composable
 internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: SuggestionsCallbacks) {
     val origin = OnboardingSuggestionsPresentation.origin(uiState)
+    val showHeader = suggestionsHeaderShows(origin, boxloreIsShortPane())
     val loading = OnboardingSuggestionsPresentation.isLoading(uiState)
     val error = OnboardingSuggestionsPresentation.isError(uiState)
     val lanes = remember(uiState.aiCurriculumRows, uiState.genreChartsPodcasts, uiState.selectedGenres, uiState.aiPicks, origin) {
         OnboardingSuggestionsPresentation.lanes(uiState)
     }
-    var details by remember { mutableStateOf<Podcast?>(null) }
+    // Kept by id, so the details sheet stays open through a fold, turn or display-size change.
+    var detailsId by rememberSaveable { mutableStateOf<String?>(null) }
+    val details = detailsId?.let { id -> lanes.firstNotNullOfOrNull { lane -> lane.podcasts.find { it.id == id } } ?: uiState.selectedPodcasts[id] }
+    val wide = LocalBoxloreWindowLayout.current.widthDp >= SuggestionGridWindowWidth
     val list = rememberLazyListState()
     LaunchedEffect(list) {
         snapshotFlow { list.firstVisibleItemIndex > 0 }.first { it }
         callbacks.onScrolled()
     }
     val choosing = SimilarShowsChoice.showing(uiState)
-    val footer = when {
-        choosing -> SuggestionsFooterState.Choice(homeFirst = SimilarShowsChoice.homeIsPrimary(uiState))
-        loading -> SuggestionsFooterState.Loading
-        error || lanes.isEmpty() -> SuggestionsFooterState.Retry
-        uiState.isCompleting -> SuggestionsFooterState.Adding
-        else -> SuggestionsFooterState.Finish(OnboardingSuggestionsPresentation.addCount(uiState))
-    }
+    val footer = suggestionsFooterState(uiState, loading, failed = error || lanes.isEmpty())
     Scaffold(
-        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxSize().testTag("suggestions_screen"),
+        modifier = Modifier.boxloreCardWidth(if (wide) BoxloreCardFamily.Grid else BoxloreCardFamily.Utility).fillMaxSize().testTag("suggestions_screen"),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { SuggestionsTopBar(callbacks.onBack) },
@@ -161,17 +161,17 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
             when {
                 choosing -> SimilarShowsChoiceContent(uiState)
                 loading -> SuggestionsLoading(uiState, origin)
-                error || lanes.isEmpty() -> SuggestionsProblem(error)
+                error || lanes.isEmpty() -> SuggestionsProblem(error, uiState.onboardingErrorKind)
                 else -> LazyColumn(
                     state = list,
                     modifier = Modifier.fillMaxSize().testTag("suggestions_lanes"),
                     contentPadding = PaddingValues(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(28.dp),
                 ) {
-                    item(key = "header") { SuggestionsHeader(uiState, origin) }
+                    if (showHeader) item(key = "header") { SuggestionsHeader(uiState, origin) }
                     lanes.forEachIndexed { index, lane ->
                         item(key = lane.id) {
-                            SuggestionLane(lane, index, uiState, callbacks, onDetails = { details = it })
+                            SuggestionLane(lane, index, uiState, callbacks, onDetails = { detailsId = it.id })
                         }
                     }
                 }
@@ -182,7 +182,7 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
         SuggestionPodcastDetailSheet(
             podcast = podcast,
             isSubscribed = podcast.id in uiState.subscribedPodcastIds,
-            onDismiss = { details = null },
+            onDismiss = { detailsId = null },
             onToggleSubscription = callbacks.onToggle,
         )
     }
@@ -191,7 +191,7 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
 @Composable
 private fun SuggestionsTopBar(onBack: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().statusBarsPadding().height(64.dp).padding(horizontal = 4.dp),
+        Modifier.fillMaxWidth().statusBarsPadding().height(if (boxloreIsShortPane()) 56.dp else 64.dp).padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.suggestions_back)) }
@@ -221,6 +221,17 @@ private fun SuggestionsHeader(uiState: OnboardingUiState, origin: SuggestionsOri
 }
 
 private val SuggestionsEchoWidth = 96.dp
+
+/**
+ * Whether the list opens with the header. Short windows (sideways phones, tabletop halves) leave
+ * Echo's line out, so the first row of shows and their names fit above the footer; the top bar
+ * still names the screen.
+ */
+internal fun suggestionsHeaderShows(origin: SuggestionsOrigin, shortPane: Boolean): Boolean = when (origin) {
+    SuggestionsOrigin.Echo -> !shortPane
+    SuggestionsOrigin.Search, SuggestionsOrigin.Library -> true
+    SuggestionsOrigin.Genres -> false
+}
 
 /** The search picks or imported shows, already in the library: a few covers and a count. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -282,6 +293,10 @@ private fun SuggestionLane(lane: OnboardingSuggestionsLane, index: Int, uiState:
     val picks = lane.id == OnboardingSuggestionsPresentation.PICKS_LANE_ID
     val shows = lane.podcasts
     val allSelected = shows.isNotEmpty() && shows.all { it.id in selectedIds }
+    // Held above the width switch, so the row's scroll and the grid's Show all both survive a lane
+    // turning from a sideways row into a grid and back.
+    val rowState = rememberSaveable(lane.id, saver = LazyListState.Saver) { LazyListState() }
+    val gridOpen = rememberSaveable(lane.id) { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().testTag("suggestions_lane_${lane.id}")) {
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -292,7 +307,7 @@ private fun SuggestionLane(lane: OnboardingSuggestionsLane, index: Int, uiState:
             }
             Text(
                 lane.title.asString(),
-                Modifier.weight(1f).padding(start = 12.dp, end = 4.dp).semantics { heading() },
+                Modifier.weight(1f).padding(start = SuggestionLaneTitleStart - 60.dp, end = 4.dp).semantics { heading() },
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
                 color = colors.onSurface,
                 maxLines = 2,
@@ -305,23 +320,102 @@ private fun SuggestionLane(lane: OnboardingSuggestionsLane, index: Int, uiState:
             }
         }
         if (lane.isCharts) {
-            RegionSegmentedSelector(activeRegion = uiState.currentRegion, onSwitchRegion = callbacks.onRegionChange, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp))
+            // A small country chip on its own line, lined up with the lane title.
+            RegionSegmentedSelector(
+                activeRegion = uiState.currentRegion,
+                onSwitchRegion = callbacks.onRegionChange,
+                modifier = Modifier.padding(start = SuggestionLaneTitleStart, end = 20.dp).testTag("suggestions_region"),
+                compact = true,
+            )
         }
         if (lane.isCharts && uiState.isLoadingPodcasts) {
             SuggestionCardsSkeleton(Modifier.padding(top = 12.dp))
         } else {
-            LazyRow(
-                Modifier.fillMaxWidth().padding(top = 12.dp),
-                contentPadding = PaddingValues(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                itemsIndexed(shows, key = { _, show -> LazyListKeyPolicy.safeKey(show.id, prefix = "suggestion_${lane.id}") }) { position, show ->
-                    SuggestionShowCard(show, show.id in selectedIds, shapeIndex = index * 3 + position, onToggle = callbacks.onToggle, onOpenDetails = onDetails)
+            BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                if (maxWidth >= SuggestionGridMinWidth) {
+                    SuggestionLaneGrid(lane, index, shows, selectedIds, maxWidth, gridOpen, callbacks.onToggle, onDetails)
+                } else {
+                    LazyRow(
+                        Modifier.fillMaxWidth().testTag("suggestions_row_${lane.id}"),
+                        state = rowState,
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        itemsIndexed(shows, key = { _, show -> LazyListKeyPolicy.safeKey(show.id, prefix = "suggestion_${lane.id}") }) { position, show ->
+                            SuggestionShowCard(show, show.id in selectedIds, shapeIndex = index * 3 + position, onToggle = callbacks.onToggle, onOpenDetails = onDetails)
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+/**
+ * A lane on a wide column: its shows in rows, as many across as fit, two rows deep, then "Show all"
+ * for the rest. Whether a lane is open ([openState]) belongs to the lane, so it is kept through window changes.
+ */
+@Composable
+// The lane's parts, its open state and its two actions; grouping them would only rename them.
+@Suppress("LongParameterList", "kotlin:S107")
+private fun SuggestionLaneGrid(
+    lane: OnboardingSuggestionsLane,
+    index: Int,
+    shows: List<Podcast>,
+    selectedIds: Set<String>,
+    width: Dp,
+    openState: MutableState<Boolean>,
+    onToggle: (String) -> Unit,
+    onDetails: (Podcast) -> Unit,
+) {
+    var open by openState
+    val columns = suggestionGridColumns(width.value)
+    // Short windows keep the smallest cards, so the first row stays above the footer.
+    val cardWidth = if (boxloreIsShortPane()) SuggestionCardWidth else suggestionGridCardWidth(width.value, columns).dp
+    val shown = if (open) shows else shows.take(columns * SuggestionGridRows)
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).testTag("suggestions_grid_${lane.id}"), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        shown.chunked(columns).forEachIndexed { row, cards ->
+            Row(horizontalArrangement = Arrangement.spacedBy(SuggestionGridGap)) {
+                cards.forEachIndexed { column, show ->
+                    key(show.id) {
+                        SuggestionShowCard(
+                            show,
+                            show.id in selectedIds,
+                            shapeIndex = index * 3 + row * columns + column,
+                            onToggle = onToggle,
+                            onOpenDetails = onDetails,
+                            width = cardWidth,
+                        )
+                    }
+                }
+            }
+        }
+        if (shown.size < shows.size) {
+            TextButton(onClick = { open = true }, modifier = Modifier.heightIn(min = 48.dp).testTag("suggestions_show_all_${lane.id}")) {
+                Text(pluralStringResource(R.plurals.suggestions_show_all, shows.size, shows.size))
+            }
+        }
+    }
+}
+
+/** How many 140dp cards fit across a [widthDp] lane, 12dp apart inside its 20dp sides. */
+internal fun suggestionGridColumns(widthDp: Float): Int =
+    ((widthDp - SuggestionGridSides + SuggestionGridGap.value) / (SuggestionCardWidth.value + SuggestionGridGap.value)).toInt().coerceAtLeast(1)
+
+/** The cards share the lane's leftover width, from 140dp up to [SuggestionGridMaxCard], so rows end level with the lane. */
+internal fun suggestionGridCardWidth(widthDp: Float, columns: Int): Float =
+    ((widthDp - SuggestionGridSides - SuggestionGridGap.value * (columns - 1)) / columns).coerceIn(SuggestionCardWidth.value, SuggestionGridMaxCard)
+
+private const val SuggestionGridMaxCard = 168f
+
+/** Lanes this wide (dp) set their shows in rows; narrower ones scroll sideways. */
+private val SuggestionGridMinWidth = 600.dp
+
+/** Windows this wide (dp) widen the page to the grid column. */
+private const val SuggestionGridWindowWidth = 840f
+private const val SuggestionGridRows = 2
+private const val SuggestionGridSides = 40f
+private val SuggestionGridGap = 12.dp
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private val SuggestionLaneShapes = listOf(MaterialShapes.Cookie9Sided, MaterialShapes.Clover4Leaf, MaterialShapes.Sunny, MaterialShapes.Puffy, MaterialShapes.SoftBurst)
@@ -390,134 +484,55 @@ private fun SuggestionCardsSkeleton(modifier: Modifier = Modifier) {
 /** A failed or empty load: what happened and what to do; the buttons below offer both ways on. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun SuggestionsProblem(error: Boolean) {
+private fun SuggestionsProblem(error: Boolean, kind: OnboardingErrorKind) {
+    val skipped = error && kind == OnboardingErrorKind.VerificationSkipped
     val colors = MaterialTheme.colorScheme
-    Column(
-        Modifier.fillMaxSize().padding(32.dp).testTag("suggestions_problem"),
-        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(Modifier.size(72.dp).clip(MaterialShapes.Cookie9Sided.toShape()).background(colors.secondaryContainer), contentAlignment = Alignment.Center) {
-            Icon(if (error) Icons.Rounded.CloudOff else Icons.Rounded.Grain, null, Modifier.size(32.dp), tint = colors.onSecondaryContainer)
-        }
-        Text(
-            stringResource(if (error) R.string.suggestions_error_title else R.string.suggestions_empty_title),
-            Modifier.semantics { heading() },
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            stringResource(if (error) R.string.suggestions_error_body else R.string.suggestions_empty_body),
-            style = MaterialTheme.typography.bodyLarge,
-            color = colors.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-    }
-}
-
-/**
- * The one sticky button. Nothing selected: a tonal "Start without adding". Shows selected: a
- * filled "Add N shows". Loading and adding keep the button in place and say what is happening;
- * a failed load offers "Try again" with "Start without adding" above it.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun SuggestionsFooter(state: SuggestionsFooterState, actions: SuggestionsFooterActions) {
-    val (container, content) = suggestionsButtonColors(state)
-    Column(
-        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).navigationBarsPadding().padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 12.dp).testTag("suggestions_footer"),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        SuggestionsSecondaryAction(state, actions)
-        Button(
-            onClick = {
-                when (state) {
-                    SuggestionsFooterState.Retry -> actions.onRetry()
-                    is SuggestionsFooterState.Choice -> if (state.homeFirst) actions.onGoHome() else actions.onSeeSimilar()
-                    else -> actions.onFinish()
-                }
-            },
-            enabled = state !is SuggestionsFooterState.Loading && state !is SuggestionsFooterState.Adding,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("suggestions_finish"),
-            shapes = ButtonDefaults.shapes(shape = RoundedCornerShape(28.dp), pressedShape = RoundedCornerShape(18.dp)),
-            colors = ButtonDefaults.buttonColors(containerColor = container, contentColor = content, disabledContainerColor = container, disabledContentColor = content),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
+    // Centred while it fits; in a short window (a sideways phone above its footer) it scrolls instead of cutting the words.
+    BoxWithConstraints(Modifier.fillMaxSize().testTag("suggestions_problem")) {
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight).padding(32.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AnimatedContent(targetState = state, transitionSpec = EchoMotion.handoff(), contentAlignment = Alignment.Center, label = "suggestionsButtonLabel") { target ->
-                SuggestionsFooterLabel(target)
+            Box(Modifier.size(72.dp).clip(MaterialShapes.Cookie9Sided.toShape()).background(colors.secondaryContainer), contentAlignment = Alignment.Center) {
+                Icon(
+                    when {
+                        skipped -> Icons.Rounded.Shield
+                        error -> Icons.Rounded.CloudOff
+                        else -> Icons.Rounded.Grain
+                    },
+                    null,
+                    Modifier.size(32.dp),
+                    tint = colors.onSecondaryContainer,
+                )
             }
-        }
-    }
-}
-
-/** What the footer's buttons do; [canSkipToHome] adds "Skip to Home" while search or import suggestions load. */
-internal data class SuggestionsFooterActions(
-    val onFinish: () -> Unit,
-    val onRetry: () -> Unit,
-    val onSeeSimilar: () -> Unit,
-    val onGoHome: () -> Unit,
-    val canSkipToHome: Boolean,
-)
-
-/** The quieter way on, above the main button: start without, the other choice, or skip a load. */
-@Composable
-private fun SuggestionsSecondaryAction(state: SuggestionsFooterState, actions: SuggestionsFooterActions) {
-    val (label, onClick, tag) = when {
-        state is SuggestionsFooterState.Retry -> Triple(R.string.suggestions_start_without, actions.onFinish, "suggestions_start_without")
-        state is SuggestionsFooterState.Choice && state.homeFirst -> Triple(R.string.similar_choice_see, actions.onSeeSimilar, "similar_choice_similar")
-        state is SuggestionsFooterState.Choice -> Triple(R.string.similar_choice_home, actions.onGoHome, "similar_choice_home")
-        state is SuggestionsFooterState.Loading && actions.canSkipToHome -> Triple(R.string.similar_skip_home, actions.onGoHome, "suggestions_skip_home")
-        else -> return
-    }
-    TextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp).padding(bottom = 4.dp).testTag(tag)) {
-        Text(stringResource(label))
-    }
-}
-
-/** Busy reads tonal and alive; nothing selected is a quieter tonal; something to add is filled. */
-@Composable
-private fun suggestionsButtonColors(state: SuggestionsFooterState): Pair<Color, Color> {
-    val colors = MaterialTheme.colorScheme
-    val busy = state is SuggestionsFooterState.Loading || state is SuggestionsFooterState.Adding
-    val filled = state is SuggestionsFooterState.Retry || state is SuggestionsFooterState.Choice || (state is SuggestionsFooterState.Finish && state.count > 0)
-    val container by animateColorAsState(
-        when {
-            busy -> colors.primaryContainer
-            filled -> colors.primary
-            else -> colors.secondaryContainer
-        },
-        label = "suggestionsButton",
-    )
-    val content by animateColorAsState(
-        when {
-            busy -> colors.onPrimaryContainer
-            filled -> colors.onPrimary
-            else -> colors.onSecondaryContainer
-        },
-        label = "suggestionsButtonText",
-    )
-    return container to content
-}
-
-@Composable
-private fun SuggestionsFooterLabel(state: SuggestionsFooterState) {
-    when (state) {
-        SuggestionsFooterState.Loading -> EchoThinkingLabel(stringArrayResource(R.array.suggestions_finding_words))
-        SuggestionsFooterState.Adding -> EchoThinkingLabel(arrayOf(stringResource(R.string.suggestions_adding)))
-        SuggestionsFooterState.Retry -> Text(stringResource(R.string.suggestions_try_again), style = MaterialTheme.typography.titleMedium)
-        is SuggestionsFooterState.Choice -> Text(
-            stringResource(if (state.homeFirst) R.string.similar_choice_home else R.string.similar_choice_see),
-            style = MaterialTheme.typography.titleMedium,
-            maxLines = 1,
-        )
-        is SuggestionsFooterState.Finish -> Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                if (state.count > 0) pluralStringResource(R.plurals.suggestions_add_shows, state.count, state.count) else stringResource(R.string.suggestions_start_without),
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
+                stringResource(
+                    when {
+                        skipped -> R.string.suggestions_check_title
+                        error -> R.string.suggestions_error_title
+                        else -> R.string.suggestions_empty_title
+                    },
+                ),
+                Modifier.semantics { heading() },
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
+                textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.width(8.dp))
-            Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, Modifier.size(20.dp))
+            Text(
+                stringResource(
+                    when {
+                        skipped -> R.string.suggestions_check_body
+                        error -> R.string.suggestions_error_body
+                        else -> R.string.suggestions_empty_body
+                    },
+                ),
+                style = MaterialTheme.typography.bodyLarge,
+                color = colors.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
+
+/** Where a lane's title starts: the 20dp edge, its 40dp icon and a 12dp gap. */
+private val SuggestionLaneTitleStart = 72.dp

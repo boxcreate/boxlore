@@ -23,6 +23,7 @@ import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.auth.EmailLinkSignInStatus
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.boxloreShowsOwnCopyConfirmation
 import cx.aswin.boxlore.core.model.BoxLoreUser
 import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.CoroutineScope
@@ -57,7 +58,8 @@ private fun AccountStateEffects(
     }
 }
 
-private fun openAccountDeletionInfo(context: Context, uriHandler: UriHandler) {
+/** Opens the account deletion page; when no app can, copies its link instead. */
+internal fun openAccountDeletionInfo(context: Context, uriHandler: UriHandler) {
     val opened = runCatching {
         uriHandler.openUri(ACCOUNT_DELETION_URL)
         true
@@ -73,7 +75,9 @@ private fun openAccountDeletionInfo(context: Context, uriHandler: UriHandler) {
         if (!fallbackOpened) {
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
             clipboard?.setPrimaryClip(android.content.ClipData.newPlainText(context.getString(R.string.account_deletion_clip_label), ACCOUNT_DELETION_URL))
-            android.widget.Toast.makeText(context, R.string.account_link_copied, android.widget.Toast.LENGTH_SHORT).show()
+            if (boxloreShowsOwnCopyConfirmation()) {
+                android.widget.Toast.makeText(context, R.string.account_link_copied, android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }

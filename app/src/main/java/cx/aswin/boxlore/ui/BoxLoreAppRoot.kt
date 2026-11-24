@@ -93,12 +93,13 @@ import cx.aswin.boxlore.navigation.shouldShowPlayerChrome
 import cx.aswin.boxlore.navigation.snapshotNavBackStack
 import cx.aswin.boxlore.ui.announcement.FeatureAnnouncementOverlay
 import cx.aswin.boxlore.ui.announcement.InAppAnnouncementDialog
+import cx.aswin.boxlore.ui.libraryimport.LibraryImportViewModel
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialog
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialogActions
-import cx.aswin.boxlore.ui.libraryimport.OpmlImportEffects
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
 import cx.aswin.boxlore.ui.libraryimport.libraryImportPhase
 import cx.aswin.boxlore.ui.libraryimport.performJsonLibraryImport
+import cx.aswin.boxlore.ui.libraryimport.runOpmlImportStep
 import cx.aswin.boxlore.ui.logic.SubscriptionResumeRefreshLogic
 import cx.aswin.boxlore.ui.logic.canUseAdaptivePlayer
 import dev.chrisbanes.haze.HazeState
@@ -320,7 +321,9 @@ fun BoxLoreAppRoot(
         }
     }
 
-    var loreQueueConflictEpisode by remember { mutableStateOf<Episode?>(null) }
+    // Held in the activity's view model store, so the question stays open when the activity is recreated.
+    val shellDialogs = rememberShellPendingDialogs(activity)
+    var loreQueueConflictEpisode by shellDialogs::loreQueueConflictEpisode
     val loreShowFallback = rememberLoreShowFallback()
     val queueLoreEpisode: (Episode) -> Unit = { episode ->
         queueManager.addToQueue(episode, loreQueuePodcast(episode, loreShowFallback), PlaybackEntryPoint.LEARN)
@@ -494,39 +497,29 @@ fun BoxLoreAppRoot(
         FcmTopicHelper.subscribeDefaultTopics(activity)
     }
 
-    var opmlImportState by remember { mutableStateOf<OpmlImportState>(OpmlImportState.Idle) }
-    var opmlImportSource by remember { mutableStateOf("welcome_screen") }
-    var importTriggerKey by remember { mutableStateOf(0L) }
+    // The import page, its progress and a running import live in the activity's view model store, so
+    // they carry on when the activity is recreated (text or display size, a foldable's screens).
+    val importViewModel = rememberLibraryImportViewModel(activity) {
+        val appContext = activity.applicationContext
+        LibraryImportViewModel(
+            runJson = { uri, onStateChange ->
+                performJsonLibraryImport(uri, appContext, subscriptionRepository, playbackRepository, podcastRepository, userPrefs, onStateChange)
+            },
+            runOpmlStep = { state, onStateChange ->
+                runOpmlImportStep(state, onStateChange, appContext, subscriptionRepository, playbackRepository, podcastRepository)
+            },
+        )
+    }
+    var opmlImportState by importViewModel::state
+    var opmlImportSource by importViewModel::source
     // Home's review prompt waits a couple of days after an import: marked when it starts (a backup's
     // listening history lands before it ends) and again when it succeeds.
     val importPhase = libraryImportPhase(opmlImportState)
     LaunchedEffect(importPhase) {
-        if (importPhase != null) userPrefs.markLibraryImported()
+        importViewModel.markPhase(importPhase) { userPrefs.markLibraryImported() }
     }
 
-    fun performJsonImport(uri: android.net.Uri) {
-        scope.launch {
-            performJsonLibraryImport(
-                uri = uri,
-                context = activity,
-                subscriptionRepository = subscriptionRepository,
-                playbackRepository = playbackRepository,
-                podcastRepository = podcastRepository,
-                userPrefs = userPrefs,
-                onStateChange = { opmlImportState = it },
-            )
-        }
-    }
-
-    OpmlImportEffects(
-        importTriggerKey = importTriggerKey,
-        opmlImportState = opmlImportState,
-        onStateChange = { opmlImportState = it },
-        context = activity,
-        subscriptionRepository = subscriptionRepository,
-        playbackRepository = playbackRepository,
-        podcastRepository = podcastRepository,
-    )
+    fun performJsonImport(uri: android.net.Uri) = importViewModel.importJson(uri)
 
     LaunchedEffect(Unit) {
         if (playbackRepository.restoreLastSession()) {
@@ -576,15 +569,9 @@ fun BoxLoreAppRoot(
             application.apiSessions?.let { sessions ->
                 cx.aswin.boxlore.session.turnstile.TurnstileStepUpHost(sessions.turnstile, sessions.apiBaseUrl)
             }
-            loreQueueConflictEpisode?.let { pendingLoreEpisode ->
-                LoreQueueConflictDialog(
-                    pendingLoreEpisode = pendingLoreEpisode,
-                    onDismiss = { loreQueueConflictEpisode = null },
-                    onConfirmStart = { episode ->
-                        playbackRepository.stopAndClearQueue()
-                        queueLoreEpisode(episode)
-                    },
-                )
+            LoreQueueConflictHost(shellDialogs) { episode ->
+                playbackRepository.stopAndClearQueue()
+                queueLoreEpisode(episode)
             }
 
             if (onboardingCompleted && activeAnnouncement != null) {
@@ -671,8 +658,8 @@ fun BoxLoreAppRoot(
                 NavOpmlCallbacks(
                     importState = opmlImportState,
                     onImportStateChange = { opmlImportState = it },
-                    triggerKey = importTriggerKey,
-                    onTriggerKeyChange = { importTriggerKey = it },
+                    triggerKey = importViewModel.triggerKey,
+                    onTriggerKeyChange = { importViewModel.runStep(it) },
                     onSourceChange = { opmlImportSource = it },
                     performJsonImport = ::performJsonImport,
                 ),
@@ -964,7 +951,7 @@ fun BoxLoreAppRoot(
                                         importedPodcasts = currentState.importedPodcasts,
                                         pendingCount = currentState.pendingCount,
                                     )
-                                importTriggerKey = System.currentTimeMillis()
+                                importViewModel.runStep()
                             }
                         }
                     },
@@ -984,7 +971,7 @@ fun BoxLoreAppRoot(
                     onImportJsonSelected = { uri -> performJsonImport(uri) },
                     onImportOpmlSelected = { uri ->
                         opmlImportState = OpmlImportState.Parsing(uri)
-                        importTriggerKey = System.currentTimeMillis()
+                        importViewModel.runStep()
                     },
                     onSyncAccountSelected = {
                         opmlImportState = OpmlImportState.Idle

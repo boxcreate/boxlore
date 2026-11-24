@@ -9,10 +9,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -61,5 +63,89 @@ class FullscreenTranscriptLayoutTest {
     @Test fun `without a visible height the screen fills its container, as before`() {
         render(visibleHeight = Dp.Unspecified)
         assertTrue("play sits at ${playBottom()}dp", playBottom() > 800f)
+    }
+
+    @Test fun `video controls and the queue Undo message stay within the visible height`() {
+        val host = androidx.compose.material3.SnackbarHostState()
+        composeRule.setContent {
+            Box(Modifier.wrapContentSize(Alignment.TopStart, unbounded = true).requiredSize(400.dp, 900.dp)) {
+                cx.aswin.boxlore.feature.player.v2.VideoFullscreenOverlay(
+                    content = cx.aswin.boxlore.feature.player.v2.VideoFullscreenContent(
+                        visible = true,
+                        episodeTitle = "Episode",
+                        isPlaying = false,
+                        durationMs = 60_000L,
+                        seekBackwardSeconds = 10,
+                        seekForwardSeconds = 30,
+                        positionFlow = flowOf(0L),
+                        controller = null,
+                        visibleHeight = 800.dp,
+                    ),
+                    colorScheme = lightColorScheme(),
+                    actions = cx.aswin.boxlore.feature.player.v2.VideoFullscreenActions({}, {}, {}, {}, {}),
+                )
+                cx.aswin.boxlore.feature.player.v2.PlayerSnackbarHost(host, visibleHeight = 800.dp, bottomInset = 0.dp)
+            }
+        }
+        composeRule.runOnIdle { kotlinx.coroutines.MainScope().launch { host.showSnackbar("Removed from queue", "Undo") } }
+        composeRule.waitForIdle()
+        val slider = composeRule.onNodeWithContentDescription("Playback position").getUnclippedBoundsInRoot().bottom.value
+        assertTrue("slider at ${slider}dp, past the 800dp visible", slider <= 800f)
+        val message = composeRule.onNodeWithText("Undo").getUnclippedBoundsInRoot().bottom.value
+        assertTrue("Undo at ${message}dp, past the 800dp visible", message <= 800f)
+    }
+
+    @Test fun `half-open on a table the transcript sits above the hinge and the controls below, and back`() {
+        val hinge = cx.aswin.boxlore.core.designsystem.layout.BoxloreFold(
+            cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldState.HalfOpened,
+            cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation.Horizontal,
+            cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds(0f, 480f, 400f, 500f),
+            true,
+            true,
+        )
+        val window = androidx.compose.runtime.mutableStateOf(cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(400f, 1_000f, listOf(hinge)))
+        composeRule.setContent {
+            androidx.compose.runtime.CompositionLocalProvider(cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout provides window.value) {
+                FullscreenTranscriptScreen(
+                    transcript = List(30) { TranscriptSegment(it * 1_000L, it * 1_000L + 999L, "Line $it") },
+                    positionFlow = flowOf(0L),
+                    isPlaying = false,
+                    isLoading = false,
+                    durationMs = 60_000L,
+                    colorScheme = lightColorScheme(),
+                    isSyncEnabled = true,
+                    onSyncEnabledChange = {},
+                    onSeek = {},
+                    onPlayPause = {},
+                    onClose = {},
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        val lines = composeRule.onAllNodes(androidx.compose.ui.test.hasText("Line ", substring = true)).fetchSemanticsNodes()
+        assertTrue("some transcript shows", lines.isNotEmpty())
+        lines.forEach { assertTrue("a transcript line at ${it.boundsInRoot} crosses the hinge", it.boundsInRoot.bottom <= 480f) }
+        val play = composeRule.onNodeWithContentDescription("Play").getUnclippedBoundsInRoot()
+        // The controls sit in the middle of the lower half, not pressed against the hinge.
+        assertTrue("play at $play sits in the middle of the lower half", play.top.value >= 700f && play.bottom.value <= 960f)
+        composeRule.runOnIdle { window.value = cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(400f, 1_000f) }
+        composeRule.waitForIdle()
+        assertTrue("flat: controls at the foot", playBottom() > 900f)
+        composeRule.runOnIdle { window.value = cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(400f, 1_000f, listOf(hinge)) }
+        composeRule.waitForIdle()
+        assertTrue(composeRule.onNodeWithContentDescription("Play").getUnclippedBoundsInRoot().top.value >= 500f)
+        // A hinge too near the bottom to fit the controls under it: they keep their size, whole on screen, as when flat.
+        val low = hinge.copy(bounds = cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds(0f, 900f, 400f, 920f))
+        composeRule.runOnIdle { window.value = cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(400f, 1_000f, listOf(low)) }
+        composeRule.waitForIdle()
+        val squeezed = composeRule.onNodeWithContentDescription("Play").getUnclippedBoundsInRoot()
+        assertTrue("play at $squeezed runs off the screen", squeezed.bottom.value <= 1_000f + 0.5f)
+        assertTrue("the controls sit at the foot, as when flat", playBottom() > 900f)
+    }
+
+    @Test fun `lines dim around the spoken one only while following the audio`() {
+        assertTrue(transcriptLineOpacity(isActive = false, following = true) < 1f)
+        assertTrue(transcriptLineOpacity(isActive = false, following = false) == 1f)
+        assertTrue(transcriptLineOpacity(isActive = true, following = true) == 1f)
     }
 }

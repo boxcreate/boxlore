@@ -6,28 +6,23 @@
     <!-- Library hub card and Subscriptions page title -->
     <string name="library_hub_subscriptions">Subscriptions</string>
     <!-- Library hub card and Liked page title -->
-    <string name="library_hub_liked_episodes">Liked Episodes</string>
+    <string name="library_hub_liked_episodes">Liked episodes</string>
     <!-- Library hub card and Downloads page title -->
     <string name="library_hub_downloads">Downloads</string>
     <!-- Library hub card -->
-    <string name="library_hub_listening_history">Listening History</string>
+    <string name="library_hub_listening_history">Listening history</string>
     <!-- Library hub card and Playlists page title -->
     <string name="library_hub_playlists">Playlists</string>
-    <string name="library_empty_title">Your library is empty</string>
-    <!-- Two short lines -->
-    <string name="library_empty_body">It\'s a big universe out there.\nStart exploring.</string>
     <!-- Button that opens Explore -->
-    <string name="library_empty_action">Go Explore</string>
+    <string name="library_find_podcasts">Find podcasts</string>
     <!-- Button that opens Explore -->
-    <string name="library_find_podcasts">Find Podcasts</string>
-    <!-- Button that opens Explore -->
-    <string name="library_discover_shows">Discover Shows</string>
+    <string name="library_discover_shows">Discover shows</string>
     <!-- Screen-reader label for the video badge on a show cover -->
     <string name="library_video_badge">Video</string>
-    <string name="library_liked_empty_title">No Liked Episodes</string>
+    <string name="library_liked_empty_title">No liked episodes yet</string>
     <string name="library_liked_empty_body">Heart episodes you love to save them here.</string>
     <!-- Floating button that plays every listed episode -->
-    <string name="library_play_all">Play All</string>
+    <string name="library_play_all">Play all</string>
     <!-- Screen-reader label for the back button -->
     <string name="library_back">Back</string>
     <!-- Screen-reader label for a close button -->
@@ -42,23 +37,19 @@
     <string name="library_turn_off">Turn off</string>
     <!-- Snackbar action -->
     <string name="library_undo">Undo</string>
-    <!-- Screen-reader label that clears the search text -->
-    <string name="library_clear">Clear</string>
     <!-- Screen-reader label for the search button -->
     <string name="library_search">Search</string>
     <!-- Screen-reader label for the sort button -->
     <string name="library_sort">Sort</string>
-    <!-- Screen-reader label for the tick beside the chosen menu option -->
-    <string name="library_selected">Selected</string>
     <!-- Screen-reader name of the long-press action that starts selecting -->
     <string name="library_select">Select</string>
     <!-- Screen-reader label -->
-    <string name="library_select_all">Select All</string>
+    <string name="library_select_all">Select all</string>
     <!-- Screen-reader label -->
     <string name="library_cancel_selection">Cancel selection</string>
     <!-- Screen-reader label -->
-    <string name="library_delete_selected">Delete Selected</string>
-    <string name="library_delete_all">Delete All</string>
+    <string name="library_delete_selected">Delete selected</string>
+    <string name="library_delete_all">Delete all</string>
     <!-- Under a sheet title: how many shows are ticked -->
     <plurals name="library_selected_count">
         <item quantity="one">%1$d selected</item>
@@ -66,8 +57,8 @@
     </plurals>
     <!-- Top bar title while selecting -->
     <plurals name="library_selected_count_title">
-        <item quantity="one">%1$d Selected</item>
-        <item quantity="other">%1$d Selected</item>
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
     </plurals>
     <!-- Screen-reader label for the ⋮ button -->
     <string name="library_more_options">More options</string>
@@ -76,7 +67,7 @@
     <!-- Screen-reader label for an episode's ⋮ button -->
     <string name="library_options">Options</string>
     <string name="library_play">Play</string>
-    <string name="library_play_next">Play Next</string>
+    <string name="library_play_next">Play next</string>
     <!-- Screen-reader label -->
     <string name="library_play_episode">Play episode</string>
     <!-- Screen-reader label for the played tick -->
@@ -171,4 +162,26 @@
     <string name="library_playlist_remove_show">Remove %1$s</string>
     <string name="library_playlist_no_followed">Follow some shows first, then add them here.</string>
     <string name="library_playlist_all_added">Every show you follow is already in this playlist.</string>
+
+    <!-- Library hub card status lines -->
+    <plurals name="library_hub_episode_count">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <plurals name="library_hub_playlist_count">
+        <item quantity="one">%1$d playlist</item>
+        <item quantity="other">%1$d playlists</item>
+    </plurals>
+    <!-- %1$s is how long ago, such as "3 days ago" -->
+    <string name="library_hub_last_played">Last played %1$s</string>
+    <!-- Hub card status when the last play was today -->
+    <string name="library_hub_played_today">Played today</string>
+    <!-- Hub card status when the last play was yesterday -->
+    <string name="library_hub_played_yesterday">Played yesterday</string>
+    <string name="library_hub_no_downloads">Nothing downloaded yet</string>
+    <string name="library_hub_no_likes">No likes yet</string>
+    <string name="library_hub_no_history">Nothing played yet</string>
+    <string name="library_hub_no_playlists">No playlists yet</string>
+    <!-- %1$s is a length of time, such as "9 hr, 5 min" -->
+    <string name="library_liked_time_left">%1$s left</string>
 </resources>

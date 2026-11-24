@@ -35,7 +35,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -266,6 +268,9 @@ private fun CompactPodcastGridContent(
             )
             .padding(5.dp),
     ) {
+        // A small folder's first empty slot carries the folder's icon; the others stay quiet.
+        val firstEmpty = slots.indexOfFirst { it.first == null }
+        val folderIcon = GenreIcons.folderIconOrFallback(folder.icon)
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(3.dp),
@@ -278,6 +283,7 @@ private fun CompactPodcastGridContent(
             ) {
                 val onFolderLongClick = { actions.onFolderLongClick(folder) }
                 MiniPodcastSlot(
+                    emptyIcon = folderIcon.takeIf { firstEmpty == 0 },
                     podcast = slots[0].first,
                     hasNewEpisode = slots[0].second,
                     onClick = actions.onPodcastClick,
@@ -287,6 +293,7 @@ private fun CompactPodcastGridContent(
                     modifier = Modifier.weight(1f),
                 )
                 MiniPodcastSlot(
+                    emptyIcon = folderIcon.takeIf { firstEmpty == 1 },
                     podcast = slots[1].first,
                     hasNewEpisode = slots[1].second,
                     onClick = actions.onPodcastClick,
@@ -304,6 +311,7 @@ private fun CompactPodcastGridContent(
             ) {
                 val onFolderLongClick = { actions.onFolderLongClick(folder) }
                 MiniPodcastSlot(
+                    emptyIcon = folderIcon.takeIf { firstEmpty == 2 },
                     podcast = slots[2].first,
                     hasNewEpisode = slots[2].second,
                     onClick = actions.onPodcastClick,
@@ -322,6 +330,7 @@ private fun CompactPodcastGridContent(
                     )
                 } else {
                     MiniPodcastSlot(
+                        emptyIcon = folderIcon.takeIf { firstEmpty == 3 },
                         podcast = slots[3].first,
                         hasNewEpisode = slots[3].second,
                         onClick = actions.onPodcastClick,
@@ -378,9 +387,6 @@ private fun CompactFolderTitlePill(
     isReordering: Boolean = false,
 ) {
     val folderIcon = GenreIcons.folderIconOrFallback(folder.icon)
-    val displayName = remember(folder.name) {
-        truncateCompactFolderName(folder.name)
-    }
     Surface(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -417,8 +423,9 @@ private fun CompactFolderTitlePill(
                 modifier = Modifier.size(10.dp),
             )
             Spacer(modifier = Modifier.width(3.dp))
+            // The pill's width (84dp) decides where the name ends with "…", not a letter count.
             Text(
-                text = displayName,
+                text = folder.name,
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontSize = 9.sp,
                     lineHeight = 11.sp,
@@ -433,6 +440,7 @@ private fun CompactFolderTitlePill(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
+@Suppress("LongParameterList") // The slot's show, its three actions, and how an empty slot looks.
 private fun MiniPodcastSlot(
     podcast: Podcast?,
     onClick: (String) -> Unit,
@@ -441,6 +449,7 @@ private fun MiniPodcastSlot(
     hasNewEpisode: Boolean = false,
     modifier: Modifier = Modifier,
     isReordering: Boolean = false,
+    emptyIcon: ImageVector? = null,
 ) {
     val miniShape = RoundedCornerShape(6.dp)
     if (podcast != null) {
@@ -477,7 +486,7 @@ private fun MiniPodcastSlot(
             modifier = modifier
                 .fillMaxSize()
                 .clip(miniShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .then(
                     if (isReordering) {
                         Modifier
@@ -489,7 +498,12 @@ private fun MiniPodcastSlot(
                         )
                     }
                 ),
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            if (emptyIcon != null) {
+                Icon(emptyIcon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp).testTag(FOLDER_EMPTY_SLOT_ICON_TAG))
+            }
+        }
     }
 }
 
@@ -534,12 +548,5 @@ private fun BoxScope.FolderFloatingBadge(
     )
 }
 
-/**
- * Truncates a compact 1×1 folder display name if it exceeds [maxLength] characters, appending an ellipsis.
- */
-internal fun truncateCompactFolderName(name: String, maxLength: Int = 10): String =
-    if (name.length > maxLength) {
-        "${name.take(maxLength)}…"
-    } else {
-        name
-    }
+/** The icon in a small folder's first empty slot, for tests. */
+internal const val FOLDER_EMPTY_SLOT_ICON_TAG = "folder_empty_slot_icon"

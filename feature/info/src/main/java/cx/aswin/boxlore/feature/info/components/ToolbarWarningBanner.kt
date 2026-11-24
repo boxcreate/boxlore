@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -57,18 +60,17 @@ internal fun ToolbarWarningBanner(
         enter = expandVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
         exit = shrinkVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(),
     ) {
-        androidx.compose.material3.Card(
-            shape = RoundedCornerShape(16.dp),
-            colors =
-            androidx.compose.material3.CardDefaults.cardColors(
-                containerColor = containerColor,
-                contentColor = contentColor,
-            ),
+        // The same rounded shape as the page's other cards.
+        androidx.compose.material3.Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = containerColor,
+            contentColor = contentColor,
             modifier =
             Modifier
                 .fillMaxWidth()
                 .boxloreCardWidth(BoxloreCardFamily.Utility)
-                .padding(horizontal = 16.dp, vertical = 6.dp),
+                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .testTag(TOOLBAR_WARNING_TAG),
         ) {
             Column(
                 modifier =
@@ -123,9 +125,10 @@ private fun ToolbarWarningHeader(
                 color = contentColor,
             )
         }
+        // A full 48dp target, drawn where the small close icon always sat.
         IconButton(
             onClick = onDismiss,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.offset(x = 12.dp).size(48.dp),
         ) {
             Icon(
                 imageVector = Icons.Rounded.Close,
@@ -137,6 +140,7 @@ private fun ToolbarWarningHeader(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ToolbarWarningAction(warning: ToolbarWarning, onAction: () -> Unit, accentColor: Color) {
     val isNotice = warning == ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY
@@ -150,6 +154,7 @@ private fun ToolbarWarningAction(warning: ToolbarWarning, onAction: () -> Unit, 
         ) {
             Button(
                 onClick = onAction,
+                shapes = ButtonDefaults.shapes(),
                 colors =
                 ButtonDefaults.buttonColors(
                     containerColor = accentColor,
@@ -166,3 +171,6 @@ private fun ToolbarWarningAction(warning: ToolbarWarning, onAction: () -> Unit, 
         }
     }
 }
+
+/** Test tag on the warning banner under the toolbar. */
+internal const val TOOLBAR_WARNING_TAG = "podcast_info_toolbar_warning"

@@ -9,17 +9,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.layout.Layout
@@ -31,6 +34,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -40,15 +44,35 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.info.R
 import kotlin.math.roundToInt
 
+/**
+ * The episode's title, three lines until opened. [expanded] lets the hero keep it open while it moves
+ * between layouts; [compact] uses the smaller headline of a short page.
+ */
 @Composable
-internal fun EpisodeExpandableTitle(episodeId: String, title: String) {
-    ExpandableInfoTitle(itemId = episodeId, title = title, collapsedLines = 3)
+internal fun EpisodeExpandableTitle(
+    episodeId: String,
+    title: String,
+    expanded: MutableState<Boolean> = rememberSaveable(episodeId, title) { mutableStateOf(false) },
+    compact: Boolean = false,
+) {
+    val style = if (compact) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium
+    ExpandableInfoTitle(itemId = episodeId, title = title, collapsedLines = 3, expandedState = expanded, baseStyle = style)
 }
 
 @Composable
-internal fun ExpandableInfoTitle(itemId: String, title: String, collapsedLines: Int, modifier: Modifier = Modifier, textAlign: TextAlign = TextAlign.Start) {
-    var expanded by rememberSaveable(itemId, title) { mutableStateOf(false) }
-    val style = MaterialTheme.typography.headlineMedium.copy(fontWeight = GoogleSansWeight.bold, textAlign = textAlign)
+internal fun ExpandableInfoTitle(
+    itemId: String,
+    title: String,
+    collapsedLines: Int,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Start,
+    expandedState: MutableState<Boolean> = rememberSaveable(itemId, title) { mutableStateOf(false) },
+    baseStyle: TextStyle = MaterialTheme.typography.headlineMedium,
+) {
+    var expanded by expandedState
+    // Heading breaks split a two-line title into lines of similar length (Android 13 and later).
+    // The measurer uses the same style, so it decides the overflow the drawn text has.
+    val style = baseStyle.copy(fontWeight = GoogleSansWeight.bold, textAlign = textAlign, lineBreak = LineBreak.Heading)
     val measurer = rememberTextMeasurer()
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val textConstraints = Constraints(maxWidth = constraints.maxWidth)
@@ -86,12 +110,13 @@ private fun InfoTitleWithControl(title: String, lastLineStart: Int, paragraph: T
                 modifier = Modifier.clearAndSetSemantics {},
             )
             IconButton(onClick = onToggle, modifier = Modifier.size(48.dp)) {
-                Box(Modifier.size(32.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f), CircleShape), contentAlignment = Alignment.Center) {
+                val (chip, icon) = expandChipColors(MaterialTheme.colorScheme)
+                Box(Modifier.size(32.dp).background(chip, CircleShape), contentAlignment = Alignment.Center) {
                     Icon(
                         if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
                         stringResource(if (expanded) R.string.episode_info_show_less else R.string.episode_info_full_title),
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurface,
+                        tint = icon,
                     )
                 }
             }
@@ -115,6 +140,9 @@ private fun InfoTitleWithControl(title: String, lastLineStart: Int, paragraph: T
         }
     }
 }
+
+/** The expand chip's fill and icon: solid, so it reads the same over every cover's tint. */
+internal fun expandChipColors(scheme: ColorScheme): Pair<Color, Color> = scheme.surfaceContainerHighest to scheme.onSurfaceVariant
 
 internal data class EpisodeTitleLineMetrics(val height: Int, val firstBaseline: Int, val lastBaseline: Int)
 

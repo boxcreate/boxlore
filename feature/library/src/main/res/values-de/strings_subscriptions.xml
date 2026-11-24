@@ -13,10 +13,6 @@
     <string name="library_search_subscribed_shows">Abonnierte Podcasts suchen…</string>
     <!-- Search field placeholder -->
     <string name="library_search_your_shows">Deine Podcasts durchsuchen</string>
-    <!-- Screen-reader label -->
-    <string name="library_close_search">Suche schließen</string>
-    <!-- Screen-reader label -->
-    <string name="library_clear_search">Suche leeren</string>
     <!-- Screen-reader label for the button that switches to a list -->
     <string name="library_list_view">Listenansicht</string>
     <!-- Screen-reader label for the button that switches to a grid -->
@@ -59,14 +55,6 @@
     <string name="library_sort_manual">Manuell</string>
     <!-- Sort choice -->
     <string name="library_sort_chronological">Chronologisch</string>
-    <!-- Menu item -->
-    <string name="library_sort_smart_sort">Smart sortieren</string>
-    <!-- Menu item -->
-    <string name="library_sort_recently_updated_menu">Zuletzt aktualisiert</string>
-    <!-- Menu item: alphabetical -->
-    <string name="library_sort_a_to_z_menu">A–Z</string>
-    <!-- Menu item -->
-    <string name="library_sort_most_listened_menu">Meistgehört</string>
     <!-- Sort choice chip -->
     <string name="library_sort_recently_updated">Zuletzt aktualisiert</string>
     <!-- Sort choice chip -->
@@ -77,8 +65,6 @@
     <string name="library_sort_same_as_shows">Wie bei Podcasts</string>
     <!-- Sort choice chip: the order the listener arranged by hand -->
     <string name="library_sort_your_order">Deine Reihenfolge</string>
-    <!-- Menu item -->
-    <string name="library_sort_auto_organize_into_folders">Automatisch in Ordner sortieren</string>
     <!-- Menu item -->
     <string name="library_hide_played_episodes">Gehörte Folgen ausblenden</string>
     <!-- Sheet title -->
@@ -134,4 +120,7 @@
     <string name="library_genre_full_religion">Religion &amp; Spiritualität</string>
     <string name="library_genre_full_family">Kinder &amp; Familie</string>
     <string name="library_genre_full_govt">Politik</string>
+    <string name="library_pin_home">Auf Start anheften</string>
+    <string name="library_unpin_home">Von Start lösen</string>
+    <string name="library_pin_capacity">Du kannst bis zu %1$d Podcasts auf Start anheften</string>
 </resources>

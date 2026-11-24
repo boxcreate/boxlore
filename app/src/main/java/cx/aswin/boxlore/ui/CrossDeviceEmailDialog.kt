@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -11,7 +12,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Email
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogConfirmButton
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 private val EMAIL_REGEX = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$".toRegex()
@@ -123,20 +124,17 @@ fun CrossDeviceEmailDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = { submit() },
-                shape = MaterialTheme.shapes.large,
-            ) {
-                Text(stringResource(R.string.app_cross_device_email_sign_in))
-            }
+            BoxloreDialogConfirmButton(text = stringResource(R.string.app_cross_device_email_sign_in), onClick = { submit() })
         },
         dismissButton = {
-            OutlinedButton(
-                onClick = onDismiss,
-                shape = MaterialTheme.shapes.large,
-            ) {
+            // Outlined like the Account dialogs this leads to; the default shape is boxlore's pill,
+            // as tall as Sign in beside it.
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.heightIn(min = DialogButtonHeight)) {
                 Text(stringResource(R.string.app_cross_device_email_cancel))
             }
         },
     )
 }
+
+/** The height of boxlore's filled dialog action, so Cancel's outlined pill matches it. */
+private val DialogButtonHeight = 48.dp

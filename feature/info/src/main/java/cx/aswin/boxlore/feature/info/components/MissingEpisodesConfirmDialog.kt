@@ -2,14 +2,14 @@ package cx.aswin.boxlore.feature.info.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.RssFeed
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogConfirmButton
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogDismissButton
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogIcon
 import cx.aswin.boxlore.feature.info.R
 
 @Composable
@@ -20,7 +20,7 @@ internal fun MissingEpisodesConfirmDialog(
     TrackScreenView("podcast_missing_episodes_confirmation")
     BoxloreAlertDialog(
         onDismissRequest = onDismissRequest,
-        icon = { Icon(Icons.Rounded.RssFeed, contentDescription = null) },
+        icon = { BoxloreDialogIcon(Icons.Rounded.RssFeed) },
         title = { Text(stringResource(R.string.podcast_info_missing_title)) },
         text = {
             Text(
@@ -28,19 +28,14 @@ internal fun MissingEpisodesConfirmDialog(
             )
         },
         confirmButton = {
-            Button(
+            BoxloreDialogConfirmButton(
+                stringResource(R.string.podcast_info_missing_allow),
                 onClick = {
                     onDismissRequest()
                     onConfirm()
                 },
-            ) {
-                Text(stringResource(R.string.podcast_info_missing_allow))
-            }
+            )
         },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(stringResource(R.string.podcast_info_missing_cancel))
-            }
-        },
+        dismissButton = { BoxloreDialogDismissButton(stringResource(R.string.podcast_info_missing_cancel), onDismissRequest) },
     )
 }

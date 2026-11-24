@@ -68,4 +68,7 @@
     <!-- Storage sizes. %1$s is an already formatted number. -->
     <string name="settings_smart_downloads_size_mb">%1$s MB</string>
     <string name="settings_smart_downloads_size_gb">%1$s GB</string>
+    <string name="settings_smart_downloads_off_title">Desativar Downloads inteligentes?</string>
+    <string name="settings_smart_downloads_off_body">Os episódios salvos pelos Downloads inteligentes serão removidos deste aparelho. Seus outros downloads continuam.</string>
+    <string name="settings_smart_downloads_off_confirm">Desativar e remover</string>
 </resources>

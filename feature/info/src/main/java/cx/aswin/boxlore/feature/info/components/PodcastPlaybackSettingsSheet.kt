@@ -6,14 +6,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,8 +25,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -84,7 +88,7 @@ fun PodcastPlaybackSettingsSheet(
         ) {
             Text(
                 text = stringResource(R.string.podcast_info_playback_for_show),
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = GoogleSansWeight.bold,
             )
             Text(
@@ -92,57 +96,68 @@ fun PodcastPlaybackSettingsSheet(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .semantics(mergeDescendants = true) {},
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.podcast_playback_use_app_defaults), style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        text =
-                        if (state.isSubscribed) {
-                            appDefaultsSummary(state).map { it.asString() }.joinToString(" · ")
-                        } else {
-                            stringResource(R.string.podcast_playback_subscribe_hint)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+            // The whole row is the switch, in its own rounded panel.
+            SettingsPanel {
+                Row(
+                    modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 56.dp)
+                        .toggleable(
+                            value = usesDefaults,
+                            enabled = state.isSubscribed,
+                            role = Role.Switch,
+                            onValueChange = actions.onUseAppDefaultsChange,
+                        )
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .testTag(USE_APP_DEFAULTS_ROW_TAG),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.podcast_playback_use_app_defaults), style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text =
+                            if (state.isSubscribed) {
+                                appDefaultsSummary(state).map { it.asString() }.joinToString(" · ")
+                            } else {
+                                stringResource(R.string.podcast_playback_subscribe_hint)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    // The row handles the tap, so the switch never toggles twice.
+                    Switch(checked = usesDefaults, enabled = state.isSubscribed, onCheckedChange = null)
+                }
+            }
+            SettingsPanel {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    // Each has its own "App" choice, so picking one never freezes the show's skips.
+                    PodcastSpeedChoice(
+                        state = state,
+                        enabled = state.isSubscribed,
+                        onChange = actions.onPlaybackSpeedOverrideChange,
+                    )
+                    PodcastTrimSilenceChoice(
+                        state = state,
+                        enabled = state.isSubscribed,
+                        onChange = actions.onTrimSilenceOverrideChange,
+                    )
+                    PodcastDurationSlider(
+                        title = stringResource(R.string.podcast_playback_skip_beginning),
+                        valueMs = state.skipBeginningOverrideMs ?: state.globalSkipBeginningMs,
+                        enabled = state.isSubscribed && !usesDefaults,
+                        onValueCommitted = actions.onSkipBeginningOverrideChange,
+                    )
+                    PodcastDurationSlider(
+                        title = stringResource(R.string.podcast_playback_skip_ending),
+                        valueMs = state.skipEndingOverrideMs ?: state.globalSkipEndingMs,
+                        enabled = state.isSubscribed && !usesDefaults,
+                        onValueCommitted = actions.onSkipEndingOverrideChange,
                     )
                 }
-                Switch(
-                    checked = usesDefaults,
-                    enabled = state.isSubscribed,
-                    onCheckedChange = actions.onUseAppDefaultsChange,
-                )
             }
-            HorizontalDivider()
-            // Each has its own "App" choice, so picking one never freezes the show's skips.
-            PodcastSpeedChoice(
-                state = state,
-                enabled = state.isSubscribed,
-                onChange = actions.onPlaybackSpeedOverrideChange,
-            )
-            PodcastTrimSilenceChoice(
-                state = state,
-                enabled = state.isSubscribed,
-                onChange = actions.onTrimSilenceOverrideChange,
-            )
-            PodcastDurationSlider(
-                title = stringResource(R.string.podcast_playback_skip_beginning),
-                valueMs = state.skipBeginningOverrideMs ?: state.globalSkipBeginningMs,
-                enabled = state.isSubscribed && !usesDefaults,
-                onValueCommitted = actions.onSkipBeginningOverrideChange,
-            )
-            PodcastDurationSlider(
-                title = stringResource(R.string.podcast_playback_skip_ending),
-                valueMs = state.skipEndingOverrideMs ?: state.globalSkipEndingMs,
-                enabled = state.isSubscribed && !usesDefaults,
-                onValueCommitted = actions.onSkipEndingOverrideChange,
-            )
             Spacer(Modifier.height(4.dp))
             Text(
                 text = stringResource(R.string.podcast_playback_seek_note),
@@ -152,6 +167,14 @@ fun PodcastPlaybackSettingsSheet(
         }
     }
 }
+
+/** One of the sheet's solid rounded panels. */
+@Composable
+private fun SettingsPanel(content: @Composable () -> Unit) {
+    Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) { content() }
+}
+
+internal const val USE_APP_DEFAULTS_ROW_TAG = "podcast_playback_use_app_defaults"
 
 @Composable
 private fun PodcastDurationSlider(

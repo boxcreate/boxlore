@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.feature.briefing
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class BriefingPlaybackLogicTest {
@@ -50,5 +52,23 @@ class BriefingPlaybackLogicTest {
                 requestedPositionMs = null,
             ),
         )
+    }
+
+    @Test
+    fun `playback leaves the story list alone while the listener scrolls and for the hold after the scroll ends`() {
+        val hold = StoryFollowHold()
+        assertTrue(hold.mayFollow(0L), "Nothing scrolled yet")
+        // A long scroll: started at 0, still going at 6s, ended at 7s.
+        hold.onScrolling(true, 0L)
+        assertFalse(hold.mayFollow(6_000L), "Never while the listener scrolls")
+        hold.onScrolling(false, 7_000L)
+        assertFalse(hold.mayFollow(7_000L + LISTENER_SCROLL_HOLD_MS - 1), "The hold runs from the end of the scroll")
+        assertTrue(hold.mayFollow(7_000L + LISTENER_SCROLL_HOLD_MS))
+        // The list's own move to the playing story starts no hold.
+        hold.following = true
+        hold.onScrolling(true, 20_000L)
+        hold.following = false
+        hold.onScrolling(false, 20_500L)
+        assertTrue(hold.mayFollow(20_600L))
     }
 }

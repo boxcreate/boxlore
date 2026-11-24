@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -15,8 +16,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Headphones
@@ -38,6 +41,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -48,6 +52,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -73,7 +78,8 @@ internal fun MonthMosaicCard(mosaic: Mosaic, today: LocalDate, onOpenDay: (Local
             stringResource(R.string.history_ins_your_month, mosaic.month.month.getDisplayName(TextStyle.FULL_STANDALONE, locale)),
             pluralStringResource(R.plurals.history_ins_days_of, mosaic.daysSoFar, mosaic.listenedDays, mosaic.daysSoFar),
         )
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Days stop growing at 56dp on wide cards (foldables, tablets), the grid centred in the card.
+        Column(Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = MOSAIC_MAX_WIDTH).testTag(MOSAIC_GRID_TAG), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 DayOfWeek.entries.forEach { day ->
                     Text(
@@ -99,6 +105,12 @@ internal fun MonthMosaicCard(mosaic: Mosaic, today: LocalDate, onOpenDay: (Local
     }
 }
 
+/** Seven 56dp days and six 6dp gaps. */
+private val MOSAIC_MAX_WIDTH = 56.dp * 7 + 6.dp * 6
+
+/** The month mosaic's grid's test tag. */
+const val MOSAIC_GRID_TAG = "insights_mosaic_grid"
+
 @Composable
 private fun MosaicCell(day: MosaicDay, isToday: Boolean, onOpenDay: (LocalDate) -> Unit) {
     val colors = MaterialTheme.colorScheme
@@ -119,9 +131,10 @@ private fun MosaicCell(day: MosaicDay, isToday: Boolean, onOpenDay: (LocalDate) 
         Modifier
             .fillMaxSize()
             .then(if (isToday) Modifier.todayOutline(colors.onSurface) else Modifier)
+            // The press layer wraps the cell's colour and cover; today's outline stays outside it.
+            .expressiveClickable(shape = shape, feedback = ExpressivePressFeedback.Control) { onOpenDay(day.date) }
             .clip(shape)
             .background(colors.surfaceContainerLow)
-            .expressiveClickable(shape = shape, feedback = ExpressivePressFeedback.Control) { onOpenDay(day.date) }
             .semantics {
                 contentDescription = label
                 role = Role.Button
@@ -198,7 +211,8 @@ internal fun RecordsSection(records: Records) {
             modifier = Modifier.padding(start = 4.dp, top = 8.dp),
         )
         cards.chunked(2).forEach { pair ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Both tiles of a pair end at the same height, whichever has the longer text.
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 pair.forEach { RecordTile(it, Modifier.weight(1f)) }
                 if (pair.size == 1) Box(Modifier.weight(1f))
             }
@@ -219,7 +233,7 @@ private fun RecordTile(card: RecordCard, modifier: Modifier) {
             Icon(card.icon, contentDescription = null, tint = colors.onPrimaryContainer, modifier = Modifier.size(20.dp))
         }
         Text(card.label, style = TimelineType.meta, color = colors.onSurfaceVariant)
-        Text(card.value, style = InsightsType.value24, color = colors.onSurface)
+        Text(card.value, style = InsightsType.value24, color = colors.onSurface, maxLines = 1, autoSize = TextAutoSize.StepBased(minFontSize = 18.sp, maxFontSize = InsightsType.value24.fontSize))
         Text(card.detail, style = TimelineType.meta.copy(letterSpacing = androidx.compose.ui.unit.TextUnit.Unspecified), color = colors.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }

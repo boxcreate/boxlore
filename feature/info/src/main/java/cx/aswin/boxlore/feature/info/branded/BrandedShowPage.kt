@@ -62,6 +62,13 @@ internal interface BrandedShowPage {
     @Composable
     fun Header(podcast: Podcast, feed: List<Episode>, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier)
 
+    /**
+     * True for a spotlight drawn as one card, which stops at a comfortable width in the middle of a
+     * wide page; an open spotlight (heading, title and picture without a card) keeps the page's
+     * start edge instead, lined up with the header and episode list.
+     */
+    val spotlightIsCard: Boolean get() = true
+
     /** The latest episode's card, with its heading. */
     @Composable
     fun Spotlight(spotlight: BrandedSpotlight, modifier: Modifier)
@@ -116,8 +123,13 @@ internal fun MomentHaptic(elapsedMillis: () -> Float, atMillis: Number, type: Ha
 @Immutable
 internal data class BrandedButtonNudge(val offsetY: Dp, val scale: Float)
 
+/**
+ * The Subscribe button's words. [subscribedCheck] puts a check before Subscribed (a Showcase page's
+ * button with room for it), so a subscribed button doesn't read as a disabled block; every subscribe
+ * moment ends on that same label.
+ */
 @Immutable
-internal data class BrandedSubscribeLabels(val subscribe: String, val subscribed: String, val compact: Boolean)
+internal data class BrandedSubscribeLabels(val subscribe: String, val subscribed: String, val compact: Boolean, val subscribedCheck: Boolean = false)
 
 /** Every id a show can be opened under: its Podcast Index feed, a linked RSS copy, its GUID or its feed URL. */
 @Immutable

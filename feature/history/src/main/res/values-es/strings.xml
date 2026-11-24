@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <string name="history_title">Historial de escucha</string>
     <string name="history_back">Atrás</string>
@@ -63,7 +63,6 @@
     <string name="history_tab_insights">Estadísticas</string>
     <string name="history_more_options">Más opciones</string>
     <string name="history_search_hint">Buscar episodios y podcasts</string>
-    <string name="history_search_clear">Borrar búsqueda</string>
     <string name="history_jump_back_in">Retoma donde lo dejaste</string>
     <!-- Opens every in-progress episode. The argument is how many there are. -->
     <string name="history_jump_back_in_all">Los %1$d</string>
@@ -313,7 +312,12 @@
     <string name="history_ins_review_in_progress">Revisar episodios en curso</string>
     <!-- Little data (only a few days timed) -->
     <string name="history_early_title">Lo que llevas escuchado</string>
-    <string name="history_early_finished">episodios terminados</string>
+    <!-- The count is shown in large type beside these words, so the words carry no number. -->
+    <plurals name="history_early_finished" tools:ignore="ImpliedQuantity">
+        <item quantity="one">episodio terminado</item>
+        <item quantity="many">episodios terminados</item>
+        <item quantity="other">episodios terminados</item>
+    </plurals>
     <string name="history_early_in_progress">%1$d en curso</string>
     <plurals name="history_early_played_days">
         <item quantity="one">Reproducido %1$d día este mes</item>
@@ -322,7 +326,7 @@
     </plurals>
     <!-- E.g. "Listening time starts from Oct 22". -->
     <string name="history_early_timing_title">Estadísticas limitadas por ahora</string>
-    <string name="history_early_timing_body">boxlore empezó a guardar tu tiempo de escucha el %1$s. Vuelve después de unos días escuchando para verlo completo.</string>
+    <string name="history_early_timing_body">Desde el %1$s, boxlore guarda tu tiempo de escucha. Vuelve después de unos días escuchando para verlo completo.</string>
     <string name="history_early_timing_body_new">boxlore empieza a guardar tu tiempo de escucha con tu próxima reproducción. Vuelve después de unos días escuchando para verlo completo.</string>
     <string name="history_early_most_played">Podcasts más reproducidos</string>
     <string name="history_early_by_episodes">por episodios</string>
@@ -344,6 +348,8 @@
     <string name="history_story_card_of">Tarjeta %1$d de %2$d</string>
     <string name="history_story_previous">Tarjeta anterior</string>
     <string name="history_story_next">Tarjeta siguiente</string>
+    <string name="history_story_pause">Pausar historia</string>
+    <string name="history_story_play">Reproducir historia</string>
     <string name="history_story_clock">Reloj de escucha: %1$s</string>
     <string name="history_story_hello_eyebrow">Tu mes de escucha</string>
     <string name="history_story_hello_eyebrow_year">Tu mes de escucha · %1$d</string>

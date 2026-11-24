@@ -6,668 +6,381 @@ import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.BatteryAlert
+import androidx.compose.material.icons.rounded.BatteryChargingFull
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DownloadForOffline
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.lerp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
-import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
-import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogConfirmButton
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogDismissButton
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogIcon
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogIconTone
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.feature.settings.R
-import kotlinx.coroutines.launch
+import cx.aswin.boxlore.feature.settings.components.SettingsContent
+import cx.aswin.boxlore.feature.settings.components.SettingsDivider
+import cx.aswin.boxlore.feature.settings.components.SettingsGroup
+import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
+import cx.aswin.boxlore.feature.settings.components.SettingsSwitchRow
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val SmartMaxEpisodes = listOf(5, 10, 15, 25)
+private val SmartStorageBudgets = listOf(250L, 500L, 1000L, 2000L, 5000L, 0L)
+
+/** Test tag on the question asked before Smart Downloads turns off. */
+internal const val SMART_DOWNLOADS_OFF_DIALOG_TAG = "smart_downloads_off_dialog"
+
 @Composable
 fun SmartDownloadsSettingsScreen(
     userPrefs: UserPreferencesRepository,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     TrackScreenView("smart_downloads_settings")
     val context = LocalContext.current
+    val scheduler = remember(context) { WorkManagerSmartDownloadScheduler(context.applicationContext) }
+    SmartDownloadsSettingsContent(userPrefs, scheduler, onBack)
+}
+
+/** The page with its [scheduler] and [writes] passed in, so tests can watch what each control starts. */
+@Composable
+internal fun SmartDownloadsSettingsContent(
+    userPrefs: UserPreferencesRepository,
+    scheduler: SmartDownloadScheduler,
+    onBack: () -> Unit,
+    writes: SmartDownloadsPrefs = remember(userPrefs) { userPrefs.smartDownloadsPrefs() },
+) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val isEnabled by userPrefs.smartDownloadsEnabledStream.collectAsState(initial = false)
-    val maxEpisodes by userPrefs.smartDownloadsMaxEpisodesStream.collectAsState(initial = 10)
-    val storageBudget by userPrefs.smartDownloadsStorageBudgetStream.collectAsState(initial = 1000L)
-    val wifiOnly by userPrefs.smartDownloadsWifiOnlyStream.collectAsState(initial = true)
-    val chargingOnly by userPrefs.smartDownloadsChargingOnlyStream.collectAsState(initial = false)
-    val cleanupRule by userPrefs.smartDownloadsCleanupRuleStream.collectAsState(initial = "after_24h")
-
-    // Check if app is ignoring battery optimizations
-    var isIgnoringBatteryOptimizations by remember {
-        mutableStateOf(
-            (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
-                .isIgnoringBatteryOptimizations(context.packageName)
-        )
+    val isEnabled by userPrefs.smartDownloadsEnabledStream.collectAsStateWithLifecycle(initialValue = false)
+    val maxEpisodes by userPrefs.smartDownloadsMaxEpisodesStream.collectAsStateWithLifecycle(initialValue = 10)
+    val storageBudget by userPrefs.smartDownloadsStorageBudgetStream.collectAsStateWithLifecycle(initialValue = 1000L)
+    val wifiOnly by userPrefs.smartDownloadsWifiOnlyStream.collectAsStateWithLifecycle(initialValue = true)
+    val chargingOnly by userPrefs.smartDownloadsChargingOnlyStream.collectAsStateWithLifecycle(initialValue = false)
+    val cleanupRule by userPrefs.smartDownloadsCleanupRuleStream.collectAsStateWithLifecycle(initialValue = "after_24h")
+    var askBeforeOff by rememberSaveable { mutableStateOf(false) }
+    var showHelp by rememberSaveable { mutableStateOf(false) }
+    val currentState by rememberUpdatedState(SmartDownloadsState(isEnabled, wifiOnly, chargingOnly, maxEpisodes, storageBudget, cleanupRule))
+    val actions = remember(scope, writes, scheduler) {
+        SmartDownloadsActions(scope, writes, scheduler, { currentState }, onConfirmOffChange = { askBeforeOff = it })
     }
+    var isIgnoringBatteryOptimizations by remember { mutableStateOf(isIgnoringBatteryOptimizations(context)) }
 
-    var showExplanation by remember { mutableStateOf(false) }
-
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
-        fraction = scrollBehavior.state.collapsedFraction,
-    )
-
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
-                title = {
-                    Text(
-                        text = stringResource(R.string.settings_smart_downloads_title),
-                        style = titleStyle,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = stringResource(R.string.settings_back)
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                )
-            )
+    SettingsScaffold(
+        title = stringResource(R.string.settings_smart_downloads_title),
+        onBack = onBack,
+        actions = {
+            IconButton(onClick = { showHelp = true }) {
+                Icon(Icons.Rounded.Info, contentDescription = stringResource(R.string.settings_smart_downloads_about))
+            }
         },
-        containerColor = MaterialTheme.colorScheme.surface
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .boxloreCardWidth(BoxloreCardFamily.Utility)
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 180.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Redesigned M3 Switch Card with Inline Explanation
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
-                ),
-                border = BorderStroke(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant
-                ),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                scope.launch {
-                                    val nextVal = !isEnabled
-                                    trackDownloadSetting("smart_downloads_toggled", nextVal, isEnabled)
-                                    userPrefs.setSmartDownloadsEnabled(nextVal)
-                                    if (nextVal) {
-                                        cx.aswin.boxlore.core.downloads.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly, chargingOnly)
-                                    } else {
-                                        cx.aswin.boxlore.core.downloads.SmartDownloadManager.cancelPeriodicSync(context)
-                                        cx.aswin.boxlore.core.downloads.SmartDownloadManager.purgeAllSmartDownloads(context)
-                                    }
-                                }
-                            },
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.settings_smart_downloads_enable),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = GoogleSansWeight.bold
-                                )
-                                IconButton(
-                                    onClick = { showExplanation = !showExplanation },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Info,
-                                        contentDescription = stringResource(R.string.settings_smart_downloads_about),
-                                        tint = if (showExplanation) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = if (isEnabled) stringResource(R.string.settings_smart_downloads_active) else stringResource(R.string.settings_smart_downloads_inactive),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = isEnabled,
-                            onCheckedChange = { checked ->
-                                scope.launch {
-                                    trackDownloadSetting("smart_downloads_toggled", checked, isEnabled)
-                                    userPrefs.setSmartDownloadsEnabled(checked)
-                                    if (checked) {
-                                        cx.aswin.boxlore.core.downloads.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly, chargingOnly)
-                                    } else {
-                                        cx.aswin.boxlore.core.downloads.SmartDownloadManager.cancelPeriodicSync(context)
-                                        cx.aswin.boxlore.core.downloads.SmartDownloadManager.purgeAllSmartDownloads(context)
-                                    }
-                                }
-                            }
-                        )
-                    }
-
-                    // Smooth Expandable Explanation
-                    AnimatedVisibility(
-                        visible = showExplanation,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                                .padding(12.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.settings_smart_downloads_description),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                lineHeight = 16.sp
-                            )
-                        }
-                    }
+    ) {
+        SmartDownloadsSummary(isEnabled)
+        SettingsGroup {
+            SettingsSwitchRow(
+                title = stringResource(R.string.settings_smart_downloads_enable),
+                supportingText = stringResource(if (isEnabled) R.string.settings_smart_downloads_active else R.string.settings_smart_downloads_inactive),
+                icon = Icons.Rounded.DownloadForOffline,
+                checked = isEnabled,
+                onCheckedChange = actions::setEnabled,
+            )
+        }
+        if (isEnabled) {
+            SmartDownloadsLimits(maxEpisodes, storageBudget, actions)
+            SettingsGroup {
+                SettingsSwitchRow(
+                    title = stringResource(R.string.settings_auto_download_wifi_only),
+                    supportingText = stringResource(if (wifiOnly) R.string.settings_smart_downloads_enabled else R.string.settings_smart_downloads_mobile_data),
+                    icon = Icons.Rounded.Wifi,
+                    checked = wifiOnly,
+                    onCheckedChange = actions::setWifiOnly,
+                )
+                SettingsDivider()
+                SettingsSwitchRow(
+                    title = stringResource(R.string.settings_smart_downloads_charging_only),
+                    supportingText = stringResource(if (chargingOnly) R.string.settings_smart_downloads_enabled else R.string.settings_smart_downloads_on_battery),
+                    icon = Icons.Rounded.BatteryChargingFull,
+                    checked = chargingOnly,
+                    onCheckedChange = actions::setChargingOnly,
+                )
+            }
+            SettingsGroup(title = stringResource(R.string.settings_smart_downloads_auto_delete)) {
+                SettingsContent {
+                    ConnectedOptionSelector(
+                        options = listOf(
+                            "immediately" to stringResource(R.string.settings_smart_downloads_delete_immediately),
+                            "after_24h" to stringResource(R.string.settings_smart_downloads_delete_24h),
+                            "after_7d" to stringResource(R.string.settings_smart_downloads_delete_7d),
+                            "never" to stringResource(R.string.settings_smart_downloads_delete_never),
+                        ),
+                        selected = cleanupRule,
+                        onSelect = actions::setCleanupRule,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
+                    )
                 }
             }
-
-            if (isEnabled) {
-                // Constraints & Limit Options (Horizontal M3 Chips)
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
-                    ),
-                    border = BorderStroke(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Section 1: Max Auto-Downloaded Episodes
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                text = stringResource(R.string.settings_smart_downloads_max_episodes),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = GoogleSansWeight.bold,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState())
-                                    .padding(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                listOf(5, 10, 15, 25).forEach { count ->
-                                    val isSelected = maxEpisodes == count
-                                    FilterChip(
-                                        selected = isSelected,
-                                        onClick = {
-                                            trackDownloadSetting("smart_downloads_max_episodes_changed", count, maxEpisodes)
-                                            scope.launch {
-                                                userPrefs.setSmartDownloadsMaxEpisodes(count)
-                                            }
-                                        },
-                                        label = { Text(pluralStringResource(R.plurals.settings_smart_downloads_episode_count, count, count)) },
-                                        leadingIcon = if (isSelected) {
-                                            {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.Check,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(FilterChipDefaults.IconSize)
-                                                )
-                                            }
-                                        } else {
-                                            null
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                        // Section 2: Storage Limit
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                text = stringResource(R.string.settings_smart_downloads_storage_limit),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = GoogleSansWeight.bold,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState())
-                                    .padding(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                listOf(
-                                    250L to smartDownloadsBudgetLabel(250L),
-                                    500L to smartDownloadsBudgetLabel(500L),
-                                    1000L to smartDownloadsBudgetLabel(1000L),
-                                    2000L to smartDownloadsBudgetLabel(2000L),
-                                    5000L to smartDownloadsBudgetLabel(5000L),
-                                    0L to stringResource(R.string.settings_smart_downloads_unlimited)
-                                ).forEach { (bytes, label) ->
-                                    val isSelected = storageBudget == bytes
-                                    FilterChip(
-                                        selected = isSelected,
-                                        onClick = {
-                                            trackDownloadSetting("smart_downloads_storage_budget_changed", bytes, storageBudget)
-                                            scope.launch {
-                                                userPrefs.setSmartDownloadsStorageBudget(bytes)
-                                            }
-                                        },
-                                        label = { Text(label) },
-                                        leadingIcon = if (isSelected) {
-                                            {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.Check,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(FilterChipDefaults.IconSize)
-                                                )
-                                            }
-                                        } else {
-                                            null
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        // Section 3: Dynamic Limit Conflict Warning
-                        val isConflict = storageBudget > 0L && (maxEpisodes * 50L) > storageBudget
-                        AnimatedVisibility(
-                            visible = isConflict,
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut()
-                        ) {
-                            val budgetText = smartDownloadsBudgetLabel(storageBudget)
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 4.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f))
-                                    .border(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Warning,
-                                    contentDescription = stringResource(R.string.settings_smart_downloads_conflict_description),
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                    text = pluralStringResource(R.plurals.settings_smart_downloads_conflict, maxEpisodes, budgetText, maxEpisodes),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Wi-Fi and Battery Constraint Toggles
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
-                    ),
-                    border = BorderStroke(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        // Wi-Fi Constraint
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    scope.launch {
-                                        val nextVal = !wifiOnly
-                                        trackDownloadSetting("smart_downloads_wifi_only_toggled", nextVal, wifiOnly)
-                                        userPrefs.setSmartDownloadsWifiOnly(nextVal)
-                                        if (isEnabled) {
-                                            cx.aswin.boxlore.core.downloads.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly = nextVal, chargingOnly = chargingOnly)
-                                        }
-                                    }
-                                }
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(imageVector = Icons.Rounded.Wifi, contentDescription = null)
-                                Column {
-                                    Text(
-                                        text = stringResource(R.string.settings_auto_download_wifi_only),
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-                                    Text(
-                                        text = if (wifiOnly) stringResource(R.string.settings_smart_downloads_enabled) else stringResource(R.string.settings_smart_downloads_mobile_data),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            Switch(
-                                checked = wifiOnly,
-                                onCheckedChange = { checked ->
-                                    scope.launch {
-                                        trackDownloadSetting("smart_downloads_wifi_only_toggled", checked, wifiOnly)
-                                        userPrefs.setSmartDownloadsWifiOnly(checked)
-                                        if (isEnabled) {
-                                            cx.aswin.boxlore.core.downloads.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly = checked, chargingOnly = chargingOnly)
-                                        }
-                                    }
-                                }
-                            )
-                        }
-
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                        // Charging Constraint
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    scope.launch {
-                                        val nextVal = !chargingOnly
-                                        trackDownloadSetting("smart_downloads_charging_only_toggled", nextVal, chargingOnly)
-                                        userPrefs.setSmartDownloadsChargingOnly(nextVal)
-                                        if (isEnabled) {
-                                            cx.aswin.boxlore.core.downloads.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly = wifiOnly, chargingOnly = nextVal)
-                                        }
-                                    }
-                                }
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(imageVector = Icons.Rounded.BatteryChargingFull, contentDescription = null)
-                                Column {
-                                    Text(
-                                        text = stringResource(R.string.settings_smart_downloads_charging_only),
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-                                    Text(
-                                        text = if (chargingOnly) stringResource(R.string.settings_smart_downloads_enabled) else stringResource(R.string.settings_smart_downloads_on_battery),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            Switch(
-                                checked = chargingOnly,
-                                onCheckedChange = { checked ->
-                                    scope.launch {
-                                        trackDownloadSetting("smart_downloads_charging_only_toggled", checked, chargingOnly)
-                                        userPrefs.setSmartDownloadsChargingOnly(checked)
-                                        if (isEnabled) {
-                                            cx.aswin.boxlore.core.downloads.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly = wifiOnly, chargingOnly = checked)
-                                        }
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-
-                // Cleanup rules card (Auto-delete played episodes)
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
-                    ),
-                    border = BorderStroke(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.DeleteSweep,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = stringResource(R.string.settings_smart_downloads_auto_delete),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = GoogleSansWeight.bold
-                            )
-                        }
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            listOf(
-                                "immediately" to stringResource(R.string.settings_smart_downloads_delete_immediately),
-                                "after_24h" to stringResource(R.string.settings_smart_downloads_delete_24h),
-                                "after_7d" to stringResource(R.string.settings_smart_downloads_delete_7d),
-                                "never" to stringResource(R.string.settings_smart_downloads_delete_never)
-                            ).forEach { (rule, label) ->
-                                val isSelected = cleanupRule == rule
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = {
-                                        trackDownloadSetting("smart_downloads_cleanup_rule_changed", rule, cleanupRule)
-                                        scope.launch {
-                                            userPrefs.setSmartDownloadsCleanupRule(rule)
-                                        }
-                                    },
-                                    label = { Text(label) },
-                                    leadingIcon = if (isSelected) {
-                                        {
-                                            Icon(
-                                                imageVector = Icons.Rounded.Check,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(FilterChipDefaults.IconSize)
-                                            )
-                                        }
-                                    } else {
-                                        null
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Battery Optimization exemption card
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
-                    ),
-                    border = BorderStroke(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Header Row: Icon and Title
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (isIgnoringBatteryOptimizations) Icons.Rounded.BatteryChargingFull else Icons.Rounded.BatteryAlert,
-                                contentDescription = null,
-                                tint = if (isIgnoringBatteryOptimizations) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text = stringResource(R.string.settings_smart_downloads_background),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = GoogleSansWeight.bold
-                            )
-                        }
-
-                        // Full-width description text
-                        Text(
-                            text = if (isIgnoringBatteryOptimizations) stringResource(R.string.settings_smart_downloads_background_allowed) else stringResource(R.string.settings_smart_downloads_background_blocked),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Action Button / Allowed Badge
-                        if (isIgnoringBatteryOptimizations) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.align(Alignment.End)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.settings_smart_downloads_allowed),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = GoogleSansWeight.bold,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                )
-                            }
-                        } else {
-                            Button(
-                                onClick = {
-                                    try {
-                                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                                            data = Uri.parse("package:${context.packageName}")
-                                        }
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        Log.e("SmartDownloadsSettings", "Failed to launch battery settings", e)
-                                    }
-                                },
-                                shape = RoundedCornerShape(100.dp),
-                                modifier = Modifier.fillMaxWidth(),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.settings_smart_downloads_allow),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = GoogleSansWeight.bold
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+            SmartDownloadsBackgroundGroup(isIgnoringBatteryOptimizations) { openBatterySettings(context) }
         }
     }
 
-    // Refresh battery optimization state when the activity is resumed (returns to foreground)
+    if (askBeforeOff) SmartDownloadsOffDialog(onConfirm = actions::confirmDisable, onDismiss = actions::dismissDisable)
+    if (showHelp) SmartDownloadsHelp(backgroundAllowed = isIgnoringBatteryOptimizations, onDismiss = { showHelp = false })
+
+    // Refresh the battery optimization state when boxlore comes back to the foreground.
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                isIgnoringBatteryOptimizations = (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
-                    .isIgnoringBatteryOptimizations(context.packageName)
-            }
+            if (event == Lifecycle.Event.ON_RESUME) isIgnoringBatteryOptimizations = isIgnoringBatteryOptimizations(context)
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+}
+
+@Composable
+private fun SmartDownloadsSummary(enabled: Boolean) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(18.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Rounded.AutoAwesome, contentDescription = null, modifier = Modifier.size(28.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
+                Text(
+                    stringResource(if (enabled) R.string.settings_smart_downloads_active else R.string.settings_smart_downloads_inactive),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = GoogleSansWeight.semiBold,
+                )
+                // One line here, as on the Downloads page; the full explanation is in About Smart Downloads.
+                Text(stringResource(R.string.settings_downloads_smart_description), style = MaterialTheme.typography.bodyMedium)
+            }
         }
+    }
+}
+
+/** How many episodes and how much room Smart Downloads may use, with a warning when the two disagree. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SmartDownloadsLimits(maxEpisodes: Int, storageBudget: Long, actions: SmartDownloadsActions) {
+    SettingsGroup {
+        SettingsContent {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.settings_smart_downloads_max_episodes), style = MaterialTheme.typography.labelLarge)
+                ConnectedOptionSelector(
+                    options = SmartMaxEpisodes.map { it to it.toString() },
+                    selected = maxEpisodes,
+                    onSelect = actions::setMaxEpisodes,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
+                )
+            }
+        }
+        SettingsDivider()
+        SettingsContent {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.settings_smart_downloads_storage_limit), style = MaterialTheme.typography.labelLarge)
+                FlowRow(
+                    modifier = Modifier.selectableGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    SmartStorageBudgets.forEach { megabytes ->
+                        val selected = storageBudget == megabytes
+                        FilterChip(
+                            selected = selected,
+                            onClick = { actions.setStorageBudget(megabytes) },
+                            label = { Text(if (megabytes == 0L) stringResource(R.string.settings_smart_downloads_unlimited) else smartDownloadsBudgetLabel(megabytes)) },
+                            modifier = Modifier.defaultMinSize(minHeight = 48.dp).semantics { role = Role.RadioButton },
+                            leadingIcon = if (selected) {
+                                { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
+                            } else {
+                                null
+                            },
+                        )
+                    }
+                }
+                val conflict = storageBudget > 0L && maxEpisodes * 50L > storageBudget
+                if (conflict) SmartDownloadsConflict(maxEpisodes, storageBudget)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SmartDownloadsConflict(maxEpisodes: Int, storageBudget: Long) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Rounded.Warning,
+                contentDescription = stringResource(R.string.settings_smart_downloads_conflict_description),
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                pluralStringResource(R.plurals.settings_smart_downloads_conflict, maxEpisodes, smartDownloadsBudgetLabel(storageBudget), maxEpisodes),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SmartDownloadsBackgroundGroup(allowed: Boolean, onAllow: () -> Unit) {
+    SettingsGroup(title = stringResource(R.string.settings_smart_downloads_background)) {
+        SettingsContent {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                    Icon(
+                        if (allowed) Icons.Rounded.BatteryChargingFull else Icons.Rounded.BatteryAlert,
+                        contentDescription = null,
+                        tint = if (allowed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    )
+                    Text(
+                        stringResource(if (allowed) R.string.settings_smart_downloads_background_allowed else R.string.settings_smart_downloads_background_blocked),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (allowed) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        shape = MaterialTheme.shapes.small,
+                        modifier = Modifier.align(Alignment.End),
+                    ) {
+                        Text(
+                            stringResource(R.string.settings_smart_downloads_allowed),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = GoogleSansWeight.bold,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        )
+                    }
+                } else {
+                    Button(onClick = onAllow, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                        Text(stringResource(R.string.settings_smart_downloads_allow), style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Asked before turning off, because turning off also removes the episodes Smart Downloads saved. */
+@Composable
+private fun SmartDownloadsOffDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    TrackScreenView("smart_downloads_off_confirmation")
+    BoxloreAlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.testTag(SMART_DOWNLOADS_OFF_DIALOG_TAG),
+        icon = { BoxloreDialogIcon(Icons.Rounded.DownloadForOffline, tone = BoxloreDialogIconTone.Destructive) },
+        title = { Text(stringResource(R.string.settings_smart_downloads_off_title)) },
+        text = {
+            Text(
+                stringResource(R.string.settings_smart_downloads_off_body),
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            )
+        },
+        confirmButton = { BoxloreDialogConfirmButton(stringResource(R.string.settings_smart_downloads_off_confirm), onConfirm, destructive = true) },
+        dismissButton = { BoxloreDialogDismissButton(stringResource(R.string.settings_cancel), onDismiss) },
+    )
+}
+
+@Composable
+private fun SmartDownloadsHelp(backgroundAllowed: Boolean, onDismiss: () -> Unit) {
+    BoxloreAlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Rounded.AutoAwesome, contentDescription = null) },
+        title = { Text(stringResource(R.string.settings_smart_downloads_about)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(stringResource(R.string.settings_smart_downloads_description), style = MaterialTheme.typography.bodyMedium)
+                // Says what is true now: background downloads already allowed, or how a phone may block them.
+                val background = if (backgroundAllowed) R.string.settings_smart_downloads_background_allowed else R.string.settings_smart_downloads_background_blocked
+                Text(stringResource(background), style = MaterialTheme.typography.bodyMedium)
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_got_it)) } },
+    )
+}
+
+private fun isIgnoringBatteryOptimizations(context: Context): Boolean =
+    (context.getSystemService(Context.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(context.packageName)
+
+@Suppress("TooGenericExceptionCaught") // Some phones refuse this screen in their own ways; the page stays put.
+private fun openBatterySettings(context: Context) {
+    try {
+        context.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply { data = Uri.parse("package:${context.packageName}") })
+    } catch (e: Exception) {
+        Log.e("SmartDownloadsSettings", "Failed to launch battery settings", e)
     }
 }
 

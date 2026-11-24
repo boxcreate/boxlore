@@ -2,13 +2,16 @@ package cx.aswin.boxlore.feature.briefing
 
 import android.app.Application
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -16,22 +19,30 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -42,11 +53,12 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -62,29 +74,41 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -92,7 +116,6 @@ import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
-import cx.aswin.boxlore.core.designsystem.briefing.BRIEFING_COVER_ASPECT_RATIO
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingCover
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingEditorialTheme
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingPageStatusBars
@@ -101,9 +124,18 @@ import cx.aswin.boxlore.core.designsystem.briefing.briefingRegionLabel
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardSpec
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneStatusBarsPadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.text.LocaleFormats
@@ -111,6 +143,7 @@ import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.QueueManager
 import cx.aswin.boxlore.core.prefs.BriefingEdition
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.feature.briefing.R as BriefingR
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Locale
@@ -163,7 +196,8 @@ fun BriefingRoute(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongParameterList") // Public screen callbacks delegate to focused components.
+// Public screen callbacks delegate to focused components; the layout choice adds its branches.
+@Suppress("LongParameterList", "CyclomaticComplexMethod")
 @Composable
 fun BriefingScreen(
     uiState: BriefingUiState,
@@ -181,53 +215,96 @@ fun BriefingScreen(
 ) {
     TrackScreenView("daily_briefing", send = {}) // daily_briefing_action screen_viewed is its view
     val scroll = rememberScrollState()
+    val success = uiState as? BriefingUiState.Success
+    // Held above the layout switch, so the story the listener is on and each layout's scroll survive
+    // turning a tablet, unfolding or resizing a window. Another edition starts again at its first story.
+    val edition = success?.briefing?.let { it.region to it.date }
+    val listState = key(edition) { rememberLazyListState() }
+    val startScroll = key(edition) { rememberScrollState() }
+    // Above the layouts, so a listener's recent scroll still holds playback off after a window change.
+    val followHold = key(edition) { remember { StoryFollowHold() } }
+    var storyIndex by rememberSaveable(edition?.first, edition?.second) { mutableIntStateOf(0) }
     var showPreferences by remember { mutableStateOf(false) }
     var showSources by remember { mutableStateOf(false) }
 
     val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val success = uiState as? BriefingUiState.Success
     var coverHeight by remember { mutableFloatStateOf(0f) }
     // The loading page already shows the bundled cover, so the status bar treats it like the edition.
     val hasCover = uiState !is BriefingUiState.Error
-    val coverVisible by remember(hasCover, scroll) {
-        derivedStateOf { hasCover && (coverHeight == 0f || scroll.value < coverHeight) }
-    }
-    BriefingPageStatusBars(coverVisible = coverVisible)
     LaunchedEffect(success?.briefing?.region, success?.briefing?.date) {
         success?.briefing?.let {
             AnalyticsHelper.trackDailyBriefingScreenViewed(it.region, it.date, initialRegion?.let { "notification" } ?: "home_banner")
         }
     }
     BriefingEditorialTheme {
-        Surface(modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxSize().testTag("briefing_reading_frame").onSizeChanged { coverHeight = it.width / BRIEFING_COVER_ASPECT_RATIO }, color = MaterialTheme.colorScheme.background) {
-            Box(Modifier.fillMaxSize()) {
-                AnimatedContent(uiState, contentKey = { it.presentationKey() }, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "briefingState") { displayedState ->
-                    when (displayedState) {
-                        is BriefingUiState.Loading -> BriefingLoadingContent(displayedState.selectedRegion, topPadding)
-                        is BriefingUiState.Error -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(displayedState.message, style = MaterialTheme.typography.bodyLarge)
-                            Button(onClick = { onRegionSelect(displayedState.selectedRegion) }, modifier = Modifier.padding(top = 16.dp)) { Text(stringResource(R.string.briefing_try_again)) }
-                            BriefingRegionMenu(displayedState.selectedRegion, onRegionSelect)
+        BoxWithConstraints(modifier.fillMaxSize()) {
+            val mode = BriefingLayoutMode.of(maxWidth.value, maxHeight.value, boxloreIsShortPane())
+            val twoPane = mode == BriefingLayoutMode.TwoPane && uiState !is BriefingUiState.Error
+            // Phones (sideways too) give the cover the whole width and cap the text below it; tablets use
+            // a reading-width frame; two panes get a wider one.
+            val readingSpec = boxloreCardSpec(LocalBoxloreWindowLayout.current, BoxloreCardFamily.Reading)
+            val frameCap = when {
+                twoPane -> BRIEFING_TWO_PANE_MAX_WIDTH_DP
+                readingSpec.preserveCallerGeometry -> null
+                else -> readingSpec.maximumWidthDp
+            }
+            val frameWidth = frameCap?.let { minOf(it, maxWidth.value) } ?: maxWidth.value
+            // White status icons only while the dark cover is under the whole status bar: the page fills the
+            // space it was given (no narrower reading frame, no two panes) and starts at the window's top.
+            val coverSpansStatusBar = !twoPane && frameWidth >= maxWidth.value - 1f && (LocalBoxlorePaneBounds.current?.top ?: 0f) < 1f
+            // Once what is left of the cover is shorter than the floating buttons' band, the page's text
+            // reaches the buttons: the band of page colour takes over the top, status bar included.
+            val bandPx = with(LocalDensity.current) { (topPadding + BRIEFING_TOP_BAND_HEIGHT).toPx() }
+            val scrolledPastCover by remember(scroll, listState, startScroll, mode, bandPx) {
+                derivedStateOf {
+                    val scrolled = when (mode) {
+                        BriefingLayoutMode.Pager -> scroll.value
+                        BriefingLayoutMode.List -> if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset else Int.MAX_VALUE
+                        BriefingLayoutMode.TwoPane -> startScroll.value
+                    }
+                    coverHeight > 0f && scrolled >= coverHeight - bandPx
+                }
+            }
+            BriefingPageStatusBars(coverVisible = hasCover && coverSpansStatusBar && !scrolledPastCover)
+            val split = if (twoPane) {
+                val paneLeft = LocalBoxlorePaneBounds.current?.left ?: 0f
+                briefingTwoPaneSplit(LocalBoxloreWindowLayout.current, paneLeft + (maxWidth.value - frameWidth) / 2f, frameWidth, LocalLayoutDirection.current == LayoutDirection.Rtl)
+            } else {
+                null
+            }
+            val frame = frameCap?.let { Modifier.boxloreReadingColumn(it) } ?: Modifier
+            Surface(Modifier.fillMaxSize().then(frame).fillMaxSize().testTag("briefing_reading_frame"), color = MaterialTheme.colorScheme.background) {
+                Box(Modifier.fillMaxSize()) {
+                    val masthead = briefingMastheadLeftPadding()
+                    val onCoverMeasured: (Int) -> Unit = { coverHeight = it.toFloat() }
+                    val layout = BriefingPageLayout(mode, split, storyIndex, { storyIndex = it }, listState, startScroll, followHold)
+                    AnimatedContent(uiState, contentKey = { it.presentationKey() }, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "briefingState") { displayedState ->
+                        when (displayedState) {
+                            is BriefingUiState.Loading -> BriefingLoadingContent(displayedState.selectedRegion, topPadding, masthead, onCoverMeasured, split, mode)
+                            is BriefingUiState.Error -> BriefingErrorContent(displayedState, topPadding, bottomContentPadding, onRegionSelect)
+                            is BriefingUiState.Success -> BriefingEditionContent(
+                                displayedState,
+                                scroll,
+                                BriefingContentActions(onRegionSelect, onPlayPauseClick, onSeekTo, onEpisodeClick, onFeedbackClick, onSources = { showSources = true }),
+                                BriefingPagePadding(topPadding, bottomContentPadding, masthead),
+                                onCoverMeasured,
+                                layout,
+                            )
                         }
-                        is BriefingUiState.Success -> BriefingEditionContent(
-                            displayedState,
-                            scroll,
-                            BriefingContentActions(onRegionSelect, onPlayPauseClick, onSeekTo, onEpisodeClick, onFeedbackClick, onSources = { showSources = true }),
-                            topPadding,
-                            bottomContentPadding,
+                    }
+                    // Once the cover has scrolled away, text passes under a band of page colour, not under bare buttons.
+                    AnimatedVisibility(scrolledPastCover && hasCover, enter = fadeIn(), exit = fadeOut()) {
+                        Box(
+                            Modifier.then(if (split != null) Modifier.width(split.start) else Modifier.fillMaxWidth())
+                                .height(topPadding + BRIEFING_TOP_BAND_HEIGHT)
+                                .background(MaterialTheme.colorScheme.background)
+                                .testTag(BRIEFING_TOP_BAND_TAG),
                         )
                     }
-                }
-                Row(
-                    Modifier.align(AbsoluteAlignment.TopRight).statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                        IconButton(onBackClick, Modifier.testTag("briefingBack")) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.briefing_back)) }
-                    }
-                    Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                        IconButton(onClick = { showPreferences = true }) { Icon(Icons.Rounded.Tune, stringResource(R.string.briefing_preferences)) }
+                    // Back at the start and Preferences at the end, clear of a sideways phone's cutout and side buttons.
+                    Box(Modifier.fillMaxWidth().boxlorePaneStatusBarsPadding().boxloreHorizontalSafePadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                        BriefingTopButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.briefing_back), onBackClick, Modifier.align(Alignment.TopStart).testTag("briefingBack"))
+                        BriefingTopButton(Icons.Rounded.Tune, stringResource(R.string.briefing_preferences), { showPreferences = true }, Modifier.align(Alignment.TopEnd))
                     }
                 }
             }
@@ -241,12 +318,19 @@ fun BriefingScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** The floating buttons' row below the status bar (12dp, the 48dp buttons, 12dp), and the band behind it's test tag. */
+private val BRIEFING_TOP_BAND_HEIGHT = 72.dp
+internal const val BRIEFING_TOP_BAND_TAG = "briefing_top_band"
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun BriefingPlaybackControls(state: BriefingUiState.Success, onPlay: () -> Unit, onSources: () -> Unit, onSeekTo: (Long) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(modifier = Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
-            Button(onPlay, modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 52.dp), shape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp, topEnd = 4.dp, bottomEnd = 4.dp)) {
+        // Listen and Sources are one connected pair that morphs on press; with no sources Listen is a full pill.
+        val hasSources = state.briefing.sources.isNotEmpty()
+        val listenShape = if (hasSources) RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp, topEnd = 7.dp, bottomEnd = 7.dp) else CircleShape
+        Row(modifier = Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween), verticalAlignment = Alignment.CenterVertically) {
+            Button(onPlay, modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 52.dp).testTag("briefingListen"), shapes = ButtonDefaults.shapes(shape = listenShape, pressedShape = RoundedCornerShape(18.dp))) {
                 if (state.isBuffering) {
                     BoxLoreLoader.CircularWavy(size = 22.dp, color = MaterialTheme.colorScheme.onPrimary)
                 } else {
@@ -263,8 +347,8 @@ private fun BriefingPlaybackControls(state: BriefingUiState.Success, onPlay: () 
                     },
                 )
             }
-            if (state.briefing.sources.isNotEmpty()) {
-                FilledTonalIconButton(onSources, modifier = Modifier.width(52.dp).fillMaxHeight(), shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 28.dp, bottomEnd = 28.dp), colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurface)) {
+            if (hasSources) {
+                FilledTonalIconButton(onSources, modifier = Modifier.width(52.dp).fillMaxHeight(), shapes = IconButtonDefaults.shapes(shape = RoundedCornerShape(topStart = 7.dp, bottomStart = 7.dp, topEnd = 28.dp, bottomEnd = 28.dp), pressedShape = RoundedCornerShape(18.dp)), colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurface)) {
                     Icon(Icons.Rounded.Link, stringResource(R.string.briefing_sources))
                 }
             }
@@ -274,6 +358,11 @@ private fun BriefingPlaybackControls(state: BriefingUiState.Success, onPlay: () 
             val interactionSource = remember { MutableInteractionSource() }
             val sliderValue = seekPosition ?: (state.currentPosition.toFloat() / state.duration).coerceIn(0f, 1f)
             val sliderState = remember { SliderState(sliderValue) }
+            // TalkBack hears what the slider is and where it is, "12:03 of 58:00", not just a percentage.
+            val seekName = stringResource(BriefingR.string.briefing_screen_seek_name)
+            val total = formatChapterTime(state.duration / 1000)
+            val positionTemplate = stringResource(BriefingR.string.briefing_screen_seek_position)
+            val spokenPosition = { fraction: Float -> positionTemplate.format(formatChapterTime((fraction * state.duration / 1000).toLong()), total) }
             sliderState.value = sliderValue
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Slider(
@@ -292,7 +381,10 @@ private fun BriefingPlaybackControls(state: BriefingUiState.Success, onPlay: () 
                     track = { slider ->
                         BriefingProgressTrack(progress = { slider.value }, playing = state.isPlaying)
                     },
-                    modifier = Modifier.weight(1f).height(48.dp).testTag("briefingSeekbar"),
+                    modifier = Modifier.weight(1f).height(48.dp).testTag("briefingSeekbar").semantics {
+                        contentDescription = seekName
+                        stateDescription = spokenPosition(sliderValue)
+                    },
                 )
                 Text(formatRemaining(((state.duration - state.currentPosition) / 1000).coerceAtLeast(0)) ?: stringResource(R.string.briefing_finished), style = MaterialTheme.typography.labelSmall)
             }
@@ -323,19 +415,33 @@ private fun BriefingProgressTrack(progress: () -> Float, playing: Boolean) {
 @Composable
 private fun BriefingPreferencesSheet(defaultEdition: String, onSelect: (String) -> Unit, onDismiss: () -> Unit) {
     TrackScreenView("briefing_preferences")
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 12.dp)) {
-            Text(stringResource(R.string.briefing_default_region), style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.briefing_default_region), style = briefingSheetHeadline())
             Text(stringResource(R.string.briefing_default_region_description), modifier = Modifier.padding(top = 8.dp, bottom = 16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            (listOf(BriefingEdition.FOLLOW_APP) + BriefingEdition.regions).forEach { edition ->
-                Surface(onClick = { onSelect(edition) }, color = if (edition == defaultEdition) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-                    Row(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = edition == defaultEdition, onClick = null)
-                        Text(stringResource(if (edition == BriefingEdition.FOLLOW_APP) R.string.briefing_follow_app_region else briefingRegionLabel(edition)), modifier = Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
+            // One choice list, read out as one, like boxlore's other region picker: solid rows, the chosen one filled, the radio at the end.
+            Column(Modifier.fillMaxWidth().selectableGroup(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                (listOf(BriefingEdition.FOLLOW_APP) + BriefingEdition.regions).forEach { edition ->
+                    val selected = edition == defaultEdition
+                    val scheme = MaterialTheme.colorScheme
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().selectable(selected = selected, role = Role.RadioButton, onClick = { onSelect(edition) }),
+                        shape = MaterialTheme.shapes.large,
+                        color = if (selected) scheme.primaryContainer else scheme.surfaceContainerHigh,
+                        contentColor = if (selected) scheme.onPrimaryContainer else scheme.onSurface,
+                    ) {
+                        Row(Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                stringResource(if (edition == BriefingEdition.FOLLOW_APP) R.string.briefing_follow_app_region else briefingRegionLabel(edition)),
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            RadioButton(selected = selected, onClick = null)
+                        }
                     }
                 }
             }
-            TextButton(onDismiss, modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.briefing_done)) }
+            TextButton(onDismiss, modifier = Modifier.align(Alignment.End).padding(top = 8.dp)) { Text(stringResource(R.string.briefing_done)) }
         }
     }
 }
@@ -345,15 +451,16 @@ private fun BriefingPreferencesSheet(defaultEdition: String, onSelect: (String) 
 private fun BriefingSourcesSheet(briefing: Briefing, onDismiss: () -> Unit) {
     TrackScreenView("briefing_sources")
     val uriHandler = LocalUriHandler.current
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
-            Text(stringResource(R.string.briefing_sources), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.briefing_sources), style = briefingSheetHeadline(), modifier = Modifier.padding(bottom = 16.dp))
+            // The title stays put while a long list scrolls.
+            LazyColumn(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(briefing.sources) { source ->
                     Surface(onClick = {
                         AnalyticsHelper.trackDailyBriefingInteraction("source_clicked", briefing.region, briefing.date, mapOf("source_title" to source.title, "source_url" to source.url))
                         uriHandler.openUri(source.url)
-                    }, color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                    }, color = MaterialTheme.colorScheme.surfaceContainerHigh, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
                         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(getDomainName(source.url), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
@@ -368,6 +475,16 @@ private fun BriefingSourcesSheet(briefing: Briefing, onDismiss: () -> Unit) {
     }
 }
 
+/**
+ * The Brief sheets' headline: headlineSmall drawn bold. The theme's styles carry their weight in the
+ * font, so the font itself is taken at the bold weight.
+ */
+@Composable
+private fun briefingSheetHeadline(): TextStyle = MaterialTheme.typography.headlineSmall.copy(
+    fontFamily = rememberGoogleSansFamily(GoogleSansWeight.bold.weight),
+    fontWeight = GoogleSansWeight.bold,
+)
+
 private data class BriefingContentActions(
     val region: (String) -> Unit,
     val play: (Briefing, Long?) -> Unit,
@@ -377,104 +494,203 @@ private data class BriefingContentActions(
     val onSources: () -> Unit,
 )
 
+/** The page's layout and the story the listener is on, kept across layouts (pager page ↔ list position). */
+private class BriefingPageLayout(
+    val mode: BriefingLayoutMode,
+    val split: BriefingTwoPaneSplit?,
+    val storyIndex: Int,
+    val onStoryIndex: (Int) -> Unit,
+    val listState: LazyListState,
+    val startScroll: ScrollState,
+    val followHold: StoryFollowHold,
+)
+
 @Composable
 private fun BriefingEditionContent(
     state: BriefingUiState.Success,
     scroll: ScrollState,
     actions: BriefingContentActions,
-    topPadding: Dp,
-    bottomContentPadding: Dp,
+    padding: BriefingPagePadding,
+    onCoverMeasured: (Int) -> Unit,
+    layout: BriefingPageLayout,
 ) {
-    val onRegionSelect = actions.region
-    val onPlayPauseClick = actions.play
-    val onSeekTo = actions.seek
-    val onEpisodeClick = actions.episode
-    val onFeedbackClick = actions.feedback
-    Column(
-        Modifier.fillMaxWidth().verticalScroll(scroll).testTag("briefingArticle").padding(bottom = bottomContentPadding + 24.dp).navigationBarsPadding(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        BriefingCover(
-            region = state.briefing.region,
-            editionDate = state.briefing.date,
-            modifier = Modifier.fillMaxWidth().aspectRatio(BRIEFING_COVER_ASPECT_RATIO).clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)).testTag("briefingPageCover"),
-            mastheadTopPadding = topPadding + 12.dp,
-            mastheadScrim = true,
-        )
-        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                itemVerticalAlignment = Alignment.CenterVertically,
-            ) {
-                val locale = currentLocale()
-                val date = remember(state.briefing.date, locale) { briefingDisplayDate(state.briefing.date, locale) }
-                val stories = state.chapters.takeIf { it.isNotEmpty() }?.let {
-                    pluralStringResource(R.plurals.briefing_story_count, it.size, it.size)
+    val bottomInsets = Modifier.windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom))
+    // The lists scroll their last item clear of a 3-button navigation bar, as the pager page does.
+    val listBottom = padding.bottom + 24.dp + WindowInsets.navigationBars.only(WindowInsetsSides.Bottom).asPaddingValues().calculateBottomPadding()
+    when (layout.mode) {
+        BriefingLayoutMode.Pager -> Column(
+            Modifier.fillMaxWidth().verticalScroll(scroll).testTag("briefingArticle").padding(bottom = padding.bottom + 24.dp)
+                // Only the bottom bar: the cover reaches the side edges, and text clears side buttons on its own.
+                .then(bottomInsets),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            BriefingEditionHeader(state, actions, padding, onCoverMeasured)
+            // On a sideways phone the cover spans the window; the stories and the footer keep a reading width.
+            Box(Modifier.boxloreReadingColumn()) {
+                // Another edition opens at its first story, in a pager of its own.
+                key(state.briefing.region, state.briefing.date) {
+                    BriefingStoriesPager(
+                        briefing = state.briefing,
+                        chapters = state.chapters,
+                        chaptersLoading = state.chaptersLoading,
+                        isPlaying = state.isPlaying,
+                        currentPositionMs = state.currentPosition,
+                        accentColor = MaterialTheme.colorScheme.primary,
+                        onEpisodeClick = actions.episode,
+                        onPlayPauseClick = { actions.play(state.briefing, it) },
+                        onShowSources = { actions.onSources() },
+                        initialPage = layout.storyIndex,
+                        onPageChange = layout.onStoryIndex,
+                    )
                 }
-                Text(
-                    listOfNotNull(date, stories, formatBriefingListenDuration(state.duration)?.asString()).joinToString(" · "),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                BriefingRegionMenu(state.selectedRegion, onSelect = { region ->
-                    AnalyticsHelper.trackDailyBriefingRegionChanged(state.selectedRegion, region, state.briefing.date)
-                    onRegionSelect(region)
-                })
             }
-            Text(
-                state.briefing.title,
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.Normal,
-                fontSize = 32.sp,
-                lineHeight = 36.sp,
-                letterSpacing = (-0.4).sp
-            )
-            BriefingPlaybackControls(state, onPlay = {
-                if (state.isPlaying) {
-                    AnalyticsHelper.trackDailyBriefingPauseClicked(state.briefing.region, state.briefing.date, "briefing_detail")
-                } else {
-                    AnalyticsHelper.trackDailyBriefingPlayClicked(state.briefing.region, state.briefing.date, "briefing_detail")
-                }
-                onPlayPauseClick(state.briefing, null)
-            }, onSources = {
-                AnalyticsHelper.trackDailyBriefingInteraction("sources_sheet_opened", state.briefing.region, state.briefing.date, mapOf("sources_count" to state.briefing.sources.size))
-                actions.onSources()
-            }, onSeekTo = onSeekTo)
+            BriefingEditionFooter(state, actions, Modifier.boxloreReadingColumn().boxloreHorizontalSafePadding().padding(horizontal = 20.dp).boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth())
         }
-        BriefingStoriesPager(
-            briefing = state.briefing,
-            chapters = state.chapters,
-            chaptersLoading = state.chaptersLoading,
-            isPlaying = state.isPlaying,
-            currentPositionMs = state.currentPosition,
-            accentColor = MaterialTheme.colorScheme.primary,
-            onEpisodeClick = onEpisodeClick,
-            onPlayPauseClick = { onPlayPauseClick(state.briefing, it) },
-            onShowSources = { actions.onSources() },
-        )
-        Surface(Modifier.padding(horizontal = 20.dp).boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
-            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (state.briefing.sources.isNotEmpty()) {
-                    Surface(onClick = { actions.onSources() }, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {
-                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text(stringResource(R.string.briefing_original_reporting), style = MaterialTheme.typography.titleSmall)
-                                Text(pluralStringResource(R.plurals.briefing_source_count, state.briefing.sources.size, state.briefing.sources.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            Icon(Icons.Rounded.ArrowOutward, stringResource(R.string.briefing_open_sources), Modifier.size(20.dp))
-                        }
+        // Portrait tablets: the same one column, with every story listed instead of a pager.
+        BriefingLayoutMode.List -> {
+            val model = rememberStoryListModel(state, actions)
+            // Arriving from a pager: open at the story the listener was on (the edition stays above story 1).
+            // Playback moves the list only once the listener is among the stories, never away from Listen and the seek bar.
+            FollowPlayingStory(layout.listState, model, firstStoryItem = 1, startAt = layout.storyIndex.takeIf { it > 0 }, onStoryInView = layout.onStoryIndex, hold = layout.followHold) { it.firstVisibleItemIndex >= 1 }
+            LazyColumn(
+                state = layout.listState,
+                modifier = Modifier.fillMaxSize().testTag("briefingArticle"),
+                contentPadding = PaddingValues(bottom = listBottom),
+                verticalArrangement = BriefingStoryListSpacing,
+            ) {
+                item(key = "edition") { Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { BriefingEditionHeader(state, actions, padding, onCoverMeasured) } }
+                if (model.chapters.isEmpty()) item(key = "no_stories") { BriefingStoriesPager(state.briefing, state.chapters, state.isPlaying, state.currentPosition, MaterialTheme.colorScheme.primary, state.chaptersLoading, actions.episode, { actions.play(state.briefing, it) }) }
+                briefingStoryItems(model, PaddingValues(horizontal = 20.dp))
+                item(key = "footer") { BriefingEditionFooter(state, actions, Modifier.padding(horizontal = 20.dp).fillMaxWidth()) }
+            }
+        }
+        // Wide windows: the edition at the start, every story in a list beside it.
+        BriefingLayoutMode.TwoPane -> {
+            val model = rememberStoryListModel(state, actions)
+            FollowPlayingStory(layout.listState, model, firstStoryItem = 0, startAt = layout.storyIndex, onStoryInView = layout.onStoryIndex, hold = layout.followHold)
+            val split = layout.split ?: BriefingTwoPaneSplit(BRIEFING_START_PANE_MIN_DP.dp, 24.dp)
+            Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(split.gap)) {
+                Column(
+                    Modifier.width(split.start).fillMaxHeight().verticalScroll(layout.startScroll).testTag(BRIEFING_START_PANE_TAG).padding(bottom = padding.bottom + 24.dp).then(bottomInsets),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    BriefingEditionHeader(state, actions, padding, onCoverMeasured)
+                    BriefingEditionFooter(state, actions, Modifier.padding(horizontal = 20.dp).fillMaxWidth())
+                }
+                Box(Modifier.weight(1f).fillMaxHeight()) {
+                    // The list starts below the floating buttons, so stories never pass under Preferences.
+                    LazyColumn(
+                        state = layout.listState,
+                        modifier = Modifier.padding(top = padding.top + BRIEFING_TOP_BAND_HEIGHT).widthIn(max = BRIEFING_STORY_LIST_MAX_DP.dp).fillMaxHeight().testTag(BRIEFING_STORY_LIST_TAG),
+                        contentPadding = PaddingValues(end = 20.dp, bottom = listBottom),
+                        verticalArrangement = BriefingStoryListSpacing,
+                    ) {
+                        if (model.chapters.isEmpty()) item(key = "no_stories") { BriefingStoriesPager(state.briefing, state.chapters, state.isPlaying, state.currentPosition, MaterialTheme.colorScheme.primary, state.chaptersLoading, actions.episode, { actions.play(state.briefing, it) }) }
+                        briefingStoryItems(model)
                     }
                 }
-                Text(stringResource(R.string.briefing_disclaimer), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                TextButton(onClick = onFeedbackClick, contentPadding = PaddingValues(0.dp)) { Text(stringResource(R.string.briefing_report_issue)) }
             }
         }
     }
 }
+
+@Composable
+private fun rememberStoryListModel(state: BriefingUiState.Success, actions: BriefingContentActions): BriefingStoryListModel {
+    val play = remember(state.briefing, actions) { { position: Long? -> actions.play(state.briefing, position) } }
+    val sources = remember(actions) { { actions.onSources() } }
+    return rememberBriefingStoryListModel(state.briefing, state.chapters, state.isPlaying, state.currentPosition, actions.episode, play, sources)
+}
+
+/** The cover, the date line with the edition menu, the headline, Listen and Sources, and the seek bar. */
+@Composable
+private fun BriefingEditionHeader(state: BriefingUiState.Success, actions: BriefingContentActions, padding: BriefingPagePadding, onCoverMeasured: (Int) -> Unit) {
+    BriefingCover(
+        region = state.briefing.region,
+        editionDate = state.briefing.date,
+        modifier = Modifier.briefingPageCoverSize().onSizeChanged { onCoverMeasured(it.height) }.clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)).testTag("briefingPageCover"),
+        mastheadTopPadding = padding.top + 12.dp,
+        mastheadScrim = true,
+        mastheadLeftPadding = padding.mastheadLeft,
+        artworkContentScale = briefingCoverScale(),
+    )
+    Column(Modifier.boxloreReadingColumn().boxloreHorizontalSafePadding().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            val locale = currentLocale()
+            val date = remember(state.briefing.date, locale) { briefingDisplayDate(state.briefing.date, locale) }
+            val stories = state.chapters.takeIf { it.isNotEmpty() }?.let {
+                pluralStringResource(R.plurals.briefing_story_count, it.size, it.size)
+            }
+            Text(
+                listOfNotNull(date, stories, formatBriefingListenDuration(state.duration)?.asString()).joinToString(" · "),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                // Wraps rather than cutting the listen time with large text or in German.
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.testTag("briefingMeta"),
+            )
+            BriefingRegionMenu(state.selectedRegion, onSelect = { region ->
+                AnalyticsHelper.trackDailyBriefingRegionChanged(state.selectedRegion, region, state.briefing.date)
+                actions.region(region)
+            })
+        }
+        Text(
+            state.briefing.title,
+            // Long words (German compounds) break with a hyphen, not mid-word.
+            style = TextStyle(
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Normal,
+                fontSize = 32.sp,
+                lineHeight = 36.sp,
+                letterSpacing = (-0.4).sp,
+                hyphens = Hyphens.Auto,
+                lineBreak = LineBreak.Paragraph,
+            ),
+            modifier = Modifier.testTag(BRIEFING_HEADLINE_TAG),
+        )
+        BriefingPlaybackControls(state, onPlay = {
+            if (state.isPlaying) {
+                AnalyticsHelper.trackDailyBriefingPauseClicked(state.briefing.region, state.briefing.date, "briefing_detail")
+            } else {
+                AnalyticsHelper.trackDailyBriefingPlayClicked(state.briefing.region, state.briefing.date, "briefing_detail")
+            }
+            actions.play(state.briefing, null)
+        }, onSources = {
+            AnalyticsHelper.trackDailyBriefingInteraction("sources_sheet_opened", state.briefing.region, state.briefing.date, mapOf("sources_count" to state.briefing.sources.size))
+            actions.onSources()
+        }, onSeekTo = actions.seek)
+    }
+}
+
+/** Original reporting, the AI note and Report an issue. */
+@Composable
+private fun BriefingEditionFooter(state: BriefingUiState.Success, actions: BriefingContentActions, modifier: Modifier) {
+    Surface(modifier, shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (state.briefing.sources.isNotEmpty()) {
+                Surface(onClick = { actions.onSources() }, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.briefing_original_reporting), style = MaterialTheme.typography.titleSmall)
+                            Text(pluralStringResource(R.plurals.briefing_source_count, state.briefing.sources.size, state.briefing.sources.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Icon(Icons.Rounded.ArrowOutward, stringResource(R.string.briefing_open_sources), Modifier.size(20.dp))
+                    }
+                }
+            }
+            Text(stringResource(R.string.briefing_disclaimer), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TextButton(onClick = actions.feedback, contentPadding = PaddingValues(0.dp)) { Text(stringResource(R.string.briefing_report_issue)) }
+        }
+    }
+}
+
+/** The edition headline's test tag. */
+internal const val BRIEFING_HEADLINE_TAG = "briefing_headline"
 
 private fun BriefingUiState.presentationKey(): String = when (this) {
     is BriefingUiState.Loading -> "loading"

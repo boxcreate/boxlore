@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -24,7 +26,6 @@ import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.ChatBubbleOutline
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Image
@@ -32,11 +33,6 @@ import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,11 +40,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,11 +52,18 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
+import cx.aswin.boxlore.core.designsystem.components.BoxloreFilterChip
+import cx.aswin.boxlore.core.designsystem.components.rememberBoxloreMenuState
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.settings.R
@@ -73,6 +73,10 @@ internal const val FEEDBACK_SEND_TAG = "feedback_send"
 internal const val FEEDBACK_PILLS_TAG = "feedback_pills"
 internal const val FEEDBACK_TYPING_BAR_TAG = "feedback_typing_bar"
 internal const val FEEDBACK_PHOTOS_TAG = "feedback_photos"
+internal const val FEEDBACK_TYPE_PILL_TAG = "feedback_type_pill"
+
+/** The typing header's type pill never grows past this; longer names shorten with "…". */
+internal val FEEDBACK_TYPE_PILL_MAX_WIDTH = 168.dp
 internal const val FEEDBACK_PRIVACY_URL = "https://boxlore.in/privacy/#feedback"
 
 /** The app's icon for the choices it knows; a speech bubble for any the server adds later. */
@@ -84,26 +88,16 @@ internal val FeedbackChoice.icon: ImageVector
         FeedbackCategory.OTHER, null -> Icons.Rounded.ChatBubbleOutline
     }
 
-/** The genre-chip look from Explore: round, 48 dp, icon first, primary container when chosen. */
+/** boxlore's filter chip, as on Home and Explore: round, 48 dp, icon first, primary container when chosen. */
 @Composable
 internal fun FeedbackTypePill(choice: FeedbackChoice, selected: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    FilterChip(
+    BoxloreFilterChip(
         selected = selected,
         onClick = onClick,
+        label = choice.label.asString(),
+        leadingIcon = choice.icon,
         enabled = enabled,
-        label = { Text(choice.label.asString(), fontWeight = GoogleSansWeight.semiBold) },
-        leadingIcon = { Icon(choice.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
-        modifier = modifier.heightIn(min = 48.dp),
-        shape = CircleShape,
-        border = null,
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
+        modifier = modifier,
     )
 }
 
@@ -129,17 +123,27 @@ internal fun FeedbackTypePills(
 
 /** Compact type picker for the typing layout: the chosen pill, opening a menu of every choice. */
 @Composable
-internal fun FeedbackTypeMenuPill(choices: List<FeedbackChoice>, selected: FeedbackChoice, enabled: Boolean, onSelect: (String) -> Unit) {
-    var open by remember { mutableStateOf(false) }
+internal fun FeedbackTypeMenuPill(
+    choices: List<FeedbackChoice>,
+    selected: FeedbackChoice,
+    enabled: Boolean,
+    onSelect: (String) -> Unit,
+    maxWidth: Dp = FEEDBACK_TYPE_PILL_MAX_WIDTH,
+) {
+    val menu = rememberBoxloreMenuState()
     Box {
         val a11yLabel = stringResource(R.string.feedback_type_change_description, selected.label.asString())
+        // A 40dp pill in a 48dp touch area; a long type name shortens instead of widening the header.
         Surface(
-            onClick = { open = true },
+            onClick = menu::open,
             enabled = enabled,
             shape = CircleShape,
             color = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier
+                .testTag(FEEDBACK_TYPE_PILL_TAG)
+                .minimumInteractiveComponentSize()
+                .widthIn(max = maxWidth)
                 .heightIn(min = 40.dp)
                 .semantics { contentDescription = a11yLabel },
         ) {
@@ -149,25 +153,21 @@ internal fun FeedbackTypeMenuPill(choices: List<FeedbackChoice>, selected: Feedb
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Icon(selected.icon, contentDescription = null, modifier = Modifier.size(16.dp))
-                Text(selected.label.asString(), style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.semiBold)
+                Text(
+                    selected.label.asString(),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = GoogleSansWeight.semiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
                 Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(18.dp))
             }
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            choices.forEach { choice ->
-                DropdownMenuItem(
-                    text = { Text(choice.label.asString()) },
-                    leadingIcon = { Icon(choice.icon, contentDescription = null) },
-                    trailingIcon = if (choice.id == selected.id) {
-                        { Icon(Icons.Rounded.Check, contentDescription = null) }
-                    } else {
-                        null
-                    },
-                    onClick = {
-                        onSelect(choice.id)
-                        open = false
-                    },
-                )
+        val labels = choices.map { it.label.asString() }
+        BoxloreDropdownMenu(menu) {
+            choices.forEachIndexed { index, choice ->
+                selectableItem(labels[index], selected = choice.id == selected.id, onClick = { onSelect(choice.id) }, leadingIcon = choice.icon)
             }
         }
     }
@@ -297,19 +297,20 @@ private fun FeedbackPhotoTiles(photos: List<PickedPhoto>, canAdd: Boolean, canRe
 
 @Composable
 internal fun FeedbackDiagnosticsRow(checked: Boolean, enabled: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier = modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+    // The whole row is the switch: a tap anywhere toggles it, and screen readers hear one switch with its state.
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
             text = stringResource(R.string.feedback_include_diagnostics),
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.weight(1f),
         )
-        val a11yLabel5 = stringResource(R.string.feedback_include_diagnostics)
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled,
-            modifier = Modifier.semantics { contentDescription = a11yLabel5 },
-        )
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }
 
@@ -324,7 +325,7 @@ internal fun FeedbackSendButton(enabled: Boolean, sending: Boolean, onClick: () 
         contentPadding = ButtonDefaults.ContentPadding,
     ) {
         if (sending) {
-            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+            BoxLoreLoader.CircularWavy(size = 20.dp, color = MaterialTheme.colorScheme.onPrimary)
         } else {
             Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null, modifier = Modifier.size(20.dp))
         }
@@ -379,28 +380,17 @@ internal fun FeedbackTypingBar(
                 }
             }
         }
-        FilterChip(
-            selected = state.attachDiagnostics,
-            onClick = onToggleDiagnostics,
-            enabled = !state.isSubmitting,
-            label = { Text(stringResource(R.string.feedback_diagnostics), fontWeight = GoogleSansWeight.semiBold) },
-            leadingIcon = if (state.attachDiagnostics) {
-                { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-            } else {
-                null
-            },
-            shape = CircleShape,
-            border = null,
-            modifier = Modifier.heightIn(min = 48.dp),
-            colors = FilterChipDefaults.filterChipColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ),
-        )
-        Spacer(Modifier.weight(1f))
+        // Send is measured first and keeps its width; the diagnostics chip takes what is left and shortens its label.
+        Box(Modifier.weight(1f)) {
+            BoxloreFilterChip(
+                selected = state.attachDiagnostics,
+                onClick = onToggleDiagnostics,
+                label = stringResource(R.string.feedback_diagnostics),
+                showCheckWhenSelected = true,
+                enabled = !state.isSubmitting,
+                modifier = Modifier.testTag(FEEDBACK_DIAGNOSTICS_CHIP_TAG),
+            )
+        }
         FeedbackSendButton(enabled = state.canSend, sending = state.isSubmitting, onClick = onSend, label = stringResource(R.string.feedback_send), modifier = Modifier.heightIn(min = 48.dp))
     }
 }
@@ -409,3 +399,6 @@ internal fun FeedbackTypingBar(
 internal fun FeedbackIconButton(icon: ImageVector, description: String, onClick: () -> Unit) {
     IconButton(onClick = onClick) { Icon(icon, contentDescription = description) }
 }
+
+/** Test tag on the typing bar's diagnostics chip. */
+internal const val FEEDBACK_DIAGNOSTICS_CHIP_TAG = "feedback_diagnostics_chip"

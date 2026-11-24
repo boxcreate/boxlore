@@ -77,6 +77,7 @@ internal object RottenMangoOnTape : BrandedSubscribeMoment {
             )
             SubscriptionLabel(
                 text = labels.subscribed,
+                check = labels.subscribedCheck,
                 compact = labels.compact,
                 color = style.subscribedContent,
                 modifier = Modifier.graphicsLayer {

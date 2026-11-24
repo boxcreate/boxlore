@@ -2,19 +2,27 @@ package cx.aswin.boxlore.feature.onboarding
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
 import cx.aswin.boxlore.core.prefs.AppLanguage
 
 /** The onboarding flow. [onAppLanguageChosen] applies a language picked in the first question and may recreate the activity. */
@@ -95,16 +103,7 @@ fun OnboardingScreen(
         }
     }
 
-    // Main content with animated transitions
-    AnimatedContent(
-        targetState = uiState.currentStep,
-        modifier = Modifier.fillMaxSize(),
-        transitionSpec = {
-            (slideInHorizontally { it } + fadeIn()) togetherWith
-                (slideOutHorizontally { -it } + fadeOut())
-        },
-        label = "onboarding_step",
-    ) { step ->
+    OnboardingStepTransition(uiState.currentStep, Modifier.fillMaxSize()) { step ->
         val (stepName, stepIndex, flowType) =
             remember(step) { onboardingStepAnalytics(step) }
         TrackScreenView("onboarding_$stepName") {
@@ -123,8 +122,8 @@ fun OnboardingScreen(
                 uiState.appLanguageQuestion?.let { question ->
                     AppLanguageQuestionContent(
                         question = question,
-                        onChoose = { language ->
-                            viewModel.chooseAppLanguage(language)
+                        onChoose = { language, handoff ->
+                            viewModel.chooseAppLanguage(language, handoff)
                             onAppLanguageChosen(language)
                         },
                     )
@@ -139,6 +138,7 @@ fun OnboardingScreen(
                     onSearch = viewModel::navigateToSearch,
                     onSkip = { viewModel.skipOnboarding(onComplete) },
                     onImportClick = onImportClick,
+                    handoff = WelcomeHandoff(uiState.openingHandoff, viewModel::finishOpeningHandoff),
                 )
             }
             OnboardingStep.GENRES -> {
@@ -268,6 +268,49 @@ fun OnboardingScreen(
         }
     }
 }
+
+/**
+ * One step at a time: the next step slides in from the end while the last one leaves. From the
+ * language question to Welcome nothing slides: the two share their panel, so Welcome takes over from
+ * the question's in place ([OpeningHandoff]) underneath, while the question's choices fade away on
+ * top. A screen on its way out is hidden from accessibility services.
+ */
+@Composable
+internal fun OnboardingStepTransition(step: OnboardingStep, modifier: Modifier = Modifier, content: @Composable (OnboardingStep) -> Unit) {
+    AnimatedContent(
+        targetState = step,
+        modifier = modifier,
+        transitionSpec = {
+            if (initialState == OnboardingStep.APP_LANGUAGE && targetState == OnboardingStep.WELCOME) {
+                (EnterTransition.None togetherWith fadeOut(tween(LanguageChoicesFadeMillis))).apply { targetContentZIndex = -1f }
+            } else {
+                (slideInHorizontally { it } + fadeIn()) togetherWith
+                    (slideOutHorizontally { -it } + fadeOut())
+            }
+        },
+        label = "onboarding_step",
+    ) { target ->
+        val leaving = transition.targetState == EnterExitState.PostExit
+        Box(if (leaving) Modifier.clearAndSetSemantics {} else Modifier, propagateMinConstraints = true) {
+            Box(Modifier.onboardingSideSafe(target), propagateMinConstraints = true) { content(target) }
+        }
+    }
+}
+
+/**
+ * Keeps each step's controls and text clear of a sideways phone's side system buttons and camera
+ * cutout; the step's own colour still runs to the edge behind them. The language question and
+ * Welcome place their panels themselves, so their colour reaches the edge.
+ */
+@Composable
+private fun Modifier.onboardingSideSafe(step: OnboardingStep): Modifier = when (step) {
+    OnboardingStep.APP_LANGUAGE, OnboardingStep.WELCOME -> this
+    OnboardingStep.AI_ONBOARDING -> background(MaterialTheme.colorScheme.background).boxloreHorizontalSafePadding()
+    else -> background(MaterialTheme.colorScheme.surface).boxloreHorizontalSafePadding()
+}
+
+/** The language question's choices fade this fast as Welcome takes over underneath. */
+private const val LanguageChoicesFadeMillis = 120
 
 /** The name, index and flow type each onboarding step reports to analytics. */
 internal fun onboardingStepAnalytics(step: OnboardingStep): Triple<String, Int, String> = when (step) {

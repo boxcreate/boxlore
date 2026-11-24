@@ -8,8 +8,10 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.feature.library.R
@@ -39,11 +41,13 @@ private const val ShowsYourShowsLabelKey = "section_label_your_shows"
 
 private fun LazyGridScope.showsSectionLabel(key: String, @StringRes text: Int) {
     item(key = key, span = { GridItemSpan(maxLineSpan) }) {
+        // A clear section title, stronger than the folder names under it.
         Text(
             text = stringResource(text),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp, top = 4.dp),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = GoogleSansWeight.semiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 12.dp, bottom = 4.dp).testTag(SHOWS_SECTION_LABEL_TAG),
         )
     }
 }
@@ -99,3 +103,6 @@ private fun LazyGridScope.folderCardItems(
         }
     }
 }
+
+/** The Folders and Your shows titles in the Shows grid, for tests. */
+internal const val SHOWS_SECTION_LABEL_TAG = "shows_section_label"

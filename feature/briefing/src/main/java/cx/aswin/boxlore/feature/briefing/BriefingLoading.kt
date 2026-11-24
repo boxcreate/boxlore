@@ -4,13 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -19,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -26,11 +30,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.R
-import cx.aswin.boxlore.core.designsystem.briefing.BRIEFING_COVER_ASPECT_RATIO
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingCover
 import cx.aswin.boxlore.core.designsystem.briefing.briefingRegionLabel
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import java.time.LocalDate
@@ -38,47 +43,91 @@ import java.time.LocalDate
 /**
  * The edition loading in the page's own layout. The cover art is bundled, so the real cover for the
  * chosen edition shows at once; the date line, headline, Listen button and first story shimmer in
- * their final places, so the page settles in place instead of swapping a spinner for content.
+ * their final places, so the page settles in place instead of swapping a spinner for content. In two
+ * panes ([split]) the cover and headline wait in the start pane and stories in the list beside it; in
+ * a one-column list ([mode] List) the stories stack under the edition.
  */
 @Composable
-internal fun BriefingLoadingContent(region: String, topPadding: Dp) {
+internal fun BriefingLoadingContent(
+    region: String,
+    topPadding: Dp,
+    mastheadLeftPadding: Dp = 0.dp,
+    onCoverMeasured: (Int) -> Unit = {},
+    split: BriefingTwoPaneSplit? = null,
+    mode: BriefingLayoutMode = BriefingLayoutMode.Pager,
+) {
     val label = stringResource(R.string.briefing_loading_edition, stringResource(briefingRegionLabel(region)))
     val today = remember { LocalDate.now().toString() }
+    val cover: @Composable () -> Unit = {
+        BriefingCover(
+            region = region,
+            editionDate = today,
+            modifier = Modifier.briefingPageCoverSize().onSizeChanged { onCoverMeasured(it.height) }.clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)),
+            mastheadTopPadding = topPadding + 12.dp,
+            mastheadScrim = true,
+            mastheadLeftPadding = mastheadLeftPadding,
+            artworkContentScale = briefingCoverScale(),
+        )
+    }
     ShimmerScope(active = true) {
+        if (split != null) {
+            Row(Modifier.fillMaxSize().testTag("briefingLoading").semantics { contentDescription = label }, horizontalArrangement = Arrangement.spacedBy(split.gap)) {
+                Column(Modifier.width(split.start).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    cover()
+                    LoadingHeaderBlocks()
+                }
+                Column(
+                    Modifier.weight(1f).fillMaxHeight().padding(top = topPadding + 72.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    repeat(3) { BriefingStoryCardSkeleton(Modifier.padding(end = 20.dp).widthIn(max = BRIEFING_STORY_LIST_MAX_DP.dp - 20.dp).fillMaxWidth()) }
+                }
+            }
+            return@ShimmerScope
+        }
         Column(
-            Modifier.fillMaxSize().testTag("briefingLoading").semantics { contentDescription = label },
+            // Scrolls in short windows, where the placeholders run past the first screen.
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).testTag("briefingLoading").semantics { contentDescription = label },
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            BriefingCover(
-                region = region,
-                editionDate = today,
-                modifier = Modifier.fillMaxWidth().aspectRatio(BRIEFING_COVER_ASPECT_RATIO).clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)),
-                mastheadTopPadding = topPadding + 12.dp,
-                mastheadScrim = true,
-            )
-            Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    LoadingBlock(Modifier.width(150.dp).height(14.dp))
-                    LoadingBlock(Modifier.width(96.dp).height(40.dp), RoundedCornerShape(20.dp))
-                }
-                LoadingBlock(Modifier.fillMaxWidth(0.92f).height(30.dp))
-                LoadingBlock(Modifier.fillMaxWidth(0.58f).height(30.dp))
-                LoadingBlock(Modifier.fillMaxWidth().height(52.dp), RoundedCornerShape(28.dp))
+            cover()
+            LoadingHeaderBlocks()
+            // A list stacks the stories under the edition; the pager shows the first one.
+            repeat(if (mode == BriefingLayoutMode.List) 2 else 1) {
+                BriefingStoryCardSkeleton(Modifier.boxloreReadingColumn().boxloreHorizontalSafePadding().padding(horizontal = 20.dp).boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth())
             }
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.padding(horizontal = 24.dp).boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth(),
-            ) {
-                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    LoadingBlock(Modifier.width(72.dp).height(20.dp))
-                    LoadingBlock(Modifier.fillMaxWidth(0.85f).height(24.dp))
-                    Box(Modifier.height(4.dp))
-                    repeat(5) { line -> LoadingBlock(Modifier.fillMaxWidth(if (line == 4) 0.6f else 1f).height(14.dp)) }
-                    Box(Modifier.height(8.dp))
-                    LoadingBlock(Modifier.fillMaxWidth().height(52.dp), RoundedCornerShape(28.dp))
-                }
-            }
+        }
+    }
+}
+
+/** The date line and edition menu, the two-line headline and Listen, as placeholders. */
+@Composable
+private fun LoadingHeaderBlocks() {
+    Column(Modifier.boxloreReadingColumn().boxloreHorizontalSafePadding().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            LoadingBlock(Modifier.width(150.dp).height(14.dp))
+            LoadingBlock(Modifier.width(96.dp).height(40.dp), RoundedCornerShape(20.dp))
+        }
+        LoadingBlock(Modifier.fillMaxWidth(0.92f).height(30.dp))
+        LoadingBlock(Modifier.fillMaxWidth(0.58f).height(30.dp))
+        LoadingBlock(Modifier.fillMaxWidth().height(52.dp), RoundedCornerShape(28.dp))
+    }
+}
+
+/**
+ * A story card while stories load: the time, the title and the story's lines as soft placeholders,
+ * and the play button, in a story card's own shape. Inside a [ShimmerScope].
+ */
+@Composable
+internal fun BriefingStoryCardSkeleton(modifier: Modifier = Modifier) {
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer, modifier = modifier) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            LoadingBlock(Modifier.width(72.dp).height(20.dp))
+            LoadingBlock(Modifier.fillMaxWidth(0.85f).height(24.dp))
+            Box(Modifier.height(4.dp))
+            repeat(5) { line -> LoadingBlock(Modifier.fillMaxWidth(if (line == 4) 0.6f else 1f).height(14.dp)) }
+            Box(Modifier.height(8.dp))
+            LoadingBlock(Modifier.fillMaxWidth().height(52.dp), RoundedCornerShape(28.dp))
         }
     }
 }

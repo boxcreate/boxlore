@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -165,10 +166,12 @@ private fun SupportTierPill(
             text = tier.cost,
             style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = if (isSelected) GoogleSansWeight.bold else GoogleSansWeight.medium,
-                fontSize = 10.5.sp,
+                fontSize = 12.sp,
             ),
             color = costTextColor,
             maxLines = 1,
+            // A wide local price steps back down rather than cutting.
+            autoSize = TextAutoSize.StepBased(minFontSize = 10.5.sp, maxFontSize = 12.sp, stepSize = 0.5.sp),
         )
     }
 }

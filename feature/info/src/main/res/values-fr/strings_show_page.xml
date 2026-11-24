@@ -2,7 +2,7 @@
 <resources>
     <!-- The show page: its menus, chips, sheets, dialogs and messages. -->
     <!-- Show-page chip: the show has not released an episode for over a year. Short chip text. -->
-    <string name="podcast_info_frequency_inactive">Inactif / Terminé</string>
+    <string name="podcast_info_frequency_inactive">Plus de nouveaux épisodes</string>
     <!-- Show-page chip: no episode for over six months. -->
     <string name="podcast_info_frequency_hiatus">En pause</string>
     <!-- Show-page chip: the show is taking a break between seasons. -->
@@ -51,6 +51,10 @@
     <string name="podcast_info_locked_ok">Compris</string>
     <!-- Heading over the shows the show's creator recommends (its podroll). -->
     <string name="podcast_info_podroll_title">Recommandés par le créateur</string>
+    <plurals name="podcast_info_podroll_count">
+        <item quantity="one">Le créateur recommande %d podcast</item>
+        <item quantity="other">Le créateur recommande %d podcasts</item>
+    </plurals>
     <!-- Screen-reader label for the show page's share button. -->
     <string name="podcast_info_share">Partager le podcast</string>
     <!-- Screen-reader label for the show page's overflow menu button. -->
@@ -59,8 +63,12 @@
     <string name="podcast_info_mark_all_played">Tout marquer comme écouté</string>
     <string name="podcast_info_mark_all_unplayed">Tout marquer comme non écouté</string>
     <string name="podcast_info_hide_completed">Masquer les épisodes terminés</string>
-    <string name="podcast_info_show_full_episodes">Afficher les épisodes en entier</string>
-    <string name="podcast_info_show_titles_only">Afficher les titres seuls</string>
+    <string name="podcast_info_sort_and_view">Trier et afficher</string>
+    <string name="podcast_info_sort_newest">Plus récents d’abord</string>
+    <string name="podcast_info_sort_oldest">Plus anciens d’abord</string>
+    <string name="podcast_info_show_archived_none">Afficher les épisodes archivés</string>
+    <string name="podcast_info_episode_titles_only">Titres des épisodes seulement</string>
+    <string name="podcast_info_add_genre">Ajouter un genre</string>
     <!-- Menu item and sheet title: this show's own speed, trim silence and skips. -->
     <string name="podcast_info_playback_for_show">Lecture pour ce podcast</string>
     <string name="podcast_info_change_genre">Modifier l’étiquette / le genre</string>

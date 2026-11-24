@@ -174,9 +174,39 @@ internal fun DrawScope.drawGlare(light: Offset, alpha: Float) {
 /** A sparkle: where it sits (0-1) and the angle at which it catches the light. */
 internal data class EchoSparkle(val x: Float, val y: Float, val phase: Float, val size: Float)
 
-internal fun echoSparkles(seed: Long, count: Int): List<EchoSparkle> {
+/**
+ * [count] glints for the card [seed], at fractions of its size. A glint that would land where
+ * [allowed] says no (the name, byline and pitch) is placed again, up to [SparkleTries] times, then
+ * left out, so the words stay clean and a card always gets the same glitter.
+ */
+internal fun echoSparkles(seed: Long, count: Int, allowed: (x: Float, y: Float) -> Boolean = { _, _ -> true }): List<EchoSparkle> {
     val random = Random(seed)
-    return List(count) { EchoSparkle(random.nextFloat(), random.nextFloat(), random.nextFloat() * 2f * PI.toFloat(), 0.6f + random.nextFloat() * 0.8f) }
+    return List(count) {
+        var placed: EchoSparkle? = null
+        repeat(SparkleTries) {
+            val sparkle = EchoSparkle(random.nextFloat(), random.nextFloat(), random.nextFloat() * 2f * PI.toFloat(), 0.6f + random.nextFloat() * 0.8f)
+            if (placed == null && allowed(sparkle.x, sparkle.y)) placed = sparkle
+        }
+        placed
+    }.filterNotNull()
+}
+
+private const val SparkleTries = 8
+
+/**
+ * Where a [plan]'s glitter may fall on its ground ([width] by [height] px, inside the rainbow
+ * edge), as fractions of it: on the art and in the [edge] margin round it, never on the words.
+ */
+internal fun prismSparkleArea(plan: PrismPlan, width: Float, height: Float, edge: Float, tilt: Float): (Float, Float) -> Boolean {
+    val artLeft = if (plan.compact) edge else (width - plan.art) / 2f
+    val artTop = edge + if (plan.compact) 0f else tilt
+    return { x, y ->
+        val px = x * width
+        val py = y * height
+        val onArt = plan.art > 0 && px in artLeft..(artLeft + plan.art) && py in artTop..(artTop + plan.art)
+        val onEdge = px < edge || px > width - edge || py < edge || py > height - edge
+        onArt || onEdge
+    }
 }
 
 /** Each glint flashes only near its own angle, so turning the card makes them twinkle in turn. */

@@ -32,8 +32,8 @@ Owns Listening history on the app's `library/history` route: an Insights tab (wh
 - Insights opens last month's story from an entry card that says New until opened; older months come from Earlier stories; Share your listening opens the latest at its share card.
 - Echo says one line a card (`StoryEchoLines`, `res/values/story_echo_lines.xml`). Special situations speak when they fit; otherwise a seed picked when the story opens chooses among the situations that fit. Facts the cards don't keep come in `StoryEchoFacts`.
 - Lines fill facts through `StoryEchoLines.PLACEHOLDER`, which escapes both braces because Android's ICU regex rejects a bare `}`. A line naming a missing fact, or too long once filled, gives way to the next.
-- The story is a fixed frame scaled to fit the window, with a minimum scale below which it scrolls. On a spanned foldable it keeps to one side of the hinge (`boxloreFoldSafeViewport`).
-- Cards advance on a timer; tapping moves back or forward and holding pauses. With TalkBack on, cards wait to be moved on; with animations off, each card shows its final state.
+- The story is a fixed frame scaled to fit the window, growing a little on wide windows, with a minimum scale below which it scrolls. On a spanned foldable it keeps to one side of the hinge (`boxloreFoldSafeViewport`). When there is room beside the frame, round previous, pause and next buttons sit there.
+- Cards advance on a timer; tapping moves back or forward and holding pauses. With TalkBack on, or while part of the card is off screen (the frame scrolls), cards wait to be moved on, and a card that waited keeps waiting once the window grows; with animations off, each card shows its final state.
 - The story dialog draws under the system bars (`StoryWindowBars`), choosing bar icon colours that read on the card (`StoryWindowLogic`).
 - `StoryPalette` turns the story's colours to the current theme's hue; Echo's accents come from `EchoAccents`.
 - `StoryEcho` hops Echo between cards and plays each card's act; the hop and the act are separate players and `StoryEchoHandoff` swaps them so Echo never jumps in size.
@@ -41,7 +41,7 @@ Owns Listening history on the app's `library/history` route: an Insights tab (wh
 
 ## Adaptive layouts
 
-Window gates and state retention follow [`ARCHITECTURE.md#adaptive-ui-and-state`](../../ARCHITECTURE.md#adaptive-ui-and-state). Both tabs share the Reading card column on wide windows, each tab keeps its scroll position while the other is open, the open story lives in the ViewModel, and the story frame keeps its card through resizing and rotation.
+Window gates and state retention follow [`ARCHITECTURE.md#adaptive-ui-and-state`](../../ARCHITECTURE.md#adaptive-ui-and-state). Both tabs share the Reading card column on wide windows, except that wide content lets Insights pair its cards in two columns of the wider Grid column (`InsightsLayout`); each tab keeps its scroll position while the other is open, the open story lives in the ViewModel, and the story frame keeps its card through resizing and rotation.
 
 ## Internal structure
 
@@ -49,7 +49,7 @@ Window gates and state retention follow [`ARCHITECTURE.md#adaptive-ui-and-state`
 src/main/java/cx/aswin/boxlore/feature/history/
   HistoryScreen.kt, HistoryScreenEffects.kt  # screen, tab switcher, screen effects and Timeline scrolls
   HistoryViewModel.kt                        # tabs, filter, grouping, search, period, stories
-  HistoryDialogs.kt, HistoryEmptyState.kt
+  HistoryDialogs.kt, HistoryEmptyState.kt, HistoryLoading.kt
   HistoryText.kt                             # historyTextStyle
   timeline/                                  # Timeline tab, rows, show cards, Jump to a day, fast scroller
   insights/                                  # Insights tab, logic, details, cards, wording

@@ -1,12 +1,16 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +31,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -33,6 +41,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
@@ -43,48 +52,90 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.feature.library.R
 
-/** Four look choices in a row, each a small drawing plus "tap up to N". */
+/**
+ * Four look choices, each a small drawing plus "tap up to N". The tiles in a row are the same
+ * height; with less than 360dp or large text they sit two by two. The picked look is filled with a
+ * primary border and a check, so it reads on a page or on a coloured card alike.
+ */
 @Composable
 internal fun FolderLookRow(
     selected: FolderDisplaySize?,
     onSelect: (FolderDisplaySize) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FolderLookOptions.forEach { size ->
-            val isSelected = size == selected
-            Surface(
-                onClick = { onSelect(size) },
-                shape = RoundedCornerShape(18.dp),
-                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics {
-                        this.selected = isSelected
-                        role = Role.RadioButton
-                    },
-            ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    // A fixed-height frame keeps all four choices the same height.
-                    Box(modifier = Modifier.height(40.dp), contentAlignment = Alignment.Center) {
-                        LookDiagram(size = size, highlighted = isSelected)
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val perRow = if (maxWidth < TWO_BY_TWO_BELOW || LocalDensity.current.fontScale > LARGE_TEXT_SCALE) 2 else FolderLookOptions.size
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            FolderLookOptions.chunked(perRow).forEach { row ->
+                Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { size ->
+                        FolderLookTile(size, size == selected, { onSelect(size) }, Modifier.weight(1f).fillMaxHeight())
                     }
-                    Text(text = folderLookName(size).asString(), style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.semiBold)
-                    Text(
-                        text = pluralStringResource(R.plurals.library_folder_look_tap_up_to, folderSlotCount(size), folderSlotCount(size)),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
             }
         }
     }
 }
+
+@Composable
+private fun FolderLookTile(size: FolderDisplaySize, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+    PickTile(selected = isSelected, onClick = onClick, shape = RoundedCornerShape(18.dp), modifier = modifier.testTag(FOLDER_LOOK_TILE_TAG)) {
+        Column(
+            modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            // A fixed-height frame keeps the drawings in line.
+            Box(modifier = Modifier.height(40.dp), contentAlignment = Alignment.Center) {
+                LookDiagram(size = size, highlighted = isSelected)
+            }
+            Text(text = folderLookName(size).asString(), style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.semiBold, textAlign = TextAlign.Center)
+            Text(
+                text = pluralStringResource(R.plurals.library_folder_look_tap_up_to, folderSlotCount(size), folderSlotCount(size)),
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center,
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * A choice tile: the picked one is `primaryContainer` with a 2dp `primary` border and a check in its
+ * corner; the others are `surfaceContainerLowest`. One radio choice for TalkBack.
+ */
+@Composable
+internal fun PickTile(selected: Boolean, onClick: () -> Unit, shape: Shape, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = shape,
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLowest,
+        contentColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+        border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+        modifier = modifier.semantics {
+            this.selected = selected
+            role = Role.RadioButton
+        },
+    ) {
+        Box {
+            content()
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(16.dp),
+                )
+            }
+        }
+    }
+}
+
+private val TWO_BY_TWO_BELOW = 360.dp
+private const val LARGE_TEXT_SCALE = 1.15f
+
+/** A folder look tile, for tests. */
+internal const val FOLDER_LOOK_TILE_TAG = "folder_look_tile"
 
 /** A tiny sketch of where the look sits: a tile among shows, or a block of 1 to 3 rows on top. */
 @Composable
@@ -122,14 +173,14 @@ internal fun TileCoverChoice(
     iconKey: String?,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(modifier = modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         TileCoverOption(
             selected = !showsCovers,
             title = stringResource(R.string.library_folder_tile_show_icon),
             subtitle = stringResource(R.string.library_folder_tile_show_icon_note),
             icon = GenreIcons.folderIconOrFallback(iconKey),
             onClick = { onChange(false) },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).fillMaxHeight(),
         )
         TileCoverOption(
             selected = showsCovers,
@@ -137,7 +188,7 @@ internal fun TileCoverChoice(
             subtitle = pluralStringResource(R.plurals.library_folder_tile_show_covers_note, 4, 4),
             icon = Icons.Rounded.GridView,
             onClick = { onChange(true) },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).fillMaxHeight(),
         )
     }
 }
@@ -151,16 +202,7 @@ private fun TileCoverOption(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-        contentColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-        modifier = modifier.semantics {
-            this.selected = selected
-            role = Role.RadioButton
-        },
-    ) {
+    PickTile(selected = selected, onClick = onClick, shape = RoundedCornerShape(16.dp), modifier = modifier) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,

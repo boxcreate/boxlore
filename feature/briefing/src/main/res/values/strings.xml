@@ -6,7 +6,7 @@
     <string name="briefing_screen_previous_story">Previous story</string>
     <string name="briefing_screen_next_story">Next story</string>
     <string name="briefing_screen_stories_loading">Loading stories…</string>
-    <string name="briefing_screen_stories_unavailable">Story text is unavailable. You can still listen to the brief.</string>
+    <string name="briefing_screen_stories_unavailable">Story text is unavailable. You can still listen to the Brief.</string>
     <!-- Header of the related episodes under a story. -->
     <string name="briefing_screen_listen_further">Listen further</string>
     <!-- Time left in the brief; the argument is a length such as "3m". -->
@@ -20,4 +20,8 @@
     <string name="briefing_screen_episode_description">Your daily AI-generated news briefing for %1$s.</string>
     <!-- Heading above the brief's source links in the episode description. -->
     <string name="briefing_screen_sources_heading">References &amp; Sources</string>
+    <!-- TalkBack name of the Brief's seek bar. -->
+    <string name="briefing_screen_seek_name">Playback position</string>
+    <!-- TalkBack position on the seek bar: where playback is, then the Brief's length, e.g. "12:03 of 58:00". -->
+    <string name="briefing_screen_seek_position">%1$s of %2$s</string>
 </resources>

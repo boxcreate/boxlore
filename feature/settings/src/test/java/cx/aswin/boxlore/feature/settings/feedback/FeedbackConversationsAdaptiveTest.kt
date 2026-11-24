@@ -45,6 +45,7 @@ import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -68,9 +69,12 @@ class FeedbackConversationsAdaptiveTest {
     private val backs = mutableListOf<Unit>()
     private lateinit var restoration: StateRestorationTester
 
-    private class FakeApi(private val threads: List<SupportThreadDto>) : SupportApi {
+    private class FakeApi(private val threads: List<SupportThreadDto>, private val hang: Boolean = false) : SupportApi {
         val reads = mutableListOf<String>()
-        override suspend fun threads() = Response.success(SupportListResponse(meta = SupportMetaDto(), threads = threads))
+        override suspend fun threads(): Response<SupportListResponse> {
+            if (hang) kotlinx.coroutines.awaitCancellation()
+            return Response.success(SupportListResponse(meta = SupportMetaDto(), threads = threads))
+        }
         override suspend fun startThread(request: SupportNewThreadRequest) = Response.success(SupportThreadResponse(threads.firstOrNull()))
         override suspend fun uploadPhoto(photo: RequestBody) = Response.error<SupportPhotoResponse>(403, "{}".toResponseBody())
         override suspend fun conversation(id: String, before: String?) = Response.success(
@@ -173,15 +177,29 @@ class FeedbackConversationsAdaptiveTest {
         fixture.compose.onNodeWithTag(FEEDBACK_LIST_TAG).assertDoesNotExist()
     }
 
+    @Test
+    fun `while the list loads it shows placeholder rows in its shape, through the split gate both ways`() {
+        render(hang = true)
+        for (size in listOf(PHONE, TABLET, PHONE, BoxloreWindowLayout(915f, 412f))) {
+            fixture.compose.runOnIdle { window.value = size }
+            fixture.compose.waitForIdle()
+            fixture.compose.onNodeWithTag(FEEDBACK_SKELETON_TAG).assertExists()
+            fixture.compose.onNodeWithTag(FEEDBACK_LIST_TAG).assertDoesNotExist()
+        }
+        val skeleton = fixture.compose.onNodeWithTag(FEEDBACK_SKELETON_TAG).fetchSemanticsNode().boundsInRoot
+        assertTrue("the list column is at most 720dp wide (${skeleton.width})", skeleton.width <= 720f)
+    }
+
     private fun render(
         threads: List<SupportThreadDto>? = null,
         hasConversations: Boolean = true,
         firstUnread: Boolean = false,
         openThreadId: String? = null,
+        hang: Boolean = false,
     ) {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences(BoxcastPrefs.PREFS_NAME, Context.MODE_PRIVATE).edit().clear().commit()
-        api = FakeApi(threads ?: listOf(dto(first, "First problem", unread = firstUnread), dto(second, "Second problem")))
+        api = FakeApi(threads ?: listOf(dto(first, "First problem", unread = firstUnread), dto(second, "Second problem")), hang)
         val repository = SupportRepository(
             api = api,
             legacySubmit = { _, _, _, _, _ -> true },

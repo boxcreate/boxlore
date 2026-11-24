@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.feature.info.R
 
@@ -35,7 +36,8 @@ internal fun PodcastInfoEpisodeSearch(podcastTitle: String, query: String, onQue
         value = query,
         onValueChange = onQueryChange,
         singleLine = true,
-        placeholder = { Text(stringResource(R.string.podcast_info_search)) },
+        // One line, ending in "…" in languages where the hint is long.
+        placeholder = { Text(stringResource(R.string.podcast_info_search), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingIcon = {
             IconButton(onClick = onClose) {
                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.podcast_info_close_search))

@@ -8,20 +8,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -32,6 +32,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogConfirmButton
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogDismissButton
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogIcon
 import kotlinx.coroutines.launch
 
 /** What the show page's menu and list need from Hide show everywhere ([rememberPodcastInfoHideShow]). */
@@ -51,6 +54,7 @@ internal fun rememberPodcastInfoHideShow(
     viewModel: PodcastInfoViewModel,
     state: PodcastInfoUiState.Success,
     snackbarHostState: SnackbarHostState,
+    pendingUndo: MutableState<PendingUndo?> = remember { mutableStateOf(null) },
 ): PodcastInfoHideShowUi {
     val isHidden by viewModel.isHidden.collectAsState()
     var confirming by rememberSaveable { mutableStateOf(false) }
@@ -66,10 +70,8 @@ internal fun rememberPodcastInfoHideShow(
             onDismissRequest = { confirming = false },
             onConfirm = {
                 viewModel.hideShowEverywhere()
-                scope.launch {
-                    val result = snackbarHostState.showSnackbar(hiddenMessage, actionLabel = undoLabel, duration = SnackbarDuration.Long)
-                    if (result == SnackbarResult.ActionPerformed) viewModel.undoHideShow()
-                }
+                val undo = PendingUndo(UndoKind.HideShow, emptyList(), undoClockMs() + PendingUndo.durationMs(UndoKind.HideShow))
+                scope.offerUndo(snackbarHostState, pendingUndo, undo, hiddenMessage, undoLabel, SnackbarDuration.Long) { viewModel.undoHideShow() }
             },
         )
     }
@@ -100,26 +102,22 @@ private fun HideShowEverywhereDialog(
     TrackScreenView("podcast_hide_show_confirmation")
     BoxloreAlertDialog(
         onDismissRequest = onDismissRequest,
-        icon = { Icon(Icons.Rounded.VisibilityOff, contentDescription = null) },
+        icon = { BoxloreDialogIcon(Icons.Rounded.VisibilityOff) },
         title = { Text(stringResource(R.string.podcast_info_hide_title)) },
         text = {
             Text(stringResource(if (isSubscribed) R.string.podcast_info_hide_message_subscribed else R.string.podcast_info_hide_message))
         },
+        // Not destructive: the snackbar that follows offers Undo.
         confirmButton = {
-            Button(
+            BoxloreDialogConfirmButton(
+                stringResource(if (isSubscribed) R.string.podcast_info_hide_confirm_subscribed else R.string.podcast_info_hide_confirm),
                 onClick = {
                     onDismissRequest()
                     onConfirm()
                 },
-            ) {
-                Text(stringResource(if (isSubscribed) R.string.podcast_info_hide_confirm_subscribed else R.string.podcast_info_hide_confirm))
-            }
+            )
         },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(stringResource(R.string.podcast_info_hide_cancel))
-            }
-        },
+        dismissButton = { BoxloreDialogDismissButton(stringResource(R.string.podcast_info_hide_cancel), onDismissRequest) },
     )
 }
 

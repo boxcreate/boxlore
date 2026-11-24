@@ -36,6 +36,8 @@
     <string name="suggestions_loading_library">Procurando podcasts parecidos com os da sua biblioteca.</string>
     <string name="suggestions_error_title">Não foi possível carregar sugestões</string>
     <string name="suggestions_error_body">Verifique sua conexão e tente de novo.</string>
+    <string name="suggestions_check_title">Podcasts parecidos precisam de uma verificação rápida</string>
+    <string name="suggestions_check_body">A verificação não terminou, então o boxlore não consegue encontrar podcasts parecidos agora. Você pode começar a ouvir e descobrir mais depois.</string>
     <string name="suggestions_empty_title">Sem sugestões desta vez</string>
     <string name="suggestions_empty_body">Tente de novo ou comece sem elas.</string>
     <string name="suggestions_try_again">Tentar de novo</string>
@@ -79,4 +81,8 @@
     <string name="suggestions_details_fallback">Explore episódios e temas de %1$s.</string>
     <!-- When a show has no description. %1$s is the show's name, %2$s its host or publisher. -->
     <string name="suggestions_details_fallback_with_host">Explore episódios e temas de %1$s, por %2$s.</string>
+    <plurals name="suggestions_show_all">
+        <item quantity="one">Ver todos os %d</item>
+        <item quantity="other">Ver todos os %d</item>
+    </plurals>
 </resources>

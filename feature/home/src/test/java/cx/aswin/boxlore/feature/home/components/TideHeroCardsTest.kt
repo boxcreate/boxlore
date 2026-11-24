@@ -140,8 +140,13 @@ class TideHeroCardsTest {
         assertEquals(286f, tidePanelTop(302f, 416f, copy = 60f), 0.01f)
         // Longer words: the edge sits 40dp above them.
         assertEquals(416f - 24f - 130f - 40f, tidePanelTop(302f, 416f, copy = 130f), 0.01f)
-        // Very long words never push it above 65% of the width.
-        assertEquals(302f * 0.65f, tidePanelTop(302f, 416f, copy = 300f), 0.01f)
+        // A phone card's longest words (a three-line title) still leave the edge below 65% of the width.
+        assertTrue(tidePanelTop(302f, 416f, copy = 136f) >= 302f * 0.65f)
+        // Cards wide for their height (wider compact windows, sideways phones): the edge rises with the words, so they sit on the panel.
+        assertEquals(416f - 24f - 130f - 40f, tidePanelTop(495f, 416f, copy = 130f), 0.01f)
+        assertEquals(240f - 24f - 112f - 40f, tidePanelTop(320f, 240f, copy = 112f), 0.01f)
+        // Never above the card's top.
+        assertEquals(0f, tidePanelTop(320f, 240f, copy = 300f), 0.01f)
     }
 
     private fun bounds(tag: String): Rect = composeRule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot

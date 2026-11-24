@@ -168,12 +168,8 @@ internal fun HomeMixArtwork(
 internal fun HomeMixEpisodeTime(episode: Episode, status: EpisodeStatus, progress: Float) {
     val inProgress = status == EpisodeStatus.IN_PROGRESS && progress > 0f
     if (episode.duration <= 0 && !inProgress) return
-    val minutes = if (inProgress) remainingMixMinutes(episode.duration, progress) else episode.duration / 60
-    val duration = if (minutes >= 60) {
-        stringResource(R.string.home_hero_hours_minutes, minutes / 60, minutes % 60)
-    } else {
-        stringResource(R.string.home_hero_minutes, minutes)
-    }
+    val minutes = remainingMixMinutes(episode.duration, if (inProgress) progress else 0f)
+    val duration = heroDurationText(minutes)
     val text = if (inProgress) stringResource(R.string.home_hero_remaining, duration) else duration
     val progressLabel = stringResource(R.string.home_hero_listening_progress)
     BoxWithConstraints(Modifier.fillMaxWidth()) {

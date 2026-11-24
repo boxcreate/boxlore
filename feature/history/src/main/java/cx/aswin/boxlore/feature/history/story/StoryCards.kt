@@ -229,7 +229,8 @@ internal fun BoxScope.StoryTimeCard(story: MonthStory, palette: StoryPalette, cl
     }
     StoryDayBars(story, clock)
     Row(Modifier.zIndex(StoryLayers.BACK).at(StoryTimeChart.LEFT, 862f).width(StoryTimeChart.WIDTH.dp).storyRise(clock, StoryMotion.D3), horizontalArrangement = Arrangement.SpaceBetween) {
-        val style = StoryType.of(12f, 16f)
+        // Informational text never drops below 13sp in frame units, so it stays readable on smaller phones.
+        val style = StoryType.of(STORY_MIN_INFO_SP, 17f)
         Text(TimelineTime.shortDate(story.month.atDay(1), locale), style = style, color = fg.copy(alpha = 0.8f))
         Text(TimelineTime.shortDate(story.month.atEndOfMonth(), locale), style = style, color = fg.copy(alpha = 0.8f))
     }

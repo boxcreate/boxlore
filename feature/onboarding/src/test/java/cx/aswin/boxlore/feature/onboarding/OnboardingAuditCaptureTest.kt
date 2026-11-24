@@ -1,0 +1,179 @@
+package cx.aswin.boxlore.feature.onboarding
+
+import android.app.Application
+import android.content.res.Configuration
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithTag
+import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.network.model.GuidedOnboardingTurn
+import cx.aswin.boxlore.core.network.model.OnboardingHistoryEntry
+import cx.aswin.boxlore.core.network.model.OnboardingPart
+import cx.aswin.boxlore.core.prefs.AppLanguage
+import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
+import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import java.util.Locale
+import org.junit.Assume.assumeTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.ParameterizedRobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+
+/**
+ * Review captures of onboarding's opening screens (run with `-PtabletCaptures=audit`; skipped
+ * otherwise): Echo's opening turn and a later turn with a long question, Welcome, the language
+ * question and the hand-off from the language question to Welcome as a frame sequence. Besides the
+ * shared audit sizes they cover phones and the Fold 8 cover with their system bars, a small phone on
+ * its side, the cover in split-screen and the lower halves the shell gives onboarding in tabletop.
+ */
+@RunWith(ParameterizedRobolectricTestRunner::class)
+@Config(sdk = [33], application = Application::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class OnboardingAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
+    @get:Rule val golden = PhoneGoldenRule(configuration)
+
+    private val callbacks = EchoCallbacks({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
+    private val longChoices = listOf("Unsolved mysteries", "Big ideas in science", "Stories from history", "Comedians riffing")
+
+    @Test fun echoOpening() = render("echo-opening", OnboardingStep.AI_ONBOARDING) {
+        EchoOnboardingScreen(
+            OnboardingUiState(currentStep = OnboardingStep.AI_ONBOARDING, aiSelectedOptions = setOf(EchoInitialTopic.SCIENCE.answer, EchoInitialTopic.TRUE_CRIME.answer)),
+            callbacks,
+        )
+    }
+
+    @Test fun echoLaterTurn() = render("echo-later-turn", OnboardingStep.AI_ONBOARDING) {
+        EchoOnboardingScreen(
+            OnboardingUiState(
+                currentStep = OnboardingStep.AI_ONBOARDING,
+                aiCurrentTurn = 2,
+                aiHistory = listOf(OnboardingHistoryEntry("user", listOf(OnboardingPart("True crime")))),
+                aiOptions = longChoices,
+                aiSelectedOptions = setOf(longChoices[1]),
+                aiGuidedTurn = GuidedOnboardingTurn(
+                    1,
+                    "question",
+                    "Cold cases and curious minds. Good mix.",
+                    "Which of these would you happily hear about on a long drive?",
+                    longChoices,
+                    intent = "preferences",
+                ),
+            ),
+            callbacks,
+        )
+    }
+
+    @Test fun welcome() = render("welcome", OnboardingStep.WELCOME) {
+        WelcomeScreen(onHelpMeFind = {}, onSearch = {}, onSkip = {}, onImportClick = {})
+    }
+
+    @Test fun appLanguage() = render("app-language", OnboardingStep.APP_LANGUAGE) {
+        AppLanguageQuestionContent(AppLanguageQuestion(AppLanguage.GERMAN), onChoose = { _, _ -> })
+    }
+
+    /** Picking a language, then Welcome, as the step host plays it; with animations on and off. */
+    @Test fun languageToWelcome() = languageToWelcomeSequence(reducedMotion = false)
+
+    @Test fun languageToWelcomeReducedMotion() = languageToWelcomeSequence(reducedMotion = true)
+
+    private fun languageToWelcomeSequence(reducedMotion: Boolean) {
+        golden.assumeAuditCapture()
+        assumeTrue("The hand-off is recorded on phones, the cover, a foldable and a tablet", golden.configuration.auditKey in SEQUENCE_SIZES)
+        // Stands in for the view model, as OnboardingScreen wires it, and for the recreation that puts the
+        // picked language in effect.
+        val state = mutableStateOf(OnboardingAppLanguage.initialState(onboardingCompleted = false) { AppLanguage.GERMAN })
+        val shown = mutableStateOf<AppLanguage?>(null)
+        golden.prepare()
+        golden.setContent(foldSafeViewport = true) {
+            val base = LocalConfiguration.current
+            val configuration = shown.value?.let { Configuration(base).apply { setLocale(Locale.forLanguageTag(it.tag)) } } ?: base
+            BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
+                CompositionLocalProvider(LocalConfiguration provides configuration) {
+                    Box(Modifier.fillMaxSize().testTag(ROOT_TAG)) {
+                        OnboardingStepTransition(state.value.currentStep, Modifier.fillMaxSize()) { current ->
+                            when (current) {
+                                OnboardingStep.APP_LANGUAGE -> AppLanguageQuestionContent(AppLanguageQuestion(AppLanguage.GERMAN), onChoose = { language, handoff ->
+                                    state.value = OnboardingAppLanguage.answered(state.value, handoff)
+                                    shown.value = language
+                                })
+                                else -> WelcomeScreen(
+                                    onHelpMeFind = {},
+                                    onSearch = {},
+                                    onSkip = {},
+                                    onImportClick = {},
+                                    handoff = WelcomeHandoff(state.value.openingHandoff) { state.value = OnboardingAppLanguage.handoffDone(state.value) },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        golden.compose.mainClock.advanceTimeBy(1_600)
+        golden.compose.waitForIdle()
+        golden.compose.onNodeWithTag(ROOT_TAG).assertExists()
+        // The pick, as a tap on the suggested language makes it.
+        val pick = golden.compose.onNode(hasText("Deutsch") and hasClickAction()).fetchSemanticsNode().config[SemanticsActions.OnClick].action
+        golden.captureSequence("language-to-welcome", frames = 16, stepMs = 40, reducedMotion = reducedMotion) {
+            pick?.invoke()
+        }
+    }
+
+    /** Captures [content] as the [step] it is, inside the step transition the app uses. */
+    private fun render(name: String, step: OnboardingStep, content: @Composable () -> Unit) {
+        golden.assumeAuditCapture()
+        assumeTrue("Dark sizes are recorded for the hand-off only", golden.configuration !in DARK_SEQUENCE_SIZES)
+        golden.prepare()
+        golden.setContent(foldSafeViewport = true) {
+            BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
+                Box(Modifier.fillMaxSize().testTag(ROOT_TAG)) { OnboardingStepTransition(step) { content() } }
+            }
+        }
+        golden.compose.onNodeWithTag(ROOT_TAG).assertExists()
+        golden.capture(name)
+    }
+
+    companion object {
+        private const val ROOT_TAG = "onboarding_audit_root"
+        private val SEQUENCE_SIZES = setOf("412x915", "475x695", "932x650", "1280x800")
+
+        /**
+         * Phones and the cover with their bars, a small phone on its side, the cover in split-screen
+         * and the lower fold-safe halves (Fold 8, Pixel Fold, a 9 Pro Fold) in tabletop.
+         */
+        val ONBOARDING_SIZES = PhoneGoldenConfiguration.PHONE_BARS_CONFIGURATIONS + listOf(
+            PhoneGoldenConfiguration(740, 360, false),
+            PhoneGoldenConfiguration(475, 330, false),
+            PhoneGoldenConfiguration(932, 314, false),
+            PhoneGoldenConfiguration(841, 340, false),
+            PhoneGoldenConfiguration(673, 410, false),
+        ) + listOf(915, 1_280).flatMap { width ->
+            // Welcome beside its panel with long text.
+            val height = if (width == 915) 412 else 800
+            listOf(
+                PhoneGoldenConfiguration(width, height, false, locale = "de"),
+                PhoneGoldenConfiguration(width, height, false, locale = "en-rXA"),
+                PhoneGoldenConfiguration(width, height, false, fontScale = 1.3f),
+            )
+        } + DARK_SEQUENCE_SIZES
+
+        /** The hand-off in dark theme too. */
+        private val DARK_SEQUENCE_SIZES: List<PhoneGoldenConfiguration>
+            get() = listOf(PhoneGoldenConfiguration(412, 915, true), PhoneGoldenConfiguration(475, 695, true), PhoneGoldenConfiguration(1_280, 800, true))
+
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
+        fun configurations(): List<Array<Any>> = PhoneGoldenConfiguration.auditMatrix(ONBOARDING_SIZES)
+    }
+}

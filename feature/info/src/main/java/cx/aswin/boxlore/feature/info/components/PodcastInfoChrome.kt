@@ -14,12 +14,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -34,28 +34,21 @@ import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.SyncProblem
 import androidx.compose.material.icons.rounded.Tune
-import androidx.compose.material.icons.rounded.ViewAgenda
-import androidx.compose.material.icons.rounded.ViewHeadline
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,8 +56,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
@@ -73,10 +66,21 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogConfirmButton
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogDismissButton
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogIcon
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogIconTone
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
+import cx.aswin.boxlore.core.designsystem.components.BoxloreMenuState
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
+import cx.aswin.boxlore.core.designsystem.components.rememberBoxloreMenuState
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneOwnsStatusBar
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneStatusBarsPadding
 import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 import cx.aswin.boxlore.core.designsystem.text.asString
-import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.model.Episode
@@ -325,11 +329,7 @@ internal data class PodcastInfoTopOverlayActions(
     val onBack: () -> Unit,
     val onMarkAllPlayed: () -> Unit,
     val onMarkAllUnplayed: () -> Unit,
-    val onToggleHideCompleted: () -> Unit,
     val onPlaybackSettings: () -> Unit,
-    /** Episode titles only is on: the menu offers full episodes back. */
-    val titlesOnly: Boolean = false,
-    val onToggleTitlesOnly: () -> Unit = {},
     val isSubscribed: Boolean = false,
     /** Opens Add to playlist; null hides it (the show isn't followed, or there are no playlists). */
     val onAddToPlaylist: (() -> Unit)? = null,
@@ -341,12 +341,10 @@ internal data class PodcastInfoTopOverlayActions(
     /** The show is hidden everywhere: the menu offers Unhide show instead of Hide show everywhere. */
     val isHidden: Boolean = false,
     val onToggleHidden: () -> Unit = {},
-    /** Show / Hide archived episodes, next to Hide completed. */
-    val archive: PodcastInfoArchiveMenu = PodcastInfoArchiveMenu(),
 )
 
 /**
- * The menu's archived-episodes toggle: offered while the show has [archivedCount] archived episodes,
+ * The list's archived-episodes choice: offered while the show has [archivedCount] archived episodes,
  * or while they show ([showArchived]) so they can be hidden again.
  */
 internal data class PodcastInfoArchiveMenu(
@@ -366,15 +364,21 @@ internal data class MissingEpisodesChip(
 /** How a branded page dresses the top bar: the seal's fade, and its icons' colour over a dark header (null for the page's own). */
 internal data class PodcastInfoTopBarLook(val sealAlpha: Float = 0f, val iconTint: Color? = null)
 
+/**
+ * The show page's top bar. Its colour spans the pane; Back, Share and More keep inside the pane's
+ * safe area (clear of side system buttons and a camera cutout) and, on wide tablet panes, inside
+ * the page's reading column ([sidePadding] each side). In a tabletop lower half it starts at the
+ * top of that half, with no room for a status bar that isn't there.
+ */
 @Composable
 internal fun PodcastInfoTopOverlay(
     podcast: Podcast,
     headerColor: Color,
     collapsedHeaderHeight: Dp,
-    hideCompleted: Boolean,
     actions: PodcastInfoTopOverlayActions,
     missingEpisodesChip: MissingEpisodesChip = MissingEpisodesChip(),
     look: PodcastInfoTopBarLook = PodcastInfoTopBarLook(),
+    sidePadding: Dp = 0.dp,
 ) {
     val sealAlpha = look.sealAlpha
     val iconTint = look.iconTint ?: MaterialTheme.colorScheme.onSurface
@@ -384,69 +388,72 @@ internal fun PodcastInfoTopOverlay(
         Modifier
             .fillMaxWidth()
             .height(collapsedHeaderHeight)
-            .background(headerColor)
-            .statusBarsPadding(),
+            .background(headerColor),
     ) {
-        val brandedPage = LocalBrandedPage.current
-        if (brandedPage != null && sealAlpha > 0f) {
-            BrandedSeal(brandedPage.style.popup, Modifier.align(Alignment.Center).graphicsLayer { alpha = sealAlpha })
-        }
-        IconButton(
-            onClick = actions.onBack,
-            modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp),
+        Box(
+            Modifier
+                .fillMaxSize()
+                .boxlorePaneStatusBarsPadding()
+                .boxloreHorizontalSafePadding()
+                .padding(horizontal = sidePadding)
+                .testTag(PODCAST_INFO_TOP_BAR_TAG),
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                contentDescription = stringResource(R.string.episode_info_back),
-                tint = iconTint,
+            val brandedPage = LocalBrandedPage.current
+            if (brandedPage != null && sealAlpha > 0f) {
+                BrandedSeal(brandedPage.style.popup, Modifier.align(Alignment.Center).graphicsLayer { alpha = sealAlpha })
+            }
+            val backLabel = stringResource(R.string.episode_info_back)
+            Box(Modifier.align(Alignment.CenterStart).padding(start = 4.dp)) {
+                BoxloreTooltip(backLabel) {
+                    IconButton(onClick = actions.onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = backLabel,
+                            tint = iconTint,
+                        )
+                    }
+                }
+            }
+
+            // Share and More Options Dropdown Menu (Top Right)
+            PodcastInfoHeaderOverflow(
+                podcast = podcast,
+                context = context,
+                actions = actions,
+                missingEpisodesChip = missingEpisodesChip,
+                iconTint = iconTint,
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp),
             )
         }
-
-        // Share and More Options Dropdown Menu (Top Right)
-        PodcastInfoHeaderOverflow(
-            podcast = podcast,
-            hideCompleted = hideCompleted,
-            context = context,
-            actions = actions,
-            missingEpisodesChip = missingEpisodesChip,
-            iconTint = iconTint,
-            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp),
-        )
     }
 }
 
 @Composable
 private fun PodcastInfoHeaderOverflow(
     podcast: Podcast,
-    hideCompleted: Boolean,
     context: android.content.Context,
     actions: PodcastInfoTopOverlayActions,
     missingEpisodesChip: MissingEpisodesChip,
     iconTint: Color,
     modifier: Modifier = Modifier,
 ) {
-    var showMenu by remember { mutableStateOf(false) }
-    var showShareSheet by remember { mutableStateOf(false) }
+    // Both survive a fold or unfold that recreates the page.
+    val menu = rememberBoxloreMenuState(key = podcast.id)
+    var showShareSheet by rememberSaveable(podcast.id) { mutableStateOf(false) }
+    val shareLabel = stringResource(R.string.podcast_info_share)
+    val moreLabel = stringResource(R.string.podcast_info_more_options)
     Box(modifier = modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             MissingEpisodesChipButton(chip = missingEpisodesChip)
-            IconButton(
-                onClick = { showShareSheet = true },
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Share,
-                    contentDescription = stringResource(R.string.podcast_info_share),
-                    tint = iconTint,
-                )
+            BoxloreTooltip(shareLabel) {
+                IconButton(onClick = { showShareSheet = true }) {
+                    Icon(imageVector = Icons.Rounded.Share, contentDescription = shareLabel, tint = iconTint)
+                }
             }
-            IconButton(
-                onClick = { showMenu = true },
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.MoreVert,
-                    contentDescription = stringResource(R.string.podcast_info_more_options),
-                    tint = iconTint,
-                )
+            BoxloreTooltip(moreLabel) {
+                IconButton(onClick = menu::open) {
+                    Icon(imageVector = Icons.Rounded.MoreVert, contentDescription = moreLabel, tint = iconTint)
+                }
             }
         }
 
@@ -469,125 +476,53 @@ private fun PodcastInfoHeaderOverflow(
             )
         }
 
-        DropdownMenu(
-            expanded = showMenu,
-            onDismissRequest = { showMenu = false },
-            shape = RoundedCornerShape(20.dp),
-            offset = DpOffset(x = (-12).dp, y = 4.dp),
-        ) {
-            PodcastInfoOverflowMenuItems(
-                hideCompleted = hideCompleted,
-                onDismiss = { showMenu = false },
-                actions = actions,
-            )
+        PodcastInfoOverflowMenu(menu, actions)
+    }
+}
+
+/**
+ * The show's More menu in three groups: marking every episode, the show's own settings, and Hide
+ * show everywhere on its own (it has Undo, so it isn't drawn as destructive). How the list looks
+ * lives in the sort button's Sort and view menu.
+ */
+@Composable
+private fun PodcastInfoOverflowMenu(menu: BoxloreMenuState, actions: PodcastInfoTopOverlayActions) {
+    val markPlayed = stringResource(R.string.podcast_info_mark_all_played)
+    val markUnplayed = stringResource(R.string.podcast_info_mark_all_unplayed)
+    val playback = stringResource(R.string.podcast_info_playback_for_show)
+    val addToPlaylist = stringResource(R.string.podcast_info_add_to_playlist)
+    val changeGenre = stringResource(R.string.podcast_info_change_genre)
+    val pin = stringResource(if (actions.isPinnedToHome) R.string.podcast_info_unpin_home else R.string.podcast_info_pin_home)
+    val hide = stringResource(if (actions.isHidden) R.string.podcast_info_unhide_show else R.string.podcast_info_hide_show)
+    // Each item closes the menu, then acts.
+    val close: (() -> Unit) -> () -> Unit = { action ->
+        {
+            menu.dismiss()
+            action()
+        }
+    }
+    BoxloreDropdownMenu(menu, offset = DpOffset((-12).dp, 4.dp)) {
+        group {
+            item(markPlayed, onClick = close(actions.onMarkAllPlayed), leadingIcon = Icons.Rounded.DoneAll, enabled = !actions.markAllRunning)
+            item(markUnplayed, onClick = close(actions.onMarkAllUnplayed), leadingIcon = Icons.Rounded.RadioButtonUnchecked, enabled = !actions.markAllRunning)
+        }
+        group {
+            item(playback, onClick = close(actions.onPlaybackSettings), leadingIcon = Icons.Rounded.Tune)
+            actions.onAddToPlaylist?.let { open -> item(addToPlaylist, onClick = close(open), leadingIcon = Icons.AutoMirrored.Rounded.PlaylistAdd) }
+            if (actions.isSubscribed) {
+                item(changeGenre, onClick = close(actions.onEditGenre), leadingIcon = Icons.Rounded.LocalOffer)
+                item(pin, onClick = close(actions.onToggleHomePin), leadingIcon = Icons.Rounded.PushPin)
+            }
+        }
+        // Followed or not: hiding a followed show unsubscribes from it after a confirmation.
+        group {
+            item(hide, onClick = close(actions.onToggleHidden), leadingIcon = if (actions.isHidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff)
         }
     }
 }
 
-@Composable
-private fun PodcastInfoOverflowMenuItems(
-    hideCompleted: Boolean,
-    onDismiss: () -> Unit,
-    actions: PodcastInfoTopOverlayActions,
-) {
-    DropdownMenuItem(
-        text = { Text(stringResource(R.string.podcast_info_mark_all_played)) },
-        enabled = !actions.markAllRunning,
-        onClick = {
-            onDismiss()
-            actions.onMarkAllPlayed()
-        },
-        leadingIcon = {
-            Icon(Icons.Rounded.DoneAll, contentDescription = null)
-        },
-    )
-    DropdownMenuItem(
-        text = { Text(stringResource(R.string.podcast_info_mark_all_unplayed)) },
-        enabled = !actions.markAllRunning,
-        onClick = {
-            onDismiss()
-            actions.onMarkAllUnplayed()
-        },
-        leadingIcon = {
-            Icon(Icons.Rounded.RadioButtonUnchecked, contentDescription = null)
-        },
-    )
-    DropdownMenuItem(
-        text = { Text(stringResource(if (hideCompleted) R.string.podcast_info_show_completed else R.string.podcast_info_hide_completed)) },
-        onClick = {
-            onDismiss()
-            actions.onToggleHideCompleted()
-        },
-        leadingIcon = {
-            Icon(
-                imageVector = if (hideCompleted) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
-                contentDescription = null,
-            )
-        },
-    )
-    if (actions.archive.offered) ArchivedEpisodesMenuItem(actions.archive, onDismiss)
-    DropdownMenuItem(
-        text = { Text(stringResource(if (actions.titlesOnly) R.string.podcast_info_show_full_episodes else R.string.podcast_info_show_titles_only)) },
-        onClick = {
-            onDismiss()
-            actions.onToggleTitlesOnly()
-        },
-        leadingIcon = {
-            Icon(
-                imageVector = if (actions.titlesOnly) Icons.Rounded.ViewAgenda else Icons.Rounded.ViewHeadline,
-                contentDescription = null,
-            )
-        },
-    )
-    DropdownMenuItem(
-        text = { Text(stringResource(R.string.podcast_info_playback_for_show)) },
-        onClick = {
-            onDismiss()
-            actions.onPlaybackSettings()
-        },
-        leadingIcon = {
-            Icon(Icons.Rounded.Tune, contentDescription = null)
-        },
-    )
-    actions.onAddToPlaylist?.let { AddToPlaylistMenuItem(onDismiss, it) }
-    if (actions.isSubscribed) {
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.podcast_info_change_genre)) },
-            onClick = {
-                onDismiss()
-                actions.onEditGenre()
-            },
-            leadingIcon = {
-                Icon(Icons.Rounded.LocalOffer, contentDescription = null)
-            },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(if (actions.isPinnedToHome) R.string.podcast_info_unpin_home else R.string.podcast_info_pin_home)) },
-            onClick = {
-                onDismiss()
-                actions.onToggleHomePin()
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Rounded.PushPin,
-                    contentDescription = null,
-                    modifier = Modifier.graphicsLayer { rotationZ = 45f },
-                )
-            },
-        )
-    }
-    // Followed or not: hiding a followed show unsubscribes from it after a confirmation.
-    DropdownMenuItem(
-        text = { Text(stringResource(if (actions.isHidden) R.string.podcast_info_unhide_show else R.string.podcast_info_hide_show)) },
-        onClick = {
-            onDismiss()
-            actions.onToggleHidden()
-        },
-        leadingIcon = {
-            Icon(if (actions.isHidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff, contentDescription = null)
-        },
-    )
-}
+/** Test tag on the show page's top bar row (Back, Share and More). */
+internal const val PODCAST_INFO_TOP_BAR_TAG = "podcast_info_top_bar"
 
 @Composable
 private fun MissingEpisodesChipButton(chip: MissingEpisodesChip) {
@@ -620,11 +555,7 @@ private fun MissingEpisodesChipButton(chip: MissingEpisodesChip) {
                 .widthIn(max = 176.dp).heightIn(min = 40.dp),
         ) {
             if (chip.state == DirectFeedChipState.Fetching) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = content,
-                    )
+                BoxLoreLoader.CircularWavy(size = 16.dp, color = content)
             } else {
                 Icon(
                     when (chip.state) {
@@ -667,55 +598,26 @@ internal fun MarkAllEpisodesDialog(
     BoxloreAlertDialog(
         onDismissRequest = onDismiss,
         icon = {
-            Icon(
-                imageVector = if (markAsPlayed) Icons.Rounded.DoneAll else Icons.Rounded.RadioButtonUnchecked,
-                contentDescription = null,
-                tint = if (markAsPlayed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(32.dp),
+            BoxloreDialogIcon(
+                if (markAsPlayed) Icons.Rounded.DoneAll else Icons.Rounded.RadioButtonUnchecked,
+                if (markAsPlayed) BoxloreDialogIconTone.Neutral else BoxloreDialogIconTone.Destructive,
             )
         },
         title = {
-            Text(
-                text = stringResource(if (markAsPlayed) R.string.podcast_info_mark_all_played_title else R.string.podcast_info_mark_all_unplayed_title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = GoogleSansWeight.bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Text(stringResource(if (markAsPlayed) R.string.podcast_info_mark_all_played_title else R.string.podcast_info_mark_all_unplayed_title))
         },
         text = {
             Text(
-                text =
                 if (markAsPlayed) {
                     stringResource(R.string.podcast_info_mark_all_played_body, podcastTitle)
                 } else {
                     stringResource(R.string.podcast_info_mark_all_unplayed_body, podcastTitle)
                 },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
             )
         },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = if (markAsPlayed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                ),
-                shape = ExpressiveShapes.Pill,
-            ) {
-                Text(stringResource(R.string.podcast_info_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.podcast_info_hide_cancel))
-            }
-        },
-        shape = MaterialTheme.shapes.extraLarge,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        // Unplayed resets every episode's progress with no Undo, so it is the destructive kind.
+        confirmButton = { BoxloreDialogConfirmButton(stringResource(R.string.podcast_info_confirm), onConfirm, destructive = !markAsPlayed) },
+        dismissButton = { BoxloreDialogDismissButton(stringResource(R.string.podcast_info_hide_cancel), onDismiss) },
     )
 }
 
@@ -764,10 +666,13 @@ internal fun openAppNotificationSettings(context: android.content.Context) {
 
 /**
  * Light status bar icons while a branded page's dark header is under the status bar in a light
- * theme ([lightIcons]); the theme's own icons once the bar fills, and again when the page leaves.
+ * theme ([lightIcons]); the theme's own icons once the bar fills, and again when the page leaves or
+ * stops filling the top of the screen (beside another pane, below a tabletop hinge).
  */
 @Composable
 internal fun BrandedHeaderStatusBar(lightIcons: Boolean) {
+    // Leaving composition runs the restore below.
+    if (!boxlorePaneOwnsStatusBar()) return
     val view = LocalView.current
     val window = (view.context as? Activity)?.window ?: return
     val controller = WindowCompat.getInsetsController(window, view)

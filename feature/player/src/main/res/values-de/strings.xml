@@ -107,6 +107,7 @@
     <!-- Cast -->
     <string name="player_cast">Streamen</string>
     <string name="player_change_cast_device">Cast-Gerät wechseln</string>
+    <string name="player_cast_volume">Lautstärke des Cast-Geräts</string>
     <string name="player_show_cast_controls">Cast-Steuerung anzeigen</string>
     <string name="player_cast_available_devices">Verfügbare Geräte</string>
     <string name="player_cast_this_phone">Dieses Handy</string>
