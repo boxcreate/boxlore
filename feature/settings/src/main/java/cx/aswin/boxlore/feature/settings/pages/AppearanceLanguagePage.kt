@@ -4,10 +4,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.prefs.AppLanguage
@@ -39,11 +36,6 @@ internal fun AppearanceLanguagePage(state: AppearanceUiState, actions: Appearanc
                     onClick = {
                         if (!selected) AnalyticsHelper.trackSettingsInteraction("app_language_changed", appLanguageAnalyticsValue(language))
                         actions.onSetAppLanguage(language)
-                    },
-                    // The whole row reads as one choice, with its state, to screen readers.
-                    modifier = Modifier.semantics {
-                        this.selected = selected
-                        role = Role.RadioButton
                     },
                 )
             }

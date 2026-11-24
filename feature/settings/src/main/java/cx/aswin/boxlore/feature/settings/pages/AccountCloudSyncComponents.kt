@@ -28,7 +28,6 @@ import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -44,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -83,7 +83,7 @@ internal fun AccountSyncPanel(syncStatus: CloudSyncUiStatus, onSyncNow: () -> Un
                 if (showEcho) AccountEcho(syncing, Modifier.size(AccountPanelEchoSize), stageColor = content.copy(alpha = 0.12f))
             }
             if (syncing) {
-                LinearProgressIndicator(Modifier.fillMaxWidth(), color = content, trackColor = content.copy(alpha = 0.2f))
+                BoxLoreLoader.LinearWavy(Modifier.fillMaxWidth(), color = content, trackColor = content.copy(alpha = 0.2f))
             } else {
                 OutlinedButton(
                     onClick = onSyncNow,

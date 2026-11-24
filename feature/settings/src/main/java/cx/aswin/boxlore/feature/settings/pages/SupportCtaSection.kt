@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -202,6 +203,9 @@ private fun DeployButtonMeterRoll(
                 ),
                 color = contentColor,
                 maxLines = 1,
+                // The name shortens first; the separator and the price always show whole.
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
             )
             Text(
                 text = " • ",

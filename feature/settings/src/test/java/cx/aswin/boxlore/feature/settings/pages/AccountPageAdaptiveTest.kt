@@ -77,6 +77,8 @@ class AccountPageAdaptiveTest {
         render()
         compose.onNodeWithTag("account_method_password").performScrollTo().performClick()
         compose.onNodeWithText("Create account").performScrollTo().performClick()
+        // The shared connected selector: each method is one radio button.
+        compose.onNode(androidx.compose.ui.test.hasText("Create account") and androidx.compose.ui.test.SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.Role, androidx.compose.ui.semantics.Role.RadioButton)).assertExists()
         compose.onNodeWithTag("account_email_field").performTextReplacement("new@example.test")
         compose.runOnIdle { window.value = BoxloreWindowLayout(1280f, 800f) }
         compose.waitForIdle()

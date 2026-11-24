@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.settings.pages
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOff
@@ -16,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.prefs.DiscoverySection
 import cx.aswin.boxlore.core.prefs.DiscoverySections
@@ -26,6 +28,8 @@ import cx.aswin.boxlore.core.prefs.HeroTideProgress
 import cx.aswin.boxlore.core.prefs.OpenAppTo
 import cx.aswin.boxlore.core.prefs.WidgetAppearance
 import cx.aswin.boxlore.core.prefs.WidgetShowsArtwork
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.text
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -65,6 +69,28 @@ class AppearancePagesTest {
     private val fakePreview: AppearanceHeroPreview = { style, _, collection, modifier ->
         Box(modifier) {
             Button(onClick = { previewButtonClicks++ }) { Text(if (collection) "$style collection" else style) }
+        }
+    }
+
+    @Test
+    fun `on tablets the Navigation page says when bar style and blur apply, and the picked style stays`() {
+        val window = mutableStateOf(BoxloreTestWindows.PHONE)
+        val navActions = actions.copy(onSetNavigationStyle = { state.value = state.value.copy(currentNavigationStyle = it) })
+        compose.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                BoxLoreTheme(dynamicColor = false) { AppearanceNavigationPage(state.value, navActions, onBack = {}) }
+            }
+        }
+        val note = text(R.string.settings_navigation_tablet_note)
+        compose.onNodeWithText(note).assertDoesNotExist()
+        compose.onNodeWithText("Classic").performClick()
+        val picked = state.value.currentNavigationStyle
+        for ((size, tablet) in listOf(BoxloreTestWindows.TABLET to true, BoxloreTestWindows.PHONE to false, BoxloreTestWindows.TABLET to true)) {
+            compose.runOnIdle { window.value = size }
+            compose.waitForIdle()
+            compose.onNodeWithText(note).apply { if (tablet) assertExists() else assertDoesNotExist() }
+            assertEquals(picked, state.value.currentNavigationStyle)
+            compose.onNodeWithText("Classic").assertIsSelected()
         }
     }
 

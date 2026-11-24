@@ -115,4 +115,5 @@
     <string name="settings_theme_look_custom">Eigenes</string>
     <string name="settings_theme_look_custom_description">Wähle deine Farben und deinen Hintergrundstil.</string>
     <string name="settings_theme_section_title">Design</string>
+    <string name="settings_navigation_tablet_note">Leistenstil und Unschärfe siehst du, wenn boxlore die untere Leiste zeigt, etwa auf dem Außendisplay oder in einem schmalen Fenster.</string>
 </resources>

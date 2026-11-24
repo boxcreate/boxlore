@@ -78,6 +78,7 @@ import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
 import cx.aswin.boxlore.feature.settings.pages.TvSignInApprover
 import cx.aswin.boxlore.feature.settings.pages.WearOsSettings
 import cx.aswin.boxlore.feature.settings.pages.WearOsSettingsPage
+import cx.aswin.boxlore.feature.settings.pages.settingsHubAccount
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -475,6 +476,7 @@ private fun SettingsDestinationContent(
                 onNavigate = actions.onNavigate,
                 onCheckForUpdates = config.onCheckForUpdates,
                 showWearOs = config.wearOs != null,
+                account = settingsHubAccount(signInAvailable = repositories.authRepository != null, uiData.accountStatus, syncStatus),
             )
 
         ProfileSettingsDestination.Account ->

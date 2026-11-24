@@ -39,12 +39,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
-import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.settings.R
@@ -318,6 +318,9 @@ private fun PromiseCard() {
     }
 }
 
+/** Test tag on each promise pill. */
+internal const val PRIVACY_PROMISE_PILL_TAG = "privacy_promise_pill"
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PromisePillRow(pills: List<String>) {
@@ -328,8 +331,9 @@ private fun PromisePillRow(pills: List<String>) {
         pills.forEach { label ->
             Surface(
                 shape = MaterialTheme.shapes.small,
-                color = if (LocalBoxloreWindowLayout.current.usesTabletLayout) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                contentColor = if (LocalBoxloreWindowLayout.current.usesTabletLayout) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.testTag(PRIVACY_PROMISE_PILL_TAG),
             ) {
                 Text(
                     text = label,
@@ -398,7 +402,7 @@ private fun ExampleCallout(text: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.65f),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
     ) {
         Row(
@@ -436,7 +440,7 @@ private data class AnalyticsCardExpansion(
     val content: @Composable () -> Unit,
 )
 
-private data class AnalyticsCardColors(
+internal data class AnalyticsCardColors(
     val container: Color,
     val onContainer: Color,
     val iconContainer: Color,
@@ -444,12 +448,12 @@ private data class AnalyticsCardColors(
 )
 
 @Composable
-private fun analyticsCardColors(destructive: Boolean): AnalyticsCardColors = if (destructive) {
+internal fun analyticsCardColors(destructive: Boolean): AnalyticsCardColors = if (destructive) {
     AnalyticsCardColors(
-        container = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f),
+        container = MaterialTheme.colorScheme.errorContainer,
         onContainer = MaterialTheme.colorScheme.onErrorContainer,
-        iconContainer = MaterialTheme.colorScheme.error.copy(alpha = 0.14f),
-        iconContent = MaterialTheme.colorScheme.error,
+        iconContainer = MaterialTheme.colorScheme.error,
+        iconContent = MaterialTheme.colorScheme.onError,
     )
 } else {
     AnalyticsCardColors(

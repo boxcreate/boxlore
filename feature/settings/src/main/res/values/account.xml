@@ -86,13 +86,12 @@
     <string name="account_delete">Delete account</string>
     <string name="account_privacy_policy">Privacy Policy</string>
     <string name="account_how_deletion_works">How deletion works</string>
-    <string name="settings_sync_cloud_sync_title">Cloud Sync</string>
     <string name="settings_sync_badge_issue">Sync issue</string>
     <string name="settings_sync_badge_syncing">Syncing...</string>
     <string name="settings_sync_badge_active">Cloud sync active</string>
     <string name="settings_sync_signed_in_as">Signed in as %1$s</string>
-    <string name="settings_sync_sign_in_prompt">Sign in to backup and sync across devices</string>
-    <string name="settings_sync_cloud_sync_label">Cloud sync</string>
+    <string name="settings_sync_sign_in_prompt">Sign in to back up and sync across devices</string>
+    <string name="settings_sync_signed_out_summary">Back up and sync your library across devices</string>
     <string name="settings_sync_open_account">Open account settings</string>
     <string name="settings_sync_full_backup_summary">Subscriptions, folders, playlists, history, likes, and settings (JSON)</string>
     <string name="settings_sync_export_title">Export</string>
@@ -101,7 +100,7 @@
     <string name="settings_sync_opml_file">OPML file</string>
     <string name="settings_sync_import_title">Import</string>
     <!-- "Missing episodes?" is the name of a per-show option. -->
-    <string name="settings_sync_import_full_description">Restores Missing episodes? opt-ins and refreshes those shows</string>
+    <string name="settings_sync_import_full_description">Restores your library and settings from the backup file</string>
     <string name="settings_sync_import_opml_description">Import from an OPML file</string>
     <string name="account_deleted_toast">Account deleted</string>
     <string name="account_delete_dialog_title">Delete Account</string>
@@ -170,4 +169,5 @@
     <string name="account_tv_wrong_code">That code didn\'t work. Check it on your TV, or get a new one there.</string>
     <string name="account_tv_sign_in_first">Verify your email on this phone first.</string>
     <string name="account_tv_no_connection">Couldn\'t reach boxlore. Check your connection and try again.</string>
+    <string name="settings_sync_import_footer">Shows with “Missing episodes?” turned on are refreshed after the import.</string>
 </resources>

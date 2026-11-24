@@ -53,8 +53,6 @@ class SharedHostUsageTest {
             allowed = mapOf(
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeSelectionToolbar.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/PodcastInfoChrome.kt" to 1,
-                "feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/feedback/FeedbackComposeParts.kt" to 1,
-                "feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/feedback/FeedbackScreen.kt" to 1,
                 "feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/pages/supportworlds/SupportWorldDebugMenu.kt" to 1,
             ),
         ),
