@@ -24,7 +24,7 @@
     <string name="settings_back">Zurück</string>
     <string name="settings_hub_sync_description">Kontosynchronisierung, OPML-Feeds und Bibliotheks-Backups</string>
     <string name="settings_hub_library_description">Region für Entdecken, Inhaltssprachen und RSS-Feeds</string>
-    <string name="settings_hub_appearance_description">Design, Start, Player, Navigation, Schrift und Sprache</string>
+    <string name="settings_hub_appearance_description">Design und Navigation</string>
     <string name="settings_hub_playback_description">Intro überspringen, Spulen und gehörte Folgen</string>
     <string name="settings_hub_downloads_description">Smarte und automatische Downloads von Folgen</string>
     <string name="settings_hub_wear_os_description">Layout deiner Podcasts und Downloadspeicher auf deiner Uhr</string>
