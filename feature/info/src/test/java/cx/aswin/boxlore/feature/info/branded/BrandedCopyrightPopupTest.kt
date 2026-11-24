@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.info.branded
 
+import androidx.compose.ui.unit.IntSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -46,6 +47,14 @@ class BrandedCopyrightPopupTest {
     fun `a card taller than the window starts at the top margin and scrolls`() {
         val placement = place(anchorTop = 200, windowHeight = 300, card = 400)
         assertEquals(8, placement.top + 10)
+    }
+
+    @Test
+    fun `in a fold half smaller than the card, the card narrows and shortens to the half less its margins`() {
+        // A 200 by 100px half: the 260px card would run past its right edge and a 96px floor past its bottom.
+        assertEquals(IntSize(184, 84), copyrightCardRoom(regionWidth = 200, regionHeight = 100, width = 260, margin = 8))
+        // A roomy region keeps the card's own width.
+        assertEquals(260, copyrightCardRoom(regionWidth = 1000, regionHeight = 1000, width = 260, margin = 8).width)
     }
 
     @Test

@@ -256,7 +256,20 @@ class EpisodeInfoViewModel(
 
     /** Try again after a failed load: the same request, which a finished error never covers. */
     fun retry() {
-        lastLoad.retryArguments()?.replay(::loadEpisode)
+        val last = lastLoad.retryArguments() ?: return
+        with(last) {
+            loadEpisode(
+                episodeId,
+                episodeTitle,
+                episodeDescription,
+                episodeImageUrl,
+                episodeAudioUrl,
+                episodeDuration,
+                podcastId,
+                podcastTitle,
+                entryPointContext,
+            )
+        }
     }
 
     fun loadEpisode(

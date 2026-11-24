@@ -185,9 +185,15 @@ private fun EpisodeMetadata(episode: Episode, completion: EpisodeCompletionState
         }
         // Archiving is done from the show page's selection menu; here an archived episode is only marked.
         // Weighted, so on a line of their own the pills sit at the end. The inner row asks for its whole
-        // width: the line breaks before the pills rather than squeezing a label.
+        // width: the line breaks before the pills rather than squeezing a label, and in a column too
+        // narrow for both, each pill takes a line of its own.
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.width(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            FlowRow(
+                Modifier.width(IntrinsicSize.Max),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
                 if (completion.isArchived) EpisodeArchivedPill()
                 MarkPlayedTip(episode.id, completion.showTip, onTipDismissed) { EpisodeCompletionPill(completion.isCompleted, onToggleCompletion) }
             }

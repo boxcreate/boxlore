@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -233,18 +234,7 @@ fun EpisodeInfoScreen(
             // Off the phone layout every block (the hero included) stops at one readable width, on the cards' edges.
             val blockCap = if (heroForm == EpisodeHeroForm.Stacked) Modifier else Modifier.fillMaxWidth().wrapContentWidth(Alignment.Start).widthIn(max = EpisodeBlockMaxWidth)
             val heroEdges = if (heroForm == EpisodeHeroForm.Stacked) Modifier.padding(horizontal = EpisodePageTextGutter) else blockCap.padding(horizontal = EpisodePageBlockGutter)
-            // The Play row moves into the hero in two columns. A page scrolled to it would otherwise lose
-            // its place (the row's item is gone) and leave Play above the screen, so it goes to the hero.
-            val formMemory = remember { EpisodeHeroFormMemory(heroForm) }
-            if (formMemory.form != heroForm && heroForm == EpisodeHeroForm.TwoColumn) {
-                // The layout measured before this change, read without subscribing to every scroll.
-                // The first item under the top bar, not one peeking into the list's top padding.
-                val top = Snapshot.withoutReadObservation {
-                    listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == listState.firstVisibleItemIndex }?.key
-                }
-                if (top == RAIL_KEY) listState.requestScrollToItem(0)
-            }
-            SideEffect { formMemory.form = heroForm }
+            KeepPlayRowInView(listState, heroForm)
             when (val state = uiState) {
                 is EpisodeInfoUiState.Loading -> {
                     // The page's outline while it loads, with Back already where it will be.
@@ -331,7 +321,7 @@ fun EpisodeInfoScreen(
                                     modifier = railModifier.testTag(EpisodeInfoTags.RAIL),
                                 )
                             }
-                            item(key = "hero") {
+                            item(key = HERO_KEY) {
                                 cx.aswin.boxlore.feature.info.components.EpisodeInfoHero(
                                     episode = state.episode,
                                     podcastTitle = EpisodeShowTitle.displayName(state.podcastTitle, showStandIn),
@@ -352,67 +342,16 @@ fun EpisodeInfoScreen(
                                     rail = { actionRail(Modifier.widthIn(max = EpisodeRailMaxWidth)) },
                                 )
                             }
-                            // Beside the cover in the two-column layout, its own row otherwise.
-                            if (heroForm != EpisodeHeroForm.TwoColumn) {
-                                item(key = RAIL_KEY) {
-                                    val railCap = if (heroForm == EpisodeHeroForm.Stacked) Modifier else Modifier.widthIn(max = EpisodeRailMaxWidth)
-                                    actionRail(Modifier.padding(horizontal = EpisodePageBlockGutter).then(railCap))
-                                }
-                            }
-
-                            // CROSS-PROMOTION CARD
-                            state.crossPromotion?.let { crossPromo ->
-                                item(key = "cross_promo") {
-                                    CrossPromotionCard(
-                                        crossPromotion = crossPromo,
-                                        onPodcastClick = onPodcastClick,
-                                        modifier =
-                                        blockCap
-                                            .padding(horizontal = 16.dp),
-                                    )
-                                }
-                            }
-
-                            // What the episode is about comes before its chapters.
-                            episodeAbout(state, viewModel::seekToPosition, blockCap)
-                            if (state.chapters.isNotEmpty()) {
-                                item(key = "chapters") {
-                                    cx.aswin.boxlore.feature.info.components.EpisodeChaptersSection(
-                                        episodeId = state.episode.id,
-                                        chapters = state.chapters,
-                                        positionMs = state.resumePositionMs,
-                                        onSeekTo = viewModel::seekToPosition,
-                                        modifier = blockCap.padding(horizontal = 16.dp),
-                                    )
-                                }
-                            }
-                            episodeLinks(state, blockCap)
-
-                            // Contextual "MORE LIKE THIS" RECOMMENDATIONS SECTION -> Card
-                            if (moreLikeThisOn == true && (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty())) {
-                                item(key = "more_like_this") {
-                                    // A carousel: it keeps the page's full width.
-                                    cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreLikeThisCard(
-                                        state = state,
-                                        onEpisodeClick = onEpisodeClick,
-                                    )
-                                }
-                            }
-
-                            // Latest episodes from this show, sharing the page's vertical scroll.
-                            item(key = "more_from_podcast") {
-                                Box(blockCap.testTag(EpisodeInfoTags.MORE_FROM)) {
-                                cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreFromPodcastCard(
-                                    state = state,
-                                    onPodcastClick = onPodcastClick,
-                                    onEpisodeClick = onEpisodeClick,
-                                    onPodcastLinkClicked = viewModel::onPodcastLinkClicked,
-                                    onRelatedEpisodesScrolled = viewModel::onRelatedEpisodesScrolled,
-                                    isSectionScrollEngaged = isMoreFromScrolling,
-                                    onRelatedEpisodeClicked = viewModel::onRelatedEpisodeClicked,
-                                )
-                                }
-                            }
+                            episodeRailRow(heroForm, actionRail)
+                            episodeSections(
+                                state = state,
+                                blockCap = blockCap,
+                                moreLikeThisOn = moreLikeThisOn == true,
+                                isMoreFromScrolling = { isMoreFromScrolling },
+                                viewModel = viewModel,
+                                onPodcastClick = onPodcastClick,
+                                onEpisodeClick = onEpisodeClick,
+                            )
                         }
                     }
 
@@ -535,6 +474,92 @@ fun EpisodeInfoScreen(
     }
 }
 
+/**
+ * The Play row moves into the hero in two columns. A page scrolled into the hero or to the row would
+ * otherwise keep its offset (or lose its place, the row's item being gone) and leave Play above the
+ * screen, so it goes to the top of the hero.
+ */
+@Composable
+private fun KeepPlayRowInView(listState: LazyListState, heroForm: EpisodeHeroForm) {
+    val formMemory = remember { EpisodeHeroFormMemory(heroForm) }
+    if (formMemory.form != heroForm && heroForm == EpisodeHeroForm.TwoColumn) {
+        // The layout measured before this change, read without subscribing to every scroll.
+        // The first item under the top bar, not one peeking into the list's top padding.
+        val top = Snapshot.withoutReadObservation {
+            listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == listState.firstVisibleItemIndex }?.key
+        }
+        if (top == HERO_KEY || top == RAIL_KEY) listState.requestScrollToItem(0)
+    }
+    SideEffect { formMemory.form = heroForm }
+}
+
+/** The Play row's own list item: beside the cover in the two-column layout, its own row otherwise. */
+private fun LazyListScope.episodeRailRow(heroForm: EpisodeHeroForm, actionRail: @Composable (Modifier) -> Unit) {
+    if (heroForm == EpisodeHeroForm.TwoColumn) return
+    item(key = RAIL_KEY) {
+        val railCap = if (heroForm == EpisodeHeroForm.Stacked) Modifier else Modifier.widthIn(max = EpisodeRailMaxWidth)
+        actionRail(Modifier.padding(horizontal = EpisodePageBlockGutter).then(railCap))
+    }
+}
+
+/** Everything under the hero and the Play row, in page order. */
+private fun LazyListScope.episodeSections(
+    state: EpisodeInfoUiState.Success,
+    blockCap: Modifier,
+    moreLikeThisOn: Boolean,
+    isMoreFromScrolling: () -> Boolean,
+    viewModel: EpisodeInfoViewModel,
+    onPodcastClick: (String) -> Unit,
+    onEpisodeClick: (cx.aswin.boxlore.core.model.Episode) -> Unit,
+) {
+    state.crossPromotion?.let { crossPromo ->
+        item(key = "cross_promo") {
+            CrossPromotionCard(
+                crossPromotion = crossPromo,
+                onPodcastClick = onPodcastClick,
+                modifier = blockCap.padding(horizontal = 16.dp),
+            )
+        }
+    }
+    // What the episode is about comes before its chapters.
+    episodeAbout(state, viewModel::seekToPosition, blockCap)
+    if (state.chapters.isNotEmpty()) {
+        item(key = "chapters") {
+            cx.aswin.boxlore.feature.info.components.EpisodeChaptersSection(
+                episodeId = state.episode.id,
+                chapters = state.chapters,
+                positionMs = state.resumePositionMs,
+                onSeekTo = viewModel::seekToPosition,
+                modifier = blockCap.padding(horizontal = 16.dp),
+            )
+        }
+    }
+    episodeLinks(state, blockCap)
+    if (moreLikeThisOn && (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty())) {
+        item(key = "more_like_this") {
+            // A carousel: it keeps the page's full width.
+            cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreLikeThisCard(
+                state = state,
+                onEpisodeClick = onEpisodeClick,
+            )
+        }
+    }
+    // Latest episodes from this show, sharing the page's vertical scroll.
+    item(key = "more_from_podcast") {
+        Box(blockCap.testTag(EpisodeInfoTags.MORE_FROM)) {
+            cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreFromPodcastCard(
+                state = state,
+                onPodcastClick = onPodcastClick,
+                onEpisodeClick = onEpisodeClick,
+                onPodcastLinkClicked = viewModel::onPodcastLinkClicked,
+                onRelatedEpisodesScrolled = viewModel::onRelatedEpisodesScrolled,
+                isSectionScrollEngaged = isMoreFromScrolling(),
+                onRelatedEpisodeClicked = viewModel::onRelatedEpisodeClicked,
+            )
+        }
+    }
+}
+
 private fun LazyListScope.episodeAbout(
     state: EpisodeInfoUiState.Success,
     onSeekTo: (Long) -> Unit,
@@ -571,6 +596,9 @@ internal val EpisodePageTextGutter = 20.dp
 
 /** Back and Share sit this far from the page edges, matching the show page's top bar. */
 private val EpisodeHeaderButtonInset = 4.dp
+
+/** The hero's list item, the page's first. */
+private const val HERO_KEY = "hero"
 
 /** The Play row's list item, right after the hero (absent in the two-column layout). */
 private const val RAIL_KEY = "rail"

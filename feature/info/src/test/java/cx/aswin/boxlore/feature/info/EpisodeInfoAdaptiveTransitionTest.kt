@@ -9,9 +9,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -24,6 +26,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
@@ -248,7 +251,7 @@ class EpisodeInfoAdaptiveTransitionTest {
         )
         fixture.compose.walkWindows(window, *walk) { size ->
             val short = size.heightDp < 480f
-            if (short) assertTrue("Play is on the first screen at $size", playBounds().bottom.value <= size.heightDp)
+            if (short) assertPlayInside(size.heightDp, "Play is on the first screen at $size")
             val rail = fixture.compose.onNodeWithTag(EpisodeInfoTags.RAIL).getBoundsInRoot()
             if (short || size.widthDp >= 600f) {
                 assertTrue("the Play row stops at a comfortable width at $size", rail.right.value - rail.left.value <= 480.5f)
@@ -299,7 +302,7 @@ class EpisodeInfoAdaptiveTransitionTest {
             window.value = BoxloreTestWindows.FOLD_TABLETOP
         }
         fixture.compose.waitForIdle()
-        assertTrue("Play is on the first screen of the lower half", playBounds().bottom.value <= lowerHalf.height)
+        assertPlayInside(lowerHalf.height, "Play is on the first screen of the lower half")
     }
 
     @Test
@@ -312,9 +315,14 @@ class EpisodeInfoAdaptiveTransitionTest {
         fixture.compose.waitForIdle()
         fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("rail")
         fixture.compose.walkWindows(window, BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900) { size ->
-            val play = playBounds()
-            // Below the 64dp top bar, not hidden under it.
-            assertTrue("Play is inside the page at $size ($play)", play.top.value >= 64f && play.bottom.value <= size.heightDp)
+            assertPlayInside(size.heightDp, "Play is inside the page at $size")
+        }
+        // Scrolled deep into the hero, its foot still the first thing under the top bar and the Play row below it.
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("rail")
+        fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, -40f) }
+        fixture.compose.waitForIdle()
+        fixture.compose.walkWindows(window, BoxloreTestWindows.W600_H900, BoxloreTestWindows.W599_H900) { size ->
+            assertPlayInside(size.heightDp, "Play is inside the page from a hero offset at $size")
         }
     }
 
@@ -425,7 +433,11 @@ class EpisodeInfoAdaptiveTransitionTest {
         assertEquals(1, backs)
     }
 
-    private fun playBounds() = fixture.compose.onNode(hasText(PLAY) and hasClickAction()).getBoundsInRoot()
+    /** Play whole on screen: below the 64dp top bar, above [pageHeight], and actually drawn. */
+    private fun assertPlayInside(pageHeight: Float, message: String) {
+        val play = fixture.compose.onNode(hasText(PLAY) and hasClickAction()).getUnclippedBoundsInRoot()
+        assertTrue("$message ($play)", (play.bottom - play.top).value > 0f && play.top.value >= 64f && play.bottom.value <= pageHeight)
+    }
 
     private fun listScroll(): Float =
         fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
