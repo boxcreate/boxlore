@@ -165,13 +165,16 @@ private fun MoreFromRowArt(episode: Episode, showImageUrl: String?) {
     when (val art = moreFromRowArt(episode, showImageUrl)) {
         is MoreFromArt.Date, is MoreFromArt.Number -> {
             val locale = currentLocale()
+            // Month and day from one calendar in the listener's language.
             val (top, main) = when (art) {
                 is MoreFromArt.Date -> LocaleFormats.date(art.epochSeconds * 1_000L, LocaleFormats.DateStyle.SHORT_MONTH, locale) to
-                    LocaleFormats.number(java.util.Calendar.getInstance().apply { timeInMillis = art.epochSeconds * 1_000L }.get(java.util.Calendar.DAY_OF_MONTH).toLong(), locale)
+                    LocaleFormats.date(art.epochSeconds * 1_000L, LocaleFormats.DateStyle.DAY, locale)
                 is MoreFromArt.Number -> stringResource(R.string.episode_info_number_short) to LocaleFormats.number(art.number.toLong(), locale)
                 else -> "" to ""
             }
-            Surface(tile.clearAndSetSemantics {}, color = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
+            // The date is already in the row's details; the number is said nowhere else.
+            val spokenNumber = (art as? MoreFromArt.Number)?.let { stringResource(R.string.episode_info_number, it.number) }
+            Surface(tile.clearAndSetSemantics { spokenNumber?.let { contentDescription = it } }, color = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
                 Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                     Text(top, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(main, style = MaterialTheme.typography.titleLarge, fontWeight = GoogleSansWeight.bold, maxLines = 1)

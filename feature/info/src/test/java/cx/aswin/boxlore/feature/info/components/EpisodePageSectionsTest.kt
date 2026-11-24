@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.onAllNodesWithText
@@ -158,11 +160,17 @@ class EpisodePageSectionsTest {
 
     @Test
     fun `More from opens the show from its header only, and says See all only above listed episodes`() {
-        val related = List(3) { TestFixtures.episode(id = "related-$it", title = "Episode ${10 + it}", podcastId = "1", podcastTitle = "Curious world") }
+        val related = List(3) { TestFixtures.episode(id = "related-$it", title = "Episode ${10 + it}", podcastId = "1", podcastTitle = "Curious world") } +
+            TestFixtures.episode(id = "related-numbered", title = "The lighthouse keeper", podcastId = "1", podcastTitle = "Curious world").copy(episodeNumber = 14)
         val state = MutableStateFlow(richState().copy(relatedEpisodes = related))
         render(state)
         fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("more_from_podcast")
         assertTrue(fixture.compose.onAllNodesWithText("See all", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
+        // A number tile is the only place the number shows, so a screen reader hears it with the row.
+        assertTrue(
+            "the number tile is spoken",
+            fixture.compose.onAllNodes(hasContentDescription("The lighthouse keeper", substring = true) and hasContentDescription("Episode 14")).fetchSemanticsNodes().isNotEmpty(),
+        )
         assertEquals("no second Explore button", 0, fixture.compose.onAllNodesWithText("Explore podcast").fetchSemanticsNodes().size)
         fixture.compose.runOnIdle { state.value = richState() }
         fixture.compose.onNodeWithTag(EpisodeInfoTags.LIST).performScrollToKey("more_from_podcast")
@@ -196,6 +204,14 @@ class EpisodePageSectionsTest {
         assertFalse("Mark played is whole", cutOff(textLayout(markPlayed)))
         assertFalse("Archived is whole", cutOff(textLayout(fixture.compose.onNode(hasText("Archived"), useUnmergedTree = true))))
         assertTrue("inside the page", markPlayed.getBoundsInRoot().right.value <= BoxloreTestWindows.PHONE.widthDp)
+        // A narrow short pane puts the small cover beside the title, leaving a column too narrow for both pills.
+        val narrowShort = BoxloreWindowLayout(320f, 420f)
+        fixture.compose.runOnIdle { window.value = narrowShort }
+        fixture.compose.waitForIdle()
+        assertFalse("Mark played is whole at $narrowShort", cutOff(textLayout(fixture.compose.onNode(hasText("Mark played"), useUnmergedTree = true))))
+        assertFalse("Archived is whole at $narrowShort", cutOff(textLayout(fixture.compose.onNode(hasText("Archived"), useUnmergedTree = true))))
+        val narrowPlayed = fixture.compose.onNode(hasText("Mark played"), useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue("inside the page at $narrowShort ($narrowPlayed)", narrowPlayed.right.value <= narrowShort.widthDp)
     }
 
     @Test

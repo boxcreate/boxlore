@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -230,11 +231,17 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         fixture.compose.onNodeWithText(DESCRIPTION).performClick()
         fixture.compose.waitForIdle()
         val heights = mutableMapOf<BoxloreWindowLayout, Float>()
+        // A 500dp-wide phone window just under and at the 760dp height gate, both ways.
+        val shortWide = BoxloreWindowLayout(500f, 759f)
+        val tallWide = BoxloreWindowLayout(500f, 760f)
         fixture.compose.walkWindows(
             window,
             BoxloreTestWindows.COVER_475,
             BoxloreWindowLayout(600f, 960f),
             BoxloreTestWindows.COVER_475,
+            shortWide,
+            tallWide,
+            shortWide,
             BoxloreTestWindows.PHONE,
         ) { size ->
             val heading = fixture.compose.onNode(hasContentDescription(podcast.title) and isHeading()).getBoundsInRoot()
@@ -243,6 +250,8 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         }
         val phone = requireNotNull(heights[BoxloreTestWindows.PHONE])
         assertEquals("The cover's photo is a phone's", phone, requireNotNull(heights[BoxloreTestWindows.COVER_475]), 1f)
+        assertEquals("Under 760dp a wide phone keeps a phone's photo", phone, requireNotNull(heights[shortWide]), 1f)
+        assertTrue("From 760dp a wide phone gets the larger photo", requireNotNull(heights[tallWide]) > phone + 1f)
         assertTrue("A tablet still gets the larger photo", requireNotNull(heights[BoxloreWindowLayout(600f, 960f)]) > phone + 1f)
     }
 
@@ -274,6 +283,10 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
                     assertTrue("An open spotlight starts at the page edge at $size, was $leftGap in", leftGap <= 16.5f)
                 }
             }
+            // The spotlight on screen holds the newest episode, and the list never repeats it.
+            fixture.compose
+                .onNode(hasText("Episode 0") and hasAnyAncestor(hasTestTag(PODCAST_INFO_BRANDED_SPOTLIGHT_TAG)), useUnmergedTree = true)
+                .assertExists("The spotlight shows Episode 0 at $size")
             spotlightOnce()
         }
     }

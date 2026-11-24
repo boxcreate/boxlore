@@ -36,7 +36,7 @@ Owns boxlore's shared Compose visuals: theme, type, shapes, motion, press feedba
 ### Layout and window classes
 
 - `BoxloreWindowLayout`, `LocalBoxloreWindowLayout`: the app-supplied window and fold model; previews default to phones.
-- `boxlorePaneSpec`, `LocalBoxlorePaneBounds`, `dockedPlayerCoversPane`, `boxlorePaneOwnsStatusBar`: shell-supplied panes, never inferred from the window; half-open folds use the whole window until a pane opens. Only a pane that fills the top of the screen sets the status bar's icon colour.
+- `boxlorePaneSpec`, `LocalBoxlorePaneBounds`, `dockedPlayerCoversPane`, `boxlorePaneOwnsStatusBar`: shell-supplied panes, never inferred from the window (half-open folds use the whole window until a pane opens); only a top pane sets status bar icons.
 - `rememberBoxloreFoldSafePopupPositionProvider`, `BoxloreTabletopSplit`, `boxloreIsShortPane`, `boxloreContentHeightDp`, `BoxloreSafeInsets.kt`: fold-safe popups, tabletop split, short-pane check and pane height, pane-relative insets.
 - `BoxloreCardSpec`, `boxlorePosterColumns`, `Modifier.boxloreReadingColumn`: card families, poster packing by pane width, a reading column for any window.
 - Gates and state retention: see [adaptive UI and state](../../ARCHITECTURE.md#adaptive-ui-and-state).
@@ -49,12 +49,12 @@ Owns boxlore's shared Compose visuals: theme, type, shapes, motion, press feedba
 - `TabletFeaturedRow`, `AdaptiveOverflowRow`, `rememberAdaptiveOverflowState`: a feature card beside equal-height posters; a width-packed chip row whose More list follows resizes.
 - `DiscoveryTabSwitcher`: Explore and Subscriptions tab capsule; pages keep selection, long names grow the floating pill, and icons drop before names shorten.
 - `TopBarUtilityActions`: connected Update, Feedback and Settings segments, named in tooltips. Update shows only with `LocalUpdateAvailableAction`, and its sweep runs three times, never with animations off; `LocalFeedbackReplyWaiting` dots Feedback.
-- `BoxloreTooltip`: names an icon-only button on hover or long-press, below it or above it (`BoxloreTooltipPosition`).
+- `BoxloreTooltip`, `BoxloreTooltipPosition`: names icon-only buttons, above or below, on hover or long-press.
 - `BoxloreTopBar`, `boxloreLargeTitlePresentation`: page header, slim in short panes.
 - `ConnectedOptionSelector`, `RegionSegmentedSelector`, `ContentRegionPickerSheet`: option buttons (long names shrink, wrap, then stack) and the region picker.
 - `BoxloreFilterChip`, `BoxloreMoreChip`, `BoxloreFilterChipDefaults`: the one filter chip, with a sheet container; `PillFilterChip` is it for genre pills.
 - `BoxloreDropdownMenu`, `rememberBoxloreMenuState`: grouped, fold-safe menus with selectable rows and destructive groups, saved across recreation.
-- `BoxloreTextField`, `BoxloreSearchField`: the text field and search box; hints stay on one line.
+- `BoxloreTextField`, `BoxloreSearchField`: the text field and search box; hints stay one line.
 - `ContentLanguagesSheet`: English can be switched off only when `ContentRegions.canSwitchEnglishOff` allows it.
 - `BoxloreDialog`, `BoxloreModalBottomSheet`, `BoxloreAlertDialog`, `EngagementBottomSheetScaffold`: phone dialogs and sheets that become bounded, fold-safe dialogs on tablets; `BoxloreDialogConfirmButton` (error-coloured when destructive), `BoxloreDialogDismissButton` and `BoxloreDialogIcon` give dialogs one look.
 - `BoxloreSnackbarHost`, `BoxloreScrollableCenteredColumn`: snackbars above bottom chrome; centred panels that scroll when short.
@@ -78,12 +78,12 @@ Owns boxlore's shared Compose visuals: theme, type, shapes, motion, press feedba
 
 ### Artwork and image loading
 
-- `ArtworkAttempts`, `ArtworkLoadPolicy`: optimized then original, one retry for a transient failure, and failures and working routes remembered for a while.
+- `ArtworkAttempts`, `ArtworkLoadPolicy`: optimized then original, one retry for a transient failure; failures and working routes are remembered briefly.
 - Alternate artwork (`fallbackUrls`, `fallbackImageUrls`) is used only after a load fails. Failed tiles retry on foreground return or reconnection, never by polling.
 - Missing art shows the decorative `ic_boxlore_app_mark` on a solid fallback; the card's description stays its accessible name.
 - `optimizedImageUrl(width)` and `proxyWidth` take pixels, clamped in `ImageRequestSizing.kt`; one value sizes request and decode, in measured buckets on tablets and wide windows.
 - `loadArtworkBitmap`: the bounded loader for widgets, share cards and notifications, on Coil's cache.
-- `ArtworkPrefetch.prefetch` warms the exact request `OptimizedImage` makes on portrait phones; `OnScreenArtwork` lets colour extraction reuse it.
+- `ArtworkPrefetch.prefetch` warms `OptimizedImage`'s exact request on portrait phones; `OnScreenArtwork` lets colour extraction reuse it.
 
 ### Echo
 
@@ -99,10 +99,10 @@ Owns boxlore's shared Compose visuals: theme, type, shapes, motion, press feedba
 
 ### Share cards and links
 
-- `ShareManager`: share cards and the system share sheet; reports `share_content` through `:core:analytics`.
+- `ShareManager`: share cards and the system share sheet; reports `share_content` via `:core:analytics`.
 - `ShareManager.episodeShareLink`, `copyEpisodeLink`: episode links from the app-installed `EpisodeShareTargetSource`, else the episode's own fields.
-- `ShareBottomSheet`: the share sheet with a preview of its card, or a name row on short windows.
-- `ShareCardRenderer`, `shareCardColors`: the card bitmap, a boxlore player in tones of the artwork's seed colour (boxlore indigo without one). `shareEpisodeDetails` and `sharePodcastDetails` give its details line: an episode's length and date, or a show's genre and rhythm.
+- `ShareBottomSheet`: the share sheet with a card preview, or a name row when short.
+- `ShareCardRenderer`, `shareCardColors`: the card bitmap, a boxlore player in the artwork seed's tones (boxlore indigo without one). `shareEpisodeDetails` and `sharePodcastDetails` give its details line: an episode's length and date, or a show's genre and rhythm.
 - `startFirstAvailable`, `openLink`, `SafeUriHandler` (`links/`): open the first intent an installed app handles; never throw when none can.
 
 ### Analytics and text helpers
