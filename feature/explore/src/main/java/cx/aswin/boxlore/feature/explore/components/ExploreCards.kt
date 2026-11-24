@@ -48,8 +48,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -93,7 +95,7 @@ fun ExploreRelatedShowsRail(
             // The items' own 6dp padding makes up the rest of the 12dp gap.
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             contentPadding = PaddingValues(bottom = 4.dp),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().outsetBy(RelatedShowPressPadding),
         ) {
             itemsIndexed(
                 railItems,
@@ -103,11 +105,11 @@ fun ExploreRelatedShowsRail(
                 Column(
                     modifier =
                     Modifier
-                        .width(RelatedShowCover + 12.dp)
+                        .width(RelatedShowCover + RelatedShowPressPadding * 2)
                         .expressiveClickable(shape = RoundedCornerShape(16.dp)) {
                             onPodcastClick(podcast, index)
                         }
-                        .padding(6.dp),
+                        .padding(RelatedShowPressPadding),
                 ) {
                     OptimizedImage(
                         url = podcast.imageUrl,
@@ -305,4 +307,15 @@ internal fun moodIconForId(moodId: String): androidx.compose.ui.graphics.vector.
     "history_buff" -> Icons.Rounded.AccountBalance
     "mystery_thriller" -> Icons.Rounded.Visibility
     else -> Icons.Rounded.AutoAwesome
+}
+
+/** The related show's press area around its cover; the rail reaches into the margin by as much, so covers line up with the page. */
+private val RelatedShowPressPadding = 6.dp
+
+/** Lays the content out [outset] wider on each side, so its edge items' padding sits in the margin. */
+private fun Modifier.outsetBy(outset: Dp): Modifier = layout { measurable, constraints ->
+    if (!constraints.hasBoundedWidth) return@layout measurable.measure(constraints).let { layout(it.width, it.height) { it.place(0, 0) } }
+    val extra = outset.roundToPx()
+    val placeable = measurable.measure(constraints.copy(minWidth = constraints.minWidth + extra * 2, maxWidth = constraints.maxWidth + extra * 2))
+    layout(constraints.maxWidth, placeable.height) { placeable.place(-extra, 0) }
 }
