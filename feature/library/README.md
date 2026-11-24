@@ -8,7 +8,7 @@ Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folde
 
 - `LibraryScreen`: the hub on the app's `library` route, with cards for Subscriptions, Liked episodes, Downloads, Listening history and, last, Playlists (when the app passes a `LibraryPlaylistsCard`, with its playlist count). Each card has a status line (shows and how many have a new episode by the shared `isLatestEpisodeNew` rule, counts, when something was last played); an empty section shows a medallion.
 - `SubscriptionsScreen`: Shows and New Episodes on `library/subscriptions?tab={tab}`. `LocalLastSeenEpisodes` supplies the last-seen episode per show for NEW badges.
-- `LikedEpisodesScreen` (its optional `onPlayEpisodes` is the multi-show Play all path New Episodes uses), `DownloadedEpisodesScreen` and `DownloadedShowEpisodesScreen` (wrappers over `downloads/`).
+- `LikedEpisodesScreen` (its optional `onPlayEpisodes` is Play all's multi-show queue, a plain one without New Episodes' list tag), `DownloadedEpisodesScreen` and `DownloadedShowEpisodesScreen` (wrappers over `downloads/`).
 - `DownloadedEpisodeEntity.toEpisode()` / `toPodcast()`: map a download to domain models, keeping its own show ID and name and its chapter and transcript links.
 - `LibraryViewModel` and `LibraryUiState`: one ViewModel class for every Library destination, built by the app from core repositories, `AdaptiveCandidateScorer` and an optional `FolderRepository`.
 - `SubscriptionSort`, `DownloadsSortOrder` and `ShowSortOrder`: sort choices shown by the screens.

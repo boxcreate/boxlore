@@ -181,7 +181,8 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
         cx.aswin.boxlore.feature.library.LikedEpisodesScreen(
             viewModel = viewModel,
             onBack = { navController.popBackStack() },
-            onPlayEpisodes = { episodes, fallbackPodcast -> queueManager.playContextEpisodes(episodes, fallbackPodcast) },
+            // A plain queue: New Episodes' context tag would report these plays as New Episodes.
+            onPlayEpisodes = { episodes, fallbackPodcast -> queueManager.playEpisodes(episodes, fallbackPodcast) },
             onEpisodeClick = { episode, podcast ->
                 fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
                 w.navigate(
