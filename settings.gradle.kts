@@ -1,7 +1,9 @@
 pluginManagement {
     repositories {
         google()
-        mavenCentral()
+        // Google's copy of Maven Central instead of Maven Central, which rate-limits shared CI runners (403, 429).
+        // The Plugin Portal serves the Gradle-only plugins and forwards anything the mirror hasn't copied yet.
+        maven("https://maven-central.storage-download.googleapis.com/maven2/") { name = "MavenCentralMirror" }
         gradlePluginPortal()
     }
 }
@@ -99,8 +101,14 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
+        // Google's Maven Central mirror first (see pluginManagement); Maven Central only for what it hasn't copied yet.
+        maven("https://maven-central.storage-download.googleapis.com/maven2/") { name = "MavenCentralMirror" }
         mavenCentral()
-        maven { url = uri("https://jitpack.io") }
+        // JitPack serves only the smooth-corner shapes, so nothing else is looked up there or for them elsewhere.
+        exclusiveContent {
+            forRepository { maven { url = uri("https://jitpack.io") } }
+            filter { includeGroup("com.github.racra") }
+        }
     }
 }
 

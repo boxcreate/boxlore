@@ -5,7 +5,9 @@ import org.jlleitschuh.gradle.ktlint.KtlintExtension
 buildscript {
     repositories {
         google()
-        mavenCentral()
+        // The same order as pluginManagement in settings.gradle.kts: Google's Maven Central mirror, then the Plugin Portal.
+        maven("https://maven-central.storage-download.googleapis.com/maven2/") { name = "MavenCentralMirror" }
+        gradlePluginPortal()
     }
     dependencies {
         // AGP 9 built-in Kotlin defaults to KGP 2.2.10; pin the catalog Kotlin version.

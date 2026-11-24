@@ -31,7 +31,7 @@ src/main/java/cx/aswin/boxlore/core/testing/
   fakes/FakePorts.kt
 src/test/java/cx/aswin/boxlore/core/testing/
   architecture/
-    ArchitectureGuardTest.kt       # module graph, imports, DI ban, READMEs, singleton allowlist
+    ArchitectureGuardTest.kt       # module graph, imports, DI ban, READMEs, singleton allowlist, repository order
     GlossaryCoverageGuardTest.kt   # event glossary CSV, AnalyticsGlossary and emission inventory
     BrandNameGuardTest.kt          # listener-facing text spells boxlore in lowercase
     ModuleReadmeBudgetTest.kt      # README length, history markers, nothing after See also
@@ -66,7 +66,7 @@ src/test/resources/module-readme-budget.txt   # allowances for READMEs not yet r
 
 | Area | Tests |
 | :--- | :--- |
-| Feature isolation, catalog boundaries, DI ban, package names, README presence, `getInstance` allowlist (Room, WorkManager, MediaRouter, Firebase and others), matching test suites | `ArchitectureGuardTest` |
+| Feature isolation, catalog boundaries, DI ban, package names, README presence, `getInstance` allowlist (Room, WorkManager, MediaRouter, Firebase and others), matching test suites, Google's Maven Central mirror before every `mavenCentral()` | `ArchitectureGuardTest` |
 | Analytics glossary parity and emission inventory modes (`emission:*`, `sdk_backed:*`, `person_props_only`) | `GlossaryCoverageGuardTest` |
 | Lowercase boxlore in resources, manifest labels and Kotlin literals; User-Agent tokens allowlisted by file | `BrandNameGuardTest` |
 | Module README budget and template rules | `ModuleReadmeBudgetTest` |
