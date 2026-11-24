@@ -57,6 +57,17 @@ class SettingsPictureRowTest {
         assertEquals(0f, settingsPictureRowSnapOffset(0f, 1100f, 240f, velocity = -800f), 0.01f)
     }
 
+    // Regression: after a fold or rotation the picked Home style could rest half off-screen.
+    @Test fun `a resize keeps the same tile at the row's start, both ways`() {
+        val phone = settingsPictureRowTileWidth(380.dp).value + gap
+        val wide = settingsPictureRowTileWidth(820.dp).value + gap
+        val atThird = (3 * phone).toInt()
+        val widened = settingsPictureRowRescroll(atThird.toFloat(), phone, wide)
+        assertEquals(3 * wide, widened.toFloat(), 1f)
+        assertEquals(3 * phone, settingsPictureRowRescroll(widened.toFloat(), wide, phone).toFloat(), 1f)
+        assertEquals(0, settingsPictureRowRescroll(0f, phone, wide))
+    }
+
     @Test fun `hero pictures keep the Home card's shape as the tile widens`() {
         // On a phone the picture is now as wide as a real hero card is tall, not a 122dp sliver.
         val tile = settingsPictureRowTileWidth(337.dp).value
