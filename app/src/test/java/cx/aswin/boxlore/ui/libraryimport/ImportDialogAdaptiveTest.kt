@@ -2,7 +2,15 @@ package cx.aswin.boxlore.ui.libraryimport
 
 import android.app.Application
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.performTouchInput
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +83,15 @@ class ImportDialogAdaptiveTest {
         BoxloreWindowLayout(800f, 1280f),
         BoxloreWindowLayout(673f, 841f, listOf(fold)),
         BoxloreWindowLayout(673f, 841f),
+        BoxloreTestWindows.FOLD_FLAT,
+        BoxloreTestWindows.FOLD_BOOK,
+        BoxloreTestWindows.FOLD_TABLETOP,
+        BoxloreTestWindows.FOLD_FLAT,
+        BoxloreTestWindows.W841,
+        BoxloreTestWindows.W839,
+        BoxloreTestWindows.PHONE_LAND,
+        BoxloreTestWindows.PHONE,
+        BoxloreTestWindows.PHONE_LAND,
         BoxloreWindowLayout(360f, 740f),
     )
 
@@ -116,7 +133,7 @@ class ImportDialogAdaptiveTest {
             compose.runOnIdle { window.value = next }
             compose.waitForIdle()
             compose.onNodeWithText("12 of 48 shows").performScrollTo().assertIsDisplayed()
-            compose.onNodeWithText("Subscribing to The Rest Is History").assertIsDisplayed()
+            compose.onNodeWithText("Subscribing to The Rest Is History").performScrollTo().assertIsDisplayed()
             compose.onNodeWithTag("import_echo").assertExists()
         }
         compose.onNodeWithTag("import_close").assertDoesNotExist()
@@ -217,12 +234,59 @@ class ImportDialogAdaptiveTest {
         compose.onNodeWithText("Bring your shows").assertIsDisplayed()
     }
 
+    @Test fun `the import page covers the whole window and nothing behind it can be tapped`() {
+        val windows = listOf(
+            BoxloreTestWindows.W600_H900,
+            BoxloreTestWindows.TABLET,
+            BoxloreTestWindows.FOLD_BOOK,
+            BoxloreTestWindows.FOLD_TABLETOP,
+            BoxloreWindowLayout(673f, 841f, listOf(fold)),
+        )
+        var behindClicks = 0
+        render(behind = { Box(Modifier.fillMaxSize().testTag("behind").clickable { behindClicks++ }) })
+        windows.forEach { next ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            val overlay = compose.onNodeWithTag("import_overlay").getUnclippedBoundsInRoot()
+            assertEquals("Overlay width at $next", next.widthDp, (overlay.right - overlay.left).value, 0.5f)
+            assertEquals("Overlay height at $next", next.heightDp, (overlay.bottom - overlay.top).value, 0.5f)
+            listOf(8f, next.widthDp - 8f).forEach { x ->
+                compose.onNodeWithTag("behind").performTouchInput { click(Offset(x.dp.toPx(), center.y)) }
+            }
+            assertEquals("Taps reached the page behind at $next", 0, behindClicks)
+        }
+        compose.onNodeWithText("In a boxlore backup").performScrollTo().assertIsDisplayed()
+        assertEquals(0, dismissed)
+    }
+
+    @Test fun `the import column is a centred 560dp column on wide windows and the full width on phones`() {
+        render()
+        mapOf(
+            BoxloreTestWindows.TABLET to 560f,
+            BoxloreTestWindows.PHONE_LAND to 560f,
+            BoxloreTestWindows.PHONE to BoxloreTestWindows.PHONE.widthDp,
+            BoxloreTestWindows.COVER_443 to BoxloreTestWindows.COVER_443.widthDp,
+        ).forEach { (next, expected) ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            val column = compose.onNodeWithTag("import_column").getUnclippedBoundsInRoot()
+            assertEquals("Column width at $next", expected, (column.right - column.left).value, 0.5f)
+            val overlay = compose.onNodeWithTag("import_overlay").getUnclippedBoundsInRoot()
+            assertEquals("Column centre at $next", ((overlay.left + overlay.right) / 2).value, ((column.left + column.right) / 2).value, 0.5f)
+        }
+    }
+
     private fun back() {
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
     }
 
-    private fun render(withRetry: Boolean = true, direction: LayoutDirection = LayoutDirection.Ltr, fontScale: Float = 1f) {
+    private fun render(
+        withRetry: Boolean = true,
+        direction: LayoutDirection = LayoutDirection.Ltr,
+        fontScale: Float = 1f,
+        behind: (@Composable () -> Unit)? = null,
+    ) {
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(
@@ -234,6 +298,7 @@ class ImportDialogAdaptiveTest {
                     val layout = window.value
                     CompositionLocalProvider(LocalBoxloreWindowLayout provides layout) {
                         Box(Modifier.requiredSize(layout.widthDp.dp, layout.heightDp.dp)) {
+                            behind?.invoke()
                             OpmlImportDialog(
                                 state.value,
                                 OpmlImportDialogActions(

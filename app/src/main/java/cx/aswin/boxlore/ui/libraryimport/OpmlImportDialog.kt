@@ -19,6 +19,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -51,9 +52,8 @@ import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.catalog.backup.JsonBackupPhase
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
-import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
-import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
+import cx.aswin.boxlore.core.designsystem.layout.boxloreReadingColumn
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -208,20 +208,29 @@ private fun ImportDialogSurface(state: OpmlImportState, actions: OpmlImportDialo
         )
     }
 
+    // The page covers the whole window with its own background, so nothing behind it shows or can be
+    // tapped; its content is a centred reading column, kept to one side of a half-open fold.
     Surface(
         modifier =
         Modifier
             .fillMaxSize()
             .zIndex(200f)
-            .boxloreFoldSafeViewport()
-            .boxloreCardWidth(BoxloreCardFamily.Utility, maximumWidthDp = ImportMaxWidthDp)
-            .pointerInput(Unit) { /* Block touch-through to welcome / player. */ },
+            .testTag("import_overlay")
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    // Final pass: the page's own controls have already had the touch.
+                    while (true) awaitPointerEvent(PointerEventPass.Final).changes.forEach { it.consume() }
+                }
+            },
         color = backgroundColor,
     ) {
         Box(
             modifier =
             Modifier
-                .fillMaxSize()
+                .boxloreFoldSafeViewport()
+                .boxloreReadingColumn(maxWidthDp = ImportMaxWidthDp)
+                .fillMaxHeight()
+                .testTag("import_column")
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
