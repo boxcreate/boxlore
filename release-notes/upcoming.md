@@ -29,7 +29,7 @@ Announcement title:
 - The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.
 - The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.
 - Episode pages now fit sideways phones, foldables and tablets, with the cover beside the title on wide or short screens, an outline while they load and links listed like chapters. Show pages in a show's own style keep their latest-episode card at a comfortable width on wide screens.
-- Show pages now fit sideways phones, foldables and tablets: the cover sits beside the title on wide or short screens, episodes fit on one line on wide screens, and the sort button opens Sort and view, which says when the list is oldest first.
+- Show pages now fit sideways phones, foldables and tablets: the cover sits beside the title on wide or short screens, on wide screens each episode's picture, details and buttons sit side by side, and the sort button opens Sort and view, where you choose the order and what the list shows.
 - In Android Auto, a show's page now lists its episodes from newest to oldest. Episodes you've started stay in their place and show the time left.
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 - On a half-open foldable, pages now use the whole screen, and the sleep timer prompt and playback notices stay clear of the fold.
