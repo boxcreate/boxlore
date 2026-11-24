@@ -92,6 +92,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>The Brief's back button is now at the top left, its edition menu marks the edition you're on, and each story's play button is smaller so Listen stands out.</li>
 <li>Settings fits short screens, phones turned sideways and large text better: page headers start slim and line up with the page, wide screens show the categories two by two, and long names and the Support price show in full instead of being cut off.</li>
 <li>Smart Downloads now looks like the other Settings pages, and the Settings hub tells you whether you're signed in and synced.</li>
+<li>Show pages now fit sideways phones, foldables and tablets: the cover sits beside the title on wide or short screens, on wide screens each episode's picture, details and buttons sit side by side, and the sort button opens Sort and view, where you choose the order and what the list shows.</li>
 </ul>
 <b>🐛 Fixed:</b>
 <ul align="left">
@@ -116,6 +117,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Undo after removing an episode from Listening history now shows above the bottom bar, where you can tap it.</li>
 <li>On sideways phones and the Galaxy Z Fold cover, Listening history and the Brief keep their buttons clear of the system buttons and the bottom bar, and the Brief's error page scrolls to Try again.</li>
 <li>Turning off Smart Downloads now asks first, because it also removes the episodes Smart Downloads saved.</li>
+<li>On show pages, Back, Share and More stay clear of the side buttons on a sideways phone, open menus and Undo stay put when a foldable folds or unfolds, and a long support message no longer pushes the other details away.</li>
 </ul>
 <!-- release-upcoming:end -->
 
