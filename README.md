@@ -93,6 +93,11 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Settings fits short screens, phones turned sideways and large text better: page headers start slim and line up with the page, wide screens show the categories two by two, and long names and the Support price show in full instead of being cut off.</li>
 <li>Smart Downloads now looks like the other Settings pages, and the Settings hub tells you whether you're signed in and synced.</li>
 <li>Show pages now fit sideways phones, foldables and tablets: the cover sits beside the title on wide or short screens, on wide screens each episode's picture, details and buttons sit side by side, and the sort button opens Sort and view, where you choose the order and what the list shows.</li>
+<li>The connection check now shows a small loader while its box loads, instead of an empty box, and fits in one half of a half-open foldable without scrolling.</li>
+<li>On tablets and foldables, the import page now fills the whole screen, so nothing behind it can be tapped by mistake.</li>
+<li>On tablets, announcements now open as one card over a dimmed screen instead of a card inside a second frame.</li>
+<li>The updates page now shows one loading indicator at a time, and its buttons match the rest of boxlore.</li>
+<li>When a new episode starts, the mini player now shows its whole title once, then settles back to one line.</li>
 </ul>
 <b>🐛 Fixed:</b>
 <ul align="left">
@@ -118,6 +123,10 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>On sideways phones and the Galaxy Z Fold cover, Listening history and the Brief keep their buttons clear of the system buttons and the bottom bar, and the Brief's error page scrolls to Try again.</li>
 <li>Turning off Smart Downloads now asks first, because it also removes the episodes Smart Downloads saved.</li>
 <li>On show pages, Back, Share and More stay clear of the side buttons on a sideways phone, open menus and Undo stay put when a foldable folds or unfolds, and a long support message no longer pushes the other details away.</li>
+<li>A library import or backup restore now keeps going when you change the text or display size, or switch screens on a foldable.</li>
+<li>Tapping Start Lore queue now always starts your Lore queue, and the "Start a Lore queue?" question stays open when you change the text or display size.</li>
+<li>When your phone is in dark mode, boxlore no longer flashes purple as it opens.</li>
+<li>On Android 13 and later, copying your privacy ID, a link or your logs no longer shows a second "copied" message on top of Android's own.</li>
 </ul>
 <!-- release-upcoming:end -->
 
