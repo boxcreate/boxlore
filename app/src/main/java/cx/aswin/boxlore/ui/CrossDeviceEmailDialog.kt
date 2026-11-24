@@ -11,7 +11,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Email
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -31,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialogConfirmButton
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 private val EMAIL_REGEX = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$".toRegex()
@@ -123,18 +123,11 @@ fun CrossDeviceEmailDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = { submit() },
-                shape = MaterialTheme.shapes.large,
-            ) {
-                Text(stringResource(R.string.app_cross_device_email_sign_in))
-            }
+            BoxloreDialogConfirmButton(text = stringResource(R.string.app_cross_device_email_sign_in), onClick = { submit() })
         },
         dismissButton = {
-            OutlinedButton(
-                onClick = onDismiss,
-                shape = MaterialTheme.shapes.large,
-            ) {
+            // Outlined like the Account dialogs this leads to; the default shape is boxlore's pill.
+            OutlinedButton(onClick = onDismiss) {
                 Text(stringResource(R.string.app_cross_device_email_cancel))
             }
         },
