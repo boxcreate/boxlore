@@ -34,6 +34,7 @@ jobs:
           ./gradlew --no-daemon -I .github/scripts/release_verification.init.gradle
           :app:assembleRelease :app:bundlePlayRelease :app:lintPlayRelease :app:lintRelease
           :wear:assembleRelease :wear:bundleRelease :wear:lintRelease
+          :tv:assembleRelease :tv:bundleRelease :tv:lintRelease
           -x :app:uploadCrashlyticsMappingFileRelease -x :app:uploadCrashlyticsMappingFilePlayRelease
       - name: Verify optimized release contracts
         run: >-
