@@ -2,4 +2,6 @@
 <resources>
     <!-- Fallback Splash Logo color for Dark Mode on pre-API 31 devices -->
     <color name="splash_logo_color">#FFFFFF</color>
+    <!-- boxlore's dark background (brand kit), so a dark-theme launch never flashes the light purple. -->
+    <color name="splash_background">#121318</color>
 </resources>
