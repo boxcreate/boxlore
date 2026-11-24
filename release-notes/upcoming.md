@@ -58,3 +58,4 @@ Announcement title:
 - Sheets keep what you picked, typed or scrolled to when a tablet or foldable changes shape.
 - Long button, tab and side navigation names in other languages or at large text sizes now fit instead of being cut off.
 - In dark theme, boxlore no longer flashes purple as it opens.
+- On Android 13 and later, copying your privacy ID, a link or your logs no longer shows a second "copied" message on top of Android's own.
