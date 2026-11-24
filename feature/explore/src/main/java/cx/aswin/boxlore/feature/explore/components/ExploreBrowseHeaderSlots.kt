@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.explore.components
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -10,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxloreSearchField
 import cx.aswin.boxlore.core.designsystem.components.BoxloreSearchFieldMaxWidth
@@ -79,15 +82,37 @@ internal fun ExploreHeaderSelectors(
             // In the search box's column, so the modes sit under it on wide windows.
             SearchTabSelector(selectedTab = searchTab, onTabSelected = onSearchTabSelected, modifier = Modifier.widthIn(max = BoxloreSearchFieldMaxWidth).fillMaxWidth())
         }
-        ExploreHeaderRow.Genres -> {
+        ExploreHeaderRow.Genres, ExploreHeaderRow.Moods -> {
             Spacer(modifier = Modifier.height(8.dp))
-            ExploreGenreSelector(selectedCategory = category, onCategorySelected = onCategorySelected)
-        }
-        ExploreHeaderRow.Moods -> {
-            Spacer(modifier = Modifier.height(8.dp))
-            ExploreVibeChipRow(vibes = moods, onVibeSelected = onMoodSelected)
+            ExploreBrowseRowSlot(
+                showMoods = row == ExploreHeaderRow.Moods,
+                shareHeight = moods.isNotEmpty(),
+                genres = { ExploreGenreSelector(selectedCategory = category, onCategorySelected = onCategorySelected) },
+                moods = { ExploreVibeChipRow(vibes = moods, onVibeSelected = onMoodSelected) },
+            )
         }
         ExploreHeaderRow.None -> Unit
     }
     Spacer(Modifier.height(8.dp))
+}
+
+/**
+ * The genre row (Top) and the mood row (For You) in one slot as tall as the taller of the two, so
+ * the header and the feed under it never move when swiping between the tabs, at any text size.
+ * Only the current row is placed, drawn, tappable and read out.
+ */
+@Composable
+private fun ExploreBrowseRowSlot(showMoods: Boolean, shareHeight: Boolean, genres: @Composable () -> Unit, moods: @Composable () -> Unit) {
+    Layout(
+        content = {
+            Box(if (showMoods) Modifier.clearAndSetSemantics { } else Modifier) { genres() }
+            Box(if (showMoods) Modifier else Modifier.clearAndSetSemantics { }) { moods() }
+        },
+    ) { measurables, constraints ->
+        val rows = measurables.map { it.measure(constraints.copy(minHeight = 0)) }
+        val shown = rows[if (showMoods) 1 else 0]
+        val height = if (shareHeight) rows.maxOf { it.height } else shown.height
+        val width = if (constraints.hasBoundedWidth) constraints.maxWidth else shown.width
+        layout(width, height.coerceIn(constraints.minHeight, constraints.maxHeight)) { shown.place(0, 0) }
+    }
 }
