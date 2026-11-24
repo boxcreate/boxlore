@@ -16,53 +16,51 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.automirrored.rounded.ViewList
-import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -71,7 +69,17 @@ import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSearchField
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTooltip
 import cx.aswin.boxlore.core.designsystem.components.discoveryTabSwitcherHeight
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreMiniPlayerVisible
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreHorizontalSafePadding
+import cx.aswin.boxlore.core.designsystem.layout.boxloreIsShortPane
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -80,6 +88,7 @@ import cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle
 import cx.aswin.boxlore.feature.library.subscriptions.AddToFoldersHost
 import cx.aswin.boxlore.feature.library.subscriptions.AutoOrganizeDisableDialog
 import cx.aswin.boxlore.feature.library.subscriptions.AutoOrganizeLook
+import cx.aswin.boxlore.feature.library.subscriptions.ContextMenuKey
 import cx.aswin.boxlore.feature.library.subscriptions.ContextMenuTarget
 import cx.aswin.boxlore.feature.library.subscriptions.ExpressiveTabSwitcher
 import cx.aswin.boxlore.feature.library.subscriptions.FolderEditorPage
@@ -91,11 +100,13 @@ import cx.aswin.boxlore.feature.library.subscriptions.FolderPagesData
 import cx.aswin.boxlore.feature.library.subscriptions.FolderShowMove
 import cx.aswin.boxlore.feature.library.subscriptions.FolderShowsSelectionSheet
 import cx.aswin.boxlore.feature.library.subscriptions.LatestQueueOutcome
-import cx.aswin.boxlore.feature.library.subscriptions.LatestSortMenuItems
+import cx.aswin.boxlore.feature.library.subscriptions.LatestSortActions
+import cx.aswin.boxlore.feature.library.subscriptions.LatestSortSheet
 import cx.aswin.boxlore.feature.library.subscriptions.LatestSwipeAction
 import cx.aswin.boxlore.feature.library.subscriptions.LatestTabActions
 import cx.aswin.boxlore.feature.library.subscriptions.LatestTabConfig
 import cx.aswin.boxlore.feature.library.subscriptions.LatestTabContent
+import cx.aswin.boxlore.feature.library.subscriptions.MoveShowKey
 import cx.aswin.boxlore.feature.library.subscriptions.MoveToFolderSheet
 import cx.aswin.boxlore.feature.library.subscriptions.OpenFolderPage
 import cx.aswin.boxlore.feature.library.subscriptions.ReorderMode
@@ -112,6 +123,8 @@ import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionsTabSelectorFa
 import cx.aswin.boxlore.feature.library.subscriptions.genreFolders
 import cx.aswin.boxlore.feature.library.subscriptions.latestQueueMessage
 import cx.aswin.boxlore.feature.library.subscriptions.rememberFolderPagesState
+import cx.aswin.boxlore.feature.library.subscriptions.rememberSubscriptionsScreenState
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 val LocalLastSeenEpisodes = compositionLocalOf<Map<String, String>> { emptyMap() }
@@ -140,8 +153,10 @@ fun SubscriptionsScreen(
         val context = LocalContext.current
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-        var searchQuery by remember { mutableStateOf("") }
-        var isSearchActive by remember { mutableStateOf(false) }
+        // Search, open sheets and questions, and a reorder in progress survive recreation.
+        val screenState = rememberSubscriptionsScreenState()
+        var searchQuery by screenState::searchQuery
+        var isSearchActive by screenState::isSearchActive
         val isGridView by viewModel.subscriptionsGridView.collectAsStateWithLifecycle()
         val isRefreshingNewEpisodes by viewModel.isRefreshingNewEpisodes.collectAsStateWithLifecycle()
         val pendingPlayedEpisodeIds by viewModel.pendingPlayedEpisodeIds.collectAsStateWithLifecycle()
@@ -154,22 +169,36 @@ fun SubscriptionsScreen(
         val folderSort by viewModel.folderSort.collectAsStateWithLifecycle()
         val folderManualOrder by viewModel.folderManualOrder.collectAsStateWithLifecycle()
         val intraFolderSort by viewModel.intraFolderSort.collectAsStateWithLifecycle()
-        val folders by viewModel.folders.collectAsStateWithLifecycle()
+        // The list and whether it has loaded come from one value, so a loaded flag never meets an empty stand-in.
+        val loadedFolders by viewModel.loadedFolders.collectAsStateWithLifecycle()
+        val folders = loadedFolders.orEmpty()
+        val foldersLoaded = loadedFolders != null
         val subscriptionsTabStyle by viewModel.subscriptionsTabStyle.collectAsStateWithLifecycle()
-        var showSortMenu by remember { mutableStateOf(false) }
-        var showSortSheet by rememberSaveable { mutableStateOf(false) }
+        var showSortSheet by screenState::sortSheetOpen
         val folderPages = rememberFolderPagesState()
-        var contextMenuTarget by remember { mutableStateOf<ContextMenuTarget?>(null) }
-        var reorderMode by remember { mutableStateOf<ReorderMode>(ReorderMode.Inactive) }
-        var selectedFolderForShowSelection by remember { mutableStateOf<SubscriptionFolder?>(null) }
-        var moveShowTarget by remember { mutableStateOf<Pair<SubscriptionFolder?, Podcast>?>(null) }
-        var confirmDeleteFolder by remember { mutableStateOf<SubscriptionFolder?>(null) }
-        var confirmUnsubscribePodcast by remember { mutableStateOf<Podcast?>(null) }
-        var tempFolderOrder by remember { mutableStateOf<List<String>>(emptyList()) }
-        var tempRootOrder by remember { mutableStateOf<List<String>>(emptyList()) }
-        var confirmAutoOrganizeOff by remember { mutableStateOf(false) }
+        var reorderMode by screenState::reorderMode
+        var tempFolderOrder by screenState::tempFolderOrder
+        var tempRootOrder by screenState::tempRootOrder
+        var confirmAutoOrganizeOff by screenState::confirmAutoOrganizeOff
+        val loadedPodcasts = (uiState as? LibraryUiState.Success)?.subscribedPodcasts
+        // Open targets are kept by ID and looked up in today's data; one that went away closes quietly.
+        // Folder targets wait for the folders: after the app was closed in the background the shows can load first.
+        LaunchedEffect(loadedPodcasts, folders, foldersLoaded) {
+            if (loadedPodcasts != null) screenState.dropMissing(folders.takeIf { foldersLoaded }, loadedPodcasts)
+        }
+        val contextMenuTarget = screenState.contextMenu?.resolve(folders, loadedPodcasts.orEmpty())
+        val selectedFolderForShowSelection = screenState.addShowsFolderId?.let { id -> folders.firstOrNull { it.id == id } }
+        val moveShowTarget = screenState.moveTarget(loadedFolders, loadedPodcasts)
+        val confirmDeleteFolder = screenState.confirmDeleteFolderId?.let { id -> folders.firstOrNull { it.id == id } }
+        val confirmUnsubscribePodcast = screenState.confirmUnsubscribeId?.let { id -> loadedPodcasts?.firstOrNull { it.id == id } }
 
         val isFloatingTabs = subscriptionsTabStyle == SubscriptionsTabStyle.FLOATING
+        val shortPane = boxloreIsShortPane()
+        // In a short window the whole header (bar and docked tabs) scrolls away with the list.
+        val shortHeaderBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+        // A window that becomes short starts with that header tucked away, so the shows come first; scrolling up brings it back.
+        val shortHeaderStart = remember(shortPane) { ShortHeaderStart(tucked = shortPane && !screenState.isSearchActive) }
+        val keyboard = LocalSoftwareKeyboardController.current
 
         val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val navigationStyle = LocalNavigationStyle.current
@@ -186,6 +215,7 @@ fun SubscriptionsScreen(
             null
         }
 
+        val pinCapacityMessage = stringResource(R.string.library_pin_capacity, cx.aswin.boxlore.core.prefs.HomePinnedShows.MAX)
         val focusRequester = remember { FocusRequester() }
         val focusManager = LocalFocusManager.current
 
@@ -260,43 +290,36 @@ fun SubscriptionsScreen(
             Scaffold(
                 // The open folder covers the tabs, so screen readers skip what's under it.
                 modifier = Modifier
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .nestedScroll(if (shortPane) shortHeaderBehavior.nestedScrollConnection else scrollBehavior.nestedScrollConnection)
                     .then(if (isFolderOpen) Modifier.clearAndSetSemantics {} else Modifier),
-                snackbarHost = {
-                    // Above Play All and the floating tabs, which sit above the mini player and nav.
-                    SnackbarHost(
-                        hostState = snackbarHostState,
-                        modifier = Modifier.padding(bottom = (playAllBottomPadding ?: bottomChromeHeight) + SNACKBAR_ABOVE_PLAY_ALL),
-                    )
-                },
                 topBar = {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(headerBgColor)
+                            // In a short window the bar and docked tabs scroll away with the list and come back on the way up.
+                            .then(if (shortPane) Modifier.collapseWith(shortHeaderBehavior.state, shortHeaderStart) else Modifier)
+                            .boxloreCardWidth(BoxloreCardFamily.Grid),
                     ) {
                         TopAppBar(
                             title = {
                                 if (isSearchActive) {
-                                    OutlinedTextField(
-                                        value = searchQuery,
-                                        onValueChange = { searchQuery = it },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .focusRequester(focusRequester),
-                                        placeholder = { Text(stringResource(R.string.library_search_shows)) },
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedContainerColor = Color.Transparent,
-                                            unfocusedContainerColor = Color.Transparent,
-                                            focusedBorderColor = Color.Transparent,
-                                            unfocusedBorderColor = Color.Transparent
-                                        ),
-                                        singleLine = true
+                                    BoxloreSearchField(
+                                        query = searchQuery,
+                                        onQueryChange = { searchQuery = it },
+                                        onSearch = { keyboard?.hide() },
+                                        placeholder = stringResource(R.string.library_search_shows),
+                                        modifier = Modifier.focusRequester(focusRequester),
+                                        active = true,
+                                        onBack = screenState::closeSearch,
+                                        maxWidth = null,
                                     )
                                 } else {
                                     Text(
                                         text = stringResource(R.string.library_hub_subscriptions),
-                                        fontWeight = GoogleSansWeight.bold
+                                        fontWeight = GoogleSansWeight.bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
                                     )
                                 }
                             },
@@ -305,79 +328,41 @@ fun SubscriptionsScreen(
                                 scrolledContainerColor = Color.Transparent
                             ),
                             navigationIcon = {
-                                IconButton(onClick = {
-                                    if (isSearchActive) {
-                                        isSearchActive = false
-                                        searchQuery = ""
-                                    } else {
-                                        onBack()
+                                // While searching, the search box carries its own Back.
+                                if (!isSearchActive) {
+                                    IconButton(onClick = onBack) {
+                                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.library_back))
                                     }
-                                }) {
-                                    Icon(
-                                        Icons.AutoMirrored.Rounded.ArrowBack,
-                                        contentDescription = stringResource(if (isSearchActive) R.string.library_close_search else R.string.library_back)
-                                    )
                                 }
                             },
                             actions = {
-                                if (isSearchActive) {
-                                    if (searchQuery.isNotEmpty()) {
-                                        IconButton(onClick = { searchQuery = "" }) {
-                                            Icon(Icons.Rounded.Clear, contentDescription = stringResource(R.string.library_clear_search))
-                                        }
-                                    }
-                                } else {
+                                if (!isSearchActive) {
                                     if (hasSubscribedPodcasts) {
-                                        IconButton(onClick = {
-                                            val showGrid = !isGridView
-                                            viewModel.setSubscriptionsGridView(showGrid)
-                                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsLayoutToggled(showGrid)
-                                        }) {
-                                            Icon(
-                                                imageVector = if (isGridView) Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
-                                                contentDescription = stringResource(if (isGridView) R.string.library_list_view else R.string.library_grid_view)
-                                            )
-                                        }
-                                    }
-                                    if (hasSubscribedPodcasts) {
-                                        Box {
-                                            IconButton(
-                                                onClick = {
-                                                    if (pagerState.currentPage == 0) {
-                                                        showSortSheet = true
-                                                    } else {
-                                                        showSortMenu = true
-                                                    }
-                                                },
-                                            ) {
-                                                Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = stringResource(R.string.library_sort))
+                                        val layoutLabel = stringResource(if (isGridView) R.string.library_list_view else R.string.library_grid_view)
+                                        BoxloreTooltip(layoutLabel) {
+                                            IconButton(onClick = {
+                                                val showGrid = !isGridView
+                                                viewModel.setSubscriptionsGridView(showGrid)
+                                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsLayoutToggled(showGrid)
+                                            }) {
+                                                Icon(
+                                                    imageVector = if (isGridView) Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
+                                                    contentDescription = layoutLabel,
+                                                )
                                             }
-                                            if (pagerState.currentPage != 0) {
-                                                DropdownMenu(
-                                                    expanded = showSortMenu,
-                                                    onDismissRequest = { showSortMenu = false },
-                                                    shape = RoundedCornerShape(20.dp),
-                                                    offset = DpOffset(x = (-12).dp, y = 4.dp),
-                                                ) {
-                                                    LatestSortMenuItems(
-                                                        useSmartRank = useSmartRank,
-                                                        onUseSmartRankChange = { useSmart ->
-                                                            viewModel.setUseSmartRank(useSmart)
-                                                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged(
-                                                                if (useSmart) "smart_sort" else "chronological",
-                                                                "latest",
-                                                            )
-                                                        },
-                                                        hideCompleted = hideCompletedInSubs,
-                                                        onHideCompletedChange = viewModel::setHideCompletedInSubs,
-                                                        onDismiss = { showSortMenu = false },
-                                                    )
-                                                }
+                                        }
+                                        val sortLabel = stringResource(R.string.library_sort)
+                                        BoxloreTooltip(sortLabel) {
+                                            IconButton(onClick = { showSortSheet = true }) {
+                                                Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = sortLabel)
                                             }
                                         }
                                     }
-                                    IconButton(onClick = { isSearchActive = true }) {
-                                        Icon(Icons.Rounded.Search, contentDescription = stringResource(R.string.library_search))
+                                    val searchLabel = stringResource(R.string.library_search)
+                                    BoxloreTooltip(searchLabel) {
+                                        IconButton(onClick = { isSearchActive = true }) {
+                                            Icon(Icons.Rounded.Search, contentDescription = searchLabel)
+                                        }
                                     }
                                 }
                             },
@@ -396,18 +381,24 @@ fun SubscriptionsScreen(
                                         pagerState.animateScrollToPage(index)
                                     }
                                 },
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                // Clear of a sideways phone's cutout and side buttons, like the bar above it.
+                                modifier = Modifier.boxloreHorizontalSafePadding().padding(horizontal = 16.dp, vertical = 6.dp).testTag(SUBSCRIPTIONS_TAB_SWITCHER_TAG)
                             )
                         }
                     }
                 },
                 containerColor = MaterialTheme.colorScheme.surface
             ) { innerPadding ->
-                Box(modifier = Modifier.padding(innerPadding).imePadding()) {
+                // With the short header tucked away, the list still starts under the status bar.
+                val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+                val contentTop = if (shortPane) maxOf(innerPadding.calculateTopPadding(), statusBarTop) else innerPadding.calculateTopPadding()
+                Box(modifier = Modifier.padding(innerPadding).padding(top = contentTop - innerPadding.calculateTopPadding()).imePadding()) {
                     when (uiState) {
-                        is LibraryUiState.Loading -> {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator()
+                        is LibraryUiState.Loading -> LibraryLoading {
+                            if (isGridView && pagerState.currentPage == 0) {
+                                LibraryGridSkeleton(columns = boxlorePosterColumns(LocalBoxloreWindowLayout.current, libraryGridWidthDp(), compactColumns = 3, gapDp = 12f))
+                            } else {
+                                LibraryRowsSkeleton()
                             }
                         }
                         is LibraryUiState.Error -> {
@@ -453,6 +444,7 @@ fun SubscriptionsScreen(
                                             },
                                             intraFolderSort = intraFolderSort,
                                             smartOrderIds = success.smartOrderIds,
+                                            floatingTabsClearance = if (isFloatingTabs) discoveryTabSwitcherHeight() + 16.dp else 0.dp,
                                         ),
                                         actions = ShowsTabActions(
                                             onExploreClick = onExploreClick,
@@ -461,7 +453,7 @@ fun SubscriptionsScreen(
                                                 onPodcastClick(it)
                                             },
                                             onPodcastLongClick = { podcast ->
-                                                contextMenuTarget = ContextMenuTarget.RootPodcast(podcast)
+                                                screenState.contextMenu = ContextMenuKey.of(ContextMenuTarget.RootPodcast(podcast))
                                             },
                                             onReorder = { newOrder ->
                                                 tempRootOrder = newOrder
@@ -472,7 +464,7 @@ fun SubscriptionsScreen(
                                             onNewFolderClick = { folderPages.openNewFolder() },
                                             onFolderClick = folderPages::openFolder,
                                             onFolderLongClick = { folder ->
-                                                contextMenuTarget = ContextMenuTarget.Folder(folder)
+                                                screenState.contextMenu = ContextMenuKey.of(ContextMenuTarget.Folder(folder))
                                             },
                                         ),
                                     )
@@ -542,6 +534,15 @@ fun SubscriptionsScreen(
                 )
             }
 
+            // boxlore's notice sits above the bar and mini player on its own; this lifts it over the tabs and Play All too.
+            CompositionLocalProvider(LocalBoxloreMiniPlayerVisible provides (LocalBoxloreMiniPlayerVisible.current || isPlayerActive)) {
+                BoxloreSnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    extraBottom = (if (isFloatingTabs) discoveryTabSwitcherHeight() + FLOATING_TABS_GAPS else 0.dp) + SNACKBAR_ABOVE_PLAY_ALL,
+                )
+            }
+
             if (reorderMode is ReorderMode.Folders || reorderMode is ReorderMode.RootShows) {
                 SubscriptionReorderBar(
                     reorderMode = reorderMode,
@@ -604,11 +605,11 @@ fun SubscriptionsScreen(
                     override fun openShow(podcastId: String) = currentOnPodcastClick(podcastId)
 
                     override fun showMenu(target: ContextMenuTarget) {
-                        contextMenuTarget = target
+                        screenState.contextMenu = ContextMenuKey.of(target)
                     }
 
                     override fun addShows(folder: SubscriptionFolder) {
-                        selectedFolderForShowSelection = folder
+                        screenState.addShowsFolderId = folder.id
                     }
 
                     override fun openSort() {
@@ -626,7 +627,7 @@ fun SubscriptionsScreen(
                     }
 
                     override fun deleteFolder(folder: SubscriptionFolder) {
-                        confirmDeleteFolder = folder
+                        screenState.confirmDeleteFolderId = folder.id
                     }
 
                     override fun createFolder(params: FolderSaveParams, podcastIds: List<String>, move: FolderShowMove?) {
@@ -676,7 +677,7 @@ fun SubscriptionsScreen(
                     actions = SubscriptionContextMenuActions(
                         onEditFolder = folderPages::openEdit,
                         onAddShowsToFolder = { folder ->
-                            selectedFolderForShowSelection = folder
+                            screenState.addShowsFolderId = folder.id
                         },
                         onReorderFolders = {
                             folderPages.closeAll()
@@ -688,20 +689,29 @@ fun SubscriptionsScreen(
                             reorderMode = ReorderMode.Folders
                         },
                         onDeleteFolder = { folder ->
-                            confirmDeleteFolder = folder
+                            screenState.confirmDeleteFolderId = folder.id
                         },
                         onRemoveFromFolder = { folder, podcast ->
                             viewModel.removePodcastFromFolder(podcast.id, folder.id)
                         },
                         onMoveToAnotherFolder = { folder, podcast ->
                             // A show outside folders can join several; one in a folder moves.
-                            if (folder == null) folderPages.addToFoldersPodcastId = podcast.id else moveShowTarget = folder to podcast
+                            if (folder == null) folderPages.addToFoldersPodcastId = podcast.id else screenState.moveShow = MoveShowKey(folder.id, podcast.id)
                         },
                         onReorderFolderShows = { folder ->
                             reorderMode = ReorderMode.FolderShows(folder.id, folder.name)
                         },
                         onUnsubscribePodcast = { podcast ->
-                            confirmUnsubscribePodcast = podcast
+                            screenState.confirmUnsubscribeId = podcast.id
+                        },
+                        onTogglePin = { podcast ->
+                            coroutineScope.launch {
+                                if (!viewModel.toggleHomePin(podcast.id)) {
+                                    snackbarHostState.showSnackbar(
+                                        pinCapacityMessage,
+                                    )
+                                }
+                            }
                         },
                         onReorderRootShows = {
                             val unfiledPodcasts = (uiState as? LibraryUiState.Success)?.subscribedPodcasts.orEmpty()
@@ -719,7 +729,8 @@ fun SubscriptionsScreen(
                             reorderMode = ReorderMode.RootShows
                         },
                     ),
-                    onDismissRequest = { contextMenuTarget = null },
+                    onDismissRequest = { screenState.contextMenu = null },
+                    pinnedPodcastIds = pinnedPodcastIds,
                 )
             }
 
@@ -730,9 +741,9 @@ fun SubscriptionsScreen(
                     allSubscribedPodcasts = successState.subscribedPodcasts,
                     onSave = { selectedIds ->
                         viewModel.setFolderShows(folderForSelection.id, selectedIds)
-                        selectedFolderForShowSelection = null
+                        screenState.addShowsFolderId = null
                     },
-                    onDismissRequest = { selectedFolderForShowSelection = null },
+                    onDismissRequest = { screenState.addShowsFolderId = null },
                 )
             }
 
@@ -748,13 +759,13 @@ fun SubscriptionsScreen(
                             fromFolderId = moveTarget.first?.id,
                             toFolderId = targetFolderId,
                         )
-                        moveShowTarget = null
+                        screenState.moveShow = null
                     },
                     onCreateNewFolder = { podcast ->
                         folderPages.openNewFolder(withShowId = podcast.id, movesFrom = moveTarget.first?.id)
-                        moveShowTarget = null
+                        screenState.moveShow = null
                     },
-                    onDismissRequest = { moveShowTarget = null },
+                    onDismissRequest = { screenState.moveShow = null },
                 )
             }
 
@@ -762,7 +773,7 @@ fun SubscriptionsScreen(
             if (folderToDelete != null) {
                 TrackScreenView("delete_folder_confirmation")
                 BoxloreAlertDialog(
-                    onDismissRequest = { confirmDeleteFolder = null },
+                    onDismissRequest = { screenState.confirmDeleteFolderId = null },
                     title = { Text(stringResource(R.string.library_folder_delete_title)) },
                     text = {
                         Text(
@@ -774,7 +785,7 @@ fun SubscriptionsScreen(
                             onClick = {
                                 viewModel.deleteFolder(folderToDelete.id)
                                 folderPages.onFolderDeleted(folderToDelete.id)
-                                confirmDeleteFolder = null
+                                screenState.confirmDeleteFolderId = null
                             },
                         ) {
                             Text(stringResource(R.string.library_delete), color = MaterialTheme.colorScheme.error)
@@ -782,7 +793,7 @@ fun SubscriptionsScreen(
                     },
                     dismissButton = {
                         androidx.compose.material3.TextButton(
-                            onClick = { confirmDeleteFolder = null },
+                            onClick = { screenState.confirmDeleteFolderId = null },
                         ) {
                             Text(stringResource(R.string.library_cancel))
                         }
@@ -794,7 +805,7 @@ fun SubscriptionsScreen(
             if (podcastToUnsubscribe != null) {
                 TrackScreenView("unsubscribe_confirmation")
                 BoxloreAlertDialog(
-                    onDismissRequest = { confirmUnsubscribePodcast = null },
+                    onDismissRequest = { screenState.confirmUnsubscribeId = null },
                     title = { Text(stringResource(R.string.library_unsubscribe_title)) },
                     text = {
                         Text(
@@ -805,7 +816,7 @@ fun SubscriptionsScreen(
                         androidx.compose.material3.TextButton(
                             onClick = {
                                 viewModel.unsubscribe(podcastToUnsubscribe)
-                                confirmUnsubscribePodcast = null
+                                screenState.confirmUnsubscribeId = null
                             },
                         ) {
                             Text(stringResource(R.string.library_unsubscribe), color = MaterialTheme.colorScheme.error)
@@ -813,7 +824,7 @@ fun SubscriptionsScreen(
                     },
                     dismissButton = {
                         androidx.compose.material3.TextButton(
-                            onClick = { confirmUnsubscribePodcast = null },
+                            onClick = { screenState.confirmUnsubscribeId = null },
                         ) {
                             Text(stringResource(R.string.library_cancel))
                         }
@@ -831,7 +842,23 @@ fun SubscriptionsScreen(
                 )
             }
 
-            if (showSortSheet && successState != null) {
+            if (showSortSheet && successState != null && pagerState.currentPage != 0) {
+                LatestSortSheet(
+                    useSmartRank = useSmartRank,
+                    hideCompleted = hideCompletedInSubs,
+                    actions = LatestSortActions(
+                        onUseSmartRankChange = { useSmart ->
+                            viewModel.setUseSmartRank(useSmart)
+                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged(
+                                if (useSmart) "smart_sort" else "chronological",
+                                "latest",
+                            )
+                        },
+                        onHideCompletedChange = viewModel::setHideCompletedInSubs,
+                        onDismiss = { showSortSheet = false },
+                    ),
+                )
+            } else if (showSortSheet && successState != null) {
                 SubscriptionSortSheet(
                     config = SubscriptionSortConfig(
                         currentSort = successState.currentSort,
@@ -871,6 +898,9 @@ fun SubscriptionsScreen(
 
 /** Room between the Undo message and the Play All button below it. */
 private val SNACKBAR_ABOVE_PLAY_ALL = 72.dp
+
+/** The floating tabs' gaps: 16dp above the bar and mini player, 12dp under Play All. */
+private val FLOATING_TABS_GAPS = 28.dp
 
 /**
  * Runs a New Episodes swipe and shows its message. Queueing is saved at once and Undo takes it
@@ -912,3 +942,33 @@ private suspend fun handleLatestSwipe(
         }
     }
 }
+
+/**
+ * Lays the header out [state]'s scroll away: it shrinks from the top as the list scrolls up and
+ * comes back on the way down. Used only in short windows, where the bar and tabs would leave too
+ * little room for the list.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+private fun Modifier.collapseWith(state: TopAppBarState, start: ShortHeaderStart): Modifier = clipToBounds().layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    val limit = -placeable.height.toFloat()
+    if (state.heightOffsetLimit != limit) {
+        // A header that was fully tucked away stays so when its height changes (system bars arriving, a turn).
+        val wasTucked = state.heightOffsetLimit > -Float.MAX_VALUE && state.heightOffset <= state.heightOffsetLimit + 0.5f
+        state.heightOffsetLimit = limit
+        if (wasTucked) state.heightOffset = limit
+    }
+    if (start.tucked) {
+        // Once the header's height is known: start fully tucked away.
+        state.heightOffset = limit
+        start.tucked = false
+    }
+    val offset = state.heightOffset.roundToInt().coerceIn(-placeable.height, 0)
+    layout(placeable.width, placeable.height + offset) { placeable.place(0, offset) }
+}
+
+/** Whether a short window's header still has to start tucked away; read once, when its height is first known. */
+private class ShortHeaderStart(var tucked: Boolean)
+
+/** Test tag for Subscriptions' docked Shows / New Episodes switcher. */
+internal const val SUBSCRIPTIONS_TAB_SWITCHER_TAG = "subscriptions_tab_switcher"

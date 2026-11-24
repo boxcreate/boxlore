@@ -9,13 +9,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -50,8 +54,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
-import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -60,6 +65,7 @@ import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.library.libraryGridWidthDp
 import cx.aswin.boxlore.feature.library.logic.SubscriptionManualOrderLogic
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
@@ -116,7 +122,7 @@ internal fun SubscriptionFolderPage(
 
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+            Column(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))) {
                 FolderPageTopBar(
                     showFolderActions = !config.isReorderMode,
                     onBack = if (config.isReorderMode) actions.onCancelReorder else actions.onBack,
@@ -125,13 +131,13 @@ internal fun SubscriptionFolderPage(
                 )
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(
-                        boxlorePosterColumns(LocalBoxloreWindowLayout.current, boxloreContentWidthDp(), compactColumns = 3, gapDp = 12f),
+                        boxlorePosterColumns(LocalBoxloreWindowLayout.current, libraryGridWidthDp(), compactColumns = 3, gapDp = 12f),
                     ),
                     state = gridState,
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = config.bottomPadding + 96.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).boxloreCardWidth(BoxloreCardFamily.Grid),
                 ) {
                     item(key = "folder_page_header", span = fullSpan) {
                         FolderPageHeader(folder = folder, showCount = podcasts.size, newCount = newCount)

@@ -42,6 +42,7 @@ Announcement title:
 - While you get started, search keeps more shows in view on sideways phones, and Shows for you lays its shows out in rows on tablets.
 - On Home, the next top card peeks in as a picture instead of cut-off words, time left is rounded the same way as in the mini player, and the menus, show picker, genre picker and rating sheets match the rest of boxlore.
 - Episode pages now fit sideways phones, foldables and tablets, with the cover beside the title on wide or short screens, an outline while they load and links listed like chapters. Show pages in a show's own style keep their latest-episode card at a comfortable width on wide screens.
+- Library's cards now say what's inside, Liked episodes has a Play all button, every show's long-press menu in Subscriptions offers Pin to Home and Unsubscribe, and loading or empty Library pages look finished.
 
 ## Fixed
 
@@ -62,3 +63,4 @@ Announcement title:
 - If you skip the quick check before similar shows, boxlore now says so instead of asking you to check your connection.
 - On the Galaxy Z Fold cover screen, tablets, split-screen windows and phones turned sideways, Home's top cards keep their title and a whole Play button, Home keeps your place and open menus when the window changes shape, its buttons stay clear of the navigation buttons and camera, and the pin message shows above the bottom bar.
 - Episode and show pages that don't load now offer Try again and Back, and on an episode page the date no longer scrolls sideways and an open Share sheet stays open when the screen changes size.
+- Library now fits sideways phones, foldables and tablets, long titles in other languages fit, and lists, selections and open menus stay as you left them when you fold, unfold or resize boxlore.

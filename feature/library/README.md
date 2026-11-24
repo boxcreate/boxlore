@@ -6,9 +6,9 @@ Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folde
 
 ## Public API
 
-- `LibraryScreen`: the hub on the app's `library` route, with cards for Subscriptions, Liked Episodes, Downloads, Listening History and, last, Playlists (when the app passes a `LibraryPlaylistsCard`).
+- `LibraryScreen`: the hub on the app's `library` route, with cards for Subscriptions, Liked episodes, Downloads, Listening history and, last, Playlists (when the app passes a `LibraryPlaylistsCard`, with its playlist count). Each card has a status line (shows and how many have a new episode by the shared `isLatestEpisodeNew` rule, counts, when something was last played); an empty section shows a medallion.
 - `SubscriptionsScreen`: Shows and New Episodes on `library/subscriptions?tab={tab}`. `LocalLastSeenEpisodes` supplies the last-seen episode per show for NEW badges.
-- `LikedEpisodesScreen`, `DownloadedEpisodesScreen` and `DownloadedShowEpisodesScreen` (wrappers over `downloads/`).
+- `LikedEpisodesScreen` (its optional `onPlayEpisodes` is Play all's multi-show queue, a plain one without New Episodes' list tag), `DownloadedEpisodesScreen` and `DownloadedShowEpisodesScreen` (wrappers over `downloads/`).
 - `DownloadedEpisodeEntity.toEpisode()` / `toPodcast()`: map a download to domain models, keeping its own show ID and name and its chapter and transcript links.
 - `LibraryViewModel` and `LibraryUiState`: one ViewModel class for every Library destination, built by the app from core repositories, `AdaptiveCandidateScorer` and an optional `FolderRepository`.
 - `SubscriptionSort`, `DownloadsSortOrder` and `ShowSortOrder`: sort choices shown by the screens.
@@ -34,9 +34,11 @@ Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folde
 - Folder rules (enforced by `FolderRepository` in `:core:catalog`): a show can be in many folders; filed shows leave the main grid; a genre-linked folder gains and loses shows of its genre; deleting a folder never unsubscribes.
 - Auto-organize groups by custom genre, else the first genre, and fills existing folders of that genre. `AutoOrganizePreviewLogic` mirrors the repository's grouping for the preview.
 - Sorting has three levels in `SubscriptionSortSheet`: shows outside folders, folders (`FolderInterSort`) and shows inside folders (`FolderIntraSort`). Reorder mode (`SubscriptionReorderBar`) never drags across sections.
+- A long-press on a show opens the same actions wherever it is (`showContextActions`): Pin to or Unpin from Home (`LibraryViewModel.toggleHomePin`, which reports when Home is full), Add to or Move to folder, Remove from folder (in a folder only), Reorder, and Unsubscribe last, asked first.
 
 ### New Episodes
 
+- Its sort is `LatestSortSheet`: Smart or Chronological, and Hide played as a switch row.
 - Rows show each show's latest episode. Opening the screen calls `SubscriptionForegroundSync.requestRefresh` (`:core:catalog`, reached through `SharedAppDependenciesHolder`); pull to refresh calls `refreshNow`, which joins a pass already running.
 - Tapping a row plays it and the visible rows after it; Play All starts at the first unfinished row. Both snapshot the visible order at tap time and skip finished rows (`latestPlaybackEpisodes`).
 - Swiping a row queues it or marks it played (both also TalkBack actions). Undoing a queue add removes it with `deferSkipSignal`, so it is not a Smart Queue rejection.
@@ -52,19 +54,23 @@ Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folde
 
 ## Downloads and Liked
 
-- Downloads groups by show, sorts by `DownloadsSortOrder`, and supports multi-select delete (checklist in the top bar, or long-press a row). A failed download, other than an auto-download, offers Download Again in place of Play.
+- Downloads groups by show, sorts by `DownloadsSortOrder`, and supports multi-select delete (checklist in the top bar, or long-press a row); the selection is saved state. A failed download, other than an auto-download, offers Download Again in place of Play.
+- Liked shows its count and time left, and Play all queues the unfinished liked episodes in order. Liked, New Episodes and a show's downloads share one episode row (`LibraryEpisodeRow`).
 - Removing a single downloaded episode asks first through designsystem's `RemoveDownloadConfirmationDialog`.
 - The Smart Downloads dashboard card (`SmartDownloadsDashboardCard`) shows status and a sync action; its settings live in `:feature:settings`.
 
 ## Adaptive layouts
 
-Window gates and state retention follow [`ARCHITECTURE.md#adaptive-ui-and-state`](../../ARCHITECTURE.md#adaptive-ui-and-state). Library-specific behaviour: `TabletLibraryHub` lays the hub out in bounded columns, `LibraryPlaybackLayout` gives Play All its own row on tablets so it never covers episode controls, and folder and playlist pages keep one owner across window changes (`FolderPagesAdaptiveTest`, `PlaylistPagesAdaptiveTest`).
+Window gates and state retention follow [`ARCHITECTURE.md#adaptive-ui-and-state`](../../ARCHITECTURE.md#adaptive-ui-and-state). Library-specific behaviour: the hub is one grid on every window (`LibraryHubGrid`: one column on phones, bounded columns on tablets), `LibraryPlaybackLayout` keeps one layout and gives Play All its own row on tablets so it never covers episode controls, and Subscriptions keeps its search, open sheets, menus, questions and unsaved reorder in saved state by ID (`SubscriptionsScreenState`). Large page titles step down and wrap before an ellipsis and start slim in short windows (`LibraryHeader.kt`). Folder and playlist pages keep one owner across window changes.
 
 ## Internal structure
 
 ```text
 src/main/java/cx/aswin/boxlore/feature/library/
-  LibraryScreen.kt, TabletLibraryHub.kt     # hub
+  LibraryScreen.kt, TabletLibraryHub.kt     # hub and its card grid
+  LibraryHeader.kt, LibraryLayout.kt        # large page titles, grid width
+  LibraryEmptyState.kt, LibrarySkeletons.kt # empty pages, loading outlines
+  LibraryEpisodeRow.kt                      # the shared episode row
   LibraryViewModel.kt                       # state, sorting, folders, New Episodes actions
   SubscriptionsScreen.kt
   LikedEpisodesScreen.kt
@@ -75,7 +81,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
   downloads/                                # Downloads list, a show's downloads, Smart Downloads card, models
   logic/                                    # SubscriptionManualOrderLogic, SubscriptionSmartOrderLogic, LibraryEpisodeStatusLogic
   playlists/                                # Playlists and playlist pages, New playlist flow, How it plays, ViewModel and saved state
-  subscriptions/                            # tabs, rows, chips, sort sheet, reorder, context menus,
+  subscriptions/                            # screen saved state, tabs, rows, chips, sort sheets, reorder, context menus,
                                             #   folder pages and editors, New Episodes swipe, refresh
                                             #   and playback queue logic
 ```

@@ -55,9 +55,6 @@ class SharedHostUsageTest {
                 "feature/history/src/main/java/cx/aswin/boxlore/feature/history/timeline/TimelineRows.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeSelectionToolbar.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/PodcastInfoChrome.kt" to 1,
-                "feature/library/src/main/java/cx/aswin/boxlore/feature/library/SubscriptionsScreen.kt" to 1,
-                "feature/library/src/main/java/cx/aswin/boxlore/feature/library/playlists/PlaylistsScreen.kt" to 1,
-                "feature/library/src/main/java/cx/aswin/boxlore/feature/library/downloads/DownloadedShowEpisodesScreen.kt" to 1,
                 "feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/feedback/FeedbackComposeParts.kt" to 1,
                 "feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/feedback/FeedbackScreen.kt" to 1,
                 "feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/pages/supportworlds/SupportWorldDebugMenu.kt" to 1,
@@ -70,9 +67,6 @@ class SharedHostUsageTest {
             allowed = mapOf(
                 "feature/history/src/main/java/cx/aswin/boxlore/feature/history/HistoryScreen.kt" to 1,
                 "feature/info/src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoScreen.kt" to 1,
-                "feature/library/src/main/java/cx/aswin/boxlore/feature/library/SubscriptionsScreen.kt" to 1,
-                "feature/library/src/main/java/cx/aswin/boxlore/feature/library/playlists/PlaylistsScreen.kt" to 1,
-                "feature/library/src/main/java/cx/aswin/boxlore/feature/library/playlists/PlaylistDetailScreen.kt" to 1,
             ),
         ),
     )

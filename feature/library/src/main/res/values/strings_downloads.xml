@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Shown as the show name while every download plays -->
-    <string name="library_downloads_all">All Downloads</string>
+    <string name="library_downloads_all">All downloads</string>
     <string name="library_downloads_error_loading">Error loading downloads</string>
     <!-- Screen-reader label -->
     <string name="library_downloads_select_podcasts">Select podcasts</string>
     <!-- Screen-reader label -->
     <string name="library_downloads_select_episodes">Select episodes</string>
-    <string name="library_downloads_offline_title">Offline Mode</string>
+    <string name="library_downloads_offline_title">Offline mode</string>
     <string name="library_downloads_offline_body">No internet connection. Playing downloaded episodes.</string>
-    <!-- Playful empty-state title; a light pun is welcome -->
-    <string name="library_downloads_empty_title">Buddha woulda coulda</string>
+    <!-- Empty-state title: says what is empty; a light pun is welcome -->
+    <string name="library_downloads_empty_title">Nothing downloaded yet</string>
     <string name="library_downloads_empty_offline_body">No downloaded episodes found. Turn on Wi-Fi and charging to auto-sync your smart downloads!</string>
     <!-- Smart Downloads is a feature name -->
-    <string name="library_downloads_empty_body">No downloaded episodes yet. Turn on Smart Downloads above or find podcasts to download manually.</string>
+    <string name="library_downloads_empty_body">Turn on Smart Downloads or download episodes from a show\'s page.</string>
     <string name="library_downloads_delete_title">Delete downloads?</string>
     <plurals name="library_downloads_delete_podcasts_body">
         <item quantity="one">Are you sure you want to delete all downloaded episodes for the %1$d selected podcast?</item>
         <item quantity="other">Are you sure you want to delete all downloaded episodes for the %1$d selected podcasts?</item>
     </plurals>
-    <string name="library_downloads_delete_episodes_title">Delete Downloads?</string>
+    <string name="library_downloads_delete_episodes_title">Delete downloads?</string>
     <plurals name="library_downloads_delete_episodes_body">
         <item quantity="one">Remove %1$d selected downloaded episode?</item>
         <item quantity="other">Remove %1$d selected downloaded episodes?</item>
     </plurals>
-    <string name="library_downloads_delete_show_title">Delete Show Downloads?</string>
+    <string name="library_downloads_delete_show_title">Delete show downloads?</string>
     <!-- %1$s is the show's name -->
     <string name="library_downloads_delete_show_body">Remove all downloaded episodes for \'%1$s\'?</string>
     <!-- Screen-reader label -->
-    <string name="library_downloads_play_show">Play Show Downloads</string>
+    <string name="library_downloads_play_show">Play show downloads</string>
     <!-- When the newest download was saved; %1$s is a short time such as 5m ago -->
     <string name="library_downloads_latest">Latest: %1$s</string>
     <!-- Screen-reader label -->
@@ -36,8 +36,8 @@
     <!-- Screen-reader label -->
     <string name="library_downloads_status_failed">Failed</string>
     <string name="library_downloads_failed_line">Couldn’t download</string>
-    <string name="library_downloads_download_again">Download Again</string>
-    <string name="library_remove_download">Remove Download</string>
+    <string name="library_downloads_download_again">Download again</string>
+    <string name="library_remove_download">Remove download</string>
     <plurals name="library_downloads_failed_count">
         <item quantity="one">%1$d couldn’t download</item>
         <item quantity="other">%1$d couldn’t download</item>
@@ -83,7 +83,7 @@
     <string name="library_smart_downloads_last_sync">Last sync: %1$s</string>
     <string name="library_smart_downloads_last_sync_never">Last sync: Never</string>
     <string name="library_smart_downloads_syncing">Syncing</string>
-    <string name="library_smart_downloads_sync_now">Sync Now</string>
+    <string name="library_smart_downloads_sync_now">Sync now</string>
     <plurals name="library_smart_downloads_downloading">
         <item quantity="one">%1$d episode downloading in background</item>
         <item quantity="other">%1$d episodes downloading in background</item>
