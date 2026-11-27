@@ -36,6 +36,7 @@ class WatchAccountTest {
         var pullAnswer: CloudAnswer<SyncPullResponse> = CloudAnswer.Ok(SyncPullResponse(syncedAt = 500L))
         val redeemed = mutableListOf<String>()
         val revoked = mutableListOf<String>()
+        var revokes = true
         val pushes = mutableListOf<SyncPushRequest>()
         val pulls = mutableListOf<SyncPullRequest>()
 
@@ -44,8 +45,9 @@ class WatchAccountTest {
             return token
         }
 
-        override suspend fun revoke(token: String) {
+        override suspend fun revoke(token: String): Boolean {
             revoked += token
+            return revokes
         }
 
         override suspend fun push(token: String, request: SyncPushRequest): CloudAnswer<SyncPushResponse> {
@@ -81,8 +83,9 @@ class WatchAccountTest {
             val tokens = WatchAccountStore.InMemory()
             val store = store()
             var synced = 0
+            var changes = 0
             val account =
-                LiveWatchAccount({ WatchSignInReply(WatchSignInReply.OK, code = "code-1", account = "me@example.org") }, cloud, tokens, store, { synced++ }, backgroundScope)
+                LiveWatchAccount({ WatchSignInReply(WatchSignInReply.OK, code = "code-1", account = "me@example.org") }, cloud, tokens, store, { synced++ }, backgroundScope, onAccountChanged = { changes++ })
 
             account.signIn()
             assertEquals(WatchAccountState.SigningIn, account.state.value)
@@ -93,7 +96,9 @@ class WatchAccountTest {
             assertEquals(WatchAccountState.SignedIn("me@example.org"), account.state.value)
             assertTrue(store.state.value.cloudLinked)
             assertEquals(1, synced)
+            assertEquals(1, changes, "the API session hears of the sign-in, to trade the token")
             assertNull(account.problem.value)
+            assertEquals("watch-token", WatchPairing(tokens).accountToken())
         }
 
     @Test
@@ -131,17 +136,28 @@ class WatchAccountTest {
             val tokens = WatchAccountStore.InMemory(token = "t", account = "me@example.org")
             val store = store()
             store.update { it.copy(cloudLinked = true, shows = listOf(WatchShow("1", "Show 1", "Pub", artworkUrl = null, subscribed = true))) }
-            val account = LiveWatchAccount({ null }, cloud, tokens, store, {}, backgroundScope)
+            var changes = 0
+            val account = LiveWatchAccount({ null }, cloud, tokens, store, {}, backgroundScope, onAccountChanged = { changes++ })
             assertEquals(WatchAccountState.SignedIn("me@example.org"), account.state.value)
 
+            // The API can't record the sign-out yet (503): it is sent again at the next start.
+            cloud.revokes = false
             account.signOut()
             runCurrent()
 
             assertEquals(WatchAccountState.SignedOut, account.state.value)
             assertNull(tokens.token)
+            assertEquals(1, changes)
             assertEquals(listOf("t"), cloud.revoked)
+            assertEquals(setOf("t"), tokens.unrevoked)
             assertFalse(store.state.value.cloudLinked)
             assertEquals(listOf("1"), store.state.value.shows.map { it.id })
+
+            cloud.revokes = true
+            LiveWatchAccount({ null }, cloud, tokens, store, {}, backgroundScope).giveUpUnrevoked()
+            runCurrent()
+            assertEquals(listOf("t", "t"), cloud.revoked)
+            assertTrue(tokens.unrevoked.isEmpty())
         }
 
     @Test

@@ -105,4 +105,9 @@
     <string name="wear_account_failed">Connexion impossible. Réessayez.</string>
     <string name="wear_shows_layout_honeycomb">Nid d’abeille</string>
     <string name="wear_shows_layout_list">Liste</string>
+    <string name="wear_pairing_title">Ouvrez boxlore sur votre téléphone pour commencer</string>
+    <string name="wear_pairing_body">Votre téléphone connecte cette montre à votre compte.</string>
+    <string name="wear_pairing_downloads_detail">Écouter ce qui est sur la montre</string>
+    <string name="wear_glance_sign_in">Connectez-vous sur votre téléphone</string>
+    <string name="wear_complication_sign_in">boxlore : connectez-vous sur votre téléphone</string>
 </resources>

@@ -126,4 +126,9 @@
     <string name="wear_account_failed">No se pudo iniciar sesión. Vuelve a intentarlo.</string>
     <string name="wear_shows_layout_honeycomb">Panal</string>
     <string name="wear_shows_layout_list">Lista</string>
+    <string name="wear_pairing_title">Abre boxlore en tu teléfono para empezar</string>
+    <string name="wear_pairing_body">Tu teléfono inicia sesión en este reloj con tu cuenta.</string>
+    <string name="wear_pairing_downloads_detail">Reproduce lo que hay en este reloj</string>
+    <string name="wear_glance_sign_in">Inicia sesión en tu teléfono</string>
+    <string name="wear_complication_sign_in">boxlore: inicia sesión en tu teléfono</string>
 </resources>

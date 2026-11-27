@@ -182,6 +182,19 @@ class WatchDataTest {
         }
 
     @Test
+    fun `before the watch is signed in nothing reaches the catalog`() =
+        runTest {
+            var signedIn = false
+            val catalog = SignedInWatchCatalog(FakeCatalog(feeds = listOf(SearchFeed(id = 7, title = "Radiolab")), details = V2PodcastResponse())) { signedIn }
+
+            assertNull(catalog.search("radio"))
+            assertNull(catalog.show(7))
+            assertNull(catalog.episodes(7))
+            signedIn = true
+            assertEquals(listOf(7L), catalog.search("radio")?.map { it.id })
+        }
+
+    @Test
     fun `search marks shows the listener already subscribes to`() =
         runTest {
             val catalog = FakeCatalog(feeds = listOf(SearchFeed(id = 7, title = "Radiolab"), SearchFeed(id = 8, title = "Serial")))

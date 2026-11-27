@@ -16,6 +16,14 @@ class GlanceRulesTest {
         WatchEpisode(id = id, showId = "1", title = "Episode $id", showTitle = show, artworkUrl = "https://example.org/$id.jpg", durationMinutes = 40, audioUrl = "https://example.org/$id.mp3")
 
     @Test
+    fun `until the watch is signed in the tile and the watch face ask for that, whatever is in progress`() {
+        val glance = GlanceRules.from(WatchLibraryState().progress(episode("a"), 5 * minute, 40 * minute, nowMs = 1L))
+        assertEquals(GlanceKind.SignIn, GlanceRules.kind(signedIn = false, glance = glance))
+        assertEquals(GlanceKind.Episode, GlanceRules.kind(signedIn = true, glance = glance))
+        assertEquals(GlanceKind.Nothing, GlanceRules.kind(signedIn = true, glance = null))
+    }
+
+    @Test
     fun `with nothing in progress there is nothing to jump back into`() {
         assertNull(GlanceRules.from(WatchLibraryState()))
         // A finished episode is not something to resume.

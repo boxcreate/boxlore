@@ -7,7 +7,9 @@ application ID and signature. It owns the watch screens, the watch's own player,
 storage rules, its saved library, and its own connection to boxlore's API.
 
 It plays on its own, with no phone nearby. With the phone app linked it is one more device of
-the listener's library, and once signed in it also syncs with the listener's account by itself.
+the listener's library. It uses boxlore's API only once signed in through the phone, and then also
+syncs with the listener's account by itself; until then it shows a sign-in screen, and downloads
+already on the watch still play.
 
 ## Public API
 
@@ -83,7 +85,13 @@ src/release/java/...         # release WatchContainerFactory
   this here) through `WatchLinkListenerService`. A phone that went out of reach while playing is
   shown paused where it was last heard (`PlaceRules.heard`), so Play carries on here.
 - Signing in never shows a typing screen: the watch asks the linked phone to sign it in
-  (`LiveWatchAccount`). `WatchCloudSync` then pushes and pulls the cloud's sync rows. A change
+  (`LiveWatchAccount`). Until it is signed in `WatchApp` opens on the sign-in screen
+  (`ui.settings.PairingScreen`), which asks the phone as soon as it is in front and again now and
+  then while the phone is out of reach, with only Downloads, their episodes and the player besides
+  (`WatchRoutes.opensSignedOut`); `data.SignedInWatchCatalog` answers nothing and the API session
+  sends only the code's redemption. Once signed in the watch trades its account token for a paired
+  session (`cloud.WatchPairing`); a trade the API refuses signs it out. Signing out returns to the
+  sign-in screen, and a sign-out the API couldn't record is sent again at the next start. `WatchCloudSync` then pushes and pulls the cloud's sync rows. A change
   made on the watch waits until everyone who needs it has confirmed it: the phone once one has
   linked, the cloud while signed in (`WatchLibraryState.confirmed`). The cloud sends only what
   changed, so `WatchCloudRules` applies its follows one by one and looks up shows it cannot name.
@@ -94,7 +102,7 @@ src/release/java/...         # release WatchContainerFactory
   to carry on with (`GlanceRules.onResume`).
 - The tile and the watch-face shortcut show the episode to jump back into (`WatchGlance`), read
   from the saved library so they work with the app closed, and are redrawn when it or its time
-  left changes. The tile's artwork travels as pixels, named per episode (`TileRules`).
+  left changes. Until the watch is signed in they say Sign in on your phone (`GlanceRules.kind`). The tile's artwork travels as pixels, named per episode (`TileRules`).
 - `ui.shows.HoneycombMath` is the honeycomb's geometry in screen-radius units; `HoneycombShows`
   only draws it.
 - Home's top block is a dome (`ui.components.DomeShape`, `ui.home.HomeDome`): it follows the top of
@@ -130,7 +138,8 @@ src/release/java/...         # release WatchContainerFactory
   stops with the task only when nothing is playing.
 - Downloads run while the app's process is alive. One cut short is forgotten at the next start and
   starts again when asked.
-- The watch holds a limited API session: it has no device attestation.
+- The watch has no device attestation: until signed in it holds a limited API session, used only to
+  redeem the phone's code; once signed in, a paired session traded for its account token.
 
 ## Persistence & identity
 
@@ -148,7 +157,8 @@ src/release/java/...         # release WatchContainerFactory
 - `files/watch_downloads/` (`FileWatchDownloads.DIRECTORY_NAME`): stored audio, one
   `<episode ID>.audio` per episode.
 - SharedPreferences `boxlore_watch_settings`: `shows_layout`, `storage_limit_mb`, `changed_at`.
-- SharedPreferences `boxlore_watch_account`: the watch's sign-in and the account's name.
+- SharedPreferences `boxlore_watch_account`: the watch's sign-in, the account's name, and tokens
+  signed out whose sign-out the API has not confirmed yet.
 - The capability `boxlore_watch` (`res/values/wear.xml`) is how the phone app finds this app.
 - The API session uses `:core:network`'s own file and Keystore alias, created fresh on the watch.
 - Install channel `wear` (`WatchServer.CHANNEL`).
@@ -170,15 +180,16 @@ Tests live in `wear/src/test` (JUnit 5, plain JVM, fakes for the ports; Robolect
 | The moving now-playing bars | `ui/components/PlayingBarsMathTest` |
 | Phone link: what is sent, merged and confirmed | `link/WatchLinkRulesTest` |
 | Which player is shown, the watch's or the phone's | `link/PlaceRulesTest` |
-| Tile and watch-face shortcut: what they show, when they redraw, what Resume does | `glance/GlanceRulesTest` |
+| Tile and watch-face shortcut: what they show (signed out too), when they redraw, what Resume does | `glance/GlanceRulesTest` |
 | Home tiles with and without a linked phone | `ui/home/HomeTilesTest` |
 | Cloud sync rows, and changes waiting for the phone and the cloud | `cloud/WatchCloudRulesTest` |
-| Sign in, sign out, a sync run and a refused token | `cloud/WatchAccountTest` |
+| Sign in, sign out and its retry, a sync run and a refused token | `cloud/WatchAccountTest` |
+| Settings and sign-in screen copy | `ui/settings/SettingsCopyTest` |
 | What counts as something to listen through | `playback/AudioOutputRulesTest` |
 | The version follows the phone app's | `WatchVersionTest` |
 | Plain-http audio and the link capability | `WatchManifestTest` |
 | Player colours and contrast | `ui/player/PlayerPaletteTest` |
-| Speeds, sleep timer choices, text helpers, launch routes | `WatchModelsTest` |
+| Speeds, sleep timer choices, text helpers, launch routes, what opens before sign-in | `WatchModelsTest` |
 
 ```bash
 ./gradlew :wear:testDebugUnitTest

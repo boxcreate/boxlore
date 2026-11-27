@@ -29,8 +29,8 @@ internal interface WatchCloudApi {
     /** Trades the phone's code for this watch's account token; null when that did not work. */
     suspend fun redeem(code: String): String?
 
-    /** Gives the token up; a failure is ignored, the token is forgotten here either way. */
-    suspend fun revoke(token: String)
+    /** Gives the token up; true once the API has recorded it (the token is forgotten here either way). */
+    suspend fun revoke(token: String): Boolean
 
     suspend fun push(token: String, request: SyncPushRequest): CloudAnswer<SyncPushResponse>
 
@@ -46,9 +46,15 @@ internal class RetrofitWatchCloudApi(
             runCatching { api.redeem(WatchTokenRequest(code)).execute() }.getOrNull()?.takeIf { it.isSuccessful }?.body()?.token?.takeIf { it.isNotBlank() }
         }
 
-    override suspend fun revoke(token: String) {
-        withContext(io) { runCatching { api.revoke(bearer(token)).execute().body()?.close() } }
-    }
+    override suspend fun revoke(token: String): Boolean =
+        withContext(io) {
+            runCatching {
+                val response = api.revoke(bearer(token)).execute()
+                response.body()?.close()
+                response.errorBody()?.close()
+                response.isSuccessful
+            }.getOrDefault(false)
+        }
 
     override suspend fun push(token: String, request: SyncPushRequest): CloudAnswer<SyncPushResponse> = answer { api.syncPush(bearer(token), request) }
 

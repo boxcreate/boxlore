@@ -27,6 +27,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import cx.aswin.boxlore.wear.MainActivity
 import cx.aswin.boxlore.wear.R
 import cx.aswin.boxlore.wear.WatchApplication
+import cx.aswin.boxlore.wear.cloud.WatchAccountState
 import cx.aswin.boxlore.wear.ui.WatchRoutes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,8 +37,9 @@ import kotlinx.coroutines.launch
 
 /**
  * The boxlore tile: the episode to jump back into, with its artwork and Resume on the edge of the
- * screen. With nothing in progress it offers to open the app instead. It is drawn from the saved
- * library, so it works with the app closed. It keeps boxlore's own colours on every watch face.
+ * screen. With nothing in progress it offers to open the app instead, and until the watch is signed
+ * in it asks for that, on the phone. It is drawn from the saved library and reaches no API, so it
+ * works with the app closed. It keeps boxlore's own colours on every watch face.
  */
 class BoxloreTileService : TileService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -49,12 +51,17 @@ class BoxloreTileService : TileService() {
 
     override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> =
         answer {
-            val glance = glance()
+            val signedIn = signedIn()
+            val glance = glance()?.takeIf { signedIn }
             // Asked for before the layout is built, so the layout only names a picture that exists.
             val artwork = glance?.let { TileArtwork.of(TileRules.artworkId(it), it.artworkUrl, this) }
             val layout =
                 materialScope(this, requestParams.deviceConfiguration, allowDynamicTheme = false, defaultColorScheme = TileColors.scheme) {
-                    if (glance == null) empty(this@BoxloreTileService) else jumpBackIn(this@BoxloreTileService, glance, hasArtwork = artwork != null)
+                    when (GlanceRules.kind(signedIn, glance)) {
+                        GlanceKind.SignIn -> message(this@BoxloreTileService, R.string.wear_glance_sign_in)
+                        GlanceKind.Nothing -> message(this@BoxloreTileService, R.string.wear_jump_back_in_empty)
+                        GlanceKind.Episode -> jumpBackIn(this@BoxloreTileService, checkNotNull(glance), hasArtwork = artwork != null)
+                    }
                 }
             TileBuilders.Tile.Builder()
                 .setResourcesVersion(TileRules.resourcesVersion(glance, hasArtwork = artwork != null))
@@ -66,7 +73,7 @@ class BoxloreTileService : TileService() {
         answer {
             // The version is the picture's name, so the picture handed over is always the one the layout asked for.
             val id = requestParams.version
-            val glance = glance()?.takeIf { TileRules.artworkId(it) == id }
+            val glance = glance()?.takeIf { signedIn() && TileRules.artworkId(it) == id }
             val artwork = TileArtwork.of(id, glance?.artworkUrl, this)
             val resources = ResourceBuilders.Resources.Builder().setVersion(id)
             if (artwork != null) resources.addIdToImageMapping(id, artwork.resource())
@@ -74,6 +81,8 @@ class BoxloreTileService : TileService() {
         }
 
     private fun glance(): WatchGlance? = (application as? WatchApplication)?.container?.glance?.invoke()
+
+    private fun signedIn(): Boolean = (application as? WatchApplication)?.container?.account?.state?.value is WatchAccountState.SignedIn
 
     private fun <T> answer(block: suspend () -> T): ListenableFuture<T> =
         CallbackToFutureAdapter.getFuture { completer ->
@@ -89,10 +98,11 @@ class BoxloreTileService : TileService() {
         /** Redraws the tile after the episode to jump back into, or its time left, changed. */
         fun requestUpdate(context: Context) = getUpdater(context).requestUpdate(BoxloreTileService::class.java)
 
-        private fun MaterialScope.empty(context: Context): LayoutElement =
+        /** The app's name over one line of [message], and Open on the edge. */
+        private fun MaterialScope.message(context: Context, message: Int): LayoutElement =
             primaryLayout(
                 titleSlot = { text(context.getString(R.string.wear_app_name).layoutString) },
-                mainSlot = { text(context.getString(R.string.wear_jump_back_in_empty).layoutString, typography = Typography.TITLE_MEDIUM, maxLines = 2) },
+                mainSlot = { text(context.getString(message).layoutString, typography = Typography.TITLE_MEDIUM, maxLines = 2) },
                 bottomSlot = {
                     textEdgeButton(
                         onClick = clickable(open(context, resume = null)),

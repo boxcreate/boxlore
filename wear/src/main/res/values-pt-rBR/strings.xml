@@ -123,4 +123,9 @@
     <string name="wear_account_failed">Não foi possível entrar. Tente de novo.</string>
     <string name="wear_shows_layout_honeycomb">Colmeia</string>
     <string name="wear_shows_layout_list">Lista</string>
+    <string name="wear_pairing_title">Abra o boxlore no celular para começar</string>
+    <string name="wear_pairing_body">Seu celular conecta este relógio à sua conta.</string>
+    <string name="wear_pairing_downloads_detail">Ouça o que está neste relógio</string>
+    <string name="wear_glance_sign_in">Entre pelo celular</string>
+    <string name="wear_complication_sign_in">boxlore: entre pelo celular</string>
 </resources>

@@ -51,3 +51,15 @@ class ApiWatchCatalog(
         const val EPISODE_LIMIT = 25
     }
 }
+
+/**
+ * The catalog only while the watch is signed in ([signedIn]): before that nothing on the watch asks
+ * boxlore's API for shows, episodes or search. Downloads already on the watch still play.
+ */
+class SignedInWatchCatalog(private val catalog: WatchCatalog, private val signedIn: () -> Boolean) : WatchCatalog {
+    override suspend fun search(query: String): List<SearchFeed>? = if (signedIn()) catalog.search(query) else null
+
+    override suspend fun show(showId: Long): V2PodcastResponse? = if (signedIn()) catalog.show(showId) else null
+
+    override suspend fun episodes(showId: Long): List<EpisodeItem>? = if (signedIn()) catalog.episodes(showId) else null
+}

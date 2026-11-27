@@ -116,4 +116,9 @@
     <string name="wear_account_failed">Anmeldung fehlgeschlagen. Versuch es noch mal.</string>
     <string name="wear_shows_layout_honeycomb">Waben</string>
     <string name="wear_shows_layout_list">Liste</string>
+    <string name="wear_pairing_title">Öffne boxlore auf deinem Handy, um zu starten</string>
+    <string name="wear_pairing_body">Dein Handy meldet diese Uhr bei deinem Konto an.</string>
+    <string name="wear_pairing_downloads_detail">Abspielen, was auf der Uhr ist</string>
+    <string name="wear_glance_sign_in">Auf dem Handy anmelden</string>
+    <string name="wear_complication_sign_in">boxlore: auf dem Handy anmelden</string>
 </resources>
