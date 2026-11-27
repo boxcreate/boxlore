@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="session_check_title">Ich bin der einzige Roboter, der in diesen Chat darf.</string>
-    <string name="session_check_body">Tippe auf das Kästchen, damit Cloudflare prüfen kann, dass du ein Mensch bist. Dann suche ich weiter Podcasts für dich.</string>
+    <string name="session_check_title">Ich bin der einzige Roboter, der diese App benutzen darf.</string>
+    <string name="session_check_body">Tippe auf das Kästchen, damit Cloudflare prüfen kann, dass du ein Mensch bist. So hält boxlore Bots fern.</string>
     <string name="session_check_skip">Überspringen</string>
 </resources>

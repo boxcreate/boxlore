@@ -26,6 +26,8 @@ Announcement title:
 
 ## Improved
 
+- When Google Play can’t confirm your phone, boxlore now runs Cloudflare’s quick check as it opens, not only during setup, so sync, feedback and recommendations keep working. Most of the time you won’t see it.
+
 ## Fixed
 
 - On episode pages, Mark played stays at the end of the date and length line again, and long details scroll beside it instead of pushing it onto a line of its own.
