@@ -98,6 +98,11 @@ class EpisodeSharePreparerTest {
         assertTrue((System.nanoTime() - started) / 1_000_000 < 2_000, "the share waits only the short timeout")
         assertEquals(2, retries.size)
         assertEquals(V2EpisodeRegisterRequest(show = show, guid = "guid-1", enclosureUrl = "https://cdn.example/-9.mp3"), retries.last())
+
+        hang = false
+        outcome = EpisodeShareRegistrationOutcome.AWAIT_SESSION
+        preparer.targetFor(episode("-9", podcastId = "920666"))
+        assertEquals(3, retries.size, "an API that wants a better session is asked again in the background too")
     }
 
     @Test
@@ -163,6 +168,9 @@ class EpisodeSharePreparerTest {
         server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"recipeId":$recipe,"servedId":null,"confirmed":true,"show":920666,"catalogKey":"guid-1"}"""))
         server.enqueue(MockResponse().setResponseCode(404).setBody("""{"error":"unknown_show"}"""))
         server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":"session_required"}"""))
+        server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":"verification_required"}"""))
+        server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":"attestation_required","reason":"no-attestation"}"""))
+        server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":"Unauthorized"}"""))
         server.enqueue(MockResponse().setResponseCode(429).setBody("""{"error":"register_limit"}"""))
         server.enqueue(MockResponse().setResponseCode(503).setBody("""{"error":"register_unavailable"}"""))
         server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
@@ -174,6 +182,7 @@ class EpisodeSharePreparerTest {
         assertEquals("POST", recorded.method)
         assertEquals("""{"show":920666,"guid":"guid-1"}""", recorded.body.readUtf8())
         assertEquals(EpisodeShareRegistrationOutcome.DROPPED, EpisodeShareRegistrar.registerOnce(api, request))
+        repeat(3) { assertEquals(EpisodeShareRegistrationOutcome.AWAIT_SESSION, EpisodeShareRegistrar.registerOnce(api, request)) }
         repeat(4) { assertEquals(EpisodeShareRegistrationOutcome.RETRY, EpisodeShareRegistrar.registerOnce(api, request)) }
     }
 

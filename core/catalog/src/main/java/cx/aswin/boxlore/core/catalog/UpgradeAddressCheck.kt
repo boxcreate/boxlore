@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.network.model.V2EpisodeIds
 import cx.aswin.boxlore.core.network.model.V2ShowAddress
 import cx.aswin.boxlore.core.network.model.V2ShowsFeedsRequest
 import cx.aswin.boxlore.core.network.model.V2ShowsFeedsResponse
+import cx.aswin.boxlore.core.network.session.ApiErrorCodes
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import retrofit2.awaitResponse
@@ -25,8 +26,9 @@ sealed interface AddressCheckAnswer {
     data class Answered(val response: V2ShowsFeedsResponse) : AddressCheckAnswer
 
     /**
-     * The server couldn't answer now (503 `lookup_unavailable`, 429, another 5xx) or the request
-     * never got through. Never counts as a try; a show unanswered for
+     * The server couldn't answer now (503 `lookup_unavailable`, 429, another 5xx), wants a better
+     * API session first ([ApiErrorCodes.AWAITS_SESSION], which the app gets on screen), or the
+     * request never got through. Never counts as a try; a show unanswered for
      * [UpgradeAddressRepair.MAX_UNANSWERED_MS] goes on without an answer.
      */
     data object Unavailable : AddressCheckAnswer
@@ -50,6 +52,7 @@ sealed interface AddressCheckAnswer {
                     response.isSuccessful && body != null -> Answered(body)
                     response.isSuccessful -> Rejected
                     response.code() == TOO_MANY_REQUESTS || response.code() >= SERVER_ERRORS -> Unavailable
+                    ApiErrorCodes.awaitsSession(response) -> Unavailable
                     else -> Rejected
                 }
             } catch (e: CancellationException) {

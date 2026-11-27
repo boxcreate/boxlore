@@ -87,6 +87,44 @@ class EpisodeShareRegistrationWorkerTest {
     }
 
     @Test
+    fun `an answer that wants a better session comes back later without counting as a failed run`() = runBlocking {
+        val queued = mutableListOf<androidx.work.OneTimeWorkRequest>()
+        val worker = worker(EpisodeShareRegistrationOutcome.AWAIT_SESSION, attempt = 3).apply { requeue = { _, next -> queued += next } }
+
+        assertEquals(ListenableWorker.Result.success(), worker.doWork())
+
+        val next = queued.single().workSpec
+        assertEquals(request, EpisodeShareRegistrationWorker.requestFrom(next.input))
+        assertEquals(EpisodeShareRegistrationWorker.SESSION_WAIT_HOURS * 3_600_000L, next.initialDelay)
+        assertEquals(NetworkType.CONNECTED, next.constraints.requiredNetworkType)
+        // The follow-up carries the 3 failed runs, so its 5th failed run is the 8th and last; session waits count none.
+        val carried = { outcome: EpisodeShareRegistrationOutcome, attempt: Int ->
+            TestListenableWorkerBuilder<EpisodeShareRegistrationWorker>(context).setInputData(next.input).setRunAttemptCount(attempt).build().apply {
+                register = { outcome }
+                requeue = { _, again -> queued += again }
+            }
+        }
+        assertEquals(ListenableWorker.Result.retry(), carried(EpisodeShareRegistrationOutcome.RETRY, EpisodeShareRegistrationWorker.MAX_ATTEMPTS - 5).doWork())
+        assertEquals(ListenableWorker.Result.failure(), carried(EpisodeShareRegistrationOutcome.RETRY, EpisodeShareRegistrationWorker.MAX_ATTEMPTS - 4).doWork())
+        assertEquals(ListenableWorker.Result.success(), carried(EpisodeShareRegistrationOutcome.AWAIT_SESSION, 0).doWork())
+        assertEquals(2, queued.size)
+    }
+
+    @Test
+    fun `session waits end after a month`() = runBlocking {
+        fun waitedFor(waits: Int) = TestListenableWorkerBuilder<EpisodeShareRegistrationWorker>(context)
+            .setInputData(EpisodeShareRegistrationWorker.workRequest(request, sessionWaits = waits).workSpec.input)
+            .build()
+            .apply {
+                register = { EpisodeShareRegistrationOutcome.AWAIT_SESSION }
+                requeue = { _, _ -> }
+            }
+
+        assertEquals(ListenableWorker.Result.success(), waitedFor(EpisodeShareRegistrationWorker.MAX_SESSION_WAITS - 1).doWork())
+        assertEquals(ListenableWorker.Result.failure(), waitedFor(EpisodeShareRegistrationWorker.MAX_SESSION_WAITS).doWork())
+    }
+
+    @Test
     fun `work without a valid request fails without calling the API`() = runBlocking {
         var calls = 0
         val worker = TestListenableWorkerBuilder<EpisodeShareRegistrationWorker>(context).build().apply {
