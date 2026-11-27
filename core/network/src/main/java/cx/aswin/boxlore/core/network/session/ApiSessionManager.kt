@@ -103,7 +103,15 @@ class ApiSessionManager(
     private val loaded = CompletableDeferred<Unit>()
     private val saveMutex = Mutex()
     private var exchangeJob: Deferred<ApiSessionToken?>? = null
-    private val scheduler = ApiSessionScheduler(scope, clock, lock, book, ::exchangeNow) { pairing?.let { it.accountToken() != null } }
+    private val scheduler = ApiSessionScheduler(
+        scope,
+        clock,
+        lock,
+        book,
+        ::exchangeNow,
+        pairedSignedIn = { pairing?.let { it.accountToken() != null } },
+        checkMayAsk = { stepUp.source != null && !checks.skipHeld() && !stepUp.coolingDown() },
+    )
 
     /** The sign-in check's and the step-up's turns; internal for tests. */
     internal val checks = ApiSessionCheckGate(clock, timing) { synchronized(lock) { book.usableToken } }
@@ -250,7 +258,10 @@ class ApiSessionManager(
         return sent.limited && stepUp.available()
     }
 
-    /** Coming to the foreground lifts a wait for it and lets a sign-in ask for the check again. */
+    /**
+     * Coming to the foreground lifts a wait for it and lets a sign-in ask for the check again; a
+     * limited session gets that check a few seconds in ([ApiSessionScheduler]).
+     */
     fun onForegroundChanged(foreground: Boolean) {
         if (foreground) {
             synchronized(lock) {

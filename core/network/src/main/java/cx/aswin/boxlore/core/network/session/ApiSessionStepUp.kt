@@ -40,6 +40,9 @@ internal class ApiSessionStepUp(
     /** Whether a step-up can run at all here: a check source, and the remote switch on (the host may still be away). */
     fun available(): Boolean = source != null && runCatching { enabled() }.getOrDefault(false)
 
+    /** A step-up failed within [ApiSessionTiming.stepUpCooldownMs]. */
+    fun coolingDown(): Boolean = synchronized(lock) { clock() < cooldownUntilMs }
+
     /**
      * A session good enough for AI routes, or null when the caller should use its fallback.
      * With [joinRunning] false, a caller that finds a step-up already running gets null at once

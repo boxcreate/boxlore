@@ -37,8 +37,22 @@ internal class ApiSessionBook(private val clock: () -> Long) {
      */
     var awaitingForeground = false
 
-    /** No sign-in Turnstile check before this local time (one failed or wasn't accepted). */
+    /** No sign-in Turnstile check before this local time (one failed or wasn't accepted); coming on screen lifts it. */
     var signInCheckAfterMs = 0L
+        set(value) {
+            field = value
+            signInCheckHeldUntilMs = maxOf(signInCheckHeldUntilMs, value)
+        }
+
+    /** The furthest [signInCheckAfterMs] has been set to: the same hold, which coming on screen doesn't lift. */
+    var signInCheckHeldUntilMs = 0L
+        private set
+
+    /**
+     * When the sign-in check a limited session gets after the app came on screen is due (see
+     * [ApiSessionScheduler]); 0 when none is. Not kept across restarts.
+     */
+    var foregroundCheckAtMs = 0L
 
     /** Local time the held token arrived; a rejection right after that is not worth another exchange. */
     var tokenReceivedAtMs = 0L

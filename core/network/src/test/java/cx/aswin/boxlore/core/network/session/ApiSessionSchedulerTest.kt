@@ -17,7 +17,8 @@ import org.junit.jupiter.api.Test
  * Background upkeep in virtual time: a limited session retries App Check about a minute after the
  * first failure, then hourly, then daily, only in the foreground with a network, and swaps in the
  * full session silently when App Check passes. Those retries give slow App Check longer than launch
- * does, and run the Turnstile check for a limited session, never for a challenge one.
+ * does, and run the Turnstile check for a limited session, never for a challenge one. A limited
+ * session also gets the check a few seconds after the app comes on screen, once per foreground.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ApiSessionSchedulerTest {
@@ -169,6 +170,77 @@ class ApiSessionSchedulerTest {
         assertEquals(harness.challenge, harness.heldToken())
         assertEquals(1, harness.exchanger.calls, "and a failed App Check sends no exchange whose limited session would be thrown away")
         assertEquals(3, harness.store.state.appCheckFailures, "the failure still counts, so the next retry backs off")
+    }
+
+    // Regression: a challenge session that ran out in the background came back limited (no check host there), and on screen the phone
+    // then waited a day for App Check's retry or the limited session's refresh, without the check that would have moved it back up.
+    @Test
+    fun `a limited session taken in the background gets the check soon after the app comes on screen, without App Check`() = runTest {
+        val check = FakeCheck(TurnstileResult.Token("ts")).apply { onScreen = false }
+        val stored = StoredApiSession(
+            token = sessionToken(sid = "challenge-0", att = "challenge", iat = BASE_S - 7 * DAY_S, exp = BASE_S - 6 * DAY_S, attExp = BASE_S - 60, tag = "c0"),
+            installId = "install-123",
+            appCheckFailures = 6,
+            nextUpgradeAtMs = BASE_MS - 1,
+        )
+        val harness = Harness(this, stored, appCheckPassesOnAttempt = Int.MAX_VALUE, check = check)
+        harness.manager.start()
+        runCurrent()
+        assertTrue(ApiSessionToken.parse(harness.heldToken())!!.limited, "in the background the check had no host, so the session is limited")
+        assertEquals(BASE_MS + 24 * hour, harness.store.state.nextUpgradeAtMs, "and App Check's next retry is a day out")
+
+        check.onScreen = true
+        harness.manager.onForegroundChanged(true)
+        runCurrent()
+        testScheduler.advanceTimeBy(ApiSessionScheduler.FOREGROUND_CHECK_DELAY_MS - 1_000)
+        runCurrent()
+        assertEquals(0, check.solves.get(), "the screen gets a few seconds first")
+
+        testScheduler.advanceTimeBy(2_000)
+        runCurrent()
+        assertEquals(1, check.solves.get())
+        assertEquals(harness.challenge, harness.heldToken(), "back to a challenge session")
+        assertEquals(1, harness.appCheckCalls.get(), "without waiting for App Check's retry")
+        assertNull(harness.exchanger.requests.last().appCheckToken)
+    }
+
+    @Test
+    fun `the foreground check runs once per foreground, and not while a failed check or a Skip holds checks back`() = runTest {
+        val check = FakeCheck(TurnstileResult.Failed("error"), TurnstileResult.Failed(TurnstileResult.SKIPPED), TurnstileResult.Token("ts"))
+        val stored = limitedStored().copy(appCheckFailures = 6, nextUpgradeAtMs = BASE_MS + 24 * hour)
+        val harness = Harness(this, stored, appCheckPassesOnAttempt = Int.MAX_VALUE, check = check)
+        harness.manager.start()
+        runCurrent()
+        suspend fun comeBackAfter(awayMs: Long) {
+            harness.manager.onForegroundChanged(false)
+            testScheduler.advanceTimeBy(awayMs)
+            harness.manager.onForegroundChanged(true)
+            runCurrent()
+            testScheduler.advanceTimeBy(minute)
+            runCurrent()
+        }
+
+        comeBackAfter(0)
+        assertEquals(1, check.solves.get(), "the check failed")
+        testScheduler.advanceTimeBy(5 * minute)
+        runCurrent()
+        assertEquals(1, check.solves.get(), "once per foreground")
+
+        comeBackAfter(0)
+        comeBackAfter(2 * minute)
+        assertEquals(1, check.solves.get(), "a check that failed lately holds the next foregrounds' back")
+
+        comeBackAfter(10 * minute)
+        assertEquals(2, check.solves.get(), "the listener skipped this one")
+        comeBackAfter(15 * minute)
+        assertEquals(2, check.solves.get(), "a Skip holds the check back for half an hour")
+        val exchanges = harness.exchanger.calls
+
+        comeBackAfter(20 * minute)
+        assertEquals(3, check.solves.get())
+        assertEquals(harness.challenge, harness.heldToken())
+        assertEquals(exchanges + 1, harness.exchanger.calls, "one exchange per foreground check")
+        assertEquals(0, harness.appCheckCalls.get(), "App Check waits for its own retry")
     }
 
     // Regression: a challenge session was refreshed only in its last hour, so it often ran out in the background, and a Skip then swapped in a limited one early.
