@@ -167,6 +167,10 @@
     <string name="account_tv_signed_in">Dein Fernseher ist angemeldet. Deine Sendungen erscheinen dort in wenigen Sekunden.</string>
     <string name="account_tv_wrong_code">Dieser Code hat nicht funktioniert. Prüfe ihn auf deinem Fernseher oder hol dir dort einen neuen.</string>
     <string name="account_tv_sign_in_first">Bestätige zuerst deine E-Mail-Adresse auf diesem Handy.</string>
+    <string name="account_tv_check_needed">Dieses Handy braucht zuerst eine kurze Prüfung. Versuche es noch einmal und schließe die Prüfung ab, wenn sie erscheint.</string>
+    <string name="account_tv_sign_in_again">Melde dich auf diesem Handy erneut an und versuche es dann noch einmal.</string>
+    <string name="account_tv_too_many_tries">Zu viele Versuche. Warte eine Weile und versuche es dann noch einmal.</string>
+    <string name="account_tv_closed">Die Anmeldung auf Fernsehern ist gerade pausiert. Versuche es später noch einmal.</string>
     <string name="account_tv_no_connection">boxlore ist nicht erreichbar. Prüfe deine Verbindung und versuche es noch einmal.</string>
     <string name="settings_sync_import_footer">Podcasts mit eingeschaltetem „Fehlende Folgen?“ werden nach dem Import aktualisiert.</string>
 </resources>

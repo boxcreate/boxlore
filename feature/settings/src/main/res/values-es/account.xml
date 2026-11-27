@@ -156,6 +156,10 @@
     <string name="account_tv_signed_in">Ya has iniciado sesión en tu TV. Tus programas aparecerán en unos segundos.</string>
     <string name="account_tv_wrong_code">Ese código no ha funcionado. Compruébalo en tu TV o pide uno nuevo allí.</string>
     <string name="account_tv_sign_in_first">Primero verifica tu correo en este teléfono.</string>
+    <string name="account_tv_check_needed">Este teléfono necesita una comprobación rápida primero. Inténtalo de nuevo y completa la comprobación si aparece.</string>
+    <string name="account_tv_sign_in_again">Vuelve a iniciar sesión en este teléfono e inténtalo de nuevo.</string>
+    <string name="account_tv_too_many_tries">Demasiados intentos por ahora. Espera un rato e inténtalo de nuevo.</string>
+    <string name="account_tv_closed">El inicio de sesión en TV está en pausa por ahora. Inténtalo más tarde.</string>
     <string name="account_tv_no_connection">No se ha podido conectar con boxlore. Comprueba tu conexión e inténtalo de nuevo.</string>
     <string name="settings_sync_import_footer">Los podcasts con «¿Faltan episodios?» activado se actualizan después de importar.</string>
 </resources>

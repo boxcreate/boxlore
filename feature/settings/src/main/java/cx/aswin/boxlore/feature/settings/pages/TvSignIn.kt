@@ -51,8 +51,12 @@ fun interface TvSignInApprover {
     suspend fun approve(code: String): TvApproval
 }
 
-/** How approving a TV's code ended. */
-enum class TvApproval { Approved, WrongCode, SignInNeeded, NoConnection }
+/**
+ * How approving a TV's code ended. [SignInNeeded]: this phone's account can't sync yet (an
+ * unverified email); [SignInAgain]: its sign-in no longer lends the account; [CheckNeeded]: the
+ * phone has to pass boxlore's quick check first; [Closed]: boxlore isn't signing TVs in for now.
+ */
+enum class TvApproval { Approved, WrongCode, SignInNeeded, SignInAgain, CheckNeeded, TooManyTries, Closed, NoConnection }
 
 /** Test tags for the TV sign-in dialog. */
 object TvSignInTestTags {
@@ -160,5 +164,9 @@ private fun TvApproval.message(): Int =
     when (this) {
         TvApproval.WrongCode -> R.string.account_tv_wrong_code
         TvApproval.SignInNeeded -> R.string.account_tv_sign_in_first
+        TvApproval.SignInAgain -> R.string.account_tv_sign_in_again
+        TvApproval.CheckNeeded -> R.string.account_tv_check_needed
+        TvApproval.TooManyTries -> R.string.account_tv_too_many_tries
+        TvApproval.Closed -> R.string.account_tv_closed
         TvApproval.NoConnection, TvApproval.Approved -> R.string.account_tv_no_connection
     }
