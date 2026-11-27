@@ -5,7 +5,7 @@
 ## Our Core Commitments
 
 1. **No App Ads, Forever:** We do not have banner ads, sponsor tracking pixels, or cross-site advertising SDKs. boxlore will never show ads in the app. Podcasts may still carry ads placed by their creators.
-2. **Accounts Stay Separate From Usage Data:** Accounts in boxlore are completely optional and used purely for cloud backup and library sync across your devices. Your email is logged solely by Firebase (Google) for secure auth verification and is never stored on our application servers. Most importantly, **your account email is never connected, linked, or cross-referenced with your app usage or telemetry event profile**. Usage events carry a random analytics ID, not your name or email.
+2. **Accounts Stay Separate From Usage Data:** On your phone, accounts are optional and used purely for cloud backup and library sync across your devices. boxlore on Android TV and Wear OS uses your account: you sign them in through boxlore on your phone, and each gets its own sign-in tied to a key stored on that device (a TV also receives your account's email so it can show which account it's on). Your email is logged solely by Firebase (Google) for secure auth verification and is never stored on our application servers. Most importantly, **your account email is never connected, linked, or cross-referenced with your app usage or telemetry event profile**. Usage events carry a random analytics ID, not your name or email.
 3. **Discovery Without Ad Profiling:** We never sell your data, build advertising dossiers, or track you across the web. To help you discover new shows, the app sends bounded listening seeds (recent shows you played, liked, or completed) to our servers to run semantic vector search against our catalog. The server returns candidate shows statelessly—it does not build a persistent behavioral profile to monetize your attention.
 
 ### How Discovery & Recommendations Work (The Hybrid Architecture)
@@ -69,7 +69,13 @@ Here is the data collected by our application and API services, and exactly how 
 * **Why:** To see which design people respond to best. Each person keeps seeing the same design, so the comparison stays fair.
 * **Good to know:** This is part design survey, part our attempt to earn back what it costs to keep boxlore running. Rest assured, it's tied only to the anonymous analytics ID described above, never to your name, email or account. We just want a rough idea of which designs lead more people to support boxlore.
 
-### 9. Feedback and Replies
+### 9. The Check That Keeps Bots Out
+* **What is sent:** A key stored on your phone signs each request to our servers. Google Play's App Check vouches for most phones; when it can't (the app didn't come from Google Play, or the phone is rooted), the app may ask Cloudflare Turnstile to check you're human before some features, such as AI onboarding, topic search, feedback, or signing in a TV or watch.
+* **Why:** So only the real app uses our servers, and nobody else can act as your phone.
+* **Where it goes:** Our API, and Cloudflare for the Turnstile check, which it processes under its own privacy policy.
+* **Good to know:** The check often runs without asking you anything. If you skip it, the app keeps working; only those features ask again.
+
+### 10. Feedback and Replies
 * **What is sent:** What you write when you send feedback, the type you pick, and the app version. If you leave "Include device diagnostics" on, also your phone model, Android version, network type, audio output and language, and boxlore's own recent logs with keys, sign-in details and email addresses removed. Any photos or screenshots you attach.
 * **Why:** So the boxlore team can read it, reply in the app, and fix what broke.
 * **Where it goes:** Your conversations are stored on our servers, tied to your phone through a coded form of boxlore's install ID and a key stored on your phone (and to your account, also coded, if you're signed in, so they show on your other devices). They aren't linked to your analytics ID; analytics only notes that feedback was sent and its type. The team reads and answers in Telegram, which receives your message, its type, your phone model, app version and any photos, but never your email address, your logs or your analytics ID. Reply notifications go through Firebase Cloud Messaging. Older versions of boxlore also email your feedback to the team, with your email address if you gave one.

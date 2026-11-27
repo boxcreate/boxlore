@@ -244,12 +244,12 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 
 - **Android Auto.** Browse Home, Library, Downloads and Discover in the car. Playback picks up when you reconnect.
 - **Google Cast.** Play on TVs and speakers, with the player in the app kept in sync.
-- **Wear OS.** boxlore on your watch plays with or without your phone. Out now on GitHub, coming to Google Play very soon. [boxlore on Wear OS](docs/WEAR_OS.md).
+- **Wear OS.** boxlore on your watch plays with or without your phone, signed in to your account through your phone. Out now on GitHub, coming to Google Play very soon. [boxlore on Wear OS](docs/WEAR_OS.md).
 - **Widgets.** Now Playing, playback controls, Your Shows and New Episodes.
 
 ### Sync and backup
 
-- **Cloud sync.** Sign in with an optional account to back up your library and keep it in sync across your devices.
+- **Cloud sync.** Sign in with an optional account to back up your library and keep it in sync across your devices. boxlore on Android TV and Wear OS uses your account, signed in through your phone.
 - **Full backup.** Export your shows, tags, folders, history, likes and settings to a file, and restore them later.
 - **OPML.** Import and export your subscriptions to move between podcast apps.
 
@@ -292,7 +292,7 @@ Yes, if the feed has its own private link. Go to <b>Settings → Library</b> and
 <details>
 <summary><b>Can I sync between phones?</b></summary>
 <br/>
-Yes. Sign in with an optional account to back up your library and keep it in sync across your devices. boxlore works fully without one.
+Yes. Sign in with an optional account to back up your library and keep it in sync across your devices. On your phone, boxlore works fully without one. boxlore on Android TV and Wear OS uses your account: you sign them in through boxlore on your phone.
 </details>
 
 <details>
@@ -327,7 +327,7 @@ Android may ask you to allow installation from your browser or file manager when
 
 Using Android Auto with the GitHub or Obtainium version? Turn on one setting first: [Use boxlore with Android Auto](docs/ANDROID_AUTO.md).
 
-The Wear OS watch app is out now on GitHub Releases and coming to Google Play very soon. [boxlore on Wear OS](docs/WEAR_OS.md) shows what it does and how to install it.
+The Wear OS watch app is out now on GitHub Releases and coming to Google Play very soon. It uses your boxlore account, signed in through your phone. [boxlore on Wear OS](docs/WEAR_OS.md) shows what it does and how to install it.
 
 ## Project
 

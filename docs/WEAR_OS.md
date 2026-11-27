@@ -29,7 +29,7 @@ boxlore is on Wear OS watches. The watch app is out now on [GitHub Releases](htt
 
 - **Plays without your phone.** Stream episodes or download them to the watch, then leave your phone at home.
 - **Keeps your place.** With boxlore on your phone, your shows and listening progress carry over to the watch and back.
-- **Syncs with your account.** Sign in on the watch with one tap from your phone, and your shows and progress sync even when the phone is away.
+- **Uses your account.** boxlore on the watch works with your boxlore account. Your phone signs the watch in with one tap, and your shows and progress sync even when the phone is away.
 - **Controls your phone's player.** When an episode is playing on your phone, pause it or skip from the watch, or move it to the watch and carry on from the same place.
 - **Send to watch.** Download an episode to the watch from its page on your phone.
 - **Tile and watch face.** Jump back into your last episode from a tile or a watch-face shortcut.
@@ -79,7 +79,7 @@ The watch app isn't on Google Play yet. Once it is:
 ### Set it up
 
 - **Link with your phone.** Open boxlore on both. With matching apps and the phone in reach, your shows and progress appear on the watch on their own.
-- **Sign in.** On the watch, open **Settings > Account > Sign in with phone**. You need to be signed in to boxlore on the phone, with the phone in reach.
+- **Sign in.** boxlore on the watch needs your account. Sign in to boxlore on your phone, keep the phone in reach, and open boxlore on the watch: it signs in through your phone. (On earlier versions, open **Settings > Account > Sign in with phone** on the watch.)
 - **Add the tile.** Swipe to the end of your tiles, add one, and pick boxlore.
 - **Add the watch-face shortcut.** Customise your watch face and pick boxlore for one of its slots.
 
