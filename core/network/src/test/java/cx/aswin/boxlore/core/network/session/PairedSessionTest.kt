@@ -166,7 +166,7 @@ class PairedSessionTest {
         assertEquals(PairedSessionResult.SessionRefused(ApiErrorCodes.SESSION_EXPIRED), OkHttpPairedSessionTrader.resultOf(401, ApiErrorCodes.SESSION_EXPIRED, null))
         assertEquals(PairedSessionResult.Failed("http_503_sign_in_unavailable", 60), OkHttpPairedSessionTrader.resultOf(503, "sign_in_unavailable", 60))
         assertEquals(PairedSessionResult.Failed("http_429_too_many_attempts", 60), OkHttpPairedSessionTrader.resultOf(429, "too_many_attempts", 60))
-        assertEquals(PairedSessionResult.Failed("http_400_device_key_required"), OkHttpPairedSessionTrader.resultOf(400, ApiErrorCodes.DEVICE_KEY_REQUIRED, null))
+        assertEquals(PairedSessionResult.SessionRefused(ApiErrorCodes.DEVICE_KEY_REQUIRED), OkHttpPairedSessionTrader.resultOf(400, ApiErrorCodes.DEVICE_KEY_REQUIRED, null))
 
         val givenUp = "bwt1.given-up"
         account.token = givenUp
@@ -226,6 +226,41 @@ class PairedSessionTest {
         assertEquals(listOf("stale", "limited-1"), trades.map { ApiSessionToken.parse(it.session())?.sid })
         assertEquals(1, exchanger.calls)
         assertTrue(account.refused.isEmpty())
+    }
+
+    // Regression: a held session without the device key backed every trade off unsent, for up to a day.
+    @Test
+    fun `a held session without the device key is dropped, and a fresh one carries the trade`() {
+        account.token = "bwt1.account"
+        store.state = StoredApiSession(token = sessionToken(sid = "keyless", att = "none", deviceKey = false, tag = "keyless"), installId = "install-123")
+        val client = client(manager())
+
+        get(client).use { assertEquals(200, it.code) }
+
+        assertEquals(listOf("limited-1"), trades.map { ApiSessionToken.parse(it.session())?.sid })
+        assertEquals(1, exchanger.calls)
+    }
+
+    // Regression: each trade's fresh limited sign-in cleared the backoff, so it never grew past 2 seconds.
+    @Test
+    fun `the trade backoff keeps growing when every trade needs a fresh limited session`() {
+        account.token = "bwt1.account"
+        repeat(8) { tradeAnswers += error(401, ApiErrorCodes.SESSION_INVALID) }
+        val client = client(manager())
+
+        get(client).use { assertEquals(401, it.code) }
+        eventually { trades.size == 2 }
+        clock.advanceSeconds(3) // past the first wait (2 s)
+        get(client).use { assertEquals(401, it.code) }
+        assertEquals(4, trades.size)
+
+        clock.advanceSeconds(3) // inside the second wait (5 s)
+        get(client).use { assertEquals(401, it.code) }
+        assertEquals(4, trades.size, "the second failure waits longer than the first")
+
+        clock.advanceSeconds(3)
+        get(client).use { assertEquals(401, it.code) }
+        assertEquals(6, trades.size)
     }
 
     @Test

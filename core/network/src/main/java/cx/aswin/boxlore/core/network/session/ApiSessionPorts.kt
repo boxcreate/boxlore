@@ -182,7 +182,10 @@ sealed interface PairedSessionResult {
     /** 401 `watch_token_invalid` or 403 `attested_session_required`: the device is signed out. */
     data object TokenRefused : PairedSessionResult
 
-    /** The session the request carried was refused ([code], one of [ApiErrorCodes.SESSION_REJECTIONS]): try once more with another. */
+    /**
+     * The session the request carried was refused ([code], one of [ApiErrorCodes.SESSION_REJECTIONS],
+     * or a 400 [ApiErrorCodes.DEVICE_KEY_REQUIRED]): try once more with another.
+     */
     data class SessionRefused(val code: String) : PairedSessionResult
 
     /** 429, 503, no network or anything else: back off ([retryAfterSeconds] when the API said) and stay signed in. */

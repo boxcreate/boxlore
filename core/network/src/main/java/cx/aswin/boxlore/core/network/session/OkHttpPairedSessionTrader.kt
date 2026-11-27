@@ -62,11 +62,14 @@ class OkHttpPairedSessionTrader(
             status == UNAUTHORIZED && code == ApiErrorCodes.WATCH_TOKEN_INVALID -> PairedSessionResult.TokenRefused
             status == FORBIDDEN && code == ApiErrorCodes.ATTESTED_SESSION_REQUIRED -> PairedSessionResult.TokenRefused
             status == UNAUTHORIZED && code != null && code in CARRIER_REFUSALS -> PairedSessionResult.SessionRefused(code)
+            // The carrier has no device key the API knows: a fresh limited session brings this one's.
+            status == BAD_REQUEST && code == ApiErrorCodes.DEVICE_KEY_REQUIRED -> PairedSessionResult.SessionRefused(code)
             else -> PairedSessionResult.Failed(listOfNotNull("http_$status", code).joinToString("_"), retryAfterSeconds)
         }
 
         /** Refusals of the session the trade carried, not of the account token. */
         private val CARRIER_REFUSALS = ApiErrorCodes.SESSION_REJECTIONS + ApiErrorCodes.SESSION_REQUIRED
+        private const val BAD_REQUEST = 400
         private const val UNAUTHORIZED = 401
         private const val FORBIDDEN = 403
     }
