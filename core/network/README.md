@@ -80,6 +80,7 @@ src/main/java/cx/aswin/boxlore/core/network/
     ApiSessionScheduler.kt       # background session upkeep
     ApiSessionSignIn.kt          # one sign-in: App Check, then Turnstile
     ApiSessionStepUp.kt          # Turnstile when a route asks for it
+    ApiSessionCheckGate.kt       # one Turnstile check at a time, and the listener's Skip
     ApiSessionPairing.kt         # a watch's or TV's paired session
     ApiSessionPolicy.kt          # pure session rules
     ApiSessionInterceptor.kt
@@ -104,7 +105,7 @@ src/main/java/cx/aswin/boxlore/core/network/
 
 - Retrofit services are `suspend` and called from repository IO paths; OkHttp runs on its own dispatcher threads.
 - Clients are process-scoped. `PodcastRepository` builds both API versions and the support service on the one cached client.
-- `ApiSessionManager` runs on the application scope it is given. The interceptor calls it on OkHttp threads and may block a request briefly while a session is obtained.
+- `ApiSessionManager` runs on the application scope it is given. The interceptor calls it on OkHttp threads and may block a request while a session is obtained: briefly, or until a Turnstile check on screen ends (bounded by `ApiSessionTiming.stepUpTimeoutMs`).
 - Session persistence is asynchronous and serialized; `ApiSessionListener` callbacks arrive off the main thread.
 
 ## Persistence & identity

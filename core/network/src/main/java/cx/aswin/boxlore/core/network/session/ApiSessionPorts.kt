@@ -17,6 +17,11 @@ sealed interface TurnstileResult {
     data class Token(val value: String) : TurnstileResult
 
     data class Failed(val reason: String) : TurnstileResult
+
+    companion object {
+        /** [Failed.reason] when the listener skipped the check (Skip, Back, a swipe or a tap outside). */
+        const val SKIPPED = "cancelled"
+    }
 }
 
 /**

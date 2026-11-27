@@ -41,6 +41,13 @@ data class ApiSessionTiming(
      * until the app next comes to the foreground. Route step-ups keep their own cooldown.
      */
     val signInCheckCooldownMs: Long = 10 * 60_000L,
+    /** A check that passed but whose exchange didn't get through (no network, 429) holds sign-in checks back this long. */
+    val signInCheckRetryMs: Long = 2 * 60_000L,
+    /**
+     * After the listener skips a check, sign-in checks wait this long, across foregrounds; a refused
+     * session (nothing works without the check) and route step-ups the listener's own action needs still ask.
+     */
+    val checkSkipHoldMs: Long = 30 * 60_000L,
 )
 
 /** Headers one request carries: the session and, when renewing, its `X-Session-Proof`. */
@@ -95,8 +102,11 @@ class ApiSessionManager(
     private val saveMutex = Mutex()
     private var exchangeJob: Deferred<ApiSessionToken?>? = null
     private val scheduler = ApiSessionScheduler(scope, clock, lock, book, ::exchangeNow) { pairing?.let { it.accountToken() != null } }
-    private val stepUp = ApiSessionStepUp(scope, clock, timing, listener, ::exchangeNow) { synchronized(lock) { book.usableToken } }
-    private val signIn = ApiSessionSignIn(exchanger, appCheck, lock, book, clock, timing, listener) { stepUp.source }
+
+    /** The sign-in check's and the step-up's turns; internal for tests. */
+    internal val checks = ApiSessionCheckGate(clock, timing) { synchronized(lock) { book.usableToken } }
+    private val stepUp = ApiSessionStepUp(scope, clock, timing, listener, ::exchangeNow, { synchronized(lock) { book.usableToken } }, checks)
+    private val signIn = ApiSessionSignIn(exchanger, appCheck, lock, book, clock, timing, listener, { stepUp.source }, checks)
 
     /** Supplies Turnstile tokens for sign-ins and step-ups; null means sessions never use Turnstile. */
     var turnstile: TurnstileTokenSource? by stepUp::source
@@ -150,7 +160,8 @@ class ApiSessionManager(
     /**
      * Headers for one request, without waiting whenever a usable session is stored. Only a missing
      * (or long-expired) session waits, at most [ApiSessionTiming.requestWaitMs], for the shared
-     * exchange; inside an exchange backoff the request goes out without a session at once.
+     * exchange (longer while that exchange runs a Turnstile check on screen, up to the check's own
+     * limit); inside an exchange backoff the request goes out without a session at once.
      * With [pairedOnly] ([needsPairedSession]) only a paired session will do: a signed-in watch or
      * TV waits for its trade, a signed-out one gets null at once.
      */
@@ -164,7 +175,7 @@ class ApiSessionManager(
                 val trigger = if (book.token == null) ApiSessionTrigger.Launch else ApiSessionTrigger.Expired
                 if (exchangeJob?.isActive == true || book.mayExchange) joinOrStartExchangeLocked(trigger) else null
             } ?: return current(pairedOnly)
-            runBlocking { withTimeoutOrNull(timing.requestWaitMs) { job.await() } }
+            awaitExchange(job)
             current(pairedOnly)?.let { return it }
         }
         return null
@@ -200,19 +211,26 @@ class ApiSessionManager(
         if (plan.step == RejectionStep.UseCurrent) return current(pairedOnly)
         persist()
         if (job == null) return null
-        runBlocking { withTimeoutOrNull(timing.requestWaitMs) { job.await() } }
+        awaitExchange(job)
         return current(pairedOnly)
     }
 
     /**
-     * A limited session reached a route that needs more (`verification_required`). Starts the
-     * Turnstile step-up and returns headers for one retry, or null so the caller uses its fallback
-     * (always null in the background, where no host can run the check).
-     * This runs on an OkHttp thread, so the wait is capped at [ApiSessionTiming.stepUpRequestWaitMs],
-     * and a request that finds a step-up already running doesn't join it: it takes its fallback.
+     * A limited session reached [url], a route that needs more (`verification_required`). Starts
+     * the Turnstile step-up, or joins the one running, and returns headers for one retry, or null so
+     * the caller uses its fallback (always null in the background, where no host can run the check).
+     * This runs on an OkHttp thread, so the wait is capped at [ApiSessionTiming.stepUpRequestWaitMs].
+     * An AI route ([AI_ROUTES]) that finds a step-up already running doesn't join it: it takes its
+     * fallback. Lending the account ([LENDING_ROUTES]) is the listener's own ask, so a recent failed
+     * step-up doesn't hold it back.
      */
-    fun stepUpForRoute(): SessionHeaders? =
-        runBlocking { withTimeoutOrNull(timing.stepUpRequestWaitMs) { stepUp.run(joinRunning = false) } }?.let { current() }
+    fun stepUpForRoute(url: HttpUrl): SessionHeaders? {
+        val route = routeOf(url)
+        val token = runBlocking {
+            withTimeoutOrNull(timing.stepUpRequestWaitMs) { stepUp.run(joinRunning = route !in AI_ROUTES, pastCooldown = route in LENDING_ROUTES) }
+        }
+        return token?.let { current() }
+    }
 
     /** Coming to the foreground lifts a wait for it and lets a sign-in ask for the check again. */
     fun onForegroundChanged(foreground: Boolean) {
@@ -248,6 +266,21 @@ class ApiSessionManager(
     }
 
     private fun routeOf(url: HttpUrl): String = "/" + url.encodedPath.removePrefix(base.encodedPath)
+
+    /**
+     * Waits for [job] up to [ApiSessionTiming.requestWaitMs], and while a sign-in is running a
+     * Turnstile check on screen (or waiting its turn behind a step-up's), until that check's own limit.
+     */
+    private fun awaitExchange(job: Deferred<ApiSessionToken?>) {
+        runBlocking {
+            withTimeoutOrNull(timing.requestWaitMs) { job.await() }
+            val checking = signIn.checkingSinceMs ?: return@runBlocking
+            if (!job.isActive) return@runBlocking
+            val since = maxOf(checking, checks.busySinceMs ?: checking)
+            val left = since + timing.stepUpTimeoutMs + timing.requestWaitMs - clock()
+            if (left > 0) withTimeoutOrNull(left) { job.await() }
+        }
+    }
 
     private fun current(pairedOnly: Boolean = false): SessionHeaders? {
         val (token, now) = synchronized(lock) { book.usableToken to book.serverNow }
@@ -324,6 +357,12 @@ class ApiSessionManager(
 
         /** Where a signed-in watch or TV trades its account token for a paired session. */
         const val PAIRED_SESSION_PATH = "/auth/watch/session"
+
+        /** Routes that spend AI and have a fallback of their own (onboarding): they never wait on a step-up another request started. */
+        val AI_ROUTES = setOf("/onboarding/next-turn", "/onboarding/probe-deck", "/onboarding/synthesize", "/onboarding/genre-synth", "/onboarding/similar-shows")
+
+        /** Where this phone lends its sign-in to a watch or a TV: only ever because the listener asked. */
+        val LENDING_ROUTES = setOf("/auth/watch/code", "/auth/tv/approve")
 
         /**
          * What a watch or TV may call without a paired session (the API's own list for limited

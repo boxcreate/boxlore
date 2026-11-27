@@ -42,7 +42,7 @@ class ApiSessionInterceptor(private val manager: () -> ApiSessionManager?) : Int
             if (!recoveries.add(kind)) return response
             val retry = when (kind) {
                 REJECTED -> sessions.recoverFromRejection(attached?.token, code, pairedOnly)
-                ApiErrorCodes.VERIFICATION_REQUIRED -> sessions.stepUpForRoute()
+                ApiErrorCodes.VERIFICATION_REQUIRED -> sessions.stepUpForRoute(original.url)
                 else -> null
             } ?: return response
             response.close()

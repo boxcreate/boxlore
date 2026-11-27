@@ -106,7 +106,7 @@ internal class TurnstileStepUpController(
     fun onPageFailed(attempt: Int, reason: String) = finish(attempt, TurnstileResult.Failed(reason))
 
     /** The listener skipped the check (Skip, Back, swipe or a tap outside). */
-    fun cancel(attempt: Int) = finish(attempt, TurnstileResult.Failed("cancelled"))
+    fun cancel(attempt: Int) = finish(attempt, TurnstileResult.Failed(TurnstileResult.SKIPPED))
 
     private fun finish(run: Int, value: TurnstileResult) {
         synchronized(lock) { if (run == attempt) result?.complete(value) }
