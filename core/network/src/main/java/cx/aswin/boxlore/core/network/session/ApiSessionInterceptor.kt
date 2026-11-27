@@ -1,8 +1,11 @@
 package cx.aswin.boxlore.core.network.session
 
 import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 
 /**
  * Sessions-only credentials for the boxlore API:
@@ -13,7 +16,10 @@ import okhttp3.Response
  * - on `session_expired` / `session_invalid` / `session_revoked` / `attestation_required`, gets one
  *   new session (which may run the Turnstile check) and retries once;
  * - on `verification_required`, runs the step-up and retries once, or returns the 401 so the caller
- *   falls back (always, in the background, where no check can run).
+ *   falls back (always, in the background, where no check can run);
+ * - on a watch or TV, sends nothing but the pairing routes until it holds a paired session
+ *   ([ApiSessionManager.needsPairedSession]): it answers anything else itself with 401
+ *   `attestation_required`, as the API would a limited session, and never sends it.
  */
 class ApiSessionInterceptor(private val manager: () -> ApiSessionManager?) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -21,7 +27,9 @@ class ApiSessionInterceptor(private val manager: () -> ApiSessionManager?) : Int
         val sessions = manager()
         if (sessions == null || !sessions.covers(original.url)) return chain.proceed(original)
 
-        var attached = sessions.headersForRequest()
+        val pairedOnly = sessions.needsPairedSession(original.url)
+        var attached = sessions.headersForRequest(pairedOnly)
+        if (pairedOnly && attached == null) return signInFirst(original)
         var response = chain.proceed(original.withSession(attached))
         captureRenewal(sessions, response)
         // Each recovery runs at most once: a refused session first, then a step-up for its replacement.
@@ -31,7 +39,7 @@ class ApiSessionInterceptor(private val manager: () -> ApiSessionManager?) : Int
             val kind = if (code in ApiErrorCodes.SESSION_REJECTIONS) REJECTED else code
             if (!recoveries.add(kind)) return response
             val retry = when (kind) {
-                REJECTED -> sessions.recoverFromRejection(attached?.token, code)
+                REJECTED -> sessions.recoverFromRejection(attached?.token, code, pairedOnly)
                 ApiErrorCodes.VERIFICATION_REQUIRED -> sessions.stepUpForRoute()
                 else -> null
             } ?: return response
@@ -41,6 +49,16 @@ class ApiSessionInterceptor(private val manager: () -> ApiSessionManager?) : Int
             captureRenewal(sessions, response)
         }
     }
+
+    /** The answer a watch or TV gives itself for a route it may not call before it holds a paired session. */
+    private fun signInFirst(request: Request): Response =
+        Response.Builder()
+            .request(request)
+            .protocol(Protocol.HTTP_1_1)
+            .code(UNAUTHORIZED)
+            .message("Sign in first")
+            .body(SIGN_IN_FIRST_BODY.toResponseBody(JSON))
+            .build()
 
     private fun captureRenewal(sessions: ApiSessionManager, response: Response) {
         // A cached response replays an old header; only the network's answer can renew.
@@ -62,5 +80,8 @@ class ApiSessionInterceptor(private val manager: () -> ApiSessionManager?) : Int
         const val RENEW_HEADER = "X-Session-Renew"
         const val PROOF_HEADER = "X-Session-Proof"
         private const val REJECTED = "rejected"
+        private const val UNAUTHORIZED = 401
+        private val JSON = "application/json".toMediaType()
+        private val SIGN_IN_FIRST_BODY = "{\"error\":\"${ApiErrorCodes.ATTESTATION_REQUIRED}\"}"
     }
 }

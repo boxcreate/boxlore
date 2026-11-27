@@ -17,6 +17,8 @@ internal data class ApiSessionStep(val atMs: Long, val trigger: ApiSessionTrigge
  * - a missing session is fetched again with the exchange backoff.
  * Every exchange App Check can't vouch for also runs the Turnstile check, which this foreground
  * work can show ([ApiSessionManager]), so a limited session moves up to a challenge one.
+ * A watch or TV ([pairedSignedIn] not null) never asks App Check: signed in, it trades for a paired
+ * session as soon as it holds none and again an hour before that one runs out ([ApiSessionPairing]).
  * Consecutive background exchanges are at least [MIN_SPACING_MS] apart.
  */
 internal class ApiSessionScheduler(
@@ -25,6 +27,8 @@ internal class ApiSessionScheduler(
     private val lock: Any,
     private val book: ApiSessionBook,
     private val exchange: suspend (ApiSessionTrigger, Boolean?, String?) -> ApiSessionToken?,
+    /** Null on a phone; on a watch or TV, whether it is signed in. Not called under [lock]. */
+    private val pairedSignedIn: () -> Boolean? = { null },
 ) {
     private var foreground = false
     private var online = true
@@ -59,7 +63,8 @@ internal class ApiSessionScheduler(
 
     private suspend fun run() {
         while (true) {
-            val step = synchronized(lock) { nextStep(book, clock()) }
+            val paired = pairedSignedIn()
+            val step = synchronized(lock) { nextStep(book, clock(), paired) }
             val wait = step.atMs - clock()
             if (wait > 0) delay(wait)
             synchronized(lock) { book.lastMaintenanceAtMs = clock() }
@@ -71,9 +76,13 @@ internal class ApiSessionScheduler(
     companion object {
         const val MIN_SPACING_MS = 60_000L
 
-        /** Pure plan for the next background exchange from [book] at local time [nowMs]. */
-        fun nextStep(book: ApiSessionBook, nowMs: Long): ApiSessionStep {
+        /**
+         * Pure plan for the next background exchange from [book] at local time [nowMs]. [pairedSignedIn]
+         * is null on a phone; on a watch or TV it says whether the device is signed in.
+         */
+        fun nextStep(book: ApiSessionBook, nowMs: Long, pairedSignedIn: Boolean? = null): ApiSessionStep {
             val floor = maxOf(nowMs, book.nextExchangeAtMs, book.lastMaintenanceAtMs + MIN_SPACING_MS)
+            if (pairedSignedIn != null) return pairedStep(book, floor, pairedSignedIn)
             val token = book.usableToken
                 ?: return ApiSessionStep(floor, ApiSessionTrigger.Retry, useAppCheck = book.appCheckFailures == 0 || nowMs >= book.nextUpgradeAtMs)
             val refreshMs = book.toLocalMs(ApiSessionPolicy.refreshAt(token))
@@ -86,6 +95,18 @@ internal class ApiSessionScheduler(
             } else {
                 ApiSessionStep(maxOf(floor, refreshMs), ApiSessionTrigger.Refresh, useAppCheck = false)
             }
+        }
+
+        /**
+         * A watch or TV: signed in without a paired session, trade (with the backoff); otherwise
+         * replace the held session an hour before it runs out. No App Check upgrades.
+         */
+        private fun pairedStep(book: ApiSessionBook, floor: Long, signedIn: Boolean): ApiSessionStep {
+            val token = book.usableToken
+            if (token == null || (signedIn && token.attestation != ApiAttestation.Paired)) {
+                return ApiSessionStep(floor, ApiSessionTrigger.Retry, useAppCheck = false)
+            }
+            return ApiSessionStep(maxOf(floor, book.toLocalMs(ApiSessionPolicy.refreshAt(token))), ApiSessionTrigger.Refresh, useAppCheck = false)
         }
     }
 }

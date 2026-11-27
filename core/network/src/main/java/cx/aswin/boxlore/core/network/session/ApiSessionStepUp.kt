@@ -37,7 +37,10 @@ internal class ApiSessionStepUp(
      * instead of waiting on it; the step-up still completes for later requests.
      */
     suspend fun run(joinRunning: Boolean = true): ApiSessionToken? {
-        usableToken()?.takeIf { !it.limited }?.let { return it }
+        val held = usableToken()
+        // A paired watch or TV never reaches AI routes, and has nothing to step up with.
+        if (held?.attestation == ApiAttestation.Paired) return null
+        held?.takeIf { !it.limited }?.let { return it }
         val turnstile = source ?: return null
         if (!runCatching { enabled() }.getOrDefault(false)) return null
         if (!nonCancellationFailure({ false }) { turnstile.ready(0L) }) return null

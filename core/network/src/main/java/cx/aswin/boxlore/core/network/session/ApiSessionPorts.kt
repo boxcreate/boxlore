@@ -155,3 +155,40 @@ sealed interface SessionExchangeResult {
 fun interface SessionExchanger {
     suspend fun exchange(request: SessionExchangeRequest): SessionExchangeResult
 }
+
+/**
+ * A watch or TV, which uses the API only once signed in: the account token a signed-in phone lent
+ * it (`bwt1…`), traded for a paired session at `POST /auth/watch/session` ([PairedSessionTrader]).
+ */
+interface PairedSessionAccount {
+    /** The account token the device holds, or null while it is signed out. */
+    fun accountToken(): String?
+
+    /**
+     * The API no longer takes [token] (given up, reset, another device's, or lent by a phone that
+     * didn't attest): sign the device out. Called off the main thread.
+     */
+    fun onTokenRefused(token: String)
+}
+
+/** One `POST /auth/watch/session`: the [session] the request carries and its `X-Request-Proof` ([proof]). */
+data class PairedSessionRequest(val accountToken: String, val session: String, val proof: String) {
+    override fun toString(): String = "PairedSessionRequest(…)"
+}
+
+sealed interface PairedSessionResult {
+    data class Issued(val session: String) : PairedSessionResult
+
+    /** 401 `watch_token_invalid` or 403 `attested_session_required`: the device is signed out. */
+    data object TokenRefused : PairedSessionResult
+
+    /** The session the request carried was refused ([code], one of [ApiErrorCodes.SESSION_REJECTIONS]): try once more with another. */
+    data class SessionRefused(val code: String) : PairedSessionResult
+
+    /** 429, 503, no network or anything else: back off ([retryAfterSeconds] when the API said) and stay signed in. */
+    data class Failed(val reason: String, val retryAfterSeconds: Long? = null) : PairedSessionResult
+}
+
+fun interface PairedSessionTrader {
+    suspend fun trade(request: PairedSessionRequest): PairedSessionResult
+}

@@ -65,8 +65,16 @@ data class SessionHeaders(val token: String, val proof: String?)
  *   session on a route that answers `verification_required` can step up with Turnstile
  *   ([stepUpForRoute]) while the app is on screen.
  * - Failed exchanges back off; there is no fallback to the app key.
+ * - A watch or TV (built with a [PairedSessionTrader]) uses the API only once signed in: its
+ *   requests go out with a paired session it trades its account token for ([ApiSessionPairing]),
+ *   kept for a day and traded again an hour before it runs out or when the API refuses it. Until
+ *   then only its pairing routes ([PAIRING_ROUTES]) go out, with a limited session; anything else
+ *   is answered on the device ([ApiSessionInterceptor]). The device says when it signs in or out
+ *   ([onPairedAccountChanged]).
  */
-@Suppress("LongParameterList") // Ports for App Check, storage, device key, HTTP and analytics stay injectable for JVM tests.
+// Ports for App Check, storage, device key, HTTP and analytics stay injectable for JVM tests; one
+// owner keeps the phone's sign-ins and a watch's or TV's paired sessions on the same lock and exchange.
+@Suppress("LongParameterList", "TooManyFunctions")
 class ApiSessionManager(
     apiBaseUrl: String,
     exchanger: SessionExchanger,
@@ -77,6 +85,8 @@ class ApiSessionManager(
     private val listener: ApiSessionListener = ApiSessionListener.None,
     private val clock: () -> Long = System::currentTimeMillis,
     private val timing: ApiSessionTiming = ApiSessionTiming(),
+    /** A watch's or TV's trade for paired sessions; null on a phone. */
+    pairedTrader: PairedSessionTrader? = null,
 ) {
     private val base: HttpUrl = (apiBaseUrl.trimEnd('/') + "/").toHttpUrl()
     private val lock = Any()
@@ -84,7 +94,7 @@ class ApiSessionManager(
     private val loaded = CompletableDeferred<Unit>()
     private val saveMutex = Mutex()
     private var exchangeJob: Deferred<ApiSessionToken?>? = null
-    private val scheduler = ApiSessionScheduler(scope, clock, lock, book, ::exchangeNow)
+    private val scheduler = ApiSessionScheduler(scope, clock, lock, book, ::exchangeNow) { pairing?.let { it.accountToken() != null } }
     private val stepUp = ApiSessionStepUp(scope, clock, timing, listener, ::exchangeNow) { synchronized(lock) { book.usableToken } }
     private val signIn = ApiSessionSignIn(exchanger, appCheck, lock, book, clock, timing, listener) { stepUp.source }
 
@@ -94,13 +104,28 @@ class ApiSessionManager(
     /** The remote switch for route step-ups (on unless the app turns it off); sign-in checks ignore it. */
     var stepUpEnabled: () -> Boolean by stepUp::enabled
 
+    /** Signs requests to routes that hold this install's private data (see [RequestProofSigner]). */
+    val requestProofs = RequestProofSigner(deviceKey) { synchronized(lock) { book.serverNow } }
+
+    private val pairing = pairedTrader?.let { ApiSessionPairing(it, lock, book, requestProofs, base.encodedPath.trimEnd('/') + PAIRED_SESSION_PATH) }
+
+    /** A watch's or TV's account, read for its token before every trade; set it before [start]. Ignored on a phone. */
+    var pairedAccount: PairedSessionAccount?
+        get() = pairing?.account
+        set(value) {
+            pairing?.account = value
+        }
+
     fun start() {
         scope.launch {
             val stored = runCatching { store.load() }.getOrElse { StoredApiSession() }
+            val pairedSignedIn = pairing?.accountToken() != null
             synchronized(lock) {
                 book.restore(stored)
+                // A watch or TV that signed out keeps no paired session.
+                if (pairing != null && !pairedSignedIn) book.dropPaired()
                 // Started before requests are released, so they all join this one exchange.
-                if (book.usableToken == null) {
+                if (book.usableToken == null || (pairedSignedIn && book.usableToken?.attestation != ApiAttestation.Paired)) {
                     joinOrStartExchangeLocked(if (stored.token == null) ApiSessionTrigger.Launch else ApiSessionTrigger.Expired)
                 }
             }
@@ -117,19 +142,32 @@ class ApiSessionManager(
             !url.encodedPath.endsWith(AUTH_SESSION_PATH)
 
     /**
+     * Whether a request to [url] goes out only with a paired session: on a watch or TV, every route
+     * but its pairing routes ([PAIRING_ROUTES]). Without one, [ApiSessionInterceptor] answers it on the device.
+     */
+    fun needsPairedSession(url: HttpUrl): Boolean = pairing != null && covers(url) && routeOf(url) !in PAIRING_ROUTES
+
+    /**
      * Headers for one request, without waiting whenever a usable session is stored. Only a missing
      * (or long-expired) session waits, at most [ApiSessionTiming.requestWaitMs], for the shared
      * exchange; inside an exchange backoff the request goes out without a session at once.
+     * With [pairedOnly] ([needsPairedSession]) only a paired session will do: a signed-in watch or
+     * TV waits for its trade, a signed-out one gets null at once.
      */
-    fun headersForRequest(): SessionHeaders? {
+    fun headersForRequest(pairedOnly: Boolean = false): SessionHeaders? {
         if (!loaded.isCompleted) runBlocking { withTimeoutOrNull(timing.loadWaitMs) { loaded.await() } }
-        current()?.let { return it }
-        val job = synchronized(lock) {
-            val trigger = if (book.token == null) ApiSessionTrigger.Launch else ApiSessionTrigger.Expired
-            if (exchangeJob?.isActive == true || book.mayExchange) joinOrStartExchangeLocked(trigger) else null
-        } ?: return null
-        runBlocking { withTimeoutOrNull(timing.requestWaitMs) { job.await() } }
-        return current()
+        current(pairedOnly)?.let { return it }
+        if (pairedOnly && pairing?.accountToken() == null) return null
+        // A paired-only request that joined a limited sign-in (one already running) asks once more, for the trade.
+        repeat(if (pairedOnly) 2 else 1) {
+            val job = synchronized(lock) {
+                val trigger = if (book.token == null) ApiSessionTrigger.Launch else ApiSessionTrigger.Expired
+                if (exchangeJob?.isActive == true || book.mayExchange) joinOrStartExchangeLocked(trigger) else null
+            } ?: return current(pairedOnly)
+            runBlocking { withTimeoutOrNull(timing.requestWaitMs) { job.await() } }
+            current(pairedOnly)?.let { return it }
+        }
+        return null
     }
 
     /** Stores an `X-Session-Renew` token from a network response. */
@@ -151,7 +189,7 @@ class ApiSessionManager(
      * The API refused [sentToken] with [code] (see [ApiErrorCodes.SESSION_REJECTIONS]). Returns
      * headers for one retry, or null when no better session can be had right now.
      */
-    fun recoverFromRejection(sentToken: String?, code: String): SessionHeaders? {
+    fun recoverFromRejection(sentToken: String?, code: String, pairedOnly: Boolean = false): SessionHeaders? {
         val (plan, job) = synchronized(lock) {
             val plan = book.planRejection(sentToken, code, clock())
             val canExchange = exchangeJob?.isActive == true || book.mayExchange
@@ -159,11 +197,11 @@ class ApiSessionManager(
         }
         plan.refusedRenewal?.let { refused -> scope.launch { listener.safely { onRenewal(ApiSessionRenewOutcome.Rejected, refused.attestation) } } }
         // Another request already replaced the refused session; retry with that one.
-        if (plan.step == RejectionStep.UseCurrent) return current()
+        if (plan.step == RejectionStep.UseCurrent) return current(pairedOnly)
         persist()
         if (job == null) return null
         runBlocking { withTimeoutOrNull(timing.requestWaitMs) { job.await() } }
-        return current()
+        return current(pairedOnly)
     }
 
     /**
@@ -175,9 +213,6 @@ class ApiSessionManager(
      */
     fun stepUpForRoute(): SessionHeaders? =
         runBlocking { withTimeoutOrNull(timing.stepUpRequestWaitMs) { stepUp.run(joinRunning = false) } }?.let { current() }
-
-    /** Signs requests to routes that hold this install's private data (see [RequestProofSigner]). */
-    val requestProofs = RequestProofSigner(deviceKey) { synchronized(lock) { book.serverNow } }
 
     /** Coming to the foreground lifts a wait for it and lets a sign-in ask for the check again. */
     fun onForegroundChanged(foreground: Boolean) {
@@ -192,9 +227,32 @@ class ApiSessionManager(
 
     fun onNetworkChanged(online: Boolean) = scheduler.setOnline(online)
 
-    private fun current(): SessionHeaders? {
+    /**
+     * A watch or TV signed in or out (its [PairedSessionAccount]'s token changed): signed in, it
+     * trades for a paired session now (unless the exchange backoff holds it back); signed out, it
+     * drops the one it holds, so its pairing routes go out with a limited session again. Ignored on
+     * a phone.
+     */
+    fun onPairedAccountChanged() {
+        val pairing = pairing ?: return
+        val signedIn = pairing.accountToken() != null
+        synchronized(lock) {
+            if (!signedIn) {
+                book.dropPaired()
+            } else if (book.usableToken?.attestation != ApiAttestation.Paired && (exchangeJob?.isActive == true || book.mayExchange)) {
+                joinOrStartExchangeLocked(ApiSessionTrigger.Retry)
+            }
+        }
+        persist()
+        scheduler.reschedule()
+    }
+
+    private fun routeOf(url: HttpUrl): String = "/" + url.encodedPath.removePrefix(base.encodedPath)
+
+    private fun current(pairedOnly: Boolean = false): SessionHeaders? {
         val (token, now) = synchronized(lock) { book.usableToken to book.serverNow }
         if (token == null) return null
+        if (pairedOnly && token.attestation != ApiAttestation.Paired) return null
         if (!ApiSessionPolicy.needsProof(token, now)) return SessionHeaders(token.raw, null)
         return SessionHeaders(token.raw, proofFor(token, now))
     }
@@ -227,18 +285,29 @@ class ApiSessionManager(
         return scope.async { mint(trigger, withAppCheck, null) }.also { exchangeJob = it }
     }
 
-    /** One sign-in ([ApiSessionSignIn]); a refusal nothing on screen could answer waits for the foreground. */
+    /**
+     * One sign-in ([ApiSessionSignIn]); a refusal nothing on screen could answer waits for the
+     * foreground. A signed-in watch or TV trades for a paired session instead ([ApiSessionPairing]),
+     * signing in for a limited session first only when it holds none to carry the trade.
+     */
     private suspend fun mint(trigger: ApiSessionTrigger, useAppCheck: Boolean, turnstileToken: String?): ApiSessionToken? {
         loaded.await()
         val installId = synchronized(lock) { book.installIdOrCreate() }
         val publicKey = runCatching { deviceKey.publicKey() }.getOrNull()
-        val outcome = signIn.run(trigger, useAppCheck, turnstileToken, installId, publicKey)
-        if (outcome.refused) {
-            synchronized(lock) { if (book.usableToken == null && !scheduler.isForeground()) book.awaitingForeground = true }
+        // Watches and TVs have no App Check.
+        val withAppCheck = useAppCheck && pairing == null
+        val token = if (pairing != null && turnstileToken == null && pairing.accountToken() != null) {
+            pairing.trade { signIn.run(trigger, useAppCheck = false, turnstileToken = null, installId, publicKey).token }
+        } else {
+            val outcome = signIn.run(trigger, withAppCheck, turnstileToken, installId, publicKey)
+            if (outcome.refused) {
+                synchronized(lock) { if (book.usableToken == null && !scheduler.isForeground()) book.awaitingForeground = true }
+            }
+            outcome.token
         }
         persist()
         scheduler.reschedule()
-        return outcome.token
+        return token
     }
 
     private fun persist() {
@@ -252,6 +321,15 @@ class ApiSessionManager(
 
     companion object {
         const val AUTH_SESSION_PATH = "/auth/session"
+
+        /** Where a signed-in watch or TV trades its account token for a paired session. */
+        const val PAIRED_SESSION_PATH = "/auth/watch/session"
+
+        /**
+         * What a watch or TV may call without a paired session (the API's own list for limited
+         * sessions): show and collect a TV code, redeem a watch code, trade, and give a token up.
+         */
+        val PAIRING_ROUTES = setOf("/auth/tv/start", "/auth/tv/poll", "/auth/watch/token", PAIRED_SESSION_PATH, "/auth/watch/revoke")
 
         /** The string the device key signs to renew: `bls-renew.<sid>.<unix seconds>`. */
         fun renewalProofMessage(sid: String, unixSeconds: Long): String = "bls-renew.$sid.$unixSeconds"

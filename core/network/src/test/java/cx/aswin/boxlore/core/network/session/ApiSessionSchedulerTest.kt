@@ -198,4 +198,28 @@ class ApiSessionSchedulerTest {
         book.lastMaintenanceAtMs = BASE_MS + (DAY_S - 3_600) * 1_000
         assertEquals(book.lastMaintenanceAtMs + ApiSessionScheduler.MIN_SPACING_MS, ApiSessionScheduler.nextStep(book, BASE_MS).atMs, "background exchanges are spaced")
     }
+
+    @Test
+    fun `a watch or TV trades as soon as it is signed in without a paired session, then an hour before that one ends, never asking App Check`() {
+        val book = ApiSessionBook { BASE_MS }
+        book.hold(ApiSessionToken.parse(sessionToken(att = "none", iat = BASE_S, exp = BASE_S + DAY_S))!!)
+        book.recordAppCheck(passed = false)
+        assertEquals(ApiSessionStep(BASE_MS, ApiSessionTrigger.Retry, useAppCheck = false), ApiSessionScheduler.nextStep(book, BASE_MS, pairedSignedIn = true), "signed in with a limited session: trade now")
+        assertEquals(
+            ApiSessionStep(BASE_MS + (DAY_S - 3_600) * 1_000, ApiSessionTrigger.Refresh, useAppCheck = false),
+            ApiSessionScheduler.nextStep(book, BASE_MS, pairedSignedIn = false),
+            "signed out: no App Check upgrade, only a fresh limited session before this one ends",
+        )
+
+        book.recordExchangeFailure(retryAfterSeconds = 60)
+        assertEquals(BASE_MS + 60_000, ApiSessionScheduler.nextStep(book, BASE_MS, pairedSignedIn = true).atMs, "a refused trade (429, 503) waits out the backoff")
+
+        book.recordExchangeSuccess()
+        book.hold(ApiSessionToken.parse(sessionToken(att = "paired", iat = BASE_S, exp = BASE_S + DAY_S))!!)
+        assertEquals(
+            ApiSessionStep(BASE_MS + (DAY_S - 3_600) * 1_000, ApiSessionTrigger.Refresh, useAppCheck = false),
+            ApiSessionScheduler.nextStep(book, BASE_MS, pairedSignedIn = true),
+            "a paired session (a day, no renewal) is traded again an hour before it ends",
+        )
+    }
 }

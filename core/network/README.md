@@ -25,10 +25,10 @@ It does not own repositories ([`:core:catalog`](../catalog/README.md)), RSS pars
 
 ### API sessions and request proofs (`session/`)
 
-- `ApiSessionManager`: owns this install's API session (obtaining it, attaching it to requests and keeping it valid). The bundled app key is never sent.
+- `ApiSessionManager`: owns this install's API session (obtaining it, attaching it to requests and keeping it valid). The bundled app key is never sent. Built with a `PairedSessionTrader` (a watch or TV), it sends only the pairing routes (`PAIRING_ROUTES`) until signed in, then a paired session traded for the device's account token; the device reports sign-in and sign-out with `onPairedAccountChanged`.
 - `ApiSessionInterceptor`: the OkHttp side of the session; it removes the bundled app key from every request.
-- `ApiSessionPorts.kt`: the ports for attestation tokens, the device key (`DeviceKeySigner`), storage (`ApiSessionStore`), the exchange (`SessionExchanger`) and outcomes (`ApiSessionListener`, which the app forwards to [`:core:analytics`](../analytics/README.md)).
-- `OkHttpSessionExchanger`, `AndroidKeystoreDeviceKey` (non-exportable Keystore key) and `DataStoreApiSessionStore`: the production adapters for those ports.
+- `ApiSessionPorts.kt`: the ports for attestation tokens, the device key (`DeviceKeySigner`), storage (`ApiSessionStore`), the exchange (`SessionExchanger`), a watch's or TV's account and trade (`PairedSessionAccount`, `PairedSessionTrader`) and outcomes (`ApiSessionListener`, which the app forwards to [`:core:analytics`](../analytics/README.md)).
+- `OkHttpSessionExchanger`, `OkHttpPairedSessionTrader`, `AndroidKeystoreDeviceKey` (non-exportable Keystore key) and `DataStoreApiSessionStore`: the production adapters for those ports.
 - `ApiErrorCodes`: reads the API's error codes; callers branch on its constants instead of string literals.
 - `RequestProofSigner` and `RequestProofInterceptor`: prove that support requests for an install's private data come from that install.
 
@@ -80,12 +80,14 @@ src/main/java/cx/aswin/boxlore/core/network/
     ApiSessionScheduler.kt       # background session upkeep
     ApiSessionSignIn.kt          # one sign-in: App Check, then Turnstile
     ApiSessionStepUp.kt          # Turnstile when a route asks for it
+    ApiSessionPairing.kt         # a watch's or TV's paired session
     ApiSessionPolicy.kt          # pure session rules
     ApiSessionInterceptor.kt
     ApiSessionToken.kt           # reads session claims
     ApiSessionPorts.kt
     ApiErrorCodes.kt
     OkHttpSessionExchanger.kt
+    OkHttpPairedSessionTrader.kt
     AndroidKeystoreDeviceKey.kt
     DataStoreApiSessionStore.kt
     RequestProofSigner.kt
@@ -127,7 +129,7 @@ Tests live in `core/network/src/test` (JUnit 5, MockWebServer, virtual time); re
 | Onboarding payloads | `OnboardingGuidedContractTest` |
 | Interceptors, converter | `EnglishOffInterceptorTest`, `StreamingJsonConverterFactoryTest` |
 | Token refresh, auth types | `FirebaseAuthAuthenticatorTest`, `AuthExceptionsTest` |
-| Sessions and proofs | `session/ApiSessionInterceptorTest`, `ApiSessionSchedulerTest`, `ApiSessionPolicyTest`, `OkHttpSessionExchangerTest`, `RequestProofTest` |
+| Sessions and proofs | `session/ApiSessionInterceptorTest`, `ApiSessionSchedulerTest`, `ApiSessionPolicyTest`, `OkHttpSessionExchangerTest`, `RequestProofTest`, `PairedSessionTest` |
 
 ```bash
 ./gradlew :core:network:testDebugUnitTest

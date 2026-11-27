@@ -235,6 +235,18 @@ class ApiSessionInterceptorTest {
         assertEquals(1, exchanger.calls)
         assertEquals(ApiSessionTrigger.Rejected, listener.exchanges.single().trigger)
         eventually { store.state.token == fresh }
+
+        // A 403 carries the shield's codes too.
+        val third = sessionToken(sid = "s3", tag = "third")
+        exchanger.handler = { issued(third) }
+        clock.advanceSeconds(ApiSessionPolicy.FRESH_TOKEN_SECONDS + 1)
+        server.enqueue(error(403, ApiErrorCodes.ATTESTATION_REQUIRED))
+        server.enqueue(ok())
+
+        get(client).use { assertEquals(200, it.code) }
+
+        assertEquals(fresh, server.takeRequest().session())
+        assertEquals(third, server.takeRequest().session())
     }
 
     @Test

@@ -23,6 +23,18 @@ object ApiErrorCodes {
     const val DEVICE_KEY_REQUIRED = "device_key_required"
     const val PROOF_REQUIRED = "proof_required"
 
+    /**
+     * A watch's or TV's account token the API no longer takes (given up, reset, another device's,
+     * unsigned): the device is signed out. Sent only for that.
+     */
+    const val WATCH_TOKEN_INVALID = "watch_token_invalid"
+
+    /**
+     * 403: the session (or, at `/auth/watch/session`, the phone that lent the account token) isn't
+     * attested enough for this route. A watch or TV trading its token treats it as [WATCH_TOKEN_INVALID].
+     */
+    const val ATTESTED_SESSION_REQUIRED = "attested_session_required"
+
     /** The session itself was refused: get a new one once, then retry. */
     val SESSION_REJECTIONS = setOf(SESSION_EXPIRED, SESSION_INVALID, SESSION_REVOKED, ATTESTATION_REQUIRED)
 
@@ -48,9 +60,9 @@ object ApiErrorCodes {
         return (element["error"] as? JsonPrimitive)?.takeIf { it.isString }?.content
     }
 
-    /** Reads the code of a 401 or 429 without consuming the body. */
+    /** Reads the code of a 401, 403 or 429 without consuming the body (403s carry shield codes too). */
     fun of(response: okhttp3.Response): String? {
-        if (response.code != 401 && response.code != 429) return null
+        if (response.code != UNAUTHORIZED && response.code != FORBIDDEN && response.code != TOO_MANY) return null
         return parse(runCatching { response.peekBody(MAX_PEEK_BYTES).string() }.getOrNull())
     }
 
@@ -64,4 +76,6 @@ object ApiErrorCodes {
     fun awaitsSession(response: retrofit2.Response<*>): Boolean = response.code() == UNAUTHORIZED && of(response) in AWAITS_SESSION
 
     private const val UNAUTHORIZED = 401
+    private const val FORBIDDEN = 403
+    private const val TOO_MANY = 429
 }
