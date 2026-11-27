@@ -22,6 +22,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
 import cx.aswin.boxlore.core.designsystem.echo.LocalEchoMotion
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
@@ -150,6 +151,20 @@ class TurnstileStepUpHostAdaptiveTest {
     private fun askForInteraction() {
         compose.runOnIdle { controller.onPageMessage(1, """{"type":"interactive"}""") }
         compose.waitForIdle()
+    }
+
+    @Test
+    fun `the host lets a check run only while its screen is started`() {
+        assertFalse("no host yet", runBlocking { controller.ready(0) })
+        render()
+        compose.waitForIdle()
+        assertTrue(runBlocking { controller.ready(0) })
+
+        compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        assertFalse("a stopped screen can't show the check", runBlocking { controller.ready(0) })
+        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        compose.waitForIdle()
+        assertTrue(runBlocking { controller.ready(0) })
     }
 
     @Test

@@ -62,7 +62,7 @@
 ## API sessions
 
 - `ApiSessionSetup.install` starts the `:core:network` session manager behind the splash, sets version and channel headers, supplies App Check (`FirebaseAppCheckTokenSource`) to the session exchange only, and forwards foreground and connectivity. Details: [`core/network/README.md`](../core/network/README.md).
-- `session/turnstile` runs the check the API can request on AI onboarding routes: an invisible, origin-locked WebView page, shown in the shared modal sheet only when it needs interaction. Failure, timeout or Skip continues without AI; a remote switch turns it on.
+- `session/turnstile` runs the check (sign-in without App Check, or a route asking for verification) while on screen: an invisible, origin-locked WebView, in the shared sheet when it needs interaction. Failure, timeout or Skip continues without it; a remote switch stops step-ups.
 
 ## Sync, switches and repair jobs
 

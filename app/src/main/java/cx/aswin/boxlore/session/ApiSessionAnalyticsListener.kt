@@ -32,6 +32,7 @@ internal class ApiSessionAnalyticsListener(private val appCheckProvider: String)
                 appCheckAttempted = event.appCheckAttempted,
                 failureReason = event.failureReason,
                 serverReason = event.serverReason,
+                turnstile = event.turnstile,
             ),
         )
     }

@@ -565,7 +565,7 @@ fun BoxLoreAppRoot(
         cx.aswin.boxlore.updates.AppUpdatesHost(application.container.appUpdates, activity) {
         val feedbackReplyWaiting by application.container.supportRepository.replyWaiting.collectAsState()
         CompositionLocalProvider(cx.aswin.boxlore.core.designsystem.components.LocalFeedbackReplyWaiting provides feedbackReplyWaiting, LocalBoxloreWindowLayout provides windowLayout, cx.aswin.boxlore.core.designsystem.components.LocalArtworkRecoveryGeneration provides artworkRecoveryGeneration, LocalNavigationStyle provides navigationStyle, cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors provides artworkNavigation) {
-            // Limited API sessions step up here before AI routes; invisible unless Turnstile asks for a tap.
+            // The API session's Turnstile check runs here (sign-in and step-ups), on any screen; invisible unless Turnstile asks for a tap.
             application.apiSessions?.let { sessions ->
                 cx.aswin.boxlore.session.turnstile.TurnstileStepUpHost(sessions.turnstile, sessions.apiBaseUrl)
             }

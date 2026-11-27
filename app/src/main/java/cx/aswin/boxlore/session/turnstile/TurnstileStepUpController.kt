@@ -6,6 +6,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Mutex
@@ -21,11 +22,14 @@ internal sealed interface TurnstileStepUpState {
 }
 
 /**
- * Runs one Turnstile step-up for the session manager. The page runs invisibly; if Turnstile asks
- * for interaction, the host shows it in a small sheet. A run that neither finishes nor asks within
- * [invisibleTimeoutMs] fails (this also covers the app being in the background, where no host is
- * on screen), and an interactive run gets [interactiveTimeoutMs]. Every failure lets onboarding
- * carry on with its non-AI path.
+ * Runs one Turnstile check for the session manager: at sign-in, when App Check can't vouch for the
+ * install, or as a step-up when a route asks for verification. The page runs invisibly; if Turnstile
+ * asks for interaction, the host shows it in a small sheet. A run that neither finishes nor asks
+ * within [invisibleTimeoutMs] fails (this also covers the app leaving the screen mid-run), and an
+ * interactive run gets [interactiveTimeoutMs]. A failure leaves the app on what the API gives
+ * without the check (onboarding carries on with its non-AI path).
+ *
+ * The manager asks [ready] first, so no run starts while no host is on screen ([hostStarted]).
  */
 internal class TurnstileStepUpController(
     private val invisibleTimeoutMs: Long = 20_000L,
@@ -36,9 +40,21 @@ internal class TurnstileStepUpController(
 
     private val runs = Mutex()
     private val lock = Any()
+
+    /** Hosts on screen: composed in a started activity. */
+    private val hosts = MutableStateFlow(0)
     private var attempt = 0
     private var result: CompletableDeferred<TurnstileResult>? = null
     private var asked: CompletableDeferred<Unit>? = null
+
+    /** True while a host is on screen; waits up to [waitMs] for one (a cold start composes it shortly). */
+    override suspend fun ready(waitMs: Long): Boolean = hosts.value > 0 || withTimeoutOrNull(waitMs) { hosts.first { it > 0 } } != null
+
+    /** [TurnstileStepUpHost] is on screen and can run a check. */
+    fun hostStarted() = hosts.update { it + 1 }
+
+    /** A host left the screen (its activity stopped, or it left composition). */
+    fun hostStopped() = hosts.update { (it - 1).coerceAtLeast(0) }
 
     override suspend fun solve(): TurnstileResult = runs.withLock {
         val done = CompletableDeferred<TurnstileResult>()

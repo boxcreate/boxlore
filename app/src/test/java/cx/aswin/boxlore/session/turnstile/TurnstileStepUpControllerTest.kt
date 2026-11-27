@@ -81,6 +81,24 @@ class TurnstileStepUpControllerTest {
     }
 
     @Test
+    fun `a check can run only while a host is on screen, and a cold start waits briefly for one`() = runTest {
+        assertFalse(controller.ready(0), "no host yet")
+        val waiting = async { controller.ready(3_000) }
+        advanceTimeBy(1_000)
+        controller.hostStarted()
+        runCurrent()
+        assertTrue(waiting.await(), "the host came up within the wait")
+
+        controller.hostStopped()
+        val background = async { controller.ready(3_000) }
+        advanceTimeBy(3_001)
+        assertFalse(background.await(), "no host came back")
+        controller.hostStopped()
+        controller.hostStarted()
+        assertTrue(controller.ready(0), "an extra stop never hides a host that is on screen")
+    }
+
+    @Test
     fun `a page from an earlier run cannot answer a later one`() = runTest {
         val first = async { controller.solve() }
         runCurrent()

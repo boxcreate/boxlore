@@ -17,6 +17,8 @@ data class ApiSessionStatus(
     val stepUpOutcome: String? = null,
     val failureReason: String? = null,
     val serverReason: String? = null,
+    /** The exchange's Turnstile check: `token`, or why none was sent. */
+    val turnstile: String? = null,
 )
 
 /** `api_session_status`: how this install gets and keeps its API session. */
@@ -36,6 +38,7 @@ internal object ApiSessionAnalyticsTracks {
             status.stepUpOutcome?.let { put("step_up_outcome", it) }
             status.failureReason?.let { put("failure_reason", it.take(MAX_REASON_LENGTH)) }
             status.serverReason?.let { put("server_reason", it.take(MAX_REASON_LENGTH)) }
+            status.turnstile?.let { put("turnstile", it.take(MAX_REASON_LENGTH)) }
         }
         AnalyticsEmit.event(EVENT, properties)
     }
