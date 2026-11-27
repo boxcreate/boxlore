@@ -44,20 +44,17 @@ internal class ApiSessionSignIn(
     suspend fun run(trigger: ApiSessionTrigger, useAppCheck: Boolean, turnstileToken: String?, installId: String, publicKey: String?): ApiSignInOutcome {
         val started = clock()
         val appCheckResult = if (useAppCheck) fetchAppCheck(trigger) else null
-        appCheckResult?.let { result -> listener.safely { onAppCheck(obtained = result is AppCheckResult.Token, failure = (result as? AppCheckResult.Failed)?.reason) } }
+        reportAppCheck(appCheckResult)
         val appCheckToken = (appCheckResult as? AppCheckResult.Token)?.value
         fun attempt(at: Long, appCheck: String?, check: CheckRun?, result: AppCheckResult?) =
             Attempt(trigger, at, SessionExchangeRequest(installId, publicKey, appCheck, check?.token), result, check, fromSignInCheck = turnstileToken == null)
         // A route step-up brings its own token.
         if (turnstileToken != null) return exchangeOnce(attempt(started, appCheckToken, CheckRun(turnstileToken, CheckRun.SENT), appCheckResult)).outcome
-        val attestedHeld = synchronized(lock) { book.usableToken?.let { !it.limited } ?: false }
+        val attestedHeld = attestedHeld()
         val checkMayHelp = checkHelps(trigger)
         // App Check can't vouch: the check's token goes in the first exchange.
         if (appCheckToken == null && checkMayHelp) {
-            val first = withCheck(trigger, appCheckResult) { check ->
-                if (attestedHeld && check.token == null) keepHeld(appCheckResult) else exchangeOnce(attempt(started, null, check, appCheckResult))
-            }
-            return first?.outcome ?: ApiSignInOutcome(null, refused = false)
+            return firstWithCheck(trigger, appCheckResult, attestedHeld) { check -> exchangeOnce(attempt(started, null, check, appCheckResult)) }
         }
         if (appCheckToken == null && attestedHeld) return keepHeld(appCheckResult).outcome
         val first = exchangeOnce(attempt(started, appCheckToken, null, appCheckResult))
@@ -94,6 +91,28 @@ internal class ApiSessionSignIn(
         } finally {
             checkingSinceMs = null
         }
+    }
+
+    /**
+     * The first exchange, with the sign-in check's token; none at all when the check gave no token
+     * while an attested session is held ([attestedHeld]), since only a limited session could come of it.
+     */
+    private suspend fun firstWithCheck(
+        trigger: ApiSessionTrigger,
+        appCheckResult: AppCheckResult?,
+        attestedHeld: Boolean,
+        exchange: suspend (CheckRun) -> Exchanged,
+    ): ApiSignInOutcome {
+        val first = withCheck(trigger, appCheckResult) { check -> if (attestedHeld && check.token == null) keepHeld(appCheckResult) else exchange(check) }
+        return first?.outcome ?: ApiSignInOutcome(null, refused = false)
+    }
+
+    /** A session better than limited is held: an exchange can bring a limited one only as a fallback, never a replacement. */
+    private fun attestedHeld(): Boolean = synchronized(lock) { book.usableToken?.limited == false }
+
+    private fun reportAppCheck(result: AppCheckResult?) {
+        if (result == null) return
+        listener.safely { onAppCheck(obtained = result is AppCheckResult.Token, failure = (result as? AppCheckResult.Failed)?.reason) }
     }
 
     /** No exchange: the session held stands. A failed App Check attempt still counts, so its retry backs off. */

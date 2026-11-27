@@ -3,6 +3,7 @@ package cx.aswin.boxlore.tv.data
 import cx.aswin.boxlore.core.network.model.V2PodcastResponse
 import cx.aswin.boxlore.tv.model.TvEpisode
 import cx.aswin.boxlore.tv.model.TvShow
+import java.util.Collections
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +23,9 @@ internal class TvShowSource(
     private val described = MutableStateFlow<Map<String, TvShow>>(emptyMap())
     private val unknown = MutableStateFlow<Set<String>>(emptySet())
     private val charted = MutableStateFlow<Map<String, List<TvShow>>>(emptyMap())
+
+    // Charts being loaded, by genre ("" for all genres).
+    private val chartLoads: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
 
     /** Shows the API has described, by ID. */
     val shows: StateFlow<Map<String, TvShow>> = described.asStateFlow()
@@ -47,13 +51,22 @@ internal class TvShowSource(
         return found.map { TvMapping.show(it, state.isSubscribed(it.id.toString())) }.also { shows -> described.update { it + shows.associateBy(TvShow::id) } }
     }
 
-    /** Loads the chart for [genre] (null for all genres); a failed load leaves no chart, so the next ask tries again. */
+    /**
+     * Loads the chart for [genre] (null for all genres) unless it is loaded or already loading, so
+     * two asks for one chart load it once; a failed load leaves no chart, so the next ask tries again.
+     */
     suspend fun loadChart(genre: String?) {
-        val found = catalog.trending(country(), genre) ?: return
-        val state = store.state.value
-        val shows = found.map { TvMapping.show(it, state.isSubscribed(it.id.toString())) }
-        described.update { known -> known + shows.filterNot { it.id in known }.associateBy(TvShow::id) }
-        charted.update { it + (genre.orEmpty() to shows) }
+        val key = genre.orEmpty()
+        if (charted.value[key] != null || !chartLoads.add(key)) return
+        try {
+            val found = catalog.trending(country(), genre) ?: return
+            val state = store.state.value
+            val shows = found.map { TvMapping.show(it, state.isSubscribed(it.id.toString())) }
+            described.update { known -> known + shows.filterNot { it.id in known }.associateBy(TvShow::id) }
+            charted.update { it + (key to shows) }
+        } finally {
+            chartLoads.remove(key)
+        }
     }
 
     /** Up to [limit] of a show's newest episodes: from its feed, else from the API's list, which may name them by other IDs. */

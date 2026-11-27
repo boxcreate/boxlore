@@ -56,17 +56,25 @@ class TvSignInAdapter(
             when {
                 status == OK -> TvApproval.Approved
                 status == NOT_FOUND || status == BAD_REQUEST -> TvApproval.WrongCode
-                LendingRules.cannotLend(status, error, sentAttested) -> TvApproval.CannotLend
-                LendingRules.needsCheck(status, error, sentAttested) -> TvApproval.CheckNeeded
-                status == UNAUTHORIZED && (error == null || error in STALE_SIGN_IN) -> TvApproval.SignInAgain
-                // A sign-in the web showed never lends the account; a fresh one on this phone does.
-                status == FORBIDDEN && error == WEB_SIGN_IN_NOT_ACCEPTED -> TvApproval.SignInAgain
-                LendingRules.tooMany(status) -> TvApproval.TooManyTries
-                status == FORBIDDEN && error == SIGN_IN_CLOSED -> TvApproval.Closed
                 // boxlore answered but couldn't check the sign-in just now (503 sync_unavailable, sign_in_unavailable).
                 status >= SERVER_ERROR -> TvApproval.Unavailable
+                else -> refusal(status, error, sentAttested)
+            }
+
+        /** A 4xx refusal: about this phone (its check, its sign-in, how often it lent), or about boxlore's switch. */
+        private fun refusal(status: Int, error: String?, sentAttested: Boolean): TvApproval =
+            when {
+                LendingRules.cannotLend(status, error, sentAttested) -> TvApproval.CannotLend
+                LendingRules.needsCheck(status, error, sentAttested) -> TvApproval.CheckNeeded
+                staleSignIn(status, error) -> TvApproval.SignInAgain
+                LendingRules.tooMany(status) -> TvApproval.TooManyTries
+                status == FORBIDDEN && error == SIGN_IN_CLOSED -> TvApproval.Closed
                 else -> TvApproval.NoConnection
             }
+
+        /** This phone's sign-in doesn't lend: not a full one, older than the account's reset, or one the web showed (a fresh one does). */
+        private fun staleSignIn(status: Int, error: String?): Boolean =
+            (status == UNAUTHORIZED && (error == null || error in STALE_SIGN_IN)) || (status == FORBIDDEN && error == WEB_SIGN_IN_NOT_ACCEPTED)
 
         /** The phone's sign-in no longer lends the account: not a full sign-in, or older than the account's reset. */
         private val STALE_SIGN_IN = setOf("sign_in_required", "account_deleted")
