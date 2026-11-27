@@ -141,20 +141,29 @@ class TvAccountTest {
         assertEquals(1, api.starts)
     }
 
-    // Regression: the API's 20-second poll interval was cut to 15, and a daily limit's long Retry-After showed "Getting a code…" for five minutes.
+    // Regression: the API's 20-second poll interval was cut to 15, a code without an interval was polled every 3 seconds, and a daily
+    // limit's long Retry-After showed "Getting a code…" for five minutes.
     @Test
-    fun `the TV polls as often as the API says, and a long wait for a code says so at once`(@TempDir folder: File) {
+    fun `the TV polls as often as the API says, every 20 seconds when it doesn't, and a long wait for a code says so at once`(@TempDir folder: File) {
         val scope = TestScope(StandardTestDispatcher())
-        val twenty = CodeStart.Code(TvSignInStartResponse(code = "CODE0020", pair = "pair", expiresInSeconds = 600, intervalSeconds = 20))
-        val api = FakeApi(ArrayDeque(), startAnswers = ArrayDeque(listOf(twenty, CodeStart.Wait(RetrofitTvCloudApi.retryAfterSeconds("3600")))))
+        val thirty = CodeStart.Code(TvSignInStartResponse(code = "CODE0030", pair = "pair", expiresInSeconds = 600, intervalSeconds = 30))
+        val unsaid = CodeStart.Code(TvSignInStartResponse(code = "CODE0000", pair = "pair", expiresInSeconds = 600))
+        val api = FakeApi(ArrayDeque(), startAnswers = ArrayDeque(listOf(thirty, unsaid, CodeStart.Wait(RetrofitTvCloudApi.retryAfterSeconds("3600")))))
         val store = TvLibraryStore(File(folder, "library.json"), scope, StandardTestDispatcher(scope.testScheduler))
         val account = LiveTvAccount(api, Tokens(), store, {}, scope, clock = { scope.testScheduler.currentTime })
 
         account.startSignIn()
-        scope.advanceTimeBy(19_000)
+        scope.advanceTimeBy(29_000)
         assertEquals(0, api.polls)
         scope.advanceTimeBy(1_001)
-        assertEquals(1, api.polls, "every 20 seconds, as the API asks")
+        assertEquals(1, api.polls, "every 30 seconds, as the API asks")
+
+        account.cancelSignIn()
+        account.startSignIn()
+        scope.advanceTimeBy(19_000)
+        assertEquals(1, api.polls, "no interval: not every 3 seconds")
+        scope.advanceTimeBy(1_001)
+        assertEquals(2, api.polls, "but every 20")
 
         account.cancelSignIn()
         account.startSignIn()

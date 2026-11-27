@@ -221,7 +221,7 @@ internal class LiveTvAccount(
     /** Asks about [started] until a phone approves it and the TV is signed in, it runs out, or signing in closes. */
     private suspend fun approval(started: TvSignInStartResponse): Approval {
         val runsOutAt = clock() + started.expiresInSeconds.coerceAtLeast(MIN_LIFE_SECONDS) * MILLIS
-        val everyMs = started.intervalSeconds.coerceIn(MIN_POLL_SECONDS, MAX_POLL_SECONDS) * MILLIS
+        val everyMs = pollSeconds(started.intervalSeconds) * MILLIS
         while (clock() < runsOutAt) {
             delay(everyMs)
             // An older wait collected an approval after being cancelled: nothing left to ask.
@@ -307,7 +307,13 @@ internal class LiveTvAccount(
         // The API asks for 20 s; a longer ask is still taken, up to a minute.
         private const val MAX_POLL_SECONDS = 60L
 
+        /** What the API asks for, used when it doesn't say. */
+        private const val DEFAULT_POLL_SECONDS = 20L
+
         /** The longest `Retry-After` the TV waits out on "Getting a code…" before saying there were too many. */
         private const val MAX_START_WAIT_SECONDS = 60L
+
+        /** How often to poll: as the API asks, within 3 s to a minute, or every 20 s when it doesn't say. */
+        private fun pollSeconds(asked: Long): Long = if (asked > 0L) asked.coerceIn(MIN_POLL_SECONDS, MAX_POLL_SECONDS) else DEFAULT_POLL_SECONDS
     }
 }

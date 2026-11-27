@@ -30,7 +30,7 @@ data class TvSignInStartResponse(
     /** Proves the TV that asked is the one asking again; never shown. */
     @SerialName("pair") val pair: String,
     @SerialName("expiresInSeconds") val expiresInSeconds: Long = 0L,
-    /** How often to ask whether the code was approved. */
+    /** How often to ask whether the code was approved; 0 when the API does not say. */
     @SerialName("intervalSeconds") val intervalSeconds: Long = 0L,
 )
 
