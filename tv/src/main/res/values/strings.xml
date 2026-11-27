@@ -150,9 +150,9 @@
     <!-- TV sign-in, the TV's first screen until it is signed in: the TV shows a code that the listener enters in boxlore on their phone. -->
     <string name="tv_sign_in_title">Sign in with your phone</string>
     <string name="tv_account_body">boxlore on this TV uses your account: your shows, listening progress and likes come from your phone and stay in step.</string>
-    <!-- Three numbered steps beside the code. "Settings", "Account" and "Sign in on a TV" name the phone app's own pages and button (feature/settings: settings_page_account, account_tv_sign_in). -->
+    <!-- Three numbered steps beside the code. "Settings", "Cloud Sync & Backups" and "Sign in on a TV" name the phone app's own pages and button (feature/settings: settings_page_sync, account_tv_sign_in). "Your account" is the account card at the top of Cloud Sync & Backups ("Sync is on"), which opens Account & sync, where the button is. -->
     <string name="tv_sign_in_step_open">On your phone, open boxlore.</string>
-    <string name="tv_sign_in_step_choose">Go to Settings › Account, and choose Sign in on a TV.</string>
+    <string name="tv_sign_in_step_choose">Go to Settings › Cloud Sync &amp; Backups, open your account, and choose Sign in on a TV.</string>
     <string name="tv_sign_in_step_enter">Enter the code shown here.</string>
     <string name="tv_your_code">Your code</string>
     <string name="tv_signed_in">Signed in</string>
