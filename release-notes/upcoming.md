@@ -27,6 +27,7 @@ Announcement title:
 ## Improved
 
 - When Google Play can’t confirm your phone, boxlore now runs Cloudflare’s quick check as it opens, not only during setup, so sync, feedback and recommendations keep working. Most of the time you won’t see it.
+- boxlore on Android TV now starts with signing in: enter the code it shows in boxlore on your phone, under Settings › Cloud Sync & Backups. After about half an hour without a sign-in, choose Show a new code.
 
 ## Fixed
 

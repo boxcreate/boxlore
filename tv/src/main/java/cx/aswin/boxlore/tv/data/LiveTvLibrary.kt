@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -38,6 +40,8 @@ class LiveTvLibrary(
     /** Where long lists are put together, off the main thread. */
     private val compute: CoroutineDispatcher = Dispatchers.Default,
     country: () -> String = { Locale.getDefault().country.lowercase(Locale.ROOT).ifBlank { DEFAULT_COUNTRY } },
+    /** Whether the TV may use boxlore's API now (it is signed in); feeds are read again once it may. */
+    signedIn: Flow<Boolean> = flowOf(true),
 ) : TvLibrary {
     private val source = TvShowSource(store, catalog, feeds, country)
     private val fetchedEpisodes = MutableStateFlow<Map<String, TvEpisode>>(emptyMap())
@@ -67,8 +71,12 @@ class LiveTvLibrary(
     override val trending: StateFlow<List<TvShow>> = chart(ALL_GENRES).stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     init {
-        // At start, and whenever the followed shows change (here or from the account), shows not read lately are read.
-        scope.launch { store.state.map { state -> state.shows.map(TvShow::id) }.distinctUntilChanged().collect { refreshFollowed() } }
+        // At start, whenever the followed shows change (here or from the account), and on signing in, shows not read lately are read.
+        scope.launch {
+            combine(store.state.map { state -> state.shows.map(TvShow::id) }.distinctUntilChanged(), signedIn.distinctUntilChanged()) { _, open -> open }
+                .filter { it }
+                .collect { refreshFollowed() }
+        }
     }
 
     override fun show(showId: String): Flow<TvShow?> =

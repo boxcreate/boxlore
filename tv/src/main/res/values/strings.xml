@@ -115,15 +115,11 @@
     <!-- Settings -->
     <string name="tv_settings">Settings</string>
     <string name="tv_account">Account</string>
-    <string name="tv_not_signed_in">Not signed in</string>
     <string name="tv_playback">Playback</string>
     <!-- Skip lengths, e.g. "Back 10 s · forward 30 s" -->
     <string name="tv_playback_summary">Back %1$d s · forward %2$d s</string>
     <string name="tv_about">About boxlore</string>
     <string name="tv_version">Version %1$s</string>
-    <string name="tv_account_body">Sign in to bring your shows, listening progress and likes from your phone, and keep them in step.</string>
-    <string name="tv_sign_in_with_phone">Sign in with your phone</string>
-    <string name="tv_without_account">You can keep using boxlore on this TV without an account.</string>
     <!-- Player -->
     <string name="tv_now_playing">Now playing</string>
     <!-- Above the Home card while it plays, e.g. "Now playing · 20m left" -->
@@ -151,15 +147,24 @@
     <string name="tv_episodes_failed">Couldn\'t load episodes. Check the TV\'s internet connection.</string>
     <string name="tv_episodes_none">No episodes yet.</string>
     <string name="tv_show_failed">Couldn\'t load this show. Check the TV\'s internet connection.</string>
-    <!-- TV sign-in: the TV shows a code that the listener enters in boxlore on their phone. -->
+    <!-- TV sign-in, the TV's first screen until it is signed in: the TV shows a code that the listener enters in boxlore on their phone. -->
+    <string name="tv_sign_in_title">Sign in with your phone</string>
+    <string name="tv_account_body">boxlore on this TV uses your account: your shows, listening progress and likes come from your phone and stay in step.</string>
+    <!-- Three numbered steps beside the code. "Settings", "Cloud Sync & Backups", "Cloud sync" and "Sign in on a TV" name the phone app's own pages and button. -->
+    <string name="tv_sign_in_step_open">On your phone, open boxlore.</string>
+    <string name="tv_sign_in_step_choose">Go to Settings › Cloud Sync &amp; Backups › Cloud sync, and choose Sign in on a TV.</string>
+    <string name="tv_sign_in_step_enter">Enter the code shown here.</string>
+    <string name="tv_your_code">Your code</string>
     <string name="tv_signed_in">Signed in</string>
     <string name="tv_getting_code">Getting a code…</string>
-    <string name="tv_sign_in_steps">On your phone, open boxlore and go to Settings › Cloud Sync &amp; Backups › Cloud sync. Choose Sign in on a TV and enter this code:</string>
-    <string name="tv_code_refreshes">The code changes every 10 minutes. This page signs in by itself once you enter it.</string>
+    <string name="tv_code_refreshes">The code changes every 10 minutes. This screen signs in by itself once you enter it.</string>
+    <!-- After a few codes ran out with nobody entering one, the TV stops asking for more until the listener chooses Show a new code. -->
+    <string name="tv_code_ran_out">The code ran out</string>
+    <string name="tv_code_ran_out_body">Get a new one when your phone is ready.</string>
+    <string name="tv_new_code">Show a new code</string>
     <string name="tv_sign_in_failed">Couldn\'t reach boxlore. Check the TV\'s internet connection.</string>
     <string name="tv_try_again">Try again</string>
     <string name="tv_search_failed">Couldn\'t search. Check the TV\'s internet connection.</string>
-    <string name="tv_cancel">Cancel</string>
     <!-- The account this TV is signed in to, e.g. "Signed in as listener@example.com" -->
     <string name="tv_signed_in_as">Signed in as %1$s</string>
     <string name="tv_signed_in_body">Your shows, listening progress and likes stay in step with your account.</string>

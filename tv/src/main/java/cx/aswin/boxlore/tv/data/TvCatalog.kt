@@ -59,3 +59,17 @@ class ApiTvCatalog(
         const val TRENDING_LIMIT = 24
     }
 }
+
+/**
+ * The catalog only while the TV is signed in ([signedIn]): before that nothing on the TV, background
+ * work included (Daily Mix reads, the next episode after one ends), asks boxlore's API for anything.
+ */
+class SignedInTvCatalog(private val catalog: TvCatalog, private val signedIn: () -> Boolean) : TvCatalog {
+    override suspend fun search(query: String): List<SearchFeed>? = if (signedIn()) catalog.search(query) else null
+
+    override suspend fun show(showId: Long): V2PodcastResponse? = if (signedIn()) catalog.show(showId) else null
+
+    override suspend fun episodes(showId: Long): List<EpisodeItem>? = if (signedIn()) catalog.episodes(showId) else null
+
+    override suspend fun trending(country: String, genre: String?): List<TrendingFeed>? = if (signedIn()) catalog.trending(country, genre) else null
+}

@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -15,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.tv.material3.LocalContentColor
 import cx.aswin.boxlore.tv.TvContainer
+import cx.aswin.boxlore.tv.cloud.TvSignIn
 import cx.aswin.boxlore.tv.ui.home.HomeScreen
 import cx.aswin.boxlore.tv.ui.library.LibraryScreen
 import cx.aswin.boxlore.tv.ui.library.LibraryTab
@@ -23,6 +26,7 @@ import cx.aswin.boxlore.tv.ui.search.SearchScreen
 import cx.aswin.boxlore.tv.ui.settings.SettingsScreen
 import cx.aswin.boxlore.tv.ui.show.EpisodeScreen
 import cx.aswin.boxlore.tv.ui.show.ShowScreen
+import cx.aswin.boxlore.tv.ui.signin.SignInScreen
 import cx.aswin.boxlore.tv.ui.theme.TvColors
 
 /** The routes the TV opens. The four tabs sit in the rail; the rest open on top of them. */
@@ -81,50 +85,62 @@ class TvNavigator(private val nav: NavHostController) {
     }
 }
 
+/**
+ * The TV app. Until the TV is signed in it shows only the sign-in screen, and signing out returns
+ * there; once signed in it opens on Home.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TvApp(container: TvContainer) {
-    val nav = rememberNavController()
-    val go = TvNavigator(nav)
+    val signIn by container.account.signIn.collectAsState()
     // Text without its own colour reads in on-surface; lists scroll only as far as needed to show the item.
     CompositionLocalProvider(LocalContentColor provides TvColors.onSurface, LocalBringIntoViewSpec provides KeepInView) {
-    // The window's own background is the app's background colour; painting it again here would
-    // fill the whole screen twice on every frame.
-    Box(Modifier.fillMaxSize()) {
-        NavHost(navController = nav, startDestination = TvRoutes.HOME) {
-            composable(TvRoutes.HOME) {
-                RailScaffold(RailTab.Home, go, container.playback.nowPlaying) { HomeScreen(container, go) }
-            }
-            composable(TvRoutes.SEARCH) {
-                RailScaffold(RailTab.Search, go, container.playback.nowPlaying) { SearchScreen(container, go) }
-            }
-            composable(
-                TvRoutes.LIBRARY_PAGE,
-                arguments = listOf(
-                    navArgument(TvRoutes.ARG_TAB) {
-                type = NavType.StringType
-                nullable = true
-            }
-                )
-            ) { entry ->
-                val tab = LibraryTab.entries.firstOrNull { it.name == entry.arguments?.getString(TvRoutes.ARG_TAB) }
-                RailScaffold(RailTab.Library, go, container.playback.nowPlaying) { LibraryScreen(container, go, tab) }
-            }
-            composable(TvRoutes.SETTINGS) {
-                RailScaffold(RailTab.Settings, go, container.playback.nowPlaying) { SettingsScreen(container.account) }
-            }
-            composable(TvRoutes.SHOW, arguments = listOf(navArgument(TvRoutes.ARG_SHOW) { type = NavType.StringType })) { entry ->
-                val id = entry.arguments?.getString(TvRoutes.ARG_SHOW).orEmpty()
-                RailScaffold(RailTab.Home, go, container.playback.nowPlaying, atRoot = false) { ShowScreen(id, container, go) }
-            }
-            composable(TvRoutes.EPISODE, arguments = listOf(navArgument(TvRoutes.ARG_EPISODE) { type = NavType.StringType })) { entry ->
-                val id = entry.arguments?.getString(TvRoutes.ARG_EPISODE).orEmpty()
-                RailScaffold(RailTab.Home, go, container.playback.nowPlaying, atRoot = false) { EpisodeScreen(id, container, go) }
-            }
-            composable(TvRoutes.PLAYER) {
-                PlayerScreen(container, go)
-            }
+        // The window's own background is the app's background colour; painting it again here would
+        // fill the whole screen twice on every frame.
+        Box(Modifier.fillMaxSize()) {
+            if (signIn is TvSignIn.SignedIn) SignedInApp(container) else SignInScreen(signIn, container.account)
         }
     }
 }
+
+/** Home and everything reached from it. Built afresh on each sign-in, so it always opens on Home. */
+@Composable
+private fun SignedInApp(container: TvContainer) {
+    val nav = rememberNavController()
+    val go = TvNavigator(nav)
+    NavHost(navController = nav, startDestination = TvRoutes.HOME) {
+        composable(TvRoutes.HOME) {
+            RailScaffold(RailTab.Home, go, container.playback.nowPlaying) { HomeScreen(container, go) }
+        }
+        composable(TvRoutes.SEARCH) {
+            RailScaffold(RailTab.Search, go, container.playback.nowPlaying) { SearchScreen(container, go) }
+        }
+        composable(
+            TvRoutes.LIBRARY_PAGE,
+            arguments =
+            listOf(
+                navArgument(TvRoutes.ARG_TAB) {
+                    type = NavType.StringType
+                    nullable = true
+                },
+            ),
+        ) { entry ->
+            val tab = LibraryTab.entries.firstOrNull { it.name == entry.arguments?.getString(TvRoutes.ARG_TAB) }
+            RailScaffold(RailTab.Library, go, container.playback.nowPlaying) { LibraryScreen(container, go, tab) }
+        }
+        composable(TvRoutes.SETTINGS) {
+            RailScaffold(RailTab.Settings, go, container.playback.nowPlaying) { SettingsScreen(container.account) }
+        }
+        composable(TvRoutes.SHOW, arguments = listOf(navArgument(TvRoutes.ARG_SHOW) { type = NavType.StringType })) { entry ->
+            val id = entry.arguments?.getString(TvRoutes.ARG_SHOW).orEmpty()
+            RailScaffold(RailTab.Home, go, container.playback.nowPlaying, atRoot = false) { ShowScreen(id, container, go) }
+        }
+        composable(TvRoutes.EPISODE, arguments = listOf(navArgument(TvRoutes.ARG_EPISODE) { type = NavType.StringType })) { entry ->
+            val id = entry.arguments?.getString(TvRoutes.ARG_EPISODE).orEmpty()
+            RailScaffold(RailTab.Home, go, container.playback.nowPlaying, atRoot = false) { EpisodeScreen(id, container, go) }
+        }
+        composable(TvRoutes.PLAYER) {
+            PlayerScreen(container, go)
+        }
+    }
 }

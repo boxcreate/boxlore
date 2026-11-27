@@ -4,11 +4,13 @@ import cx.aswin.boxlore.core.network.model.EpisodeItem
 import cx.aswin.boxlore.core.network.model.SearchFeed
 import cx.aswin.boxlore.core.network.model.TrendingFeed
 import cx.aswin.boxlore.core.network.model.V2PodcastResponse
+import cx.aswin.boxlore.tv.model.TvSearchResult
 import cx.aswin.boxlore.tv.model.TvShow
 import java.io.File
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -81,5 +83,34 @@ class TvChartsTest {
             work.advanceUntilIdle()
             assertEquals(listOf("1"), (page.getCompleted() as ShowEpisodes.Loaded).episodes.map { it.id })
             mixRead.complete(null)
+        }
+
+    @Test
+    fun `nothing asks the API before the TV is signed in, and followed shows are read once it is`(@TempDir folder: File) =
+        runTest {
+            val work = TestScope(StandardTestDispatcher(testScheduler))
+            val store = TvLibraryStore(File(folder, "library.json"), work, StandardTestDispatcher(testScheduler))
+            store.update { it.subscribe(TvShow("5", "Show", "", null)) }
+            val charts = Charts()
+            val looked = mutableListOf<Long>()
+            val api = object : TvCatalog by charts {
+                override suspend fun show(showId: Long): V2PodcastResponse? {
+                    looked += showId
+                    return null
+                }
+            }
+            val signedIn = MutableStateFlow(false)
+            val library = LiveTvLibrary(store, SignedInTvCatalog(api) { signedIn.value }, feeds = null, scope = work, country = { "us" }, signedIn = signedIn)
+
+            work.advanceUntilIdle()
+            library.chart("comedy").first()
+            assertEquals(TvSearchResult.NoConnection("news"), library.search("news"))
+            work.advanceUntilIdle()
+            assertEquals(emptyList<String?>(), charts.asked, "no chart, search or Daily Mix read before sign-in")
+            assertEquals(emptyList<Long>(), looked)
+
+            signedIn.value = true
+            work.advanceUntilIdle()
+            assertEquals(listOf(5L), looked, "signing in reads the followed shows for Daily Mix")
         }
 }
