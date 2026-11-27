@@ -121,6 +121,7 @@
     <string name="wear_account_phone_away">Seu celular está longe. Aproxime-o e tente de novo.</string>
     <string name="wear_account_phone_signed_out">Primeiro entre no boxlore pelo celular.</string>
     <string name="wear_account_failed">Não foi possível entrar. Tente de novo.</string>
+    <string name="wear_account_check_on_phone">Abra o boxlore no celular e tente de novo. O celular pode pedir uma verificação rápida.</string>
     <string name="wear_shows_layout_honeycomb">Colmeia</string>
     <string name="wear_shows_layout_list">Lista</string>
     <string name="wear_pairing_title">Abra o boxlore no celular para começar</string>

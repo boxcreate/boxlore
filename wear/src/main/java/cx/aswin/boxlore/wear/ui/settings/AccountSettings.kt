@@ -45,6 +45,7 @@ internal object AccountCopy {
         when (problem) {
             SignInProblem.PhoneAway -> R.string.wear_account_phone_away
             SignInProblem.PhoneSignedOut -> R.string.wear_account_phone_signed_out
+            SignInProblem.CheckOnPhone -> R.string.wear_account_check_on_phone
             SignInProblem.Failed -> R.string.wear_account_failed
         }
 }

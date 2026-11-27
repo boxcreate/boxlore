@@ -114,6 +114,7 @@
     <string name="wear_account_phone_away">Dein Handy ist nicht in Reichweite. Halte es näher und versuch es noch mal.</string>
     <string name="wear_account_phone_signed_out">Melde dich zuerst auf dem Handy bei boxlore an.</string>
     <string name="wear_account_failed">Anmeldung fehlgeschlagen. Versuch es noch mal.</string>
+    <string name="wear_account_check_on_phone">Öffne boxlore auf deinem Handy und versuch es dann noch mal. Dort kann eine kurze Prüfung nötig sein.</string>
     <string name="wear_shows_layout_honeycomb">Waben</string>
     <string name="wear_shows_layout_list">Liste</string>
     <string name="wear_pairing_title">Öffne boxlore auf deinem Handy, um zu starten</string>

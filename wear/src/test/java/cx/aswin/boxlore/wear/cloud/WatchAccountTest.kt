@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.network.model.SyncPullResponse
 import cx.aswin.boxlore.core.network.model.SyncPushRequest
 import cx.aswin.boxlore.core.network.model.SyncPushResponse
 import cx.aswin.boxlore.core.network.model.UserSubscriptionSyncDto
+import cx.aswin.boxlore.core.network.session.PairedTokenRefusal
 import cx.aswin.boxlore.core.wearlink.WatchSignInReply
 import cx.aswin.boxlore.wear.data.WatchLibraryStore
 import cx.aswin.boxlore.wear.model.WatchEpisode
@@ -263,13 +264,86 @@ class WatchAccountTest {
             store.update { it.copy(cloudLinked = true) }
             val account = LiveWatchAccount({ null }, FakeCloud(), tokens, store, {}, backgroundScope)
 
-            account.forget(refused = "old-token")
+            account.refused("old-token")
             assertEquals(WatchAccountState.SignedIn("me@example.org"), account.state.value)
             assertEquals("new-token", tokens.token)
 
-            account.forget(refused = "new-token")
+            account.refused("new-token")
             assertEquals(WatchAccountState.SignedOut, account.state.value)
             assertNull(tokens.token)
+        }
+
+    // Regression: signing out rebuilt the sign-in screen, which asked the phone at once and signed the watch straight back in.
+    @Test
+    fun `after a sign-out the sign-in screen waits for a tap, even after a restart`() =
+        runTest {
+            val tokens = WatchAccountStore.InMemory(token = "t", account = "me@example.org")
+            var asked = 0
+            val phone: suspend () -> WatchSignInReply? = {
+                asked++
+                WatchSignInReply(WatchSignInReply.OK, code = "code-1", account = "me@example.org")
+            }
+            val account = LiveWatchAccount(phone, FakeCloud(), tokens, store(), {}, backgroundScope)
+
+            account.signOut()
+            account.signInBySelf()
+            runCurrent()
+            assertEquals(0, asked)
+            assertEquals(WatchAccountState.SignedOut, account.state.value)
+            assertNull(account.problem.value)
+
+            LiveWatchAccount(phone, FakeCloud(), tokens, store(), {}, backgroundScope).signInBySelf()
+            runCurrent()
+            assertEquals(0, asked, "the wait is kept across a restart")
+
+            account.signIn()
+            runCurrent()
+            assertEquals(1, asked)
+            assertEquals(WatchAccountState.SignedIn("me@example.org"), account.state.value)
+            assertNull(tokens.hold)
+        }
+
+    @Test
+    fun `a new watch asks the phone by itself`() =
+        runTest {
+            var asked = 0
+            val account = LiveWatchAccount({ asked++.let { null } }, FakeCloud(), WatchAccountStore.InMemory(), store(), {}, backgroundScope)
+
+            account.signInBySelf()
+            runCurrent()
+
+            assertEquals(1, asked)
+            assertEquals(SignInProblem.PhoneAway, account.problem.value)
+        }
+
+    // Regression: a trade refused for an unchecked lending phone signed the watch out, and the
+    // sign-in screen asked the phone again by itself until the account's daily lendings ran out.
+    @Test
+    fun `a sign-in lent by an unchecked phone says to finish the check there, and waits for a tap`() =
+        runTest {
+            val tokens = WatchAccountStore.InMemory(token = "lent", account = "me@example.org")
+            var asked = 0
+            val phone: suspend () -> WatchSignInReply? = { asked++.let { null } }
+            val pairing = WatchPairing(tokens)
+            val account = LiveWatchAccount(phone, FakeCloud(), tokens, store(), {}, backgroundScope)
+            pairing.onRefused = account::refused
+
+            pairing.onTokenRefused("lent", PairedTokenRefusal.UnattestedLender)
+            account.signInBySelf()
+            runCurrent()
+
+            assertEquals(WatchAccountState.SignedOut, account.state.value)
+            assertEquals(SignInProblem.CheckOnPhone, account.problem.value)
+            assertEquals(0, asked)
+            assertEquals(SignInProblem.CheckOnPhone, LiveWatchAccount(phone, FakeCloud(), tokens, store(), {}, backgroundScope).problem.value, "the reason is kept across a restart")
+
+            // A token refused for any other reason waits for a tap too, without a problem to show.
+            tokens.save("other", null)
+            account.refused("other", PairedTokenRefusal.Invalid)
+            account.signInBySelf()
+            runCurrent()
+            assertEquals(0, asked)
+            assertNull(account.problem.value)
         }
 
     @Test

@@ -26,8 +26,29 @@ sealed interface WatchAccountState {
     data class SignedIn(val account: String?) : WatchAccountState
 }
 
-/** Why a tap on Sign in did not sign the watch in. */
-enum class SignInProblem { PhoneAway, PhoneSignedOut, Failed }
+/**
+ * Why a tap on Sign in did not sign the watch in. [CheckOnPhone]: the phone has to pass boxlore's
+ * check before it can lend its sign-in (it was asked for one, or the API refused a sign-in it lent
+ * without one).
+ */
+enum class SignInProblem { PhoneAway, PhoneSignedOut, CheckOnPhone, Failed }
+
+/** Why the sign-in screen waits for a tap on Sign in instead of asking the phone by itself. */
+internal enum class SignInHold(val wire: String, val problem: SignInProblem?) {
+    /** The listener signed out here. */
+    SignedOut("signed_out", null),
+
+    /** The API stopped taking the watch's token. */
+    Refused("refused", null),
+
+    /** The phone needs its check before it can lend its sign-in; asking it again at once won't help. */
+    CheckOnPhone("check_on_phone", SignInProblem.CheckOnPhone),
+    ;
+
+    companion object {
+        fun fromWire(value: String?): SignInHold? = entries.firstOrNull { it.wire == value }
+    }
+}
 
 /**
  * The listener's account on the watch. Signing in needs the phone once: it lends its sign-in over
@@ -40,7 +61,15 @@ interface WatchAccount {
     /** Why the last try did not work; null before a try, during one and after one that worked. */
     val problem: StateFlow<SignInProblem?>
 
+    /** The listener asked to sign in: asks the phone. */
     fun signIn()
+
+    /**
+     * The sign-in screen came to the front: asks the phone, unless the listener signed out here or
+     * the API refused the last sign-in. Those wait for [signIn], so the phone never lends its sign-in
+     * again by itself (each lending counts toward the account's daily limit).
+     */
+    fun signInBySelf()
 
     /** Signs this watch out. The shows and listening already on it stay. */
     fun signOut()
@@ -53,6 +82,8 @@ object NoWatchAccount : WatchAccount {
 
     override fun signIn() = Unit
 
+    override fun signInBySelf() = Unit
+
     override fun signOut() = Unit
 }
 
@@ -63,6 +94,9 @@ internal interface WatchAccountStore {
 
     /** Tokens signed out here that the API has not confirmed giving up yet; sent again at the next start. */
     val unrevoked: Set<String>
+
+    /** Why the sign-in screen waits for the listener; null when it may ask the phone by itself. Kept across restarts. */
+    var hold: SignInHold?
 
     fun save(token: String, account: String?)
 
@@ -90,6 +124,10 @@ internal interface WatchAccountStore {
         @get:Synchronized
         override var unrevoked: Set<String> = emptySet()
             private set
+
+        @get:Synchronized
+        @set:Synchronized
+        override var hold: SignInHold? = null
 
         @Synchronized
         override fun keepUnrevoked(tokens: Set<String>) {
@@ -121,6 +159,9 @@ internal class SharedPreferencesWatchAccountStore(private val preferences: Share
     override val token: String? get() = synchronized(this) { preferences.getString(KEY_TOKEN, null)?.takeIf { it.isNotBlank() } }
     override val account: String? get() = synchronized(this) { preferences.getString(KEY_ACCOUNT, null) }
     override val unrevoked: Set<String> get() = synchronized(this) { preferences.getStringSet(KEY_UNREVOKED, null).orEmpty().toSet() }
+    override var hold: SignInHold?
+        get() = synchronized(this) { SignInHold.fromWire(preferences.getString(KEY_HOLD, null)) }
+        set(value) = synchronized(this) { preferences.edit().apply { if (value == null) remove(KEY_HOLD) else putString(KEY_HOLD, value.wire) }.apply() }
 
     // Every change goes through this object's lock, so a swap and a sign-out never interleave.
     override fun save(token: String, account: String?) = synchronized(this) { preferences.edit().putString(KEY_TOKEN, token).putString(KEY_ACCOUNT, account).apply() }
@@ -142,6 +183,7 @@ internal class SharedPreferencesWatchAccountStore(private val preferences: Share
         private const val KEY_TOKEN = "token"
         private const val KEY_ACCOUNT = "account"
         private const val KEY_UNREVOKED = "unrevoked"
+        private const val KEY_HOLD = "sign_in_hold"
 
         fun create(context: Context) = SharedPreferencesWatchAccountStore(context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE))
     }
@@ -161,7 +203,7 @@ internal object WatchSignInRules {
 
 /**
  * The watch's account as its API session sees it ([PairedSessionAccount]): the stored token, traded
- * for a paired session, and a trade's refusal, which signs the watch out ([LiveWatchAccount.forget]).
+ * for a paired session, and a trade's refusal, which signs the watch out ([LiveWatchAccount.refused]).
  */
 internal class WatchPairing(private val tokens: WatchAccountStore) : PairedSessionAccount {
     @Volatile
@@ -175,6 +217,8 @@ internal class WatchPairing(private val tokens: WatchAccountStore) : PairedSessi
 /**
  * Signs the watch in through its phone and out again. Nothing on the watch reaches boxlore's API
  * until it is signed in: [onAccountChanged] tells the API session each time the token comes or goes.
+ * After a sign-out here, a refused token or a phone that needs its check, the watch asks the phone
+ * again only when the listener taps Sign in ([WatchAccountStore.hold]).
  */
 internal class LiveWatchAccount(
     /** Asks the phone to sign this watch in; null when the phone is out of reach. */
@@ -189,7 +233,7 @@ internal class LiveWatchAccount(
     private val onAccountChanged: () -> Unit = {},
 ) : WatchAccount {
     private val current = MutableStateFlow(if (tokens.token == null) WatchAccountState.SignedOut else WatchAccountState.SignedIn(tokens.account))
-    private val lastProblem = MutableStateFlow<SignInProblem?>(null)
+    private val lastProblem = MutableStateFlow(tokens.hold?.problem)
 
     // Counts sign-in tries and sign-outs, so a try that was overtaken by a sign-out changes nothing.
     private val turn = AtomicInteger()
@@ -198,8 +242,15 @@ internal class LiveWatchAccount(
     override val state: StateFlow<WatchAccountState> = current.asStateFlow()
     override val problem: StateFlow<SignInProblem?> = lastProblem.asStateFlow()
 
-    override fun signIn() {
+    override fun signIn() = ask(byListener = true)
+
+    override fun signInBySelf() {
+        if (tokens.hold == null) ask(byListener = false)
+    }
+
+    private fun ask(byListener: Boolean) {
         if (!current.compareAndSet(WatchAccountState.SignedOut, WatchAccountState.SigningIn)) return
+        if (byListener) tokens.hold = null
         lastProblem.value = null
         val mine = turn.incrementAndGet()
         scope.launch {
@@ -208,11 +259,14 @@ internal class LiveWatchAccount(
             // Signed out while this was on its way: the listener's last word stands.
             if (turn.get() != mine) return@launch
             if (token == null) {
-                lastProblem.value = WatchSignInRules.problem(reply) ?: SignInProblem.Failed
+                val problem = WatchSignInRules.problem(reply) ?: SignInProblem.Failed
+                if (problem == SignInProblem.CheckOnPhone) tokens.hold = SignInHold.CheckOnPhone
+                lastProblem.value = problem
                 current.value = WatchAccountState.SignedOut
                 return@launch
             }
             tokens.save(token, reply?.account)
+            tokens.hold = null
             // Everything still waiting here goes up to the account, and the first pull takes it all down.
             store.update { it.copy(cloudLinked = true, cloudAcked = 0L, cloudSince = 0L) }
             current.value = WatchAccountState.SignedIn(reply?.account)
@@ -224,7 +278,7 @@ internal class LiveWatchAccount(
     override fun signOut() {
         val token = tokens.token
         if (token != null) tokens.keepUnrevoked(tokens.unrevoked + token)
-        forget()
+        forget(SignInHold.SignedOut)
         if (token != null) scope.launch { giveUp() }
     }
 
@@ -241,15 +295,22 @@ internal class LiveWatchAccount(
         }
 
     /**
-     * Signed out, with nothing to give up. [refused] is the token the API stopped taking; a
-     * refusal that arrives after the watch signed in afresh is about the old one and is ignored.
+     * The API stopped taking [refused], at a sync or a trade ([reason]): signed out, with nothing to
+     * give up, and waiting for the listener. A refusal that arrives after the watch signed in
+     * afresh is about the old token and is ignored.
      */
-    fun forget(refused: String? = null) {
-        if (refused != null && tokens.token != refused) return
+    fun refused(refused: String, reason: PairedTokenRefusal = PairedTokenRefusal.Invalid) {
+        if (tokens.token != refused) return
+        forget(if (reason == PairedTokenRefusal.UnattestedLender) SignInHold.CheckOnPhone else SignInHold.Refused)
+    }
+
+    private fun forget(hold: SignInHold) {
         turn.incrementAndGet()
         tokens.clear()
+        // Kept before the sign-in screen comes up, so it doesn't ask the phone by itself.
+        tokens.hold = hold
         store.update { it.copy(cloudLinked = false, cloudAcked = 0L, cloudSince = 0L).confirmed() }
-        lastProblem.value = null
+        lastProblem.value = hold.problem
         current.value = WatchAccountState.SignedOut
         onAccountChanged()
     }

@@ -26,10 +26,10 @@ internal object WatchCloud {
         if (apis == null) return NoWatchAccount
         val cloud = RetrofitWatchCloudApi(apis.account)
         var account: LiveWatchAccount? = null
-        val sync = WatchCloudSync(cloud, tokens, store, ports.showOf, ports.playingId, scope, onSignedOut = { refused -> account?.forget(refused) })
+        val sync = WatchCloudSync(cloud, tokens, store, ports.showOf, ports.playingId, scope, onSignedOut = { refused -> account?.refused(refused) })
         val live = LiveWatchAccount(ports.askPhone, cloud, tokens, store, onSignedIn = sync::request, scope = scope, onAccountChanged = apis.sessions::onPairedAccountChanged)
         account = live
-        pairing.onRefused = { refused, _ -> live.forget(refused) }
+        pairing.onRefused = live::refused
         live.giveUpUnrevoked()
         sync.start()
         return live

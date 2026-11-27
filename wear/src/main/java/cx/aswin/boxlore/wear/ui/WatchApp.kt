@@ -191,6 +191,7 @@ private fun NavGraphBuilder.pairingRoute(container: WatchContainer, navControlle
             problem = problem,
             hasDownloads = downloads.isNotEmpty(),
             onSignIn = container.account::signIn,
+            onSignInBySelf = container.account::signInBySelf,
             onDownloads = { navController.navigate(WatchRoutes.DOWNLOADS) },
         )
     }

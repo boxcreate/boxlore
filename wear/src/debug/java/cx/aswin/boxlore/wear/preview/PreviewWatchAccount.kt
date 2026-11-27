@@ -7,7 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** The sample shows' account: signed in from the start, so every screen can be looked at; Sign in after Sign out works at once. */
+/**
+ * The sample shows' account: signed in from the start, so every screen can be looked at. After Sign
+ * out the sign-in screen waits for a tap, as a real watch does, and Sign in works at once.
+ */
 internal class PreviewWatchAccount : WatchAccount {
     private val current = MutableStateFlow<WatchAccountState>(WatchAccountState.SignedIn(SAMPLE_ACCOUNT))
     override val state: StateFlow<WatchAccountState> = current.asStateFlow()
@@ -16,6 +19,8 @@ internal class PreviewWatchAccount : WatchAccount {
     override fun signIn() {
         current.value = WatchAccountState.SignedIn(SAMPLE_ACCOUNT)
     }
+
+    override fun signInBySelf() = Unit
 
     override fun signOut() {
         current.value = WatchAccountState.SignedOut

@@ -103,6 +103,7 @@
     <string name="wear_account_phone_away">Votre téléphone est hors de portée. Rapprochez-le et réessayez.</string>
     <string name="wear_account_phone_signed_out">Connectez-vous d’abord à boxlore sur votre téléphone.</string>
     <string name="wear_account_failed">Connexion impossible. Réessayez.</string>
+    <string name="wear_account_check_on_phone">Ouvrez boxlore sur votre téléphone, puis réessayez. Une vérification rapide peut vous être demandée.</string>
     <string name="wear_shows_layout_honeycomb">Nid d’abeille</string>
     <string name="wear_shows_layout_list">Liste</string>
     <string name="wear_pairing_title">Ouvrez boxlore sur votre téléphone pour commencer</string>

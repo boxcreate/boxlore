@@ -61,8 +61,9 @@ internal object PairingCopy {
 
 /**
  * The watch's first screen until it is signed in, and where signing out leads. The phone lends its
- * sign-in by itself: the watch asks it as soon as the screen is in front, shows progress while it
- * does, and offers the try again. Episodes already downloaded still play, from [onDownloads].
+ * sign-in by itself: the watch asks it as soon as the screen is in front ([onSignInBySelf], which
+ * waits for a tap after a sign-out or a refusal), shows progress while it does, and offers the try
+ * again ([onSignIn]). Episodes already downloaded still play, from [onDownloads].
  */
 @Composable
 internal fun PairingScreen(
@@ -70,9 +71,10 @@ internal fun PairingScreen(
     problem: SignInProblem?,
     hasDownloads: Boolean,
     onSignIn: () -> Unit,
+    onSignInBySelf: () -> Unit,
     onDownloads: () -> Unit,
 ) {
-    val signIn by rememberUpdatedState(onSignIn)
+    val signIn by rememberUpdatedState(onSignInBySelf)
     LifecycleStartEffect(Unit) {
         signIn()
         onStopOrDispose {}

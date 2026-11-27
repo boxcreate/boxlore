@@ -123,6 +123,8 @@
     <string name="wear_account_phone_away">Your phone isn\'t in reach. Bring it close and try again.</string>
     <string name="wear_account_phone_signed_out">Sign in to boxlore on your phone first.</string>
     <string name="wear_account_failed">Couldn\'t sign in. Try again.</string>
+    <!-- The phone must pass boxlore's quick check (Cloudflare's, on the phone) before it can sign the watch in. -->
+    <string name="wear_account_check_on_phone">Open boxlore on your phone, then try again. It may ask for a quick check.</string>
     <string name="wear_shows_layout_honeycomb">Honeycomb</string>
     <string name="wear_shows_layout_list">List</string>
     <!-- The watch's first screen until it is signed in through the phone; the phone lends its own sign-in, nothing is typed on the watch. -->
