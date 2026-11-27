@@ -131,6 +131,7 @@ Tests live in `core/network/src/test` (JUnit 5, MockWebServer, virtual time); re
 | Interceptors, converter | `EnglishOffInterceptorTest`, `StreamingJsonConverterFactoryTest` |
 | Token refresh, auth types | `FirebaseAuthAuthenticatorTest`, `AuthExceptionsTest` |
 | Sessions and proofs | `session/ApiSessionInterceptorTest`, `ApiSessionSchedulerTest`, `ApiSessionPolicyTest`, `OkHttpSessionExchangerTest`, `RequestProofTest`, `PairedSessionTest` |
+| Turnstile checks taking turns, a Skip, waits for a check on screen | `session/ApiSessionCheckTurnsTest`, `ApiSessionCheckGateTest` |
 
 ```bash
 ./gradlew :core:network:testDebugUnitTest

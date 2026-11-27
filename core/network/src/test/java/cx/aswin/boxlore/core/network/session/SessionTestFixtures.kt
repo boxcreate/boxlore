@@ -95,6 +95,18 @@ internal class FakeClock(start: Long = BASE_MS) : () -> Long {
     }
 }
 
+/** A Turnstile source whose host can leave the screen, answering [results] in turn (then the last one). */
+internal class FakeCheck(vararg results: TurnstileResult) : TurnstileTokenSource {
+    private val answers = results.toList()
+    val solves = AtomicInteger()
+
+    @Volatile var onScreen = true
+
+    override suspend fun solve(): TurnstileResult = answers[minOf(solves.getAndIncrement(), answers.lastIndex)]
+
+    override suspend fun ready(waitMs: Long): Boolean = onScreen
+}
+
 /** Polls a condition that settles on another thread (persistence runs asynchronously). */
 internal fun eventually(timeoutMs: Long = 2_000L, condition: () -> Boolean) {
     val deadline = System.currentTimeMillis() + timeoutMs

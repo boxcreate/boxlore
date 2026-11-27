@@ -186,7 +186,7 @@ Tests live in `wear/src/test` (JUnit 5, plain JVM, fakes for the ports; Robolect
 | Tile and watch-face shortcut: what they show (signed out too), when they redraw, what Resume does | `glance/GlanceRulesTest` |
 | Home tiles with and without a linked phone | `ui/home/HomeTilesTest` |
 | Cloud sync rows, and changes waiting for the phone and the cloud | `cloud/WatchCloudRulesTest` |
-| Sign in, sign out and its retry, a sync run and a refused token | `cloud/WatchAccountTest` |
+| Sign in, sign out and its retry, when the sign-in screen waits for a tap, a sync run and a refused token | `cloud/WatchAccountTest` |
 | Settings and sign-in screen copy | `ui/settings/SettingsCopyTest` |
 | What counts as something to listen through | `playback/AudioOutputRulesTest` |
 | The version follows the phone app's | `WatchVersionTest` |

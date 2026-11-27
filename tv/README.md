@@ -177,7 +177,7 @@ Tests live in `tv/src/test` (JUnit 5, plain JVM).
 | Charts: loaded once per genre, followed shows marked; nothing asked before sign-in | `data/TvChartsTest` |
 | How far a list scrolls to the remote's item | `ui/KeepInViewTest` |
 | What is sent to and taken from the account, and when | `cloud/TvCloudRulesTest` |
-| Sign-in with a code, a fresh code, the three-code limit, 429 waits, sign out and its retry, a refused token or trade | `cloud/TvAccountTest` |
+| Sign-in with a code, a fresh code, the three-code limit, 429 waits, a closed sign-in, an approval as the screen leaves, sign out and its retry, a refused token or trade | `cloud/TvAccountTest` |
 | What the sign-in screen shows in each state | `ui/signin/SignInRulesTest` |
 
 ```bash
