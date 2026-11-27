@@ -487,6 +487,43 @@ class PodcastRepositoryV2DiscoveryTest {
     }
 
     @Test
+    fun aReadRefusedUntilTheQuickCheckPassesSaysSoUnlessALastGoodAnswerCoversIt() = runTest {
+        val refused = { json("""{"error":"verification_required"}""", code = 401) }
+        answers["/v2/search/semantic"] = refused
+        answers["/v2/curated/vibe"] = refused
+        answers["/v2/home/bootstrap"] = refused
+        val repository = repository()
+
+        val search = repository.searchSemanticGrouped("space", "us")
+        assertTrue(search.needsCheck)
+        assertTrue(search.episodes.isEmpty() && search.podcasts.isEmpty())
+        assertEquals(CuratedPodcastsRead(null, needsCheck = true), repository.readCuratedPodcasts("calm", "us", listOf("en")))
+        val picks = repository.getHomeRecommendations(country = "us", history = listeningHistory())
+        assertTrue(picks.failed)
+        assertTrue(picks.needsCheck)
+
+        // Any other failure is no reason to offer the check.
+        answers["/v2/search/semantic"] = { MockResponse().setResponseCode(503) }
+        answers["/v2/curated/vibe"] = { json("""{"error":"rate_limited"}""", code = 429) }
+        assertFalse(repository.searchSemanticGrouped("space", "us").needsCheck)
+        assertEquals(CuratedPodcastsRead(null), repository.readCuratedPodcasts("calm", "us", listOf("en")))
+
+        // A collection read before keeps its last good shows.
+        answers["/v2/curated/vibe"] = { fixture("fixtures/v2/vibe.json") }
+        val good = repository.getCuratedPodcasts("morning_news", "us", listOf("en"))
+        answers["/v2/curated/vibe"] = refused
+        assertEquals(CuratedPodcastsRead(good), repository.readCuratedPodcasts("morning_news", "us", listOf("en")))
+
+        v2Discovery = false
+        answers["/search/semantic"] = refused
+        answers["/curated/vibe"] = refused
+        answers["/home/bootstrap"] = refused
+        assertTrue(repository.searchSemanticGrouped("space", "us").needsCheck)
+        assertTrue(repository.readCuratedPodcasts("calm").needsCheck)
+        assertTrue(repository.getHomeRecommendations(country = "us", history = listeningHistory()).needsCheck)
+    }
+
+    @Test
     fun theTrendingStreamReadsV2TranslatesAndKeepsTheLastGoodListOnFailure() = runTest {
         val repository = repository()
         answers["/v2/trending"] = { fixture("fixtures/v2/trending.json") }

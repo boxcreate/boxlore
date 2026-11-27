@@ -161,13 +161,21 @@ data class HomeBootstrapData(
  * is true when the request failed and there were no last good picks: Home and Explore keep the
  * picks they show and don't save the empty list. [fromLastGood] is true when the request brought no
  * picks and these are the last good ones kept for the country (`/v2` only, P4 PR 12, own-IDs plan
- * section 9): they can be shown, but they are not a fresh answer.
+ * section 9): they can be shown, but they are not a fresh answer. [needsCheck] goes with [failed]
+ * when the request was refused until this phone passes the quick check.
  */
 data class HomeRecommendations(
     val items: List<Episode> = emptyList(),
     val isFallback: Boolean = true,
     val failed: Boolean = false,
     val fromLastGood: Boolean = false,
+    val needsCheck: Boolean = false,
 )
+
+/**
+ * One collection's shows, or null [podcasts] when they couldn't be read (with no last good copy);
+ * [needsCheck] when the read was refused until this phone passes the quick check.
+ */
+data class CuratedPodcastsRead(val podcasts: List<Podcast>?, val needsCheck: Boolean = false)
 
 data class BecauseYouLikeData(val podcasts: List<Podcast> = emptyList(), val episodes: List<Episode> = emptyList())

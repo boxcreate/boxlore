@@ -14,6 +14,7 @@ import cx.aswin.boxlore.core.network.BoxLoreApi
 import cx.aswin.boxlore.core.network.BoxLoreApiV2
 import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.network.model.CuratedCuriosityResponseDto
+import cx.aswin.boxlore.core.network.session.ApiErrorCodes
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import kotlinx.coroutines.Dispatchers
@@ -179,7 +180,11 @@ class PodcastRepository(
         getCuratedPodcastsOrNull(vibeId, country, languages).orEmpty()
 
     /** One collection's shows, or null when they couldn't be read (with no last good copy), so a failed read isn't shown as an empty collection. */
-    suspend fun getCuratedPodcastsOrNull(vibeId: String, country: String? = null, languages: List<String>? = null,): List<Podcast>? = withContext(Dispatchers.IO) {
+    suspend fun getCuratedPodcastsOrNull(vibeId: String, country: String? = null, languages: List<String>? = null,): List<Podcast>? =
+        readCuratedPodcasts(vibeId, country, languages).podcasts
+
+    /** [getCuratedPodcastsOrNull], and whether a read that failed was refused until this phone passes the quick check. */
+    suspend fun readCuratedPodcasts(vibeId: String, country: String? = null, languages: List<String>? = null,): CuratedPodcastsRead = withContext(Dispatchers.IO) {
         try {
             val resolvedCountry =
                 country?.let {
@@ -199,14 +204,14 @@ class PodcastRepository(
                         queryLanguages,
                     ).execute()
             val body = response.body()
-            if (response.isSuccessful && body != null) mapFeedsToPodcasts(body.feeds) else null
+            if (response.isSuccessful && body != null) CuratedPodcastsRead(mapFeedsToPodcasts(body.feeds)) else CuratedPodcastsRead(null, ApiErrorCodes.needsCheck(response))
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
             android.util.Log.e("BoxCastRepo", "Curated Vibe Error: $vibeId", e)
-            null
+            CuratedPodcastsRead(null)
         }
-    }?.let { withoutHiddenPodcasts(it) }
+    }.let { read -> read.podcasts?.let { read.copy(podcasts = withoutHiddenPodcasts(it)) } ?: read }
 
     fun getTrendingPodcastsStream(
         country: String = "us",
@@ -304,7 +309,7 @@ class PodcastRepository(
                     episodes = body.items.mapNotNull { mapToEpisode(it) },
                 )
             } else {
-                SemanticSearchGroupedResult(emptyList(), emptyList())
+                SemanticSearchGroupedResult(emptyList(), emptyList(), needsCheck = ApiErrorCodes.needsCheck(response))
             }
         } catch (_: Exception) {
             SemanticSearchGroupedResult(emptyList(), emptyList())
@@ -1059,7 +1064,7 @@ class PodcastRepository(
                 )
             } else {
                 // A failed request is not an answer with no picks: Home and Explore keep what they show.
-                HomeRecommendations(failed = true)
+                HomeRecommendations(failed = true, needsCheck = ApiErrorCodes.needsCheck(response))
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
@@ -1080,7 +1085,7 @@ class PodcastRepository(
             .map { vibeId ->
                 async {
                     if (v2) {
-                        v2CuratedPodcasts(vibeId, resolvedCountry, queryLanguages)?.let { result[vibeId] = it }
+                        v2CuratedPodcasts(vibeId, resolvedCountry, queryLanguages).podcasts?.let { result[vibeId] = it }
                         return@async
                     }
                     try {
