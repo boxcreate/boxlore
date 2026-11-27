@@ -45,10 +45,13 @@ internal object PairingCopy {
     /** The line under the title: the last try's problem, else what the phone does. */
     fun body(problem: SignInProblem?): Int = problem?.let(AccountCopy::problem) ?: R.string.wear_pairing_body
 
-    /** The button: Signing in while the phone is asked, Try again after a problem, else Sign in with phone. */
+    /**
+     * The button: Signing in while the phone is asked, Try again after a try that didn't work, else
+     * Sign in with phone (also after the account signed this watch out: nothing was tried yet).
+     */
     fun action(state: WatchAccountState, problem: SignInProblem?): Int = when {
         state == WatchAccountState.SigningIn -> R.string.wear_account_signing_in
-        problem != null -> R.string.wear_try_again
+        problem != null && problem != SignInProblem.AccountSignedOut -> R.string.wear_try_again
         else -> R.string.wear_account_sign_in
     }
 

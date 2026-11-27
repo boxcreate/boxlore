@@ -73,6 +73,8 @@ class WatchAccountTest {
         assertEquals(SignInProblem.PhoneSignedOut, WatchSignInRules.problem(WatchSignInReply(WatchSignInReply.SIGNED_OUT)))
         assertEquals(SignInProblem.Failed, WatchSignInRules.problem(WatchSignInReply(WatchSignInReply.FAILED)))
         assertEquals(SignInProblem.CheckOnPhone, WatchSignInRules.problem(WatchSignInReply(WatchSignInReply.CHECK_NEEDED)))
+        assertEquals(SignInProblem.TryLater, WatchSignInRules.problem(WatchSignInReply(WatchSignInReply.TRY_LATER)))
+        assertEquals(SignInProblem.PhoneCantLend, WatchSignInRules.problem(WatchSignInReply(WatchSignInReply.CANNOT_LEND)))
         // A status this build doesn't know, from a newer phone, reads as a failure.
         assertEquals(SignInProblem.Failed, WatchSignInRules.problem(WatchSignInReply("later")))
         // An answer that says it worked but carries no code cannot sign anyone in.
@@ -340,13 +342,68 @@ class WatchAccountTest {
             assertEquals(0, asked)
             assertEquals(SignInProblem.CheckOnPhone, LiveWatchAccount(phone, FakeCloud(), tokens, store(), {}, backgroundScope).problem.value, "the reason is kept across a restart")
 
-            // A token refused for any other reason waits for a tap too, without a problem to show.
+            // Regression: a token refused for any other reason waited for a tap with no reason shown.
             tokens.save("other", null)
             account.refused("other", PairedTokenRefusal.Invalid)
             account.signInBySelf()
             runCurrent()
             assertEquals(0, asked)
-            assertNull(account.problem.value)
+            assertEquals(SignInProblem.AccountSignedOut, account.problem.value)
+            assertEquals(SignInProblem.AccountSignedOut, LiveWatchAccount(phone, FakeCloud(), tokens, store(), {}, backgroundScope).problem.value, "and after a restart")
+        }
+
+    // Regression: a code the phone lent but the watch couldn't redeem left nothing held, so every screen start lent another.
+    @Test
+    fun `a lent code that couldn't be redeemed waits a while, or for a tap, before the phone lends again`() =
+        runTest {
+            val tokens = WatchAccountStore.InMemory()
+            val cloud = FakeCloud().apply { token = null }
+            var now = 1_000_000L
+            var asked = 0
+            val phone: suspend () -> WatchSignInReply? = { asked++.let { WatchSignInReply(WatchSignInReply.OK, code = "code-$asked") } }
+            val account = LiveWatchAccount(phone, cloud, tokens, store(), {}, backgroundScope, clock = { now })
+
+            account.signInBySelf()
+            runCurrent()
+            assertEquals(SignInProblem.Failed, account.problem.value)
+            assertEquals(SignInHold.RedeemFailed, tokens.hold)
+
+            now += 9 * minute
+            account.signInBySelf()
+            LiveWatchAccount(phone, cloud, tokens, store(), {}, backgroundScope, clock = { now }).signInBySelf()
+            runCurrent()
+            assertEquals(1, asked, "not again within ten minutes, even after a restart")
+
+            now += 2 * minute
+            account.signInBySelf()
+            runCurrent()
+            assertEquals(2, asked, "the hold lifts by itself")
+
+            account.signIn()
+            runCurrent()
+            assertEquals(3, asked, "a tap always asks")
+            assertEquals(listOf("code-1", "code-2", "code-3"), cloud.redeemed)
+        }
+
+    @Test
+    fun `a phone that lent too often, or can't lend, says so and waits for a tap`() =
+        runTest {
+            for ((status, problem) in listOf(WatchSignInReply.TRY_LATER to SignInProblem.TryLater, WatchSignInReply.CANNOT_LEND to SignInProblem.PhoneCantLend)) {
+                val tokens = WatchAccountStore.InMemory()
+                var asked = 0
+                val account = LiveWatchAccount({ asked++.let { WatchSignInReply(status) } }, FakeCloud(), tokens, store(), {}, backgroundScope)
+
+                account.signInBySelf()
+                runCurrent()
+                account.signInBySelf()
+                runCurrent()
+
+                assertEquals(problem, account.problem.value)
+                assertEquals(1, asked, status)
+                account.signIn()
+                runCurrent()
+                assertEquals(2, asked, status)
+            }
         }
 
     @Test

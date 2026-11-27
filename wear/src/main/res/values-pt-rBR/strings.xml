@@ -122,6 +122,9 @@
     <string name="wear_account_phone_signed_out">Primeiro entre no boxlore pelo celular.</string>
     <string name="wear_account_failed">Não foi possível entrar. Tente de novo.</string>
     <string name="wear_account_check_on_phone">Abra o boxlore no celular e tente de novo. O celular pode pedir uma verificação rápida.</string>
+    <string name="wear_account_try_later">Muitas tentativas por agora. Espere um pouco e tente de novo.</string>
+    <string name="wear_account_phone_cant_lend">Seu celular não consegue conectar este relógio agora. Tente de novo mais tarde.</string>
+    <string name="wear_account_signed_out_by_account">Este relógio foi desconectado da sua conta. Conecte-o de novo pelo celular.</string>
     <string name="wear_shows_layout_honeycomb">Colmeia</string>
     <string name="wear_shows_layout_list">Lista</string>
     <string name="wear_pairing_title">Abra o boxlore no celular para começar</string>

@@ -104,6 +104,9 @@
     <string name="wear_account_phone_signed_out">Connectez-vous d’abord à boxlore sur votre téléphone.</string>
     <string name="wear_account_failed">Connexion impossible. Réessayez.</string>
     <string name="wear_account_check_on_phone">Ouvrez boxlore sur votre téléphone, puis réessayez. Une vérification rapide peut vous être demandée.</string>
+    <string name="wear_account_try_later">Trop de tentatives pour le moment. Patientez un peu, puis réessayez.</string>
+    <string name="wear_account_phone_cant_lend">Votre téléphone ne peut pas connecter cette montre pour le moment. Réessayez plus tard.</string>
+    <string name="wear_account_signed_out_by_account">Cette montre a été déconnectée de votre compte. Reconnectez-la avec votre téléphone.</string>
     <string name="wear_shows_layout_honeycomb">Nid d’abeille</string>
     <string name="wear_shows_layout_list">Liste</string>
     <string name="wear_pairing_title">Ouvrez boxlore sur votre téléphone pour commencer</string>

@@ -92,8 +92,10 @@ src/release/java/...         # release WatchContainerFactory
   sends only the code's redemption. Once signed in the watch trades its account token for a paired
   session (`cloud.WatchPairing`); a trade the API refuses signs it out. Signing out returns to the
   sign-in screen, and a sign-out the API couldn't record is sent again at the next start. After a
-  sign-out, a refused token or a phone that needs its check first, the sign-in screen asks the phone
-  only when the listener taps Sign in (`cloud.SignInHold`, kept across restarts). `WatchCloudSync` then pushes and pulls the cloud's sync rows. A change
+  sign-out, a refused token (which says the account signed this watch out), or a phone that needs
+  its check first, lent too often lately or can't lend for now, the sign-in screen asks the phone
+  only when the listener taps Sign in; after a lent code it couldn't redeem, also once ten minutes
+  have passed (`cloud.SignInHold`, kept across restarts). `WatchCloudSync` then pushes and pulls the cloud's sync rows. A change
   made on the watch waits until everyone who needs it has confirmed it: the phone once one has
   linked, the cloud while signed in (`WatchLibraryState.confirmed`). The cloud sends only what
   changed, so `WatchCloudRules` applies its follows one by one and looks up shows it cannot name.
@@ -161,7 +163,7 @@ src/release/java/...         # release WatchContainerFactory
 - SharedPreferences `boxlore_watch_settings`: `shows_layout`, `storage_limit_mb`, `changed_at`.
 - SharedPreferences `boxlore_watch_account`: the watch's sign-in, the account's name, tokens
   signed out whose sign-out the API has not confirmed yet, and why the sign-in screen waits for a
-  tap (`sign_in_hold`).
+  tap (`sign_in_hold`) and, for a wait that lifts by itself, until when (`sign_in_hold_until`).
 - The capability `boxlore_watch` (`res/values/wear.xml`) is how the phone app finds this app.
 - The API session uses `:core:network`'s own file and Keystore alias, created fresh on the watch.
 - Install channel `wear` (`WatchServer.CHANNEL`).

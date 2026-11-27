@@ -27,22 +27,40 @@ sealed interface WatchAccountState {
 }
 
 /**
- * Why a tap on Sign in did not sign the watch in. [CheckOnPhone]: the phone has to pass boxlore's
- * check before it can lend its sign-in (it was asked for one, or the API refused a sign-in it lent
- * without one).
+ * Why a tap on Sign in did not sign the watch in, or why the watch is signed out. [CheckOnPhone]:
+ * the phone has to pass boxlore's check before it can lend its sign-in (it was asked for one, or
+ * the API refused a sign-in it lent without one). [TryLater]: the phone lent its sign-in too often
+ * lately. [PhoneCantLend]: the phone passed its check, but boxlore wants more of it before it
+ * lends. [AccountSignedOut]: the API stopped taking this watch's token (signed out or reset from
+ * the account's side).
  */
-enum class SignInProblem { PhoneAway, PhoneSignedOut, CheckOnPhone, Failed }
+enum class SignInProblem { PhoneAway, PhoneSignedOut, CheckOnPhone, TryLater, PhoneCantLend, AccountSignedOut, Failed }
 
-/** Why the sign-in screen waits for a tap on Sign in instead of asking the phone by itself. */
-internal enum class SignInHold(val wire: String, val problem: SignInProblem?) {
+/**
+ * Why the sign-in screen waits for a tap on Sign in instead of asking the phone by itself: until the
+ * tap, or for [lapsesAfterMs] when it has one.
+ */
+internal enum class SignInHold(val wire: String, val problem: SignInProblem?, val lapsesAfterMs: Long? = null) {
     /** The listener signed out here. */
     SignedOut("signed_out", null),
 
     /** The API stopped taking the watch's token. */
-    Refused("refused", null),
+    Refused("refused", SignInProblem.AccountSignedOut),
 
     /** The phone needs its check before it can lend its sign-in; asking it again at once won't help. */
     CheckOnPhone("check_on_phone", SignInProblem.CheckOnPhone),
+
+    /** The phone lent its sign-in too often lately; asking again at once gets the same answer. */
+    TryLater("try_later", SignInProblem.TryLater),
+
+    /** The phone can't lend its sign-in for now, check or not. */
+    PhoneCantLend("phone_cant_lend", SignInProblem.PhoneCantLend),
+
+    /**
+     * The phone lent a code, but redeeming it didn't work: asking again at once would only lend
+     * another, and each lending counts toward the account's daily limit. Lifts by itself after a while.
+     */
+    RedeemFailed("redeem_failed", SignInProblem.Failed, lapsesAfterMs = 10 * 60_000L),
     ;
 
     companion object {
@@ -98,6 +116,9 @@ internal interface WatchAccountStore {
     /** Why the sign-in screen waits for the listener; null when it may ask the phone by itself. Kept across restarts. */
     var hold: SignInHold?
 
+    /** When a [hold] that lifts by itself ([SignInHold.lapsesAfterMs]) does, in local milliseconds; kept across restarts. */
+    var holdUntilMs: Long
+
     fun save(token: String, account: String?)
 
     /** Forgets the token and the account's name; [unrevoked] stays. */
@@ -128,6 +149,10 @@ internal interface WatchAccountStore {
         @get:Synchronized
         @set:Synchronized
         override var hold: SignInHold? = null
+
+        @get:Synchronized
+        @set:Synchronized
+        override var holdUntilMs: Long = 0L
 
         @Synchronized
         override fun keepUnrevoked(tokens: Set<String>) {
@@ -162,6 +187,9 @@ internal class SharedPreferencesWatchAccountStore(private val preferences: Share
     override var hold: SignInHold?
         get() = synchronized(this) { SignInHold.fromWire(preferences.getString(KEY_HOLD, null)) }
         set(value) = synchronized(this) { preferences.edit().apply { if (value == null) remove(KEY_HOLD) else putString(KEY_HOLD, value.wire) }.apply() }
+    override var holdUntilMs: Long
+        get() = synchronized(this) { preferences.getLong(KEY_HOLD_UNTIL, 0L) }
+        set(value) = synchronized(this) { preferences.edit().putLong(KEY_HOLD_UNTIL, value).apply() }
 
     // Every change goes through this object's lock, so a swap and a sign-out never interleave.
     override fun save(token: String, account: String?) = synchronized(this) { preferences.edit().putString(KEY_TOKEN, token).putString(KEY_ACCOUNT, account).apply() }
@@ -184,6 +212,7 @@ internal class SharedPreferencesWatchAccountStore(private val preferences: Share
         private const val KEY_ACCOUNT = "account"
         private const val KEY_UNREVOKED = "unrevoked"
         private const val KEY_HOLD = "sign_in_hold"
+        private const val KEY_HOLD_UNTIL = "sign_in_hold_until"
 
         fun create(context: Context) = SharedPreferencesWatchAccountStore(context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE))
     }
@@ -197,8 +226,24 @@ internal object WatchSignInRules {
             reply == null -> SignInProblem.PhoneAway
             reply.status == WatchSignInReply.SIGNED_OUT -> SignInProblem.PhoneSignedOut
             reply.status == WatchSignInReply.CHECK_NEEDED -> SignInProblem.CheckOnPhone
+            reply.status == WatchSignInReply.TRY_LATER -> SignInProblem.TryLater
+            reply.status == WatchSignInReply.CANNOT_LEND -> SignInProblem.PhoneCantLend
             reply.status == WatchSignInReply.OK && !reply.code.isNullOrBlank() -> null
             else -> SignInProblem.Failed
+        }
+
+    /**
+     * What a try that didn't sign the watch in holds the sign-in screen with: the phone's answer that
+     * asking again at once won't change, or a code lent but not redeemed ([lent]); null when the
+     * screen may ask again by itself (the phone away, signed out, or failing for now).
+     */
+    fun hold(problem: SignInProblem, lent: Boolean): SignInHold? =
+        when {
+            lent -> SignInHold.RedeemFailed
+            problem == SignInProblem.CheckOnPhone -> SignInHold.CheckOnPhone
+            problem == SignInProblem.TryLater -> SignInHold.TryLater
+            problem == SignInProblem.PhoneCantLend -> SignInHold.PhoneCantLend
+            else -> null
         }
 }
 
@@ -218,8 +263,9 @@ internal class WatchPairing(private val tokens: WatchAccountStore) : PairedSessi
 /**
  * Signs the watch in through its phone and out again. Nothing on the watch reaches boxlore's API
  * until it is signed in: [onAccountChanged] tells the API session each time the token comes or goes.
- * After a sign-out here, a refused token or a phone that needs its check, the watch asks the phone
- * again only when the listener taps Sign in ([WatchAccountStore.hold]).
+ * After a sign-out here, a refused token, or a phone that needs its check, lent too often or can't
+ * lend, the watch asks the phone again only when the listener taps Sign in; after a lent code it
+ * couldn't redeem, also once a few minutes have passed ([WatchAccountStore.hold]).
  */
 internal class LiveWatchAccount(
     /** Asks the phone to sign this watch in; null when the phone is out of reach. */
@@ -232,6 +278,7 @@ internal class LiveWatchAccount(
     private val scope: CoroutineScope,
     /** Runs after the watch signed in or out, once the token store says so. */
     private val onAccountChanged: () -> Unit = {},
+    private val clock: () -> Long = System::currentTimeMillis,
 ) : WatchAccount {
     private val current = MutableStateFlow(if (tokens.token == null) WatchAccountState.SignedOut else WatchAccountState.SignedIn(tokens.account))
     private val lastProblem = MutableStateFlow(tokens.hold?.problem)
@@ -246,7 +293,8 @@ internal class LiveWatchAccount(
     override fun signIn() = ask(byListener = true)
 
     override fun signInBySelf() {
-        if (tokens.hold == null) ask(byListener = false)
+        val hold = tokens.hold
+        if (hold == null || (hold.lapsesAfterMs != null && clock() >= tokens.holdUntilMs)) ask(byListener = false)
     }
 
     private fun ask(byListener: Boolean) {
@@ -260,8 +308,9 @@ internal class LiveWatchAccount(
             // Signed out while this was on its way: the listener's last word stands.
             if (turn.get() != mine) return@launch
             if (token == null) {
+                val lent = WatchSignInRules.problem(reply) == null
                 val problem = WatchSignInRules.problem(reply) ?: SignInProblem.Failed
-                if (problem == SignInProblem.CheckOnPhone) tokens.hold = SignInHold.CheckOnPhone
+                hold(WatchSignInRules.hold(problem, lent))
                 lastProblem.value = problem
                 current.value = WatchAccountState.SignedOut
                 return@launch
@@ -305,11 +354,17 @@ internal class LiveWatchAccount(
         forget(if (reason == PairedTokenRefusal.UnattestedLender) SignInHold.CheckOnPhone else SignInHold.Refused)
     }
 
+    /** Keeps [next] (or no hold), with when it lifts if it lifts by itself. */
+    private fun hold(next: SignInHold?) {
+        tokens.holdUntilMs = next?.lapsesAfterMs?.let { clock() + it } ?: 0L
+        tokens.hold = next
+    }
+
     private fun forget(hold: SignInHold) {
         turn.incrementAndGet()
         tokens.clear()
         // Kept before the sign-in screen comes up, so it doesn't ask the phone by itself.
-        tokens.hold = hold
+        hold(hold)
         store.update { it.copy(cloudLinked = false, cloudAcked = 0L, cloudSince = 0L).confirmed() }
         lastProblem.value = hold.problem
         current.value = WatchAccountState.SignedOut

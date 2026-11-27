@@ -125,6 +125,12 @@
     <string name="wear_account_failed">Couldn\'t sign in. Try again.</string>
     <!-- The phone must pass boxlore's quick check (Cloudflare's, on the phone) before it can sign the watch in. -->
     <string name="wear_account_check_on_phone">Open boxlore on your phone, then try again. It may ask for a quick check.</string>
+    <!-- The phone has lent its sign-in to watches and TVs too often lately (boxlore's limit per minute, or per day). -->
+    <string name="wear_account_try_later">Too many tries for now. Wait a while, then try again.</string>
+    <!-- The phone passed boxlore's quick check, but boxlore wants more of the phone (Google's own check) before it signs a watch in; nothing on the watch fixes it. -->
+    <string name="wear_account_phone_cant_lend">Your phone can\'t sign in this watch right now. Try again later.</string>
+    <!-- boxlore stopped taking this watch's sign-in (signed out or reset from the account's side, or it ran out). -->
+    <string name="wear_account_signed_out_by_account">This watch was signed out of your account. Sign in again with your phone.</string>
     <string name="wear_shows_layout_honeycomb">Honeycomb</string>
     <string name="wear_shows_layout_list">List</string>
     <!-- The watch's first screen until it is signed in through the phone; the phone lends its own sign-in, nothing is typed on the watch. -->
