@@ -159,7 +159,7 @@
     <plurals name="account_sync_hours_ago"><item quantity="one">Synchronisé il y a %d h</item><item quantity="many">Synchronisé il y a %d h</item><item quantity="other">Synchronisé il y a %d h</item></plurals>
     <plurals name="account_sync_days_ago"><item quantity="one">Synchronisé il y a %d jour</item><item quantity="many">Synchronisé il y a %d jours</item><item quantity="other">Synchronisé il y a %d jours</item></plurals>
     <string name="account_tv_sign_in">Se connecter sur une TV</string>
-    <string name="account_tv_instruction">Ouvrez boxlore sur votre TV, choisissez Se connecter et saisissez le code affiché.</string>
+    <string name="account_tv_instruction">Ouvrez boxlore sur votre TV et saisissez le code affiché.</string>
     <string name="account_tv_code">Code de la TV</string>
     <string name="account_tv_own_tv_only">Ne saisissez que le code de votre propre TV. Cette TV aura accès à vos émissions et à votre écoute.</string>
     <string name="account_tv_confirm">Connecter la TV</string>

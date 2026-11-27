@@ -160,7 +160,7 @@
     <plurals name="account_sync_days_ago"><item quantity="one">Synced %d day ago</item><item quantity="other">Synced %d days ago</item></plurals>
     <!-- Signing boxlore on a TV in to this account with the code the TV shows. -->
     <string name="account_tv_sign_in">Sign in on a TV</string>
-    <string name="account_tv_instruction">Open boxlore on your TV, choose Sign in, and enter the code it shows.</string>
+    <string name="account_tv_instruction">Open boxlore on your TV and enter the code it shows.</string>
     <string name="account_tv_code">TV code</string>
     <string name="account_tv_own_tv_only">Only enter a code from your own TV. That TV gets your shows and listening.</string>
     <string name="account_tv_confirm">Sign in TV</string>

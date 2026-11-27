@@ -159,7 +159,7 @@
     <plurals name="account_sync_hours_ago"><item quantity="one">Vor %d Std. synchronisiert</item><item quantity="other">Vor %d Std. synchronisiert</item></plurals>
     <plurals name="account_sync_days_ago"><item quantity="one">Vor %d Tag synchronisiert</item><item quantity="other">Vor %d Tagen synchronisiert</item></plurals>
     <string name="account_tv_sign_in">Auf einem Fernseher anmelden</string>
-    <string name="account_tv_instruction">Öffne boxlore auf deinem Fernseher, wähle Anmelden und gib den angezeigten Code ein.</string>
+    <string name="account_tv_instruction">Öffne boxlore auf deinem Fernseher und gib den angezeigten Code ein.</string>
     <string name="account_tv_code">Fernseher-Code</string>
     <string name="account_tv_own_tv_only">Gib nur einen Code von deinem eigenen Fernseher ein. Dieser Fernseher erhält deine Sendungen und deinen Hörverlauf.</string>
     <string name="account_tv_confirm">Fernseher anmelden</string>

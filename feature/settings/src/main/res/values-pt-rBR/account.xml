@@ -159,7 +159,7 @@
     <plurals name="account_sync_hours_ago"><item quantity="one">Sincronizado há %d h</item><item quantity="many">Sincronizado há %d h</item><item quantity="other">Sincronizado há %d h</item></plurals>
     <plurals name="account_sync_days_ago"><item quantity="one">Sincronizado há %d dia</item><item quantity="many">Sincronizado há %d dias</item><item quantity="other">Sincronizado há %d dias</item></plurals>
     <string name="account_tv_sign_in">Entrar em uma TV</string>
-    <string name="account_tv_instruction">Abra o boxlore na sua TV, escolha Entrar e digite o código que aparece.</string>
+    <string name="account_tv_instruction">Abra o boxlore na sua TV e digite o código que aparece.</string>
     <string name="account_tv_code">Código da TV</string>
     <string name="account_tv_own_tv_only">Só digite um código da sua própria TV. Essa TV recebe seus programas e o que você ouve.</string>
     <string name="account_tv_confirm">Entrar na TV</string>
