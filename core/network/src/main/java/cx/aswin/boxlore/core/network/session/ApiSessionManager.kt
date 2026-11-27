@@ -233,6 +233,20 @@ class ApiSessionManager(
         return token?.let { current() }
     }
 
+    /**
+     * Whether a request to [url] would lend this phone's sign-in ([LENDING_ROUTES]) from the limited
+     * session in [attached] while a step-up could do better. The API records how the lending phone
+     * attested in the token it lends, and a watch or TV can't trade one lent by a limited session
+     * (403 `attested_session_required`), so the interceptor steps up first ([stepUpForRoute]) and
+     * doesn't lend from a limited session at all when that gives nothing better. With no check
+     * source or the step-up switched off, the request goes as it is and the API decides.
+     */
+    fun lendsUnchecked(url: HttpUrl, attached: SessionHeaders?): Boolean {
+        if (pairing != null || !covers(url) || routeOf(url) !in LENDING_ROUTES) return false
+        val sent = attached?.let { ApiSessionToken.parse(it.token) } ?: return false
+        return sent.limited && stepUp.available()
+    }
+
     /** Coming to the foreground lifts a wait for it and lets a sign-in ask for the check again. */
     fun onForegroundChanged(foreground: Boolean) {
         if (foreground) {
