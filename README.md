@@ -63,7 +63,10 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
-New features and improvements for the next release are currently in development.
+<b>🐛 Fixed:</b>
+<ul align="left">
+<li>On episode pages, Mark played stays at the end of the date and length line again, and long details scroll beside it instead of pushing it onto a line of its own.</li>
+</ul>
 <!-- release-upcoming:end -->
 
 
