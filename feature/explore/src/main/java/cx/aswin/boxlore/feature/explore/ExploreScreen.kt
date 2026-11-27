@@ -81,6 +81,7 @@ import cx.aswin.boxlore.feature.explore.components.ExploreFloatingHeader
 import cx.aswin.boxlore.feature.explore.components.ExploreHeaderRow
 import cx.aswin.boxlore.feature.explore.components.ExploreHeaderSearchField
 import cx.aswin.boxlore.feature.explore.components.ExploreHeaderSelectors
+import cx.aswin.boxlore.feature.explore.components.ExploreQuickCheckNotice
 import cx.aswin.boxlore.feature.explore.components.ExploreRecommendationsEmptyState
 import cx.aswin.boxlore.feature.explore.components.ExploreSectionHeader
 import cx.aswin.boxlore.feature.explore.components.ExploreTabSelectorFab
@@ -91,6 +92,7 @@ import cx.aswin.boxlore.feature.explore.components.exploreTopHeaderTitle
 import cx.aswin.boxlore.feature.explore.components.exploreTopicResults
 import cx.aswin.boxlore.feature.explore.components.rememberExploreTabPagerState
 import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
+import cx.aswin.boxlore.feature.explore.logic.ExploreCheckedRead
 import cx.aswin.boxlore.feature.explore.logic.ExploreChromeScrollLogic
 import cx.aswin.boxlore.feature.explore.logic.ExploreListRowLogic
 import cx.aswin.boxlore.feature.explore.logic.ExploreTabPagerLogic
@@ -427,6 +429,8 @@ fun ExploreContent(
                                 },
                                 failed = state.topicFailed,
                                 onRetry = { onRetry(ExploreRetry.TOPIC) },
+                                check = state.quickCheck,
+                                onStartCheck = { onRetry(ExploreRetry.QUICK_CHECK) },
                             )
                         } else if (isSearchModeActive) {
                             if (state.searchTab == SearchTab.EPISODES) {
@@ -438,11 +442,13 @@ fun ExploreContent(
                                         loading = state.isSemanticLoading,
                                         searched = state.hasPerformedSemanticSearch,
                                         category = state.currentCategory,
+                                        check = state.quickCheck,
                                     ),
                                     columns = tabletColumns,
                                     onExampleClick = onSearchQueryChanged,
                                     onPodcastClick = onPodcastClick,
                                     onEpisodeClick = onEpisodeClick,
+                                    onStartCheck = { onRetry(ExploreRetry.QUICK_CHECK) },
                                 )
                             } else {
                                 exploreShowSearchItems(
@@ -503,6 +509,18 @@ fun ExploreContent(
                                     items(4) {
                                         ExploreBrowseCardSkeleton(featured = false)
                                     }
+                                    }
+                                } else if (showEmptyState && state.quickCheck.needs(ExploreCheckedRead.FOR_YOU)) {
+                                    // Refused until the quick check passes: say so, not "your picks are on the way".
+                                    item(key = "for_you_quick_check", span = StaggeredGridItemSpan.FullLine) {
+                                        ExploreQuickCheckNotice(
+                                            title = stringResource(R.string.explore_check_for_you_title),
+                                            body = stringResource(R.string.explore_check_for_you_body),
+                                            checking = state.quickCheck.checking,
+                                            missed = state.quickCheck.missed,
+                                            onStartCheck = { onRetry(ExploreRetry.QUICK_CHECK) },
+                                            modifier = Modifier.padding(vertical = 24.dp),
+                                        )
                                     }
                                 } else if (showEmptyState) {
                                     item(span = StaggeredGridItemSpan.FullLine) {

@@ -426,6 +426,32 @@ class ExploreForYouRefresherTest {
     }
 
     @Test
+    fun `asking again after a failure asks at once with the loading state, and nothing else`() = runHarness { h ->
+        h.fails = true
+        h.refresher.onVisibilityChanged(true)
+        h.followed.emit(shows(3))
+        runCurrent()
+        advanceTimeBy(1_000)
+        assertEquals(1, h.requests.size)
+
+        // The quick check passed: the failed picks are asked for now, not a minute later, and show loading.
+        h.fails = false
+        h.loadingChanges.clear()
+        h.refresher.askAgain()
+        runCurrent()
+        assertEquals(2, h.requests.size)
+        assertEquals(listOf(true), h.loadingChanges)
+        settle()
+        assertEquals(listOf(key(shows(3))), h.published)
+        assertFalse(h.loading)
+
+        // Fresh picks are not asked for again.
+        h.refresher.askAgain()
+        runCurrent()
+        assertEquals(2, h.requests.size)
+    }
+
+    @Test
     fun `a failure keeps the shown picks and is retried`() = runHarness { h ->
         h.refresher.onVisibilityChanged(true)
         h.followed.emit(shows(3))

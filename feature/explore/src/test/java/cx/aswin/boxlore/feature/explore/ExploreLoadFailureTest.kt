@@ -9,6 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -24,6 +26,9 @@ import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.feature.explore.components.EXPLORE_QUICK_CHECK_TAG
+import cx.aswin.boxlore.feature.explore.logic.ExploreCheckedRead
+import cx.aswin.boxlore.feature.explore.logic.ExploreQuickCheck
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -34,7 +39,9 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * A read that failed never shows as "nothing there": failed show searches, Top charts and chart
- * pages show Try again, which survives live compact and tablet window changes and asks once.
+ * pages show Try again, which survives live compact and tablet window changes and asks once. A
+ * topic search, collection or For you refused until this phone passes the quick check offers the
+ * check instead.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], application = Application::class)
@@ -106,6 +113,55 @@ class ExploreLoadFailureTest {
         fixture.compose.onNodeWithText("No podcasts to show right now").assertIsDisplayed()
         fixture.compose.onNodeWithText("Nothing here for your region and languages yet. Try another collection.").assertIsDisplayed()
         fixture.compose.onNodeWithText("Try again").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a topic search refused for the quick check offers the check instead of no matches`() {
+        val search =
+            ExploreUiState.Success(
+                searchQuery = "why do we dream",
+                isSearching = true,
+                searchTab = SearchTab.EPISODES,
+                hasPerformedSemanticSearch = true,
+                quickCheck = ExploreQuickCheck(needed = setOf(ExploreCheckedRead.TOPIC_SEARCH)),
+            )
+        val state = mutableStateOf(search)
+        renderLive(state)
+        assertAcrossWindowChanges("Topic search needs a quick check")
+        fixture.compose.onNodeWithText("Nothing matched that idea").assertDoesNotExist()
+        fixture.compose.onNodeWithText("Start check").performClick()
+        assertEquals(listOf(ExploreRetry.QUICK_CHECK), retries)
+
+        // While it runs the button waits; a check that didn't pass says so under it.
+        fixture.compose.runOnIdle { state.value = search.copy(quickCheck = search.quickCheck.started()) }
+        fixture.compose.onNodeWithText("Checking…").assertIsDisplayed().assertIsNotEnabled()
+        fixture.compose.runOnIdle { state.value = search.copy(quickCheck = search.quickCheck.started().finished(passed = false)) }
+        fixture.compose.onNodeWithText("The check didn’t finish.").assertIsDisplayed()
+        fixture.compose.onNodeWithText("Start check").assertIsEnabled()
+
+        // A search that was read and found nothing still says so.
+        fixture.compose.runOnIdle { state.value = search.copy(quickCheck = ExploreQuickCheck()) }
+        fixture.compose.onNodeWithText("Nothing matched that idea").assertIsDisplayed()
+        fixture.compose.onNodeWithTag(EXPLORE_QUICK_CHECK_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a collection refused for the quick check offers the check instead of Try again`() {
+        val refused = ExploreQuickCheck(needed = setOf(ExploreCheckedRead.COLLECTION))
+        render(ExploreUiState.Success(currentVibe = "What's happening", isSearching = true, topicFailed = true, quickCheck = refused))
+        assertAcrossWindowChanges("This collection needs a quick check")
+        fixture.compose.onNodeWithText("Couldn’t load this collection").assertDoesNotExist()
+        fixture.compose.onNodeWithText("Start check").performClick()
+        assertEquals(listOf(ExploreRetry.QUICK_CHECK), retries)
+    }
+
+    @Test
+    fun `For you refused for the quick check offers the check instead of picks on the way`() {
+        render(ExploreUiState.Success(selectedTab = 1, quickCheck = ExploreQuickCheck(needed = setOf(ExploreCheckedRead.FOR_YOU))))
+        assertAcrossWindowChanges("Your picks need a quick check")
+        fixture.compose.onNodeWithText("Your picks are on the way").assertDoesNotExist()
+        fixture.compose.onNodeWithText("Start check").performClick()
+        assertEquals(listOf(ExploreRetry.QUICK_CHECK), retries)
     }
 
     @Test

@@ -334,6 +334,7 @@ internal fun androidx.navigation.NavGraphBuilder.addExploreDestination(w: NavGra
                         adaptiveScorer = container.adaptiveCandidateScorer,
                         initialCategory = category,
                         initialTab = tab,
+                        quickCheck = { application.apiSessions?.manager?.checkNow() == true },
                     ) as T
                 },
             )

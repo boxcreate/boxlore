@@ -25,6 +25,7 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.explore.components.ExploreEmptyState
 import cx.aswin.boxlore.feature.explore.components.ExploreEpisodesSearchEmptyState
 import cx.aswin.boxlore.feature.explore.components.ExploreEpisodesSearchIdleState
+import cx.aswin.boxlore.feature.explore.components.ExploreQuickCheckNotice
 import cx.aswin.boxlore.feature.explore.components.ExploreRelatedShowsRail
 import cx.aswin.boxlore.feature.explore.components.ExploreSearchEpisodeCard
 import cx.aswin.boxlore.feature.explore.components.ExploreSearchLoadingState
@@ -33,9 +34,14 @@ import cx.aswin.boxlore.feature.explore.components.ExploreShowResultRow
 import cx.aswin.boxlore.feature.explore.components.ExploreSuggestedMoodsHeader
 import cx.aswin.boxlore.feature.explore.components.ExploreVibeCard
 import cx.aswin.boxlore.feature.explore.components.exploreConnectedRowShape
+import cx.aswin.boxlore.feature.explore.logic.ExploreCheckedRead
 import cx.aswin.boxlore.feature.explore.logic.ExploreListRowLogic
+import cx.aswin.boxlore.feature.explore.logic.ExploreQuickCheck
 
-/** What Ask anything shows: its results with the order, keys and analytics positions they always had. */
+/**
+ * What Ask anything shows: its results with the order, keys and analytics positions they always
+ * had, and the quick check ([check]) when the search was refused until this phone passes it.
+ */
 internal class ExploreEpisodeSearchContent(
     val query: String,
     val episodes: List<Episode>,
@@ -43,15 +49,20 @@ internal class ExploreEpisodeSearchContent(
     val loading: Boolean,
     val searched: Boolean,
     val category: String,
+    val check: ExploreQuickCheck = ExploreQuickCheck(),
 )
 
-/** Ask anything: the example questions, a loader, no matches, or Related shows then episodes. */
+/**
+ * Ask anything: the example questions, a loader, no matches (or the quick check it needs), or
+ * Related shows then episodes.
+ */
 internal fun LazyStaggeredGridScope.exploreEpisodeSearchItems(
     content: ExploreEpisodeSearchContent,
     columns: Int,
     onExampleClick: (String) -> Unit,
     onPodcastClick: (String, String, String?, Int?) -> Unit,
     onEpisodeClick: (Episode, Podcast) -> Unit,
+    onStartCheck: () -> Unit = {},
 ) {
     if (content.query.isEmpty()) {
         item(span = StaggeredGridItemSpan.FullLine) { ExploreEpisodesSearchIdleState(onExampleClick = onExampleClick) }
@@ -62,9 +73,7 @@ internal fun LazyStaggeredGridScope.exploreEpisodeSearchItems(
     val showContent = eps.isNotEmpty() || pods.isNotEmpty()
     when {
         content.loading && !showContent -> item(span = StaggeredGridItemSpan.FullLine) { ExploreSearchLoadingState(SearchTab.EPISODES) }
-        !content.loading && content.searched && !showContent -> item(span = StaggeredGridItemSpan.FullLine) {
-            ExploreEpisodesSearchEmptyState(onExampleClick = onExampleClick)
-        }
+        !content.loading && content.searched && !showContent -> exploreEpisodeSearchNothingShown(content.check, onExampleClick, onStartCheck)
         showContent -> {
             if (pods.isNotEmpty()) {
                 item(key = "semantic_related_shows_rail", span = StaggeredGridItemSpan.FullLine) {
@@ -100,6 +109,24 @@ internal fun LazyStaggeredGridScope.exploreEpisodeSearchItems(
             }
             if (content.loading) item(span = StaggeredGridItemSpan.FullLine) { ExploreSearchMoreLoader() }
         }
+    }
+}
+
+/** An Ask anything search that brought nothing: the quick check it was refused for, or no matches. */
+private fun LazyStaggeredGridScope.exploreEpisodeSearchNothingShown(check: ExploreQuickCheck, onExampleClick: (String) -> Unit, onStartCheck: () -> Unit) {
+    if (!check.needs(ExploreCheckedRead.TOPIC_SEARCH)) {
+        item(span = StaggeredGridItemSpan.FullLine) { ExploreEpisodesSearchEmptyState(onExampleClick = onExampleClick) }
+        return
+    }
+    item(key = "semantic_quick_check", span = StaggeredGridItemSpan.FullLine) {
+        ExploreQuickCheckNotice(
+            title = stringResource(R.string.explore_check_search_title),
+            body = stringResource(R.string.explore_check_search_body),
+            checking = check.checking,
+            missed = check.missed,
+            onStartCheck = onStartCheck,
+            modifier = Modifier.padding(vertical = 24.dp),
+        )
     }
 }
 
