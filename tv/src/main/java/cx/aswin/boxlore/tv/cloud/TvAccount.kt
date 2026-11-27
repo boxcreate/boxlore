@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import cx.aswin.boxlore.core.network.model.TvSignInStartResponse
 import cx.aswin.boxlore.core.network.session.PairedSessionAccount
+import cx.aswin.boxlore.core.network.session.PairedTokenRefusal
 import cx.aswin.boxlore.tv.data.TvLibraryStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -117,11 +118,11 @@ class TvAccountStore(private val prefs: SharedPreferences) : TvTokenStore {
  */
 internal class TvPairing(private val tokens: TvTokenStore) : PairedSessionAccount {
     @Volatile
-    var onRefused: (token: String) -> Unit = {}
+    var onRefused: (token: String, reason: PairedTokenRefusal) -> Unit = { _, _ -> }
 
     override fun accountToken(): String? = tokens.token
 
-    override fun onTokenRefused(token: String) = onRefused(token)
+    override fun onTokenRefused(token: String, reason: PairedTokenRefusal) = onRefused(token, reason)
 }
 
 /**

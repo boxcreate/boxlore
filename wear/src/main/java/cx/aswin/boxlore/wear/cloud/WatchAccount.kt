@@ -3,6 +3,7 @@ package cx.aswin.boxlore.wear.cloud
 import android.content.Context
 import android.content.SharedPreferences
 import cx.aswin.boxlore.core.network.session.PairedSessionAccount
+import cx.aswin.boxlore.core.network.session.PairedTokenRefusal
 import cx.aswin.boxlore.core.wearlink.WatchSignInReply
 import cx.aswin.boxlore.wear.data.WatchLibraryStore
 import cx.aswin.boxlore.wear.data.confirmed
@@ -164,11 +165,11 @@ internal object WatchSignInRules {
  */
 internal class WatchPairing(private val tokens: WatchAccountStore) : PairedSessionAccount {
     @Volatile
-    var onRefused: (token: String) -> Unit = {}
+    var onRefused: (token: String, reason: PairedTokenRefusal) -> Unit = { _, _ -> }
 
     override fun accountToken(): String? = tokens.token
 
-    override fun onTokenRefused(token: String) = onRefused(token)
+    override fun onTokenRefused(token: String, reason: PairedTokenRefusal) = onRefused(token, reason)
 }
 
 /**

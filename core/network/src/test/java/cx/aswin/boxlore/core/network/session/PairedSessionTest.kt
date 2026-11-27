@@ -48,13 +48,15 @@ class PairedSessionTest {
     private class FakeAccount : PairedSessionAccount {
         @Volatile var token: String? = null
         val refused = CopyOnWriteArrayList<String>()
+        val reasons = CopyOnWriteArrayList<PairedTokenRefusal>()
 
         @Volatile var onRefused: () -> Unit = {}
 
         override fun accountToken(): String? = token
 
-        override fun onTokenRefused(token: String) {
+        override fun onTokenRefused(token: String, reason: PairedTokenRefusal) {
             refused += token
+            reasons += reason
             if (this.token == token) this.token = null
             onRefused()
         }
@@ -160,9 +162,8 @@ class PairedSessionTest {
 
     @Test
     fun `a refused account token signs the device out, whether 401 watch_token_invalid or 403 attested_session_required`() {
-        for ((status, code) in listOf(401 to ApiErrorCodes.WATCH_TOKEN_INVALID, 403 to ApiErrorCodes.ATTESTED_SESSION_REQUIRED)) {
-            assertEquals(PairedSessionResult.TokenRefused, OkHttpPairedSessionTrader.resultOf(status, code, null))
-        }
+        assertEquals(PairedSessionResult.TokenRefused(PairedTokenRefusal.Invalid), OkHttpPairedSessionTrader.resultOf(401, ApiErrorCodes.WATCH_TOKEN_INVALID, null))
+        assertEquals(PairedSessionResult.TokenRefused(PairedTokenRefusal.UnattestedLender), OkHttpPairedSessionTrader.resultOf(403, ApiErrorCodes.ATTESTED_SESSION_REQUIRED, null))
         assertEquals(PairedSessionResult.SessionRefused(ApiErrorCodes.SESSION_EXPIRED), OkHttpPairedSessionTrader.resultOf(401, ApiErrorCodes.SESSION_EXPIRED, null))
         assertEquals(PairedSessionResult.Failed("http_503_sign_in_unavailable", 60), OkHttpPairedSessionTrader.resultOf(503, "sign_in_unavailable", 60))
         assertEquals(PairedSessionResult.Failed("http_429_too_many_attempts", 60), OkHttpPairedSessionTrader.resultOf(429, "too_many_attempts", 60))
@@ -177,6 +178,7 @@ class PairedSessionTest {
         post(client, "/auth/tv/start").use { assertEquals(200, it.code) }
 
         assertEquals(listOf(givenUp), account.refused)
+        assertEquals(listOf(PairedTokenRefusal.UnattestedLender), account.reasons, "the device hears why, to say so")
         assertNull(account.token)
         assertTrue(routesTo("/trending").isEmpty())
         assertEquals(ApiAttestation.None, ApiSessionToken.parse(routesTo("/auth/tv/start").single().session())?.attestation, "a new TV code starts with the limited session")

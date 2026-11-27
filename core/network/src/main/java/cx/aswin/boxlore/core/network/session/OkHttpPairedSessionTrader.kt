@@ -59,8 +59,8 @@ class OkHttpPairedSessionTrader(
 
         /** A refusal by status and `error` code; only a refused account token signs the device out. */
         fun resultOf(status: Int, code: String?, retryAfterSeconds: Long?): PairedSessionResult = when {
-            status == UNAUTHORIZED && code == ApiErrorCodes.WATCH_TOKEN_INVALID -> PairedSessionResult.TokenRefused
-            status == FORBIDDEN && code == ApiErrorCodes.ATTESTED_SESSION_REQUIRED -> PairedSessionResult.TokenRefused
+            status == UNAUTHORIZED && code == ApiErrorCodes.WATCH_TOKEN_INVALID -> PairedSessionResult.TokenRefused(PairedTokenRefusal.Invalid)
+            status == FORBIDDEN && code == ApiErrorCodes.ATTESTED_SESSION_REQUIRED -> PairedSessionResult.TokenRefused(PairedTokenRefusal.UnattestedLender)
             status == UNAUTHORIZED && code != null && code in CARRIER_REFUSALS -> PairedSessionResult.SessionRefused(code)
             // The carrier has no device key the API knows: a fresh limited session brings this one's.
             status == BAD_REQUEST && code == ApiErrorCodes.DEVICE_KEY_REQUIRED -> PairedSessionResult.SessionRefused(code)

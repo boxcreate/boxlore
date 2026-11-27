@@ -31,7 +31,8 @@ object ApiErrorCodes {
 
     /**
      * 403: the session (or, at `/auth/watch/session`, the phone that lent the account token) isn't
-     * attested enough for this route. A watch or TV trading its token treats it as [WATCH_TOKEN_INVALID].
+     * attested enough for this route. A watch or TV trading its token signs out, as for
+     * [WATCH_TOKEN_INVALID], and waits for the listener (see [PairedTokenRefusal.UnattestedLender]).
      */
     const val ATTESTED_SESSION_REQUIRED = "attested_session_required"
 

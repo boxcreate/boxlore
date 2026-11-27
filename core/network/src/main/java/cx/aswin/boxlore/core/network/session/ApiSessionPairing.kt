@@ -9,8 +9,8 @@ package cx.aswin.boxlore.core.network.session
  * - A carrier session the API refuses, or one without the device key, is replaced with a fresh
  *   limited one, once.
  * - A refused account token (`watch_token_invalid`, or 403 `attested_session_required`) signs the
- *   device out ([PairedSessionAccount.onTokenRefused]) and drops the paired session; the limited
- *   one stays, for showing or redeeming a code again.
+ *   device out ([PairedSessionAccount.onTokenRefused], with the [PairedTokenRefusal]) and drops the
+ *   paired session; the limited one stays, for showing or redeeming a code again.
  * - 429, 503 and network failures back off with the exchange backoff and keep the device signed in;
  *   the backoff keeps growing even when each trade needed a fresh limited session first.
  *
@@ -55,7 +55,7 @@ internal class ApiSessionPairing(
             }
             when (result) {
                 is PairedSessionResult.Issued -> return hold(result.session, accountToken, failures)
-                is PairedSessionResult.TokenRefused -> return refused(accountToken)
+                is PairedSessionResult.TokenRefused -> return refused(accountToken, result.reason)
                 is PairedSessionResult.SessionRefused -> {
                     synchronized(lock) { book.drop(session.raw) }
                     carrier = null
@@ -77,10 +77,10 @@ internal class ApiSessionPairing(
         return token
     }
 
-    private fun refused(accountToken: String): ApiSessionToken? {
+    private fun refused(accountToken: String, reason: PairedTokenRefusal): ApiSessionToken? {
         // No backoff: the device signs out, and the limited session it keeps stays free for a new code at once.
         synchronized(lock) { book.dropPaired() }
-        runCatching { account?.onTokenRefused(accountToken) }
+        runCatching { account?.onTokenRefused(accountToken, reason) }
         return null
     }
 

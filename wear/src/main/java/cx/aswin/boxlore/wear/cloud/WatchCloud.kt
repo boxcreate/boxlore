@@ -29,7 +29,7 @@ internal object WatchCloud {
         val sync = WatchCloudSync(cloud, tokens, store, ports.showOf, ports.playingId, scope, onSignedOut = { refused -> account?.forget(refused) })
         val live = LiveWatchAccount(ports.askPhone, cloud, tokens, store, onSignedIn = sync::request, scope = scope, onAccountChanged = apis.sessions::onPairedAccountChanged)
         account = live
-        pairing.onRefused = { refused -> live.forget(refused) }
+        pairing.onRefused = { refused, _ -> live.forget(refused) }
         live.giveUpUnrevoked()
         sync.start()
         return live

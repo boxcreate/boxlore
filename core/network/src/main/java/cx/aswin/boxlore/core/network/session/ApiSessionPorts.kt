@@ -164,11 +164,20 @@ interface PairedSessionAccount {
     /** The account token the device holds, or null while it is signed out. */
     fun accountToken(): String?
 
+    /** The API no longer takes [token], for [reason]: sign the device out. Called off the main thread. */
+    fun onTokenRefused(token: String, reason: PairedTokenRefusal)
+}
+
+/** Why the API stopped taking a watch's or TV's account token when it was traded. */
+enum class PairedTokenRefusal {
+    /** 401 `watch_token_invalid`: given up, reset, another device's or unsigned. */
+    Invalid,
+
     /**
-     * The API no longer takes [token] (given up, reset, another device's, or lent by a phone that
-     * didn't attest): sign the device out. Called off the main thread.
+     * 403 `attested_session_required`: the phone that lent it had passed no check (App Check or
+     * Turnstile) then. Signing in again works once that phone has; asking it again at once doesn't.
      */
-    fun onTokenRefused(token: String)
+    UnattestedLender,
 }
 
 /** One `POST /auth/watch/session`: the [session] the request carries and its `X-Request-Proof` ([proof]). */
@@ -179,8 +188,8 @@ data class PairedSessionRequest(val accountToken: String, val session: String, v
 sealed interface PairedSessionResult {
     data class Issued(val session: String) : PairedSessionResult
 
-    /** 401 `watch_token_invalid` or 403 `attested_session_required`: the device is signed out. */
-    data object TokenRefused : PairedSessionResult
+    /** 401 `watch_token_invalid` or 403 `attested_session_required` ([reason]): the device is signed out. */
+    data class TokenRefused(val reason: PairedTokenRefusal) : PairedSessionResult
 
     /**
      * The session the request carried was refused ([code], one of [ApiErrorCodes.SESSION_REJECTIONS],

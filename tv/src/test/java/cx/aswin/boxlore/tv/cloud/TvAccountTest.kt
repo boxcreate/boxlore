@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.network.model.SyncPullResponse
 import cx.aswin.boxlore.core.network.model.SyncPushRequest
 import cx.aswin.boxlore.core.network.model.SyncPushResponse
 import cx.aswin.boxlore.core.network.model.TvSignInStartResponse
+import cx.aswin.boxlore.core.network.session.PairedTokenRefusal
 import cx.aswin.boxlore.tv.data.TvLibraryStore
 import java.io.File
 import kotlinx.coroutines.CompletableDeferred
@@ -191,10 +192,10 @@ class TvAccountTest {
         val tokens = Tokens().apply { token = "lent" }
         val store = TvLibraryStore(File(folder, "library.json"), scope, StandardTestDispatcher(scope.testScheduler))
         val account = LiveTvAccount(FakeApi(ArrayDeque()), tokens, store, {}, scope)
-        val pairing = TvPairing(tokens).apply { onRefused = account::refused }
+        val pairing = TvPairing(tokens).apply { onRefused = { token, _ -> account.refused(token) } }
         assertEquals("lent", pairing.accountToken())
 
-        pairing.onTokenRefused("lent")
+        pairing.onTokenRefused("lent", PairedTokenRefusal.Invalid)
         assertEquals(TvSignIn.SignedOut, account.signIn.value)
         assertNull(pairing.accountToken())
     }
