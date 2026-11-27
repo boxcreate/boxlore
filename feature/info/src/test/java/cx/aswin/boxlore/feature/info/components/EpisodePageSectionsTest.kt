@@ -205,13 +205,20 @@ class EpisodePageSectionsTest {
     }
 
     @Test
-    fun `beside Archived and a season number on a regular phone, Mark played moves down whole instead of shrinking`() {
+    fun `beside Archived and a season number, Mark played stays whole at the end of the scrolling details' line`() {
         val rich = richState().let { it.copy(episode = it.episode.copy(seasonNumber = 3, episodeNumber = 14, duration = 4_380)) }
         render(rich, archived = setOf(EPISODE_ID))
         val markPlayed = fixture.compose.onNode(hasText("Mark played"), useUnmergedTree = true)
         assertFalse("Mark played is whole", cutOff(textLayout(markPlayed)))
         assertFalse("Archived is whole", cutOff(textLayout(fixture.compose.onNode(hasText("Archived"), useUnmergedTree = true))))
         assertTrue("inside the page", markPlayed.getBoundsInRoot().right.value <= BoxloreTestWindows.PHONE.widthDp)
+        val details = fixture.compose.onNodeWithTag(EPISODE_DETAILS_TAG)
+        val detailsBounds = details.getBoundsInRoot()
+        val pillBounds = markPlayed.getBoundsInRoot()
+        assertEquals("Mark played shares the details' line", (detailsBounds.top.value + detailsBounds.bottom.value) / 2, (pillBounds.top.value + pillBounds.bottom.value) / 2, 2f)
+        assertTrue("the details end before the pills", detailsBounds.right <= fixture.compose.onNode(hasText("Archived"), useUnmergedTree = true).getBoundsInRoot().left)
+        assertEquals("the details run on one line, to scroll", 1, textLayout(details).lineCount)
+        assertFalse("the details never wrap", textLayout(details).layoutInput.softWrap)
         // A narrow short pane puts the small cover beside the title, leaving a column too narrow for both pills.
         val narrowShort = BoxloreWindowLayout(320f, 420f)
         fixture.compose.runOnIdle { window.value = narrowShort }
@@ -322,7 +329,7 @@ class EpisodeDetailsLongTextTest(private val configuration: PhoneGoldenConfigura
     @get:Rule val fixture = PhoneGoldenRule(configuration)
 
     @Test
-    fun `long German details stay still and push the pills below`() {
+    fun `long German details scroll on one line beside a whole Mark played`() {
         val model = mock(EpisodeInfoViewModel::class.java)
         val episode = TestFixtures.episode(id = "de", title = "Wie wir nach Hause finden", podcastId = "1", podcastTitle = "Neugierige Welt", duration = 4_380, publishedDate = 1_731_000_000L)
             .copy(seasonNumber = 3, episodeNumber = 14)
@@ -338,15 +345,21 @@ class EpisodeDetailsLongTextTest(private val configuration: PhoneGoldenConfigura
             }
         }
         fixture.compose.waitForIdle()
-        // The details wrap as plain text: a ticker needs one unwrapped line that runs past its room.
+        // One unwrapped line that scrolls when it runs past its room, so the details never push the pills away.
         val detailsLayout = textLayout(fixture.compose.onNodeWithTag(EPISODE_DETAILS_TAG))
-        assertTrue("the details wrap", detailsLayout.layoutInput.softWrap)
+        assertFalse("the details never wrap", detailsLayout.layoutInput.softWrap)
+        assertEquals("the details run on one line", 1, detailsLayout.lineCount)
         assertFalse("the details are whole", cutOff(detailsLayout))
         val markPlayedNode = fixture.compose.onNode(hasText("Als gehört markieren"), useUnmergedTree = true)
         assertFalse("Mark played is whole", cutOff(textLayout(markPlayedNode)))
         val details = fixture.compose.onNodeWithTag(EPISODE_DETAILS_TAG).getBoundsInRoot()
         val markPlayed = markPlayedNode.getBoundsInRoot()
-        if (configuration.fontScale > 1f) assertTrue("the pills sit below the details", markPlayed.top >= details.bottom)
+        if (configuration.fontScale > 1f) {
+            // Large German pills leave no room for the details, which then take the whole line above them.
+            assertTrue("the pills sit below the details", markPlayed.top >= details.bottom)
+        } else {
+            assertEquals("Mark played shares the details' line", (details.top.value + details.bottom.value) / 2, (markPlayed.top.value + markPlayed.bottom.value) / 2, 2f)
+        }
         assertTrue("the details stay inside the page", details.right.value <= window.widthDp)
         assertTrue("Mark played stays inside the page", markPlayed.right.value <= window.widthDp)
     }

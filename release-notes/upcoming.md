@@ -27,3 +27,5 @@ Announcement title:
 ## Improved
 
 ## Fixed
+
+- On episode pages, Mark played stays at the end of the date and length line again, and long details scroll beside it instead of pushing it onto a line of its own.
