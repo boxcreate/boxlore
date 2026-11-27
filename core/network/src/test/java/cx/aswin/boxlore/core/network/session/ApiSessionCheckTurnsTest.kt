@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.mockwebserver.Dispatcher
@@ -18,15 +19,17 @@ import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 /**
  * The Turnstile check on a phone, against a real HTTP server: the sign-in check and route step-ups
  * take turns and never queue a second check, requests that aren't AI join a running step-up,
- * lending asks past the step-up cooldown, requests wait for a check on screen, and a Skip sticks,
- * for step-ups too.
+ * lending and the check the listener starts ask past the step-up cooldown, requests wait for a
+ * check on screen, and a Skip sticks, for step-ups too.
  */
 class ApiSessionCheckTurnsTest {
     private lateinit var server: MockWebServer
@@ -223,6 +226,30 @@ class ApiSessionCheckTurnsTest {
 
         get(client, "/auth/watch/code").use { assertEquals(200, it.code) }
         assertEquals(2, check.solves.get(), "lending a watch its sign-in is the listener's own ask")
+    }
+
+    // Regression: topic search during the Skip hold got its 401 back and Explore showed no matches, with no way to run the check.
+    @Test
+    fun `after a Skip, the check the listener starts still asks, and the route then goes through`() {
+        appCheck = AppCheckResult.Failed("play_integrity_-9")
+        val limited = sessionToken(sid = "l1", att = "none", tag = "limited")
+        exchanger.handler = { request -> if (request.turnstileToken == "ts") issued(challengeToken()) else issued(limited) }
+        val skipped = TurnstileResult.Failed(TurnstileResult.SKIPPED)
+        val check = FakeCheck(skipped, skipped, TurnstileResult.Token("ts"))
+        val manager = manager(check = check)
+        val client = client(manager)
+        server.dispatcher = limitedRefused(limited)
+
+        get(client, "/v2/search/semantic?q=space").use { assertEquals(401, it.code, "the Skip holds the route's own step-up back") }
+        assertEquals(1, check.solves.get(), "only the sign-in's check, which was skipped")
+
+        assertFalse(runBlocking { manager.checkNow() }, "skipped again")
+        assertTrue(runBlocking { manager.checkNow() }, "neither the Skip nor the miss just before holds the listener's ask back")
+        assertEquals(3, check.solves.get())
+        get(client, "/v2/search/semantic?q=space").use { assertEquals(200, it.code) }
+
+        assertTrue(runBlocking { manager.checkNow() }, "a session better than limited needs no check")
+        assertEquals(3, check.solves.get())
     }
 
     // Regression: a step-up that waited for the sign-in check's turn ran its check with the app gone, timed out and cooled down for 30 minutes.

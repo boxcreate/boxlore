@@ -245,6 +245,15 @@ class ApiSessionManager(
     }
 
     /**
+     * The listener asked for the check (a button on a screen whose answer needs a session better
+     * than limited): runs the Turnstile step-up now, or joins the one running. It is the listener's
+     * own ask, so neither a recent failed step-up nor a Skip holds it back. True when a session
+     * better than limited is held afterwards; false when the check failed or was skipped, or can't
+     * run here (no check source, step-ups switched off, nothing on screen, a watch or TV).
+     */
+    suspend fun checkNow(): Boolean = stepUp.run(joinRunning = true, pastCooldown = true)?.limited == false
+
+    /**
      * Whether a request to [url] would lend this phone's sign-in ([LENDING_ROUTES]) from the limited
      * session in [attached] while a step-up could do better. The API records how the lending phone
      * attested in the token it lends, and a watch or TV can't trade one lent by a limited session

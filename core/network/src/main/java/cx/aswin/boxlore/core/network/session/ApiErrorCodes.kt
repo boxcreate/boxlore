@@ -76,6 +76,13 @@ object ApiErrorCodes {
     /** A 401 in [AWAITS_SESSION]: try again later, once the app holds a better session. Consumes the error body. */
     fun awaitsSession(response: retrofit2.Response<*>): Boolean = response.code() == UNAUTHORIZED && of(response) in AWAITS_SESSION
 
+    /**
+     * The route was refused until this phone passes the quick check ([VERIFICATION_REQUIRED]: the
+     * step-up didn't run, failed or was skipped), so a screen says so and offers the check
+     * ([ApiSessionManager.checkNow]) instead of showing nothing found. Consumes the error body.
+     */
+    fun needsCheck(response: retrofit2.Response<*>): Boolean = of(response) == VERIFICATION_REQUIRED
+
     private const val UNAUTHORIZED = 401
     private const val FORBIDDEN = 403
     private const val TOO_MANY = 429
