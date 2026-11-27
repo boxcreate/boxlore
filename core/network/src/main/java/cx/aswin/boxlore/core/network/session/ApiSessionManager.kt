@@ -219,10 +219,11 @@ class ApiSessionManager(
      * A limited session reached [url], a route that needs more (`verification_required`). Starts
      * the Turnstile step-up, or joins the one running, and returns headers for one retry, or null so
      * the caller uses its fallback (always null in the background, where no host can run the check).
-     * This runs on an OkHttp thread, so the wait is capped at [ApiSessionTiming.stepUpRequestWaitMs].
+     * This runs on an OkHttp thread, so the wait is capped at [ApiSessionTiming.stepUpRequestWaitMs]
+     * (the API client allows enough requests per host that waiting ones don't hold up the rest).
      * An AI route ([AI_ROUTES]) that finds a step-up already running doesn't join it: it takes its
-     * fallback. Lending the account ([LENDING_ROUTES]) is the listener's own ask, so a recent failed
-     * step-up doesn't hold it back.
+     * fallback. Lending the account ([LENDING_ROUTES]) is the listener's own ask, so neither a recent
+     * failed step-up nor a Skip holds it back.
      */
     fun stepUpForRoute(url: HttpUrl): SessionHeaders? {
         val route = routeOf(url)

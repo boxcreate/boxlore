@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test
 /**
  * The Turnstile check on a phone, against a real HTTP server: the sign-in check and route step-ups
  * take turns and never queue a second check, requests that aren't AI join a running step-up,
- * lending asks past the step-up cooldown, requests wait for a check on screen, and a Skip sticks.
+ * lending asks past the step-up cooldown, requests wait for a check on screen, and a Skip sticks,
+ * for step-ups too.
  */
 class ApiSessionCheckTurnsTest {
     private lateinit var server: MockWebServer
@@ -203,6 +204,82 @@ class ApiSessionCheckTurnsTest {
         get(client, "/auth/tv/approve").use { assertEquals(200, it.code) }
 
         assertEquals(2, check.solves.get(), "the listener's own ask goes past the step-up cooldown")
+    }
+
+    // Regression: after a Skip at sign-in, the first route that asked for verification put the check straight back on screen.
+    @Test
+    fun `after a Skip at sign-in, a route step-up doesn't ask, but lending still does`() {
+        appCheck = AppCheckResult.Failed("play_integrity_-9")
+        val limited = sessionToken(sid = "l1", att = "none", tag = "limited")
+        exchanger.handler = { request -> if (request.turnstileToken == "ts") issued(challengeToken()) else issued(limited) }
+        val check = FakeCheck(TurnstileResult.Failed(TurnstileResult.SKIPPED), TurnstileResult.Token("ts"))
+        val client = client(manager(check = check))
+        server.dispatcher = limitedRefused(limited)
+
+        get(client, "/onboarding/next-turn").use { assertEquals(401, it.code, "the AI route takes its fallback") }
+        get(client, "/v2/episodes/register").use { assertEquals(401, it.code) }
+        assertEquals(1, check.solves.get(), "only the sign-in's check, which was skipped")
+        assertEquals(emptyList<Pair<ApiSessionStepUpOutcome, String?>>(), listener.stepUps.toList())
+
+        get(client, "/auth/watch/code").use { assertEquals(200, it.code) }
+        assertEquals(2, check.solves.get(), "lending a watch its sign-in is the listener's own ask")
+    }
+
+    // Regression: a step-up that waited for the sign-in check's turn ran its check with the app gone, timed out and cooled down for 30 minutes.
+    @Test
+    fun `a step-up that waited its turn while the app left the screen gives up without a cooldown`() {
+        appCheck = AppCheckResult.Failed("play_integrity_-9")
+        val limited = sessionToken(sid = "l1", att = "none", tag = "limited")
+        // App Check is due, so background upkeep runs a sign-in check as soon as the app is in front.
+        store.state = StoredApiSession(token = limited, installId = "install-123", appCheckFailures = 1, nextUpgradeAtMs = BASE_MS)
+        exchanger.handler = { request -> if (request.turnstileToken == "ts") issued(challengeToken()) else issued(sessionToken(sid = "l2", att = "none", tag = "limited-2")) }
+        val host = LeavingHost()
+        val manager = manager(check = host)
+        val client = client(manager)
+        server.dispatcher = limitedRefused(limited)
+        val pool = Executors.newFixedThreadPool(1)
+        try {
+            manager.onForegroundChanged(true)
+            eventually { host.signInWaiting.isCompleted }
+            val stepUp = pool.submit(Callable { get(client, "/onboarding/next-turn").use { it.code } })
+            eventually { manager.checks.waiting == 1 }
+            host.onScreen = false
+            host.leave.complete(Unit)
+
+            assertEquals(401, stepUp.get(5, TimeUnit.SECONDS))
+            assertEquals(0, host.solves.get(), "no check ran with nothing on screen")
+            assertEquals(emptyList<Pair<ApiSessionStepUpOutcome, String?>>(), listener.stepUps.toList(), "and nothing failed")
+
+            host.onScreen = true
+            get(client, "/onboarding/next-turn").use { assertEquals(200, it.code, "no cooldown holds the next step-up back") }
+            assertEquals(1, host.solves.get())
+        } finally {
+            host.leave.complete(Unit)
+            pool.shutdownNow()
+        }
+    }
+
+    /**
+     * A check host the sign-in check finds coming up ([signInWaiting]) until [leave], when it is
+     * [onScreen] or not; a check run with nothing on screen times out, as a real one would.
+     */
+    private class LeavingHost : TurnstileTokenSource {
+        val signInWaiting = CompletableDeferred<Unit>()
+        val leave = CompletableDeferred<Unit>()
+        val solves = AtomicInteger()
+
+        @Volatile var onScreen = true
+
+        override suspend fun ready(waitMs: Long): Boolean {
+            if (waitMs > 0 && signInWaiting.complete(Unit)) leave.await()
+            return onScreen
+        }
+
+        override suspend fun solve(): TurnstileResult {
+            if (!onScreen) return TurnstileResult.Failed("timeout")
+            solves.incrementAndGet()
+            return TurnstileResult.Token("ts")
+        }
     }
 
     // Regression: a first request on a fresh install stopped waiting after 15 s, while the sign-in's check was still on screen.

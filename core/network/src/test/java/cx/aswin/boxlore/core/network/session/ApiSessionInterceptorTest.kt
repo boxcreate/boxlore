@@ -584,7 +584,8 @@ class ApiSessionInterceptorTest {
         val limited = sessionToken(sid = "l1", att = "none", tag = "limited")
         val challenge = challengeToken()
         exchanger.handler = { request -> if (request.turnstileToken == "ts") issued(challenge) else issued(limited) }
-        val check = FakeCheck(TurnstileResult.Failed("cancelled"), TurnstileResult.Token("ts"))
+        // A check that failed by itself; one the listener skipped holds step-ups back (ApiSessionCheckTurnsTest).
+        val check = FakeCheck(TurnstileResult.Failed("timeout"), TurnstileResult.Token("ts"))
         val manager = manager(check = check)
         val client = client(manager)
         server.enqueue(error(401, ApiErrorCodes.VERIFICATION_REQUIRED))
@@ -595,7 +596,7 @@ class ApiSessionInterceptorTest {
         assertEquals(limited, server.takeRequest().session(), "the skipped check left a limited session")
         assertEquals(challenge, server.takeRequest().session())
         assertEquals(2, check.solves.get())
-        assertEquals(listOf("cancelled", "token"), listener.exchanges.map { it.turnstile })
+        assertEquals(listOf("timeout", "token"), listener.exchanges.map { it.turnstile })
     }
 
     @Test
