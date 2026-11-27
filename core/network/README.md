@@ -17,7 +17,7 @@ It does not own repositories ([`:core:catalog`](../catalog/README.md)), RSS pars
 - `NetworkModule.createCachedClient(context)`: the one shared OkHttp client with the HTTP cache. Build every service on it (`createBoxLoreApi`, `createBoxLoreApiV2`, `createWatchAccountApi`, `createSupportApi`); two caches must never share a directory, so there is no context-based shortcut.
 - `NetworkModule.createSessionExchangeClient()`: the plain client for session exchanges (no session interceptor, no authenticator, no cache).
 - `NetworkModule.appVersion` / `appChannel` are sent as `X-App-Version` and `X-App-Channel`; `sessionManager`, `authenticator` and `accountToken` are set by the app at startup.
-- Debug logging redacts every credential, App Check, session and proof header; release builds log nothing.
+- Debug logging redacts every credential, App Check, session and proof header, and a watch's or TV's renewed account token; release builds log nothing.
 - `StreamingJsonConverterFactory`: decodes responses straight from the body stream, without buffering a whole string.
 - `EnglishOffInterceptor` (first on the API client): adds `englishOff` to requests whose `languages` leave English out; every other request passes through unchanged.
 - `FirebaseAuthAuthenticator`: refreshes the Firebase ID token on a 401 from the API base URL's origin only, one refresh at a time (`Mutex`), using `AuthRepository` from [`:core:auth`](../auth/README.md). It ignores other hosts' 401s and 401s carrying `ApiErrorCodes.SHIELD_CODES`, which belong to the session layer.
@@ -103,9 +103,9 @@ src/main/java/cx/aswin/boxlore/core/network/
 
 ## Threading / lifecycle
 
-- Retrofit services are `suspend` and called from repository IO paths; OkHttp runs on its own dispatcher threads.
+- Retrofit services are `suspend` and called from repository IO paths; OkHttp runs on its own dispatcher threads, at most 16 requests per host (`NetworkModule.MAX_REQUESTS_PER_HOST`), so a few held by a step-up don't stall the rest.
 - Clients are process-scoped. `PodcastRepository` builds both API versions and the support service on the one cached client.
-- `ApiSessionManager` runs on the application scope it is given. The interceptor calls it on OkHttp threads and may block a request while a session is obtained: briefly, or until a Turnstile check on screen ends (bounded by `ApiSessionTiming.stepUpTimeoutMs`).
+- `ApiSessionManager` runs on the application scope it is given. The interceptor calls it on OkHttp threads and may block a request while a session is obtained: briefly, or until a Turnstile check on screen ends (bounded by `ApiSessionTiming.stepUpTimeoutMs`; a request that starts or joins a route step-up, `stepUpRequestWaitMs`).
 - Session persistence is asynchronous and serialized; `ApiSessionListener` callbacks arrive off the main thread.
 
 ## Persistence & identity
@@ -132,6 +132,8 @@ Tests live in `core/network/src/test` (JUnit 5, MockWebServer, virtual time); re
 | Token refresh, auth types | `FirebaseAuthAuthenticatorTest`, `AuthExceptionsTest` |
 | Sessions and proofs | `session/ApiSessionInterceptorTest`, `ApiSessionSchedulerTest`, `ApiSessionPolicyTest`, `OkHttpSessionExchangerTest`, `RequestProofTest`, `PairedSessionTest` |
 | Turnstile checks taking turns, a Skip, waits for a check on screen | `session/ApiSessionCheckTurnsTest`, `ApiSessionCheckGateTest` |
+| Lending a watch or TV the sign-in: step up first, never from a limited session | `session/ApiSessionLendingTest` |
+| Client limits, redacted debug logs | `NetworkModuleTest` |
 
 ```bash
 ./gradlew :core:network:testDebugUnitTest
