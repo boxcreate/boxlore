@@ -6,8 +6,8 @@ package cx.aswin.boxlore.core.network.session
  * the catalogue whatever the API's limited-session mode. The request carries the session the
  * device already holds (a paired one about to run out, else a limited one) and its device-key proof.
  *
- * - A carrier session the API refuses, or one without the device key, is replaced with a fresh
- *   limited one, once.
+ * - A carrier session the API refuses (its proof included), or one without the device key, is
+ *   replaced with a fresh limited one, once.
  * - A refused account token (`watch_token_invalid`, or 403 `attested_session_required`) signs the
  *   device out ([PairedSessionAccount.onTokenRefused], with the [PairedTokenRefusal]) and drops the
  *   paired session; the limited one stays, for showing or redeeming a code again.

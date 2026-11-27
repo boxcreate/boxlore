@@ -206,7 +206,8 @@ sealed interface PairedSessionResult {
 
     /**
      * The session the request carried was refused ([code], one of [ApiErrorCodes.SESSION_REJECTIONS],
-     * or a 400 [ApiErrorCodes.DEVICE_KEY_REQUIRED]): try once more with another.
+     * a 400 [ApiErrorCodes.DEVICE_KEY_REQUIRED] or a 401 [ApiErrorCodes.PROOF_REQUIRED]): try once
+     * more with another.
      */
     data class SessionRefused(val code: String) : PairedSessionResult
 

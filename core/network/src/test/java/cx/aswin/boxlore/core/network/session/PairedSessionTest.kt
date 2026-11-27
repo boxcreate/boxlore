@@ -168,6 +168,7 @@ class PairedSessionTest {
         assertEquals(PairedSessionResult.Failed("http_503_sign_in_unavailable", 60), OkHttpPairedSessionTrader.resultOf(503, "sign_in_unavailable", 60))
         assertEquals(PairedSessionResult.Failed("http_429_too_many_attempts", 60), OkHttpPairedSessionTrader.resultOf(429, "too_many_attempts", 60))
         assertEquals(PairedSessionResult.SessionRefused(ApiErrorCodes.DEVICE_KEY_REQUIRED), OkHttpPairedSessionTrader.resultOf(400, ApiErrorCodes.DEVICE_KEY_REQUIRED, null))
+        assertEquals(PairedSessionResult.SessionRefused(ApiErrorCodes.PROOF_REQUIRED), OkHttpPairedSessionTrader.resultOf(401, ApiErrorCodes.PROOF_REQUIRED, null))
 
         val givenUp = "bwt1.given-up"
         account.token = givenUp
@@ -228,6 +229,36 @@ class PairedSessionTest {
         assertEquals(listOf("stale", "limited-1"), trades.map { ApiSessionToken.parse(it.session())?.sid })
         assertEquals(1, exchanger.calls)
         assertTrue(account.refused.isEmpty())
+    }
+
+    // Regression: a refused proof counted as a plain failure and kept the carrier, retrying it every few minutes for a day.
+    @Test
+    fun `a trade whose proof is refused gets a fresh limited session, with the device key, and trades again`() {
+        account.token = "bwt1.account"
+        store.state = StoredApiSession(token = sessionToken(sid = "stale", att = "none", tag = "stale"), installId = "install-123")
+        tradeAnswers += error(401, ApiErrorCodes.PROOF_REQUIRED)
+        val client = client(manager())
+
+        get(client).use { assertEquals(200, it.code) }
+
+        assertEquals(listOf("stale", "limited-1"), trades.map { ApiSessionToken.parse(it.session())?.sid })
+        assertEquals("device-pk", exchanger.requests.single().devicePublicKey)
+        assertTrue(account.refused.isEmpty(), "the account token wasn't what the API refused")
+    }
+
+    // Regression: after a refused trade the request asked once more, for a limited sign-in nothing needed.
+    @Test
+    fun `a refused trade sends no second sign-in for the same request`() {
+        val givenUp = "bwt1.given-up"
+        account.token = givenUp
+        tradeAnswers += error(401, ApiErrorCodes.WATCH_TOKEN_INVALID)
+        val client = client(manager())
+
+        get(client).use { assertEquals(401, it.code) }
+
+        assertEquals(1, trades.size)
+        assertEquals(1, exchanger.calls, "one limited sign-in, to carry the trade")
+        assertEquals(listOf(PairedTokenRefusal.Invalid), account.reasons)
     }
 
     // Regression: a held session without the device key backed every trade off unsent, for up to a day.

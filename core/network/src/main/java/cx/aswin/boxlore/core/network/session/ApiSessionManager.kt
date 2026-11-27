@@ -170,9 +170,10 @@ class ApiSessionManager(
     fun headersForRequest(pairedOnly: Boolean = false): SessionHeaders? {
         if (!loaded.isCompleted) runBlocking { withTimeoutOrNull(timing.loadWaitMs) { loaded.await() } }
         current(pairedOnly)?.let { return it }
-        if (pairedOnly && pairing?.accountToken() == null) return null
         // A paired-only request that joined a limited sign-in (one already running) asks once more, for the trade.
         repeat(if (pairedOnly) 2 else 1) {
+            // Signed out, or the trade just refused the account token: no exchange can bring a paired session now.
+            if (pairedOnly && pairing?.accountToken() == null) return null
             val job = synchronized(lock) {
                 val trigger = if (book.token == null) ApiSessionTrigger.Launch else ApiSessionTrigger.Expired
                 if (exchangeJob?.isActive == true || book.mayExchange) joinOrStartExchangeLocked(trigger) else null

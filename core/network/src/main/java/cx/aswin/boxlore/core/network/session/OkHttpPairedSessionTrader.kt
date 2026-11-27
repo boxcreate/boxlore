@@ -62,8 +62,10 @@ class OkHttpPairedSessionTrader(
             status == UNAUTHORIZED && code == ApiErrorCodes.WATCH_TOKEN_INVALID -> PairedSessionResult.TokenRefused(PairedTokenRefusal.Invalid)
             status == FORBIDDEN && code == ApiErrorCodes.ATTESTED_SESSION_REQUIRED -> PairedSessionResult.TokenRefused(PairedTokenRefusal.UnattestedLender)
             status == UNAUTHORIZED && code != null && code in CARRIER_REFUSALS -> PairedSessionResult.SessionRefused(code)
-            // The carrier has no device key the API knows: a fresh limited session brings this one's.
+            // The carrier has no device key the API knows, or its proof didn't check out against it (a key
+            // that changed, a clock far off): a fresh limited session brings this key, and its `iat` the clock.
             status == BAD_REQUEST && code == ApiErrorCodes.DEVICE_KEY_REQUIRED -> PairedSessionResult.SessionRefused(code)
+            status == UNAUTHORIZED && code == ApiErrorCodes.PROOF_REQUIRED -> PairedSessionResult.SessionRefused(code)
             else -> PairedSessionResult.Failed(listOfNotNull("http_$status", code).joinToString("_"), retryAfterSeconds)
         }
 
