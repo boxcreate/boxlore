@@ -75,16 +75,21 @@ class OkHttpSessionExchangerTest {
     }
 
     @Test
-    fun `failures carry the status, the error code and any Retry-After`() = runTest {
+    fun `failures carry the status, the error code, a refusal's reason and any Retry-After`() = runTest {
         server.enqueue(MockResponse().setResponseCode(429).setHeader("Retry-After", "60").setBody("""{"error":"too_many_attempts"}"""))
         server.enqueue(MockResponse().setResponseCode(503).setBody("""{"error":"sessions_unavailable"}"""))
         server.enqueue(MockResponse().setResponseCode(403).setBody("""{"error":"install_revoked"}"""))
+        server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":"attestation_required","reason":"appcheck:invalid"}"""))
         server.enqueue(MockResponse().setBody("not json"))
         val request = SessionExchangeRequest("install-123", null, null, null)
 
-        assertEquals(SessionExchangeResult.Failed("http_429_too_many_attempts", 60), exchanger.exchange(request))
-        assertEquals(SessionExchangeResult.Failed("http_503_sessions_unavailable", null), exchanger.exchange(request))
-        assertEquals(SessionExchangeResult.Failed("http_403_install_revoked", 3_600), exchanger.exchange(request))
+        assertEquals(SessionExchangeResult.Failed("http_429_too_many_attempts", 60, "too_many_attempts"), exchanger.exchange(request))
+        assertEquals(SessionExchangeResult.Failed("http_503_sessions_unavailable", null, "sessions_unavailable"), exchanger.exchange(request))
+        assertEquals(SessionExchangeResult.Failed("http_403_install_revoked", 3_600, "install_revoked"), exchanger.exchange(request))
+        assertEquals(
+            SessionExchangeResult.Failed("http_401_attestation_required", null, ApiErrorCodes.ATTESTATION_REQUIRED, "appcheck:invalid"),
+            exchanger.exchange(request),
+        )
         assertEquals(SessionExchangeResult.Failed("bad_response"), exchanger.exchange(request))
         val unreachable = OkHttpSessionExchanger("http://127.0.0.1:1", OkHttpClient(), { null }, { null })
         assertEquals(SessionExchangeResult.Failed("network"), unreachable.exchange(request))

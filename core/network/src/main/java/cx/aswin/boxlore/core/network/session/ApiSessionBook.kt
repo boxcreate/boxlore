@@ -25,6 +25,15 @@ internal class ApiSessionBook(private val clock: () -> Long) {
     var nextExchangeAtMs = 0L
     var lastMaintenanceAtMs = 0L
 
+    /**
+     * The API refused a session without attestation while the app was in the background, where no
+     * Turnstile check can run: no exchange until the app next comes to the foreground.
+     */
+    var awaitingForeground = false
+
+    /** No sign-in Turnstile check before this local time (one failed or wasn't accepted). */
+    var signInCheckAfterMs = 0L
+
     /** Local time the held token arrived; a rejection right after that is not worth another exchange. */
     var tokenReceivedAtMs = 0L
 
@@ -89,9 +98,9 @@ internal class ApiSessionBook(private val clock: () -> Long) {
         return RejectionPlan(RejectionStep.BackOff, refusedRenewal)
     }
 
-    fun recordAppCheck(attempted: Boolean, attestation: ApiAttestation) {
-        if (!attempted) return
-        if (attestation == ApiAttestation.AppCheck) {
+    /** One App Check attempt's verdict: [passed] when the API issued an App Check session for it. */
+    fun recordAppCheck(passed: Boolean) {
+        if (passed) {
             appCheckFailures = 0
             nextUpgradeAtMs = 0L
         } else {
@@ -99,6 +108,12 @@ internal class ApiSessionBook(private val clock: () -> Long) {
             nextUpgradeAtMs = clock() + ApiSessionPolicy.upgradeDelayMs(appCheckFailures)
         }
     }
+
+    /** App Check is worth asking: it hasn't failed lately, or its retry is due. */
+    val appCheckDue: Boolean get() = appCheckFailures == 0 || clock() >= nextUpgradeAtMs
+
+    /** A request may start an exchange: outside the backoff, and not waiting for the foreground. */
+    val mayExchange: Boolean get() = !awaitingForeground && clock() >= nextExchangeAtMs
 
     fun recordExchangeSuccess() {
         exchangeFailures = 0

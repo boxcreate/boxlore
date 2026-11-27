@@ -19,9 +19,20 @@ sealed interface TurnstileResult {
     data class Failed(val reason: String) : TurnstileResult
 }
 
-/** Supplied by the app's Turnstile host; it shows UI only if Turnstile asks for interaction. */
+/**
+ * Supplied by the app's Turnstile host; it shows UI only if Turnstile asks for interaction. Sign-ins
+ * use it when App Check can't vouch for the install, and routes that answer `verification_required`
+ * use it to step a limited session up.
+ */
 fun interface TurnstileTokenSource {
     suspend fun solve(): TurnstileResult
+
+    /**
+     * Whether [solve] can run now: a host is on screen to run it (the app is in the foreground).
+     * Waits up to [waitMs] for a host that is still coming up, as on a cold start. A source that
+     * needs no host is always ready.
+     */
+    suspend fun ready(waitMs: Long): Boolean = true
 }
 
 /** A non-exportable hardware-backed P-256 key that binds renewals to this phone. */
@@ -71,6 +82,12 @@ data class ApiSessionExchangeEvent(
     val appCheckFailure: String?,
     val failureReason: String?,
     val serverReason: String?,
+    /**
+     * Turnstile in this exchange: `token` when one was sent, else why none was (a failure reason
+     * such as `cancelled` or `timeout`, `no_host` in the background, `cooldown` after a recent
+     * failure); null when the exchange didn't need one.
+     */
+    val turnstile: String? = null,
 )
 
 /** Renewal outcomes: `renewed`, `proof_unavailable` (signing failed) or `rejected` (the API refused it). */
@@ -80,7 +97,7 @@ enum class ApiSessionRenewOutcome(val wire: String) {
     Rejected("rejected"),
 }
 
-/** Step-up outcomes for `api_session_status`; a disabled step-up records nothing. */
+/** Step-up outcomes for `api_session_status`; a disabled step-up, or one with no host on screen, records nothing. */
 enum class ApiSessionStepUpOutcome(val wire: String) {
     Passed("passed"),
     ChallengeFailed("challenge_failed"),
@@ -122,8 +139,17 @@ data class SessionExchangeRequest(
 sealed interface SessionExchangeResult {
     data class Issued(val session: String, val attestation: ApiAttestation, val limited: Boolean, val reason: String?) : SessionExchangeResult
 
-    /** [reason] is `network`, `http_<status>` or `http_<status>_<error code>`. */
-    data class Failed(val reason: String, val retryAfterSeconds: Long? = null) : SessionExchangeResult
+    /**
+     * [reason] is `network`, `http_<status>` or `http_<status>_<error code>`; [code] is the API's
+     * error code alone (such as [ApiErrorCodes.ATTESTATION_REQUIRED]) and [serverReason] the short
+     * reason some refusals carry.
+     */
+    data class Failed(
+        val reason: String,
+        val retryAfterSeconds: Long? = null,
+        val code: String? = null,
+        val serverReason: String? = null,
+    ) : SessionExchangeResult
 }
 
 fun interface SessionExchanger {

@@ -123,5 +123,7 @@ class ApiSessionPolicyTest {
         assertTrue(ApiErrorCodes.VERIFICATION_REQUIRED in ApiErrorCodes.AI_UNAVAILABLE)
         assertTrue(ApiErrorCodes.DAILY_AI_LIMIT in ApiErrorCodes.AI_UNAVAILABLE)
         assertFalse(ApiErrorCodes.SESSION_EXPIRED in ApiErrorCodes.AI_UNAVAILABLE)
+        assertTrue(ApiErrorCodes.ATTESTATION_REQUIRED in ApiErrorCodes.SESSION_REJECTIONS, "a refused limited session is replaced")
+        assertTrue(ApiErrorCodes.ATTESTATION_REQUIRED in ApiErrorCodes.SHIELD_CODES, "and never sent to the Firebase authenticator")
     }
 }

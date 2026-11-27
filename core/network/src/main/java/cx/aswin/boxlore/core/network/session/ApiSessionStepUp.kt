@@ -6,9 +6,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * The Turnstile step-up for a limited session on an AI route. One step-up runs at a time and
- * concurrent AI requests join it. A failure starts a cooldown so later AI requests go straight to
- * onboarding's non-AI fallback instead of asking again.
+ * The Turnstile step-up for a limited session on a route that answered `verification_required`
+ * (AI onboarding, and what a read-only limited session may not do). One step-up runs at a time and
+ * concurrent requests join it. It starts only while a host is on screen: a background request gets
+ * its 401 back at once, with no cooldown. A failure starts a cooldown, separate from the sign-in
+ * check's, so later requests go straight to their fallback instead of asking again.
  */
 internal class ApiSessionStepUp(
     private val scope: CoroutineScope,
@@ -21,8 +23,9 @@ internal class ApiSessionStepUp(
     @Volatile
     var source: TurnstileTokenSource? = null
 
+    /** The app's remote switch for route step-ups; sign-in checks don't read it. */
     @Volatile
-    var enabled: () -> Boolean = { false }
+    var enabled: () -> Boolean = { true }
 
     private val lock = Any()
     private var job: Deferred<ApiSessionToken?>? = null
@@ -37,6 +40,7 @@ internal class ApiSessionStepUp(
         usableToken()?.takeIf { !it.limited }?.let { return it }
         val turnstile = source ?: return null
         if (!runCatching { enabled() }.getOrDefault(false)) return null
+        if (!nonCancellationFailure({ false }) { turnstile.ready(0L) }) return null
         val running = synchronized(lock) {
             val active = job?.takeIf { it.isActive }
             when {

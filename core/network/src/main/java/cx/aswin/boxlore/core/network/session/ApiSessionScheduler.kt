@@ -15,6 +15,8 @@ internal data class ApiSessionStep(val atMs: Long, val trigger: ApiSessionTrigge
  *   daily ([ApiSessionPolicy.upgradeDelayMs]), and swap in the full session when it passes;
  * - weaker sessions also get a fresh session (without App Check) an hour before they run out;
  * - a missing session is fetched again with the exchange backoff.
+ * Every exchange App Check can't vouch for also runs the Turnstile check, which this foreground
+ * work can show ([ApiSessionManager]), so a limited session moves up to a challenge one.
  * Consecutive background exchanges are at least [MIN_SPACING_MS] apart.
  */
 internal class ApiSessionScheduler(
@@ -33,6 +35,8 @@ internal class ApiSessionScheduler(
         synchronized(lock) { foreground = value }
         reschedule()
     }
+
+    fun isForeground(): Boolean = synchronized(lock) { foreground }
 
     fun setOnline(value: Boolean) {
         synchronized(lock) { online = value }

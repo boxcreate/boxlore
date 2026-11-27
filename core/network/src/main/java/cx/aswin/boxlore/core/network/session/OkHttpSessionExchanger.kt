@@ -46,12 +46,14 @@ class OkHttpSessionExchanger(
             client.newCall(http).execute().use { response ->
                 val text = response.body?.string().orEmpty()
                 if (!response.isSuccessful) {
-                    val code = ApiErrorCodes.parse(text)
+                    val refusal = refusalOf(text)
                     val retryAfter = response.header("Retry-After")?.trim()?.toLongOrNull()
                         ?: if (response.code == 403) REVOKED_RETRY_SECONDS else null
                     return@withContext SessionExchangeResult.Failed(
-                        reason = listOfNotNull("http_${response.code}", code).joinToString("_"),
+                        reason = listOfNotNull("http_${response.code}", refusal?.error).joinToString("_"),
                         retryAfterSeconds = retryAfter,
+                        code = refusal?.error,
+                        serverReason = refusal?.reason?.take(MAX_REASON_LENGTH),
                     )
                 }
                 val parsed = runCatching { json.decodeFromString(SessionResponseBody.serializer(), text) }.getOrNull()
@@ -66,6 +68,13 @@ class OkHttpSessionExchanger(
         } catch (_: IOException) {
             SessionExchangeResult.Failed("network")
         }
+    }
+
+    /** The `error` code and `reason` of a small JSON refusal (`attestation_required` carries a reason). */
+    private fun refusalOf(text: String): RefusalBody? {
+        val code = ApiErrorCodes.parse(text) ?: return null
+        val reason = runCatching { json.decodeFromString(RefusalBody.serializer(), text).reason }.getOrNull()
+        return RefusalBody(code, reason)
     }
 
     private companion object {
@@ -98,5 +107,11 @@ private data class SessionResponseBody(
     val session: String,
     val attestation: String? = null,
     val limited: Boolean = false,
+    val reason: String? = null,
+)
+
+@Serializable
+private data class RefusalBody(
+    val error: String,
     val reason: String? = null,
 )

@@ -16,18 +16,30 @@ import org.junit.jupiter.api.Test
 /**
  * Background upkeep in virtual time: a limited session retries App Check about a minute after the
  * first failure, then hourly, then daily, only in the foreground with a network, and swaps in the
- * full session silently when App Check passes. Those retries give slow App Check longer than launch does.
+ * full session silently when App Check passes. Those retries give slow App Check longer than launch
+ * does, and run the Turnstile check for a limited session, never for a challenge one.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ApiSessionSchedulerTest {
     private val minute = 60_000L
     private val hour = 60 * minute
 
-    private class Harness(scope: TestScope, stored: StoredApiSession, appCheckPassesOnAttempt: Int, appCheckDelayMs: Long = 0L) {
+    private class Harness(
+        scope: TestScope,
+        stored: StoredApiSession,
+        appCheckPassesOnAttempt: Int,
+        appCheckDelayMs: Long = 0L,
+        check: TurnstileTokenSource? = null,
+    ) {
         val appCheckCalls = AtomicInteger()
         val full = sessionToken(sid = "full", att = "appcheck", tag = "full")
+        val challenge = sessionToken(sid = "challenge", att = "challenge", exp = BASE_S + DAY_S, attExp = BASE_S + 7 * DAY_S, tag = "challenge")
         val exchanger = FakeExchanger { request ->
-            if (request.appCheckToken != null) issued(full) else issued(sessionToken(sid = "limited-${request.hashCode()}", att = "none"))
+            when {
+                request.appCheckToken != null -> issued(full)
+                request.turnstileToken != null -> issued(challenge)
+                else -> issued(sessionToken(sid = "limited-${request.hashCode()}", att = "none"))
+            }
         }
         val store = FakeStore(stored)
         val manager = ApiSessionManager(
@@ -42,7 +54,7 @@ class ApiSessionSchedulerTest {
             },
             scope = scope.backgroundScope,
             clock = { BASE_MS + scope.testScheduler.currentTime },
-        )
+        ).also { it.turnstile = check }
 
         fun heldToken(): String? = manager.headersForRequest()?.token
     }
@@ -132,6 +144,32 @@ class ApiSessionSchedulerTest {
     }
 
     @Test
+    fun `a limited session's upgrade runs the check when App Check fails, a challenge session's never does`() = runTest {
+        val solves = AtomicInteger()
+        val check = TurnstileTokenSource {
+            solves.incrementAndGet()
+            TurnstileResult.Token("ts")
+        }
+        val harness = Harness(this, limitedStored(), appCheckPassesOnAttempt = Int.MAX_VALUE, check = check)
+        harness.manager.start()
+        runCurrent()
+        harness.manager.onForegroundChanged(true)
+        runCurrent()
+
+        testScheduler.advanceTimeBy(minute + 1_000)
+        runCurrent()
+        assertEquals(1, harness.appCheckCalls.get())
+        assertEquals(1, solves.get(), "App Check failed, so the upgrade asked Turnstile in the same exchange")
+        assertEquals(harness.challenge, harness.heldToken())
+
+        testScheduler.advanceTimeBy(hour + minute)
+        runCurrent()
+        assertEquals(2, harness.appCheckCalls.get(), "App Check keeps retrying to upgrade the challenge session")
+        assertEquals(1, solves.get(), "but a challenge session needs no new check")
+        assertEquals(harness.challenge, harness.heldToken())
+    }
+
+    @Test
     fun `plans the next background exchange from the held session`() {
         val book = ApiSessionBook { BASE_MS }
         assertEquals(ApiSessionStep(BASE_MS, ApiSessionTrigger.Retry, useAppCheck = true), ApiSessionScheduler.nextStep(book, BASE_MS))
@@ -147,11 +185,11 @@ class ApiSessionSchedulerTest {
         assertEquals(BASE_MS + 29 * DAY_S * 1_000, refresh.atMs, "App Check sessions re-attest a day before the window ends")
 
         book.hold(ApiSessionToken.parse(sessionToken(att = "none", iat = BASE_S, exp = BASE_S + DAY_S))!!)
-        book.recordAppCheck(attempted = true, attestation = ApiAttestation.None)
+        book.recordAppCheck(passed = false)
         val upgrade = ApiSessionScheduler.nextStep(book, BASE_MS)
         assertEquals(ApiSessionStep(BASE_MS + minute, ApiSessionTrigger.Upgrade, useAppCheck = true), upgrade)
 
-        repeat(5) { book.recordAppCheck(attempted = true, attestation = ApiAttestation.None) }
+        repeat(5) { book.recordAppCheck(passed = false) }
         val plain = ApiSessionScheduler.nextStep(book, BASE_MS)
         assertEquals(ApiSessionTrigger.Refresh, plain.trigger, "with App Check on a daily retry, the limited session is refreshed first")
         assertFalse(plain.useAppCheck)

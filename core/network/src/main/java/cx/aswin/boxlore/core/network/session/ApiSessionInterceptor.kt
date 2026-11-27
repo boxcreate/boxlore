@@ -10,9 +10,10 @@ import okhttp3.Response
  * - attaches the stored `X-Boxlore-Session` (and `X-Session-Proof` once past `exp`) without
  *   waiting, unless there is no usable session at all;
  * - stores `X-Session-Renew` from network responses;
- * - on `session_expired` / `session_invalid` / `session_revoked`, gets one new session and retries once;
- * - on `verification_required` from an AI route, runs the step-up and retries once, or returns the
- *   401 so the caller falls back.
+ * - on `session_expired` / `session_invalid` / `session_revoked` / `attestation_required`, gets one
+ *   new session (which may run the Turnstile check) and retries once;
+ * - on `verification_required`, runs the step-up and retries once, or returns the 401 so the caller
+ *   falls back (always, in the background, where no check can run).
  */
 class ApiSessionInterceptor(private val manager: () -> ApiSessionManager?) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -31,7 +32,7 @@ class ApiSessionInterceptor(private val manager: () -> ApiSessionManager?) : Int
             if (!recoveries.add(kind)) return response
             val retry = when (kind) {
                 REJECTED -> sessions.recoverFromRejection(attached?.token, code)
-                ApiErrorCodes.VERIFICATION_REQUIRED -> sessions.stepUpForAiRoute()
+                ApiErrorCodes.VERIFICATION_REQUIRED -> sessions.stepUpForRoute()
                 else -> null
             } ?: return response
             response.close()

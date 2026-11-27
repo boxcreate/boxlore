@@ -27,7 +27,8 @@ import org.junit.jupiter.api.Test
 /**
  * The session interceptor against a real HTTP server: requests never wait while a usable session
  * is stored, one exchange serves every waiting request, renewals and proofs follow `exp`, refused
- * sessions are replaced once, and limited sessions step up (or fall back) on AI routes.
+ * sessions are replaced once, sign-ins App Check can't vouch for send a Turnstile token (on screen
+ * only), and limited sessions step up (or fall back) on routes that ask for verification.
  */
 class ApiSessionInterceptorTest {
     private lateinit var server: MockWebServer
@@ -51,7 +52,11 @@ class ApiSessionInterceptorTest {
         server.shutdown()
     }
 
-    private fun manager(timing: ApiSessionTiming = ApiSessionTiming(appCheckTimeoutMs = 500, requestWaitMs = 3_000, loadWaitMs = 1_000, stepUpTimeoutMs = 2_000)) =
+    /** A manager that has started; [check] is in place before its first exchange. */
+    private fun manager(
+        timing: ApiSessionTiming = ApiSessionTiming(appCheckTimeoutMs = 500, requestWaitMs = 3_000, loadWaitMs = 1_000, stepUpTimeoutMs = 2_000, checkHostWaitMs = 100),
+        check: TurnstileTokenSource? = null,
+    ) =
         ApiSessionManager(
             apiBaseUrl = server.url("/").toString(),
             exchanger = exchanger,
@@ -65,7 +70,10 @@ class ApiSessionInterceptorTest {
             listener = listener,
             clock = clock,
             timing = timing,
-        ).also { it.start() }
+        ).also {
+            it.turnstile = check
+            it.start()
+        }
 
     private fun client(manager: ApiSessionManager) = OkHttpClient.Builder().addInterceptor(ApiSessionInterceptor { manager }).build()
 
@@ -77,6 +85,22 @@ class ApiSessionInterceptorTest {
     private fun error(status: Int, code: String) = MockResponse().setResponseCode(status).setBody("""{"error":"$code"}""")
 
     private fun RecordedRequest.session() = getHeader(ApiSessionInterceptor.SESSION_HEADER)
+
+    private fun challengeToken(sid: String = "c1") = sessionToken(sid = sid, att = "challenge", exp = BASE_S + DAY_S, attExp = BASE_S + 7 * DAY_S, tag = sid)
+
+    private val refused = SessionExchangeResult.Failed("http_401_attestation_required", code = ApiErrorCodes.ATTESTATION_REQUIRED, serverReason = "no-attestation")
+
+    /** A Turnstile source whose host can leave the screen, answering [results] in turn (then the last one). */
+    private class FakeCheck(vararg results: TurnstileResult) : TurnstileTokenSource {
+        private val answers = results.toList()
+        val solves = AtomicInteger()
+
+        @Volatile var onScreen = true
+
+        override suspend fun solve(): TurnstileResult = answers[minOf(solves.getAndIncrement(), answers.lastIndex)]
+
+        override suspend fun ready(waitMs: Long): Boolean = onScreen
+    }
 
     @Test
     fun `a stored session goes out at once even while an exchange hangs, and the app key never does`() {
@@ -249,7 +273,7 @@ class ApiSessionInterceptorTest {
     }
 
     @Test
-    fun `App Check failure gives a limited session and the next launch skips App Check`() {
+    fun `App Check failure gives a limited session, and later launches skip App Check until its retry is due`() {
         appCheck = AppCheckResult.Failed("play_integrity_-9")
         val limited = sessionToken(att = "none", tag = "limited")
         exchanger.handler = { request -> if (request.appCheckToken == null) issued(limited) else issued(sessionToken()) }
@@ -265,8 +289,9 @@ class ApiSessionInterceptorTest {
         assertEquals("appcheck:invalid", event.serverReason)
         eventually { store.state.appCheckFailures == 1 && store.state.nextUpgradeAtMs == BASE_MS + 60_000 }
 
-        // Relaunch two days later: the limited session has run out, and App Check is not on the critical path.
-        clock.advanceSeconds(2 * DAY_S)
+        // Relaunch inside the retry backoff without the session: App Check is not on the critical path.
+        clock.advanceSeconds(30)
+        store.state = store.state.copy(token = null)
         val calls = appCheckCalls.get()
         val relaunched = client(manager())
         server.enqueue(ok())
@@ -274,6 +299,150 @@ class ApiSessionInterceptorTest {
         server.takeRequest()
         assertEquals(calls, appCheckCalls.get())
         assertEquals(2, exchanger.calls)
+
+        // Two days later the limited session has run out and the retry is due: App Check is asked again.
+        clock.advanceSeconds(2 * DAY_S)
+        server.enqueue(ok())
+        get(client(manager())).close()
+        server.takeRequest()
+        assertEquals(calls + 1, appCheckCalls.get())
+    }
+
+    @Test
+    fun `an App Check failure counts even when the exchange fails, so the next attempt skips Play Integrity`() {
+        appCheck = AppCheckResult.Failed("play_integrity_-9")
+        exchanger.handler = { SessionExchangeResult.Failed("network") }
+        val client = client(manager())
+        repeat(2) { server.enqueue(error(401, ApiErrorCodes.SESSION_REQUIRED)) }
+
+        get(client).close()
+        eventually { store.state.appCheckFailures == 1 }
+        clock.advanceSeconds(10) // past the exchange backoff, inside App Check's
+        get(client).close()
+
+        assertEquals(2, exchanger.calls)
+        assertEquals(1, appCheckCalls.get())
+        assertEquals(listOf(true, false), listener.exchanges.map { it.appCheckAttempted })
+    }
+
+    @Test
+    fun `a sign-in App Check can't vouch for sends a Turnstile token in the same exchange`() {
+        appCheck = AppCheckResult.Failed("play_integrity_-9")
+        val challenge = challengeToken()
+        exchanger.handler = { request -> if (request.turnstileToken == "ts") issued(challenge) else issued(sessionToken(att = "none")) }
+        val check = FakeCheck(TurnstileResult.Token("ts"))
+        val manager = manager(check = check)
+        val client = client(manager)
+        server.enqueue(ok())
+
+        get(client).use { assertEquals(200, it.code) }
+
+        assertEquals(challenge, server.takeRequest().session())
+        val request = exchanger.requests.single()
+        assertNull(request.appCheckToken)
+        assertEquals("ts", request.turnstileToken)
+        assertEquals("token", listener.exchanges.single().turnstile)
+        eventually { store.state.appCheckFailures == 1 }
+    }
+
+    @Test
+    fun `with no host on screen a sign-in takes what the API gives, without a check`() {
+        appCheck = AppCheckResult.Failed("play_integrity_-9")
+        val limited = sessionToken(att = "none", tag = "limited")
+        exchanger.handler = { issued(limited) }
+        val check = FakeCheck(TurnstileResult.Token("ts")).apply { onScreen = false }
+        val manager = manager(check = check)
+        server.enqueue(ok())
+
+        get(client(manager)).close()
+
+        assertEquals(limited, server.takeRequest().session())
+        assertEquals(0, check.solves.get())
+        assertNull(exchanger.requests.single().turnstileToken)
+        assertEquals("no_host", listener.exchanges.single().turnstile)
+    }
+
+    @Test
+    fun `a refusal on screen runs the check and signs in once more`() {
+        val challenge = challengeToken()
+        exchanger.handler = { request -> if (request.turnstileToken == "ts") issued(challenge) else refused }
+        val manager = manager(check = FakeCheck(TurnstileResult.Token("ts")))
+        server.enqueue(ok())
+
+        get(client(manager)).use { assertEquals(200, it.code) }
+
+        assertEquals(challenge, server.takeRequest().session())
+        val (first, second) = exchanger.requests
+        assertEquals("app-check-token", first.appCheckToken, "App Check went first, and the API refused it")
+        assertNull(first.turnstileToken)
+        assertNull(second.appCheckToken)
+        assertEquals("ts", second.turnstileToken)
+        assertEquals(listOf("no-attestation", null), listener.exchanges.map { it.serverReason })
+        eventually { store.state.appCheckFailures == 1 }
+    }
+
+    @Test
+    fun `a refusal in the background waits for the foreground instead of backing off`() {
+        appCheck = AppCheckResult.Failed("play_integrity_-9")
+        val challenge = challengeToken()
+        exchanger.handler = { request -> if (request.turnstileToken == "ts") issued(challenge) else refused }
+        val check = FakeCheck(TurnstileResult.Token("ts")).apply { onScreen = false }
+        val manager = manager(check = check)
+        val client = client(manager)
+        repeat(2) { server.enqueue(error(401, ApiErrorCodes.SESSION_REQUIRED)) }
+
+        get(client).use { assertEquals(401, it.code) }
+        clock.advanceSeconds(600)
+        get(client).use { assertEquals(401, it.code) }
+
+        assertEquals(1, exchanger.calls, "no exchange until the app is on screen again")
+        server.takeRequest()
+        assertNull(server.takeRequest().session())
+
+        check.onScreen = true
+        manager.onForegroundChanged(true)
+        eventually { store.state.token == challenge }
+        assertEquals(2, exchanger.calls)
+        assertEquals(1, check.solves.get())
+    }
+
+    @Test
+    fun `a session the gate stops taking is replaced, with the check, and the request retried`() {
+        val limited = sessionToken(sid = "l1", att = "none", tag = "limited")
+        val challenge = challengeToken()
+        store.state = StoredApiSession(token = limited, installId = "install-123", appCheckFailures = 1, nextUpgradeAtMs = BASE_MS + 3_600_000)
+        exchanger.handler = { request -> if (request.turnstileToken == "ts") issued(challenge) else refused }
+        val manager = manager(check = FakeCheck(TurnstileResult.Token("ts")))
+        val client = client(manager)
+        server.enqueue(error(401, ApiErrorCodes.ATTESTATION_REQUIRED))
+        server.enqueue(ok())
+
+        get(client, "/feedback").use { assertEquals(200, it.code) }
+
+        assertEquals(limited, server.takeRequest().session())
+        assertEquals(challenge, server.takeRequest().session())
+        val request = exchanger.requests.single()
+        assertNull(request.appCheckToken, "App Check waits out its retry backoff")
+        assertEquals("ts", request.turnstileToken)
+        assertEquals(ApiSessionTrigger.Rejected, listener.exchanges.single().trigger)
+    }
+
+    @Test
+    fun `an expired challenge session tries App Check again, then the check`() {
+        appCheck = AppCheckResult.Failed("play_integrity_-9")
+        val expired = sessionToken(sid = "c0", att = "challenge", iat = BASE_S - 8 * DAY_S, exp = BASE_S - 7 * DAY_S, attExp = BASE_S - DAY_S, tag = "old")
+        val challenge = challengeToken()
+        store.state = StoredApiSession(token = expired, installId = "install-123", appCheckFailures = 5, nextUpgradeAtMs = BASE_MS - 3_600_000)
+        exchanger.handler = { request -> if (request.turnstileToken == "ts") issued(challenge) else refused }
+        val manager = manager(check = FakeCheck(TurnstileResult.Token("ts")))
+        server.enqueue(ok())
+
+        get(client(manager)).close()
+
+        assertEquals(challenge, server.takeRequest().session())
+        assertEquals(1, appCheckCalls.get())
+        assertEquals(ApiSessionTrigger.Expired, listener.exchanges.single().trigger)
+        assertEquals("ts", exchanger.requests.single().turnstileToken)
     }
 
     @Test
@@ -288,7 +457,6 @@ class ApiSessionInterceptorTest {
             solves.incrementAndGet()
             TurnstileResult.Token("turnstile-ok")
         }
-        manager.stepUpEnabled = { true }
         val client = client(manager)
         server.enqueue(error(401, ApiErrorCodes.VERIFICATION_REQUIRED))
         server.enqueue(ok())
@@ -313,7 +481,6 @@ class ApiSessionInterceptorTest {
             solves.incrementAndGet()
             TurnstileResult.Failed("cancelled")
         }
-        manager.stepUpEnabled = { true }
         val client = client(manager)
         repeat(2) { server.enqueue(error(401, ApiErrorCodes.VERIFICATION_REQUIRED)) }
 
@@ -342,7 +509,6 @@ class ApiSessionInterceptorTest {
             release.await()
             TurnstileResult.Token("turnstile-ok")
         }
-        manager.stepUpEnabled = { true }
         val client = client(manager)
         repeat(2) { server.enqueue(error(401, ApiErrorCodes.VERIFICATION_REQUIRED)) }
         server.enqueue(ok())
@@ -371,21 +537,77 @@ class ApiSessionInterceptorTest {
     }
 
     @Test
-    fun `the step-up stays off until it is enabled`() {
+    fun `the remote switch turns the step-up off`() {
         store.state = StoredApiSession(token = sessionToken(att = "none"), installId = "install-123", appCheckFailures = 1, nextUpgradeAtMs = BASE_MS + 3_600_000)
-        val manager = manager()
-        val solves = AtomicInteger()
-        manager.turnstile = TurnstileTokenSource {
-            solves.incrementAndGet()
-            TurnstileResult.Token("unused")
-        }
+        val check = FakeCheck(TurnstileResult.Token("unused"))
+        val manager = manager(check = check)
+        manager.stepUpEnabled = { false }
         val client = client(manager)
         server.enqueue(error(401, ApiErrorCodes.VERIFICATION_REQUIRED))
 
         get(client, "/onboarding/next-turn").use { assertEquals(401, it.code) }
 
-        assertEquals(0, solves.get())
+        assertEquals(0, check.solves.get())
         assertTrue(listener.stepUps.isEmpty())
+    }
+
+    @Test
+    fun `a background request asked for verification gets its 401 without a step-up or a cooldown`() {
+        val challenge = challengeToken()
+        store.state = StoredApiSession(token = sessionToken(att = "none"), installId = "install-123", appCheckFailures = 1, nextUpgradeAtMs = BASE_MS + 3_600_000)
+        exchanger.handler = { request -> if (request.turnstileToken == "ts") issued(challenge) else refused }
+        val check = FakeCheck(TurnstileResult.Token("ts")).apply { onScreen = false }
+        val manager = manager(check = check)
+        val client = client(manager)
+        repeat(2) { server.enqueue(error(401, ApiErrorCodes.VERIFICATION_REQUIRED)) }
+        server.enqueue(ok())
+
+        get(client, "/v2/episodes/register").use { assertEquals(401, it.code) }
+        assertEquals(0, check.solves.get())
+        assertTrue(listener.stepUps.isEmpty())
+
+        check.onScreen = true
+        get(client, "/v2/episodes/register").use { assertEquals(200, it.code) }
+        assertEquals(1, check.solves.get(), "no cooldown held the step-up back")
+    }
+
+    @Test
+    fun `a failed step-up doesn't hold back the sign-in check`() {
+        val challenge = challengeToken()
+        store.state = StoredApiSession(token = sessionToken(att = "none"), installId = "install-123", appCheckFailures = 1, nextUpgradeAtMs = BASE_MS + 3_600_000)
+        exchanger.handler = { request -> if (request.turnstileToken == "ts") issued(challenge) else refused }
+        val check = FakeCheck(TurnstileResult.Failed("cancelled"), TurnstileResult.Token("ts"))
+        val manager = manager(check = check)
+        val client = client(manager)
+        server.enqueue(error(401, ApiErrorCodes.VERIFICATION_REQUIRED))
+        server.enqueue(error(401, ApiErrorCodes.ATTESTATION_REQUIRED))
+        server.enqueue(ok())
+
+        get(client, "/onboarding/next-turn").use { assertEquals(401, it.code) }
+        get(client, "/feedback").use { assertEquals(200, it.code) }
+
+        assertEquals(2, check.solves.get())
+        assertEquals("ts", exchanger.requests.single().turnstileToken)
+    }
+
+    @Test
+    fun `a failed sign-in check doesn't hold back the step-up`() {
+        appCheck = AppCheckResult.Failed("play_integrity_-9")
+        val limited = sessionToken(sid = "l1", att = "none", tag = "limited")
+        val challenge = challengeToken()
+        exchanger.handler = { request -> if (request.turnstileToken == "ts") issued(challenge) else issued(limited) }
+        val check = FakeCheck(TurnstileResult.Failed("cancelled"), TurnstileResult.Token("ts"))
+        val manager = manager(check = check)
+        val client = client(manager)
+        server.enqueue(error(401, ApiErrorCodes.VERIFICATION_REQUIRED))
+        server.enqueue(ok())
+
+        get(client, "/onboarding/next-turn").use { assertEquals(200, it.code) }
+
+        assertEquals(limited, server.takeRequest().session(), "the skipped check left a limited session")
+        assertEquals(challenge, server.takeRequest().session())
+        assertEquals(2, check.solves.get())
+        assertEquals(listOf("cancelled", "token"), listener.exchanges.map { it.turnstile })
     }
 
     @Test

@@ -78,7 +78,8 @@ src/main/java/cx/aswin/boxlore/core/network/
     ApiSessionManager.kt         # owns the install's session
     ApiSessionBook.kt            # the manager's in-memory state
     ApiSessionScheduler.kt       # background session upkeep
-    ApiSessionStepUp.kt          # extra verification for AI routes
+    ApiSessionSignIn.kt          # one sign-in: App Check, then Turnstile
+    ApiSessionStepUp.kt          # Turnstile when a route asks for it
     ApiSessionPolicy.kt          # pure session rules
     ApiSessionInterceptor.kt
     ApiSessionToken.kt           # reads session claims
