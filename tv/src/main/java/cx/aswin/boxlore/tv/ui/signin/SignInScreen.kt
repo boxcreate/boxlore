@@ -128,7 +128,8 @@ private fun Panel(signIn: TvSignIn, account: TvAccount) {
             Text(stringResource(R.string.tv_your_code), style = MaterialTheme.typography.titleSmall, color = TvColors.onSurfaceVariant)
             Text(
                 SignInRules.grouped(code),
-                style = MaterialTheme.typography.displayLarge.copy(fontFamily = FontFamily.Monospace, letterSpacing = 4.sp),
+                // Nine monospace characters at this size fit the panel on the smallest TV layout.
+                style = MaterialTheme.typography.displayMedium.copy(fontFamily = FontFamily.Monospace, letterSpacing = 4.sp),
                 color = TvColors.onSurface,
                 maxLines = 1,
                 modifier = Modifier.semantics { contentDescription = SignInRules.spoken(code) },
