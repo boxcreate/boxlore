@@ -13,7 +13,11 @@ internal data class ApiSessionStep(val atMs: Long, val trigger: ApiSessionTrigge
  * - App Check sessions re-attest a day before their 30-day window ends;
  * - weaker sessions retry App Check about a minute after the first failure, then hourly, then
  *   daily ([ApiSessionPolicy.upgradeDelayMs]), and swap in the full session when it passes;
- * - weaker sessions also get a fresh session (without App Check) an hour before they run out;
+ * - weaker sessions also get a fresh session (without App Check) before they run out: a day early
+ *   for a challenge session (its 7-day window), so the check runs while the app is on screen, an
+ *   hour early for a limited one;
+ * - a refresh that got nothing better than the attested session held waits
+ *   [ApiSessionPolicy.REFRESH_RETRY_MS] before the next ([ApiSessionBook.nextRefreshAtMs]);
  * - a missing session is fetched again with the exchange backoff.
  * Every exchange App Check can't vouch for also runs the Turnstile check, which this foreground
  * work can show ([ApiSessionManager]), so a limited session moves up to a challenge one.
@@ -85,7 +89,7 @@ internal class ApiSessionScheduler(
             if (pairedSignedIn != null) return pairedStep(book, floor, pairedSignedIn)
             val token = book.usableToken
                 ?: return ApiSessionStep(floor, ApiSessionTrigger.Retry, useAppCheck = book.appCheckFailures == 0 || nowMs >= book.nextUpgradeAtMs)
-            val refreshMs = book.toLocalMs(ApiSessionPolicy.refreshAt(token))
+            val refreshMs = maxOf(book.toLocalMs(ApiSessionPolicy.refreshAt(token)), book.nextRefreshAtMs)
             if (token.attestation == ApiAttestation.AppCheck) {
                 return ApiSessionStep(maxOf(floor, refreshMs, book.nextUpgradeAtMs), ApiSessionTrigger.Refresh, useAppCheck = true)
             }

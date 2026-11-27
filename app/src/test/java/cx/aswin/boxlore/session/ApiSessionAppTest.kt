@@ -55,9 +55,10 @@ class ApiSessionAppTest {
     }
 
     @Test
-    fun `an exchange reports the App Check attempt and the session status`() {
+    fun `an App Check attempt and an exchange report their own events`() {
         val listener = ApiSessionAnalyticsListener(appCheckProvider = "play_integrity")
 
+        listener.onAppCheck(obtained = false, failure = "play_integrity_-9")
         listener.onExchange(
             ApiSessionExchangeEvent(
                 trigger = ApiSessionTrigger.Launch,

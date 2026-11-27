@@ -115,6 +115,14 @@ interface ApiSessionListener {
         // Optional hook: a listener overrides only the events it reports.
     }
 
+    /**
+     * One App Check attempt, whether or not an exchange then carried its token: [obtained], or the
+     * short [failure] category. Never the token itself.
+     */
+    fun onAppCheck(obtained: Boolean, failure: String?) {
+        // Optional hook: a listener overrides only the events it reports.
+    }
+
     fun onRenewal(outcome: ApiSessionRenewOutcome, attestation: ApiAttestation) {
         // Optional hook: a listener overrides only the events it reports.
     }

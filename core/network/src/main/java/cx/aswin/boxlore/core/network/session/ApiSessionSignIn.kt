@@ -11,6 +11,11 @@ internal data class ApiSignInOutcome(val token: ApiSessionToken?, val refused: B
  * or gives only a limited session although App Check went, the check runs and the exchange is
  * asked once more. A route step-up brings its own Turnstile token and skips both.
  *
+ * While a session better than limited is held, an exchange with neither an App Check token nor the
+ * check's could only bring a limited session, which wouldn't replace it
+ * ([ApiSessionPolicy.shouldReplace]): it isn't sent (an App Check upgrade of a challenge session
+ * whose App Check failed, a refresh whose check was held back or skipped).
+ *
  * The check runs only while its host is on screen ([TurnstileTokenSource.ready]), and takes its
  * turn with route step-ups ([ApiSessionCheckGate]) together with the exchange its token goes into.
  * A failed or refused check holds later sign-in checks back for
@@ -39,17 +44,22 @@ internal class ApiSessionSignIn(
     suspend fun run(trigger: ApiSessionTrigger, useAppCheck: Boolean, turnstileToken: String?, installId: String, publicKey: String?): ApiSignInOutcome {
         val started = clock()
         val appCheckResult = if (useAppCheck) fetchAppCheck(trigger) else null
+        appCheckResult?.let { result -> listener.safely { onAppCheck(obtained = result is AppCheckResult.Token, failure = (result as? AppCheckResult.Failed)?.reason) } }
         val appCheckToken = (appCheckResult as? AppCheckResult.Token)?.value
         fun attempt(at: Long, appCheck: String?, check: CheckRun?, result: AppCheckResult?) =
             Attempt(trigger, at, SessionExchangeRequest(installId, publicKey, appCheck, check?.token), result, check, fromSignInCheck = turnstileToken == null)
         // A route step-up brings its own token.
         if (turnstileToken != null) return exchangeOnce(attempt(started, appCheckToken, CheckRun(turnstileToken, CheckRun.SENT), appCheckResult)).outcome
+        val attestedHeld = synchronized(lock) { book.usableToken?.let { !it.limited } ?: false }
         val checkMayHelp = checkHelps(trigger)
         // App Check can't vouch: the check's token goes in the first exchange.
         if (appCheckToken == null && checkMayHelp) {
-            val first = withCheck(trigger, appCheckResult) { check -> exchangeOnce(attempt(started, null, check, appCheckResult)) }
+            val first = withCheck(trigger, appCheckResult) { check ->
+                if (attestedHeld && check.token == null) keepHeld(appCheckResult) else exchangeOnce(attempt(started, null, check, appCheckResult))
+            }
             return first?.outcome ?: ApiSignInOutcome(null, refused = false)
         }
+        if (appCheckToken == null && attestedHeld) return keepHeld(appCheckResult).outcome
         val first = exchangeOnce(attempt(started, appCheckToken, null, appCheckResult))
         if (!checkMayHelp || !first.needsAttestation) return first.outcome
         // App Check went and the API didn't take it: ask Turnstile and exchange once more.
@@ -84,6 +94,12 @@ internal class ApiSessionSignIn(
         } finally {
             checkingSinceMs = null
         }
+    }
+
+    /** No exchange: the session held stands. A failed App Check attempt still counts, so its retry backs off. */
+    private fun keepHeld(appCheckResult: AppCheckResult?): Exchanged {
+        if (appCheckResult != null) synchronized(lock) { book.recordAppCheck(false) }
+        return Exchanged(null, refused = false)
     }
 
     private suspend fun fetchAppCheck(trigger: ApiSessionTrigger): AppCheckResult {

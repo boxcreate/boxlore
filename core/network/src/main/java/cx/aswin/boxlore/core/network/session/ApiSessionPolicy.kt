@@ -11,6 +11,12 @@ object ApiSessionPolicy {
     private const val HOUR_S = 3_600L
     private const val DAY_S = 24 * HOUR_S
 
+    /** Attestations whose sessions renew for days, refreshed a day early ([refreshAt]). */
+    private val DAY_EARLY = setOf(ApiAttestation.AppCheck, ApiAttestation.Challenge)
+
+    /** After a background refresh got nothing better than the attested session held, wait this long before the next. */
+    const val REFRESH_RETRY_MS = HOUR_MS
+
     /** A request sent this close to `exp` signs a proof, so it still renews if it lands after `exp`. */
     const val PROOF_LEAD_SECONDS = 30L
 
@@ -33,16 +39,18 @@ object ApiSessionPolicy {
 
     /**
      * When to get a fresh session in the background before this one runs out: a day early for
-     * App Check sessions (their 30-day window), an hour early for everything else.
+     * sessions that renew for days (App Check's 30-day window, a challenge session's 7), so the
+     * app on screen gets one before it lapses in the background; an hour early for everything else.
      */
     fun refreshAt(token: ApiSessionToken): Long {
-        val lead = if (token.attestation == ApiAttestation.AppCheck && token.renewable) DAY_S else HOUR_S
+        val lead = if (token.attestation in DAY_EARLY && token.renewable) DAY_S else HOUR_S
         return maxOf(token.issuedAt, token.attestedUntil - lead)
     }
 
     /**
      * Whether [candidate] should replace [current]: anything beats nothing, better attestation wins,
-     * and a weaker session takes over only once the current one is due for a refresh.
+     * and a weaker session takes over only once the current one is due for a refresh. A limited
+     * session never replaces a usable one that isn't: that one is kept until it actually runs out.
      */
     fun shouldReplace(current: ApiSessionToken?, candidate: ApiSessionToken, serverNow: Long): Boolean {
         if (current == null || !isUsable(current, serverNow)) return true
@@ -50,6 +58,7 @@ object ApiSessionPolicy {
         return when {
             rank > 0 -> true
             rank == 0 -> candidate.attestedUntil > current.attestedUntil
+            candidate.limited -> false
             else -> serverNow >= refreshAt(current) && candidate.attestedUntil > current.attestedUntil
         }
     }

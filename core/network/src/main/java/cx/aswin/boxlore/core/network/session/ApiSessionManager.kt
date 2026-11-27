@@ -70,7 +70,9 @@ data class SessionHeaders(val token: String, val proof: String?)
  *   then the request is retried.
  * - Weaker sessions keep retrying App Check in the background ([ApiSessionScheduler]); a limited
  *   session on a route that answers `verification_required` can step up with Turnstile
- *   ([stepUpForRoute]) while the app is on screen.
+ *   ([stepUpForRoute]) while the app is on screen, and lending the account to a watch or TV from a
+ *   limited session steps up first ([lendsUnchecked]). A limited session never replaces a usable
+ *   attested one ([ApiSessionPolicy.shouldReplace]).
  * - Failed exchanges back off; there is no fallback to the app key.
  * - A watch or TV (built with a [PairedSessionTrader]) uses the API only once signed in: its
  *   requests go out with a paired session it trades its account token for ([ApiSessionPairing]),
@@ -340,7 +342,7 @@ class ApiSessionManager(
      */
     private suspend fun mint(trigger: ApiSessionTrigger, useAppCheck: Boolean, turnstileToken: String?): ApiSessionToken? {
         loaded.await()
-        val installId = synchronized(lock) { book.installIdOrCreate() }
+        val (installId, heldBefore) = synchronized(lock) { book.installIdOrCreate() to book.usableToken }
         val publicKey = runCatching { deviceKey.publicKey() }.getOrNull()
         // Watches and TVs have no App Check.
         val withAppCheck = useAppCheck && pairing == null
@@ -353,9 +355,22 @@ class ApiSessionManager(
             }
             outcome.token
         }
+        if (trigger == ApiSessionTrigger.Refresh && pairing == null) holdRefreshIfUnchanged(heldBefore)
         persist()
         scheduler.reschedule()
         return token
+    }
+
+    /**
+     * A phone's background refresh that left the attested session it held in place (its check was
+     * held back, skipped or failed) waits [ApiSessionPolicy.REFRESH_RETRY_MS] before the next one,
+     * rather than asking every minute until that session runs out.
+     */
+    private fun holdRefreshIfUnchanged(heldBefore: ApiSessionToken?) {
+        if (heldBefore == null || heldBefore.limited) return
+        synchronized(lock) {
+            if (book.usableToken?.raw == heldBefore.raw) book.nextRefreshAtMs = clock() + ApiSessionPolicy.REFRESH_RETRY_MS
+        }
     }
 
     private fun persist() {

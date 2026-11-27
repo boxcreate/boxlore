@@ -62,11 +62,15 @@ class ApiSessionPolicyTest {
     }
 
     @Test
-    fun `refreshes App Check sessions a day early and others an hour early`() {
+    fun `refreshes App Check and challenge sessions a day early and others an hour early`() {
         val full = parse(sessionToken(att = "appcheck", iat = BASE_S, attExp = BASE_S + 30 * DAY_S))
+        val challenge = parse(sessionToken(att = "challenge", iat = BASE_S, exp = BASE_S + DAY_S, attExp = BASE_S + 7 * DAY_S))
+        val keylessChallenge = parse(sessionToken(att = "challenge", iat = BASE_S, exp = BASE_S + DAY_S, deviceKey = false))
         val limited = parse(sessionToken(att = "none", iat = BASE_S, exp = BASE_S + DAY_S))
 
         assertEquals(BASE_S + 29 * DAY_S, ApiSessionPolicy.refreshAt(full))
+        assertEquals(BASE_S + 6 * DAY_S, ApiSessionPolicy.refreshAt(challenge), "a day before its 7-day window ends")
+        assertEquals(BASE_S + DAY_S - 3_600, ApiSessionPolicy.refreshAt(keylessChallenge), "one that can't renew lasts a day: an hour early")
         assertEquals(BASE_S + DAY_S - 3_600, ApiSessionPolicy.refreshAt(limited))
     }
 
@@ -83,7 +87,12 @@ class ApiSessionPolicyTest {
         assertFalse(ApiSessionPolicy.shouldReplace(limited, olderLimited, BASE_S + 60))
         val nearEnd = parse(sessionToken(att = "challenge", iat = BASE_S, exp = BASE_S + DAY_S, attExp = BASE_S + 7 * DAY_S, tag = "challenge"))
         val freshLimited = parse(sessionToken(att = "none", iat = BASE_S + 7 * DAY_S - 1_800, tag = "fresh"))
-        assertTrue(ApiSessionPolicy.shouldReplace(nearEnd, freshLimited, BASE_S + 7 * DAY_S - 1_800), "a weaker session takes over once the current one is due")
+        assertFalse(ApiSessionPolicy.shouldReplace(nearEnd, freshLimited, BASE_S + 7 * DAY_S - 1_800), "a limited session never displaces a usable attested one, even near its end")
+        assertTrue(ApiSessionPolicy.shouldReplace(nearEnd, freshLimited, BASE_S + 7 * DAY_S), "it takes over once that one has run out")
+        val fullNearEnd = parse(sessionToken(att = "appcheck", iat = BASE_S, attExp = BASE_S + 30 * DAY_S, tag = "full-end"))
+        val freshChallenge = parse(sessionToken(att = "challenge", iat = BASE_S + 29 * DAY_S, attExp = BASE_S + 36 * DAY_S, tag = "fresh-challenge"))
+        assertFalse(ApiSessionPolicy.shouldReplace(fullNearEnd, freshChallenge, BASE_S + 28 * DAY_S))
+        assertTrue(ApiSessionPolicy.shouldReplace(fullNearEnd, freshChallenge, BASE_S + 29 * DAY_S + 60), "a weaker attested session takes over once the current one is due")
     }
 
     @Test

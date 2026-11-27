@@ -26,6 +26,12 @@ internal class ApiSessionBook(private val clock: () -> Long) {
     var lastMaintenanceAtMs = 0L
 
     /**
+     * No background refresh of the attested session held before this local time: the last one got
+     * nothing better (its check was held back, skipped or failed). Not kept across restarts.
+     */
+    var nextRefreshAtMs = 0L
+
+    /**
      * The API refused a session without attestation while the app was in the background, where no
      * Turnstile check can run: no exchange until the app next comes to the foreground.
      */

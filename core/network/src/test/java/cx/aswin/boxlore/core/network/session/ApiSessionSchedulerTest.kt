@@ -167,6 +167,47 @@ class ApiSessionSchedulerTest {
         assertEquals(2, harness.appCheckCalls.get(), "App Check keeps retrying to upgrade the challenge session")
         assertEquals(1, solves.get(), "but a challenge session needs no new check")
         assertEquals(harness.challenge, harness.heldToken())
+        assertEquals(1, harness.exchanger.calls, "and a failed App Check sends no exchange whose limited session would be thrown away")
+        assertEquals(3, harness.store.state.appCheckFailures, "the failure still counts, so the next retry backs off")
+    }
+
+    // Regression: a challenge session was refreshed only in its last hour, so it often ran out in the background, and a Skip then swapped in a limited one early.
+    @Test
+    fun `a challenge session is refreshed with the check a day before it ends, and a skipped check keeps it`() = runTest {
+        val skipThenPass = FakeCheck(TurnstileResult.Failed(TurnstileResult.SKIPPED), TurnstileResult.Token("ts"))
+        val stored = StoredApiSession(
+            token = sessionToken(sid = "challenge-0", att = "challenge", iat = BASE_S, exp = BASE_S + DAY_S, attExp = BASE_S + 7 * DAY_S, tag = "c0"),
+            installId = "install-123",
+            appCheckFailures = 6,
+            nextUpgradeAtMs = BASE_MS + 30 * 24 * hour,
+        )
+        val harness = Harness(this, stored, appCheckPassesOnAttempt = Int.MAX_VALUE, check = skipThenPass)
+        val fresh = sessionToken(sid = "challenge-1", att = "challenge", iat = BASE_S + 6 * DAY_S, exp = BASE_S + 7 * DAY_S, attExp = BASE_S + 13 * DAY_S, tag = "c1")
+        harness.exchanger.handler = { request -> if (request.turnstileToken != null) issued(fresh) else issued(sessionToken(sid = "limited", att = "none", iat = BASE_S + 6 * DAY_S)) }
+        harness.manager.start()
+        runCurrent()
+        harness.manager.onForegroundChanged(true)
+        runCurrent()
+
+        testScheduler.advanceTimeBy(6 * 24 * hour - minute)
+        runCurrent()
+        assertEquals(0, skipThenPass.solves.get(), "nothing before the last day")
+
+        testScheduler.advanceTimeBy(2 * minute)
+        runCurrent()
+        assertEquals(1, skipThenPass.solves.get(), "the refresh runs the check while the app is on screen")
+        assertEquals(0, harness.exchanger.calls, "skipped: no exchange, since only a limited session could come of it")
+        assertEquals(stored.token, harness.heldToken(), "the challenge session stays until it runs out")
+
+        testScheduler.advanceTimeBy(50 * minute)
+        runCurrent()
+        assertEquals(1, skipThenPass.solves.get(), "a refresh that got nothing waits an hour")
+
+        testScheduler.advanceTimeBy(11 * minute)
+        runCurrent()
+        assertEquals(2, skipThenPass.solves.get())
+        assertEquals(listOf("ts"), harness.exchanger.requests.map { it.turnstileToken })
+        assertEquals(fresh, harness.heldToken())
     }
 
     @Test
