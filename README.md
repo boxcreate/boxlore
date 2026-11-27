@@ -81,7 +81,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 </ul>
 <b>🆕 New:</b>
 <ul align="left">
-<li>To bring your shows to your TV, go to Settings › Cloud Sync & Backups on your phone, open your account, choose Sign in on a TV, and enter the code your TV shows.</li>
+<li>To bring your shows to your TV, open Cloud Sync & Backups on your phone, choose Sign in on a TV, and enter the code your TV shows.</li>
 </ul>
 <b>⚡ Improved:</b>
 <ul align="left">
