@@ -347,7 +347,7 @@ class TurnstileStepUpHostAdaptiveTest {
     }
 
     private companion object {
-        const val TITLE = "I’m the only robot allowed in this chat."
+        const val TITLE = "I’m the only robot allowed to use this app."
         const val EXPANDED_PANEL_TAG = "expanded_sheet_panel"
         const val BODY = "Tap the box so Cloudflare can check you’re human, then I’ll keep finding shows for you."
     }
