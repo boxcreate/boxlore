@@ -43,7 +43,10 @@ sealed interface TvSignIn {
     /** boxlore isn't signing TVs in for now (the API's `watch_sign_in_closed`). */
     data object SignInClosed : TvSignIn
 
-    /** Too many codes were asked for from this network lately, even after waiting as long as the API said once. */
+    /**
+     * Too many codes were asked for lately: from this network even after waiting as long as the API
+     * said once, or for longer than a minute (a daily limit), when the TV doesn't wait at all.
+     */
     data object TooManyCodes : TvSignIn
 
     /**
@@ -200,11 +203,15 @@ internal class LiveTvAccount(
     /** Puts [next] on screen, unless the TV signed in meanwhile (a poll that outlived a cancel can sign it in). */
     private fun show(next: TvSignIn) = state.update { if (it is TvSignIn.SignedIn) it else next }
 
-    /** A code to show, waiting out the API's limit once when too many were asked for lately; a [CodeStart.Wait] when it still says wait. */
+    /**
+     * A code to show, waiting out the API's limit once when too many were asked for lately; a
+     * [CodeStart.Wait] when it still says wait, or says wait longer than [MAX_START_WAIT_SECONDS]
+     * (a daily limit: "Getting a code…" with nothing to press for minutes would help nobody).
+     */
     private suspend fun code(): CodeStart {
         repeat(START_TRIES - 1) {
             when (val start = api.start()) {
-                is CodeStart.Wait -> delay(start.seconds * MILLIS)
+                is CodeStart.Wait -> if (start.seconds > MAX_START_WAIT_SECONDS) return start else delay(start.seconds * MILLIS)
                 else -> return start
             }
         }
@@ -296,6 +303,11 @@ internal class LiveTvAccount(
         private const val MILLIS = 1_000L
         private const val MIN_LIFE_SECONDS = 60L
         private const val MIN_POLL_SECONDS = 3L
-        private const val MAX_POLL_SECONDS = 15L
+
+        // The API asks for 20 s; a longer ask is still taken, up to a minute.
+        private const val MAX_POLL_SECONDS = 60L
+
+        /** The longest `Retry-After` the TV waits out on "Getting a code…" before saying there were too many. */
+        private const val MAX_START_WAIT_SECONDS = 60L
     }
 }

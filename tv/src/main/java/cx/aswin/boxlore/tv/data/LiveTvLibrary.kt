@@ -60,6 +60,9 @@ class LiveTvLibrary(
     // Feeds read at once for Daily Mix, across every refresh: old TVs and slow networks share them.
     private val reads = Semaphore(PARALLEL_READS)
 
+    // Charts being loaded, by genre ("" for all genres), so two asks for one chart load it once.
+    private val chartLoads: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
+
     override val shows: StateFlow<List<TvShow>> =
         store.kept(scope) { state -> TvLibraryRules.sorted(state.shows, state, ShowSort.Smart).map { it.copy(newEpisodes = TvLibraryRules.newEpisodes(state, it.id)) } }
     override val jumpBackIn: StateFlow<List<TvEpisode>> = store.kept(scope) { it.jumpBackIn }
@@ -76,6 +79,10 @@ class LiveTvLibrary(
             combine(store.state.map { state -> state.shows.map(TvShow::id) }.distinctUntilChanged(), signedIn.distinctUntilChanged()) { _, open -> open }
                 .filter { it }
                 .collect { refreshFollowed() }
+        }
+        // The top chart is first asked for at start, when a new TV is still signed out and gets none: it loads on signing in.
+        scope.launch {
+            signedIn.distinctUntilChanged().filter { it }.collect { loadChart(ALL_GENRES) }
         }
     }
 
@@ -101,12 +108,12 @@ class LiveTvLibrary(
     override fun chart(genre: String): Flow<List<TvShow>> =
         combine(source.charts, store.state) { charts, state -> charts[genre].orEmpty().map { it.copy(subscribed = state.isSubscribed(it.id)) } }
             .distinctUntilChanged()
-            .onStart { if (source.charts.value[genre] == null) scope.launch { source.loadChart(genre.ifEmpty { null }) } }
+            .onStart { loadChart(genre) }
 
     override fun sortedShows(sort: ShowSort): Flow<List<TvShow>> = store.state.map { TvLibraryRules.sorted(it.shows, it, sort) }.distinctUntilChanged()
 
     override suspend fun search(query: String): TvSearchResult {
-        if (source.charts.value[ALL_GENRES] == null) scope.launch { source.loadChart(null) }
+        loadChart(ALL_GENRES)
         val found = source.search(query) ?: return TvSearchResult.NoConnection(query)
         return TvSearchResult.Found(query, found, emptyList())
     }
@@ -145,6 +152,18 @@ class LiveTvLibrary(
     override fun markPlayed(episodeId: String) {
         val episode = known(episodeId) ?: return
         store.update { it.markPlayed(episode, clock()) }
+    }
+
+    /** Loads the chart for [genre] ("" for all genres) unless it is loaded or loading; a failed load leaves none, so the next ask tries again. */
+    private fun loadChart(genre: String) {
+        if (source.charts.value[genre] != null || !chartLoads.add(genre)) return
+        scope.launch {
+            try {
+                source.loadChart(genre.ifEmpty { null })
+            } finally {
+                chartLoads.remove(genre)
+            }
+        }
     }
 
     /**

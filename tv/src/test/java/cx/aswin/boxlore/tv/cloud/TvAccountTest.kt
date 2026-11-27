@@ -141,6 +141,27 @@ class TvAccountTest {
         assertEquals(1, api.starts)
     }
 
+    // Regression: the API's 20-second poll interval was cut to 15, and a daily limit's long Retry-After showed "Getting a code…" for five minutes.
+    @Test
+    fun `the TV polls as often as the API says, and a long wait for a code says so at once`(@TempDir folder: File) {
+        val scope = TestScope(StandardTestDispatcher())
+        val twenty = CodeStart.Code(TvSignInStartResponse(code = "CODE0020", pair = "pair", expiresInSeconds = 600, intervalSeconds = 20))
+        val api = FakeApi(ArrayDeque(), startAnswers = ArrayDeque(listOf(twenty, CodeStart.Wait(RetrofitTvCloudApi.retryAfterSeconds("3600")))))
+        val store = TvLibraryStore(File(folder, "library.json"), scope, StandardTestDispatcher(scope.testScheduler))
+        val account = LiveTvAccount(api, Tokens(), store, {}, scope, clock = { scope.testScheduler.currentTime })
+
+        account.startSignIn()
+        scope.advanceTimeBy(19_000)
+        assertEquals(0, api.polls)
+        scope.advanceTimeBy(1_001)
+        assertEquals(1, api.polls, "every 20 seconds, as the API asks")
+
+        account.cancelSignIn()
+        account.startSignIn()
+        scope.advanceTimeBy(1)
+        assertEquals(TvSignIn.TooManyCodes, account.signIn.value, "a limit that lasts longer than a minute isn't waited out on screen")
+    }
+
     // Regression: a closed sign-in and a network over its code limit both read as no connection.
     @Test
     fun `a closed sign-in and too many codes say so, instead of blaming the connection`(@TempDir folder: File) {

@@ -104,13 +104,15 @@ src/release/java/...         # release TvContainerFactory
   session takes the remote's media keys while the app is closed.
 - Signing in: `LiveTvAccount` shows a code from the API until a phone signed in to the account
   approves it. A code that runs out gives way to a new one, three in all, then the screen waits for
-  Show a new code; codes are asked for and polled only while the sign-in screen is in front, and a
-  429 is waited out once. An approval that arrives as the screen leaves still signs the TV in (the
+  Show a new code; codes are asked for and polled only while the sign-in screen is in front, as
+  often as the API says (`intervalSeconds`, 20 s now, taken up to a minute). A 429 asking for a
+  minute or less is waited out once; a longer one (a daily limit) says too many codes at once. An approval that arrives as the screen leaves still signs the TV in (the
   API hands its token over once). The TV then holds its own account token, used as the watch's is,
   and gives it up on Sign out (again at the next start when the API couldn't record it).
 - Nothing else reaches the API before sign-in: `TvApp` shows only the sign-in screen,
   `data.SignedInTvCatalog` answers nothing (Daily Mix reads and the next episode after one ends
-  included), and the API session sends only the sign-in routes. Once signed in the TV trades its
+  included), and the API session sends only the sign-in routes; the top chart, first asked for
+  then, loads on signing in. Once signed in the TV trades its
   account token for a paired session (`TvServer`, `cloud.TvPairing`); a trade the API refuses signs
   the TV out, and one lent by a phone that had passed no check says so and waits for Show a new code.
 - `cloud.TvCloudSync` pushes what changed on the TV, then pulls what changed elsewhere: at start, a

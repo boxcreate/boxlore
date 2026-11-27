@@ -112,5 +112,8 @@ class TvChartsTest {
             signedIn.value = true
             work.advanceUntilIdle()
             assertEquals(listOf(5L), looked, "signing in reads the followed shows for Daily Mix")
+            // Regression: the top chart asked for at start, signed out, stayed empty on Home and Search after signing in.
+            assertEquals(listOf<String?>(null), charts.asked, "and loads the top chart, once")
+            assertEquals(listOf("10", "11"), library.trending.value.map { it.id })
         }
 }
