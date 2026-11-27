@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.model.BoxLoreUser
 import cx.aswin.boxlore.core.network.WatchAccountApi
 import cx.aswin.boxlore.core.network.model.TvApproveRequest
 import cx.aswin.boxlore.core.network.session.ApiErrorCodes
+import cx.aswin.boxlore.core.network.session.ApiSessionInterceptor
 import cx.aswin.boxlore.feature.settings.pages.TvApproval
 import cx.aswin.boxlore.feature.settings.pages.TvSignInApprover
 import kotlinx.coroutines.CoroutineDispatcher
@@ -30,7 +31,7 @@ class TvSignInAdapter(
                     val response = api().approveTv(authorization, TvApproveRequest(code)).execute()
                     response.body()?.close()
                     // Reads and closes the error body.
-                    Answer(response.code(), ApiErrorCodes.of(response))
+                    Answer(response.code(), ApiErrorCodes.of(response), ApiSessionInterceptor.sentAttestedSession(response.raw()))
                 }.getOrNull()
             }
         },
@@ -40,33 +41,42 @@ class TvSignInAdapter(
         if (!canSyncUser(user())) return TvApproval.SignInNeeded
         val token = idToken() ?: return TvApproval.NoConnection
         val answer = send("Bearer $token", code) ?: return TvApproval.NoConnection
-        return approval(answer.status, answer.error)
+        return approval(answer.status, answer.error, answer.sentAttested)
     }
 
-    /** The API's HTTP [status] and its `error` code ([error]), when it gave one. */
-    data class Answer(val status: Int, val error: String?)
+    /**
+     * The API's HTTP [status] and its `error` code ([error]), when it gave one; [sentAttested] when
+     * the approval went out with a session better than limited ([ApiSessionInterceptor.sentAttestedSession]).
+     */
+    data class Answer(val status: Int, val error: String?, val sentAttested: Boolean = false)
 
     internal companion object {
         /** What the API's answer means for the listener. */
-        fun approval(status: Int, error: String?): TvApproval =
+        fun approval(status: Int, error: String?, sentAttested: Boolean = false): TvApproval =
             when {
                 status == OK -> TvApproval.Approved
                 status == NOT_FOUND || status == BAD_REQUEST -> TvApproval.WrongCode
-                LendingRules.needsCheck(status, error) -> TvApproval.CheckNeeded
+                LendingRules.cannotLend(status, error, sentAttested) -> TvApproval.CannotLend
+                LendingRules.needsCheck(status, error, sentAttested) -> TvApproval.CheckNeeded
                 status == UNAUTHORIZED && (error == null || error in STALE_SIGN_IN) -> TvApproval.SignInAgain
-                status == TOO_MANY -> TvApproval.TooManyTries
+                // A sign-in the web showed never lends the account; a fresh one on this phone does.
+                status == FORBIDDEN && error == WEB_SIGN_IN_NOT_ACCEPTED -> TvApproval.SignInAgain
+                LendingRules.tooMany(status) -> TvApproval.TooManyTries
                 status == FORBIDDEN && error == SIGN_IN_CLOSED -> TvApproval.Closed
+                // boxlore answered but couldn't check the sign-in just now (503 sync_unavailable, sign_in_unavailable).
+                status >= SERVER_ERROR -> TvApproval.Unavailable
                 else -> TvApproval.NoConnection
             }
 
         /** The phone's sign-in no longer lends the account: not a full sign-in, or older than the account's reset. */
         private val STALE_SIGN_IN = setOf("sign_in_required", "account_deleted")
+        private const val WEB_SIGN_IN_NOT_ACCEPTED = "web_sign_in_not_accepted"
         private const val SIGN_IN_CLOSED = "watch_sign_in_closed"
         private const val OK = 200
         private const val BAD_REQUEST = 400
         private const val UNAUTHORIZED = 401
         private const val FORBIDDEN = 403
         private const val NOT_FOUND = 404
-        private const val TOO_MANY = 429
+        private const val SERVER_ERROR = 500
     }
 }

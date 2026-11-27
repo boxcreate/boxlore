@@ -179,7 +179,7 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `android_auto_disconnected` | Auto session ended | — | session_id:string; duration_seconds:int | none |
 | `android_auto_browse` | User browsed Auto media tree | node:string | action:string | none |
 | `watch_linked` | boxlore on a Wear OS watch linked with this phone for the first time. Watch events are sent by the phone; the watch app sends none | — | — | none |
-| `watch_sign_in_answered` | The phone answered the watch's request to be signed in | result:string (`ok`, `signed_out`, `check_needed`, `failed`) | — | none |
+| `watch_sign_in_answered` | The phone answered the watch's request to be signed in | result:string (`ok`, `signed_out`, `check_needed`, `try_later`, `cannot_lend`, `failed`) | — | none |
 | `watch_episode_order` | Send to watch or Remove from watch on an episode page | action:string (`download`, `remove`); result:string (`sent`, `out_of_reach`) | — | none |
 | `watch_playback_moved` | Playback moved between the phone and the watch | direction:string (`to_watch`, `to_phone`) | — | none |
 | `watch_changes_merged` | One day of listening and follows done on the watch that reached the phone's library, sent once that day is over (a playing watch sends its place about once a minute) | day:string (the phone's local date, `YYYY-MM-DD`); merge_count:int; episode_count:int (listening updates: an episode counts again each time its place arrives); follow_change_count:int | — | none |

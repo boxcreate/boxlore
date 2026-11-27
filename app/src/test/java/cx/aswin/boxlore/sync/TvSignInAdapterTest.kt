@@ -34,8 +34,17 @@ class TvSignInAdapterTest {
             assertEquals(TvApproval.TooManyTries, answering(429, "too_many_attempts").approve("K7QX4M2P"))
             assertEquals(TvApproval.Closed, answering(403, "watch_sign_in_closed").approve("K7QX4M2P"))
             assertEquals(TvApproval.NoConnection, answering(null).approve("K7QX4M2P"))
-            assertEquals(TvApproval.NoConnection, answering(503, "sync_unavailable").approve("K7QX4M2P"))
         }
+
+    // Regression: a sign-in the web had shown, and a moment boxlore couldn't check the sign-in, both read "Couldn't reach boxlore".
+    @Test
+    fun `a sign-in the web showed and a brief outage say what they are`() {
+        assertEquals("a fresh sign-in on this phone lends", TvApproval.SignInAgain, TvSignInAdapter.approval(403, "web_sign_in_not_accepted"))
+        assertEquals(TvApproval.Unavailable, TvSignInAdapter.approval(503, "sync_unavailable"))
+        assertEquals(TvApproval.Unavailable, TvSignInAdapter.approval(503, "sign_in_unavailable"))
+        assertEquals(TvApproval.Unavailable, TvSignInAdapter.approval(502, null))
+        assertEquals("the daily cap for a phone without App Check", TvApproval.TooManyTries, TvSignInAdapter.approval(429, "too_many_attempts", sentAttested = true))
+    }
 
     // Regression: a phone that had to pass its check read "Verify your email", or "Couldn't reach boxlore" for a 403.
     @Test
@@ -44,6 +53,16 @@ class TvSignInAdapterTest {
         assertEquals(TvApproval.CheckNeeded, TvSignInAdapter.approval(401, ApiErrorCodes.ATTESTATION_REQUIRED))
         assertEquals(TvApproval.CheckNeeded, TvSignInAdapter.approval(403, ApiErrorCodes.ATTESTED_SESSION_REQUIRED))
     }
+
+    // Regression: a phone that had passed its check, refused for want of App Check, was told to finish a check that couldn't help.
+    @Test
+    fun `a checked phone the API still won't take says it can't sign a TV in`() =
+        runTest {
+            val adapter = TvSignInAdapter(user = { verified }, idToken = { "id-token" }, send = { _, _ -> TvSignInAdapter.Answer(403, ApiErrorCodes.ATTESTED_SESSION_REQUIRED, sentAttested = true) })
+
+            assertEquals(TvApproval.CannotLend, adapter.approve("K7QX4M2P"))
+            assertEquals(TvApproval.CheckNeeded, TvSignInAdapter.approval(403, ApiErrorCodes.ATTESTED_SESSION_REQUIRED, sentAttested = false))
+        }
 
     @Test
     fun `an account that cannot sync yet never sends a code`() =

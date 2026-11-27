@@ -170,11 +170,15 @@
     <string name="account_tv_sign_in_first">Verify your email on this phone first.</string>
     <!-- The phone has to pass boxlore's quick check (Cloudflare's) before it can sign a TV in; trying again runs it. -->
     <string name="account_tv_check_needed">This phone needs a quick check first. Try again, and finish the check if it opens.</string>
+    <!-- The phone passed boxlore's quick check, but boxlore wants more of this phone (Google's own check, Play Integrity) before it signs a TV in; nothing on this phone fixes it now. -->
+    <string name="account_tv_cannot_lend">This phone can\'t sign in a TV right now. Try again later, or use another phone that\'s signed in to your account.</string>
     <!-- This phone's sign-in no longer lends the account (not a full sign-in, or from before the account was reset). -->
     <string name="account_tv_sign_in_again">Sign in again on this phone, then try again.</string>
     <string name="account_tv_too_many_tries">Too many tries for now. Wait a while, then try again.</string>
     <!-- boxlore has paused signing in new TVs (a switch on boxlore's side). -->
     <string name="account_tv_closed">Signing in on a TV is paused for now. Try again later.</string>
+    <!-- boxlore answered but couldn't check this phone's sign-in just then (a brief outage on boxlore's side). -->
+    <string name="account_tv_unavailable">Couldn\'t sign in your TV just now. Try again in a minute.</string>
     <string name="account_tv_no_connection">Couldn\'t reach boxlore. Check your connection and try again.</string>
     <string name="settings_sync_import_footer">Shows with “Missing episodes?” turned on are refreshed after the import.</string>
 </resources>

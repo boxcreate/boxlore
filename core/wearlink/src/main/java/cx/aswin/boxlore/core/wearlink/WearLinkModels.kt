@@ -240,6 +240,19 @@ data class WatchSignInReply(
          * then try again). Watch builds that don't know it read it as [FAILED].
          */
         const val CHECK_NEEDED = "check_needed"
+
+        /**
+         * The phone lent its sign-in too often lately (the API's limit per minute, or per day for a
+         * phone without App Check): try again later. Watch builds that don't know it read it as [FAILED].
+         */
+        const val TRY_LATER = "try_later"
+
+        /**
+         * The phone passed boxlore's check, but the API wants more (App Check) before it lends, which
+         * no check on the phone gives: trying again soon won't help. Watch builds that don't know it
+         * read it as [FAILED].
+         */
+        const val CANNOT_LEND = "cannot_lend"
     }
 }
 

@@ -54,9 +54,11 @@ fun interface TvSignInApprover {
 /**
  * How approving a TV's code ended. [SignInNeeded]: this phone's account can't sync yet (an
  * unverified email); [SignInAgain]: its sign-in no longer lends the account; [CheckNeeded]: the
- * phone has to pass boxlore's quick check first; [Closed]: boxlore isn't signing TVs in for now.
+ * phone has to pass boxlore's quick check first; [CannotLend]: it passed the check, but boxlore
+ * wants more of this phone than a check gives before it signs a TV in; [Closed]: boxlore isn't
+ * signing TVs in for now; [Unavailable]: boxlore answered, but couldn't sign the TV in just now.
  */
-enum class TvApproval { Approved, WrongCode, SignInNeeded, SignInAgain, CheckNeeded, TooManyTries, Closed, NoConnection }
+enum class TvApproval { Approved, WrongCode, SignInNeeded, SignInAgain, CheckNeeded, CannotLend, TooManyTries, Closed, Unavailable, NoConnection }
 
 /** Test tags for the TV sign-in dialog. */
 object TvSignInTestTags {
@@ -166,7 +168,9 @@ private fun TvApproval.message(): Int =
         TvApproval.SignInNeeded -> R.string.account_tv_sign_in_first
         TvApproval.SignInAgain -> R.string.account_tv_sign_in_again
         TvApproval.CheckNeeded -> R.string.account_tv_check_needed
+        TvApproval.CannotLend -> R.string.account_tv_cannot_lend
         TvApproval.TooManyTries -> R.string.account_tv_too_many_tries
         TvApproval.Closed -> R.string.account_tv_closed
+        TvApproval.Unavailable -> R.string.account_tv_unavailable
         TvApproval.NoConnection, TvApproval.Approved -> R.string.account_tv_no_connection
     }

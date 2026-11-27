@@ -62,6 +62,17 @@ class PhoneAccountAdapterTest {
             assertEquals(WatchSignInReply.FAILED, other.watchSignIn().status)
         }
 
+    // Regression: the lending limit and a checked phone the API still refused both reached the watch as a plain failure.
+    @Test
+    fun `a phone that lent too often, or can't lend even after its check, says so`() =
+        runTest {
+            fun refusing(answer: CodeAnswer.Refused) = PhoneAccountAdapter(user = { google }, idToken = { "id-token" }, createCode = { answer })
+
+            assertEquals(WatchSignInReply(WatchSignInReply.TRY_LATER), refusing(CodeAnswer.Refused(429, "too_many_attempts")).watchSignIn())
+            assertEquals(WatchSignInReply(WatchSignInReply.CANNOT_LEND), refusing(CodeAnswer.Refused(403, ApiErrorCodes.ATTESTED_SESSION_REQUIRED, sentAttested = true)).watchSignIn())
+            assertEquals(WatchSignInReply(WatchSignInReply.CHECK_NEEDED), refusing(CodeAnswer.Refused(403, ApiErrorCodes.ATTESTED_SESSION_REQUIRED, sentAttested = false)).watchSignIn())
+        }
+
     @Test
     fun `the watch shows the account's email, else its name`() {
         assertEquals("me@example.org", PhoneAccountRules.name(google))
