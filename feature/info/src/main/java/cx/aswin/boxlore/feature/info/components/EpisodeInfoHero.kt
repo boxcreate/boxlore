@@ -1,12 +1,13 @@
 package cx.aswin.boxlore.feature.info.components
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.MarqueeSpacing
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -40,10 +40,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
@@ -155,8 +158,9 @@ private fun EpisodeShowLink(podcastTitle: String, onPodcastClick: () -> Unit) {
 }
 
 /**
- * Date, length and number in readable text that never scrolls, then the Archived and Mark played
- * pills: on the same line when they fit, on their own line at the end when they don't.
+ * Date, length and number on one line that scrolls when it runs long, with the Archived and Mark played
+ * pills fixed at its end. Only a column too narrow for the pills and [MinDetailsWidth] of details gives
+ * the details the whole line and puts the pills at the end of the next one.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -167,39 +171,67 @@ private fun EpisodeMetadata(episode: Episode, completion: EpisodeCompletionState
     }
     val number = episodeNumberLabel(episode)
     val metadata = listOfNotNull(date, formatEpisodeDuration(episode.duration, locale).takeIf(String::isNotBlank), number).joinToString(" · ")
-    FlowRow(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (metadata.isNotEmpty()) {
-            Text(
-                metadata,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.testTag(EPISODE_DETAILS_TAG),
-            )
-        }
-        // Archiving is done from the show page's selection menu; here an archived episode is only marked.
-        // Weighted, so on a line of their own the pills sit at the end. The inner row asks for its whole
-        // width: the line breaks before the pills rather than squeezing a label, and in a column too
-        // narrow for both, each pill takes a line of its own.
-        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+    Layout(
+        content = {
+            if (metadata.isNotEmpty()) {
+                Text(
+                    metadata,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Clip,
+                    modifier = Modifier.testTag(EPISODE_DETAILS_TAG).clipToBounds().basicMarquee(
+                        iterations = Int.MAX_VALUE,
+                        initialDelayMillis = 2_500,
+                        repeatDelayMillis = 2_000,
+                        spacing = MarqueeSpacing(32.dp),
+                        velocity = 24.dp,
+                    ),
+                )
+            }
+            // Archiving is done from the show page's selection menu; here an archived episode is only marked.
+            // The pills wrap, each whole, only in a column too narrow for both.
             FlowRow(
-                Modifier.width(IntrinsicSize.Max),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(MetadataGap, Alignment.End),
+                verticalArrangement = Arrangement.spacedBy(MetadataGap),
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
                 if (completion.isArchived) EpisodeArchivedPill()
                 MarkPlayedTip(episode.id, completion.showTip, onTipDismissed) { EpisodeCompletionPill(completion.isCompleted, onToggleCompletion) }
             }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    ) { measurables, constraints ->
+        val details = measurables.takeIf { it.size == 2 }?.first()
+        val pills = measurables.last()
+        val width = constraints.maxWidth
+        val gap = MetadataGap.roundToPx()
+        val pillsPlaced = pills.measure(Constraints(maxWidth = width))
+        val oneLine = details == null || pills.maxIntrinsicWidth(Constraints.Infinity) + gap + MinDetailsWidth.roundToPx() <= width
+        if (oneLine) {
+            val detailsPlaced = details?.measure(Constraints.fixedWidth((width - pillsPlaced.width - gap).coerceAtLeast(0)))
+            val height = maxOf(detailsPlaced?.height ?: 0, pillsPlaced.height)
+            layout(width, height) {
+                detailsPlaced?.placeRelative(0, (height - detailsPlaced.height) / 2)
+                pillsPlaced.placeRelative(width - pillsPlaced.width, (height - pillsPlaced.height) / 2)
+            }
+        } else {
+            val detailsPlaced = details.measure(Constraints.fixedWidth(width))
+            val top = detailsPlaced.height + MetadataLineGap.roundToPx()
+            layout(width, top + pillsPlaced.height) {
+                detailsPlaced.placeRelative(0, 0)
+                pillsPlaced.placeRelative(width - pillsPlaced.width, top)
+            }
         }
     }
 }
+
+private val MetadataGap = 8.dp
+private val MetadataLineGap = 4.dp
+
+/** The least room the scrolling details keep beside the pills before the pills move to the next line. */
+internal val MinDetailsWidth = 80.dp
 
 /**
  * The Mark played tip as a small label pointing at the button, so nothing on the page moves: it
