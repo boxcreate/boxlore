@@ -13,7 +13,10 @@ class SignInRulesTest {
         assertEquals(CodePanel.Loading, SignInRules.panel(TvSignIn.Starting))
         assertEquals(CodePanel.Code, SignInRules.panel(TvSignIn.ShowingCode("K7QX4M2P")))
         assertEquals(CodePanel.RanOut, SignInRules.panel(TvSignIn.CodeRanOut))
-        assertEquals(CodePanel.NoConnection, SignInRules.panel(TvSignIn.NoConnection))
+        assertEquals(CodePanel.PhoneCheck, SignInRules.panel(TvSignIn.PhoneCheckNeeded))
+        for (problem in listOf(TvSignIn.NoConnection, TvSignIn.SignInClosed, TvSignIn.TooManyCodes)) assertEquals(CodePanel.Problem, SignInRules.panel(problem))
+        // Each problem says its own reason, not the connection's.
+        assertEquals(3, listOf(TvSignIn.NoConnection, TvSignIn.SignInClosed, TvSignIn.TooManyCodes).map(SignInRules::problem).toSet().size)
         assertEquals("K7QX-4M2P", SignInRules.grouped("K7QX4M2P"))
     }
 }

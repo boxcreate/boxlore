@@ -31,6 +31,8 @@ internal class PreviewTvAccount : TvAccount {
             }
     }
 
+    override fun startSignInBySelf() = startSignIn()
+
     override fun cancelSignIn() {
         approving?.cancel()
         if (state.value !is TvSignIn.SignedIn) state.value = TvSignIn.SignedOut

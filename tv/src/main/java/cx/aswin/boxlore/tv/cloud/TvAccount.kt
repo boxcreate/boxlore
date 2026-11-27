@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.network.session.PairedTokenRefusal
 import cx.aswin.boxlore.tv.data.TvLibraryStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /** Where signing this TV in stands. Every state but [SignedIn] is the sign-in screen. */
 sealed interface TvSignIn {
@@ -37,6 +39,18 @@ sealed interface TvSignIn {
 
     /** The API could not be reached for a code. */
     data object NoConnection : TvSignIn
+
+    /** boxlore isn't signing TVs in for now (the API's `watch_sign_in_closed`). */
+    data object SignInClosed : TvSignIn
+
+    /** Too many codes were asked for from this network lately, even after waiting as long as the API said once. */
+    data object TooManyCodes : TvSignIn
+
+    /**
+     * The phone that approved the last code had passed no check (App Check or Turnstile), so the API
+     * would not sign the TV in with it. Stays on screen until the listener asks for a new code.
+     */
+    data object PhoneCheckNeeded : TvSignIn
 }
 
 /** Signing this TV in to the listener's account and out again. The TV uses boxlore only once signed in. */
@@ -46,9 +60,12 @@ interface TvAccount {
     /**
      * Shows a code and waits for a phone to approve it, until signed in or [cancelSignIn]. A code
      * that runs out gives way to a new one, a few times, then [TvSignIn.CodeRanOut]; calling this
-     * again starts over.
+     * again starts over. The listener asked for it (Show a new code, Try again).
      */
     fun startSignIn()
+
+    /** The sign-in screen came to the front: [startSignIn], unless [TvSignIn.PhoneCheckNeeded] is waiting for the listener. */
+    fun startSignInBySelf()
 
     /** Stops waiting for a code (the sign-in screen left the screen); a TV signed in stays signed in. */
     fun cancelSignIn()
@@ -61,6 +78,8 @@ class NoTvAccount : TvAccount {
     override val signIn: StateFlow<TvSignIn> = MutableStateFlow(TvSignIn.NoConnection)
 
     override fun startSignIn() = Unit
+
+    override fun startSignInBySelf() = Unit
 
     override fun cancelSignIn() = Unit
 
@@ -155,54 +174,72 @@ internal class LiveTvAccount(
             scope.launch {
                 // A code that runs out with nobody approving it gives way to a fresh one, a few times.
                 repeat(MAX_CODES) {
-                    state.value = TvSignIn.Starting
-                    val started = code()
-                    if (started == null) {
-                        state.value = TvSignIn.NoConnection
-                        return@launch
+                    show(TvSignIn.Starting)
+                    val started = when (val start = code()) {
+                        is CodeStart.Code -> start.code
+                        CodeStart.Closed -> return@launch show(TvSignIn.SignInClosed)
+                        is CodeStart.Wait -> return@launch show(TvSignIn.TooManyCodes)
+                        CodeStart.Unreachable -> return@launch show(TvSignIn.NoConnection)
                     }
-                    state.value = TvSignIn.ShowingCode(started.code)
-                    val approved = approval(started)
-                    if (approved != null) return@launch signedIn(approved.token, approved.account)
+                    if (tokens.token != null) return@launch
+                    show(TvSignIn.ShowingCode(started.code))
+                    when (approval(started)) {
+                        Approval.SignedIn -> return@launch
+                        Approval.Closed -> return@launch show(TvSignIn.SignInClosed)
+                        Approval.RanOut -> Unit
+                    }
                 }
-                state.value = TvSignIn.CodeRanOut
+                show(TvSignIn.CodeRanOut)
             }
     }
 
-    /** A code to show, waiting out the API's limit once when too many were asked for lately; null when it can't be had. */
-    private suspend fun code(): TvSignInStartResponse? {
-        repeat(START_TRIES) {
+    override fun startSignInBySelf() {
+        if (state.value != TvSignIn.PhoneCheckNeeded) startSignIn()
+    }
+
+    /** Puts [next] on screen, unless the TV signed in meanwhile (a poll that outlived a cancel can sign it in). */
+    private fun show(next: TvSignIn) = state.update { if (it is TvSignIn.SignedIn) it else next }
+
+    /** A code to show, waiting out the API's limit once when too many were asked for lately; a [CodeStart.Wait] when it still says wait. */
+    private suspend fun code(): CodeStart {
+        repeat(START_TRIES - 1) {
             when (val start = api.start()) {
-                is CodeStart.Code -> return start.code
                 is CodeStart.Wait -> delay(start.seconds * MILLIS)
-                CodeStart.Unreachable -> return null
+                else -> return start
             }
         }
-        return null
+        return api.start()
     }
 
-    /** Asks about [started] until a phone approves it, or null once it runs out. */
-    private suspend fun approval(started: TvSignInStartResponse): CodeCheck.Approved? {
+    /** Asks about [started] until a phone approves it and the TV is signed in, it runs out, or signing in closes. */
+    private suspend fun approval(started: TvSignInStartResponse): Approval {
         val runsOutAt = clock() + started.expiresInSeconds.coerceAtLeast(MIN_LIFE_SECONDS) * MILLIS
         val everyMs = started.intervalSeconds.coerceIn(MIN_POLL_SECONDS, MAX_POLL_SECONDS) * MILLIS
         while (clock() < runsOutAt) {
             delay(everyMs)
-            when (val check = api.poll(started.code, started.pair)) {
-                is CodeCheck.Approved -> return check
-                CodeCheck.Expired -> return null
+            // An older wait collected an approval after being cancelled: nothing left to ask.
+            if (tokens.token != null) return Approval.SignedIn
+            // The API hands the token over once: a cancel (the screen leaving) must not drop it between the answer and the sign-in.
+            val check = withContext(NonCancellable) {
+                api.poll(started.code, started.pair).also { if (it is CodeCheck.Approved) signedIn(it.token, it.account) }
+            }
+            when (check) {
+                is CodeCheck.Approved -> return Approval.SignedIn
+                CodeCheck.Expired -> return Approval.RanOut
+                CodeCheck.Closed -> return Approval.Closed
                 // Asked too often from this address: the code still stands, so wait as long as the API says.
                 is CodeCheck.Wait -> delay((check.seconds * MILLIS - everyMs).coerceAtLeast(0L))
                 else -> Unit
             }
         }
-        return null
+        return Approval.RanOut
     }
 
     override fun cancelSignIn() {
         waiting?.cancel()
         waiting = null
-        // One step, so an approval landing meanwhile is never overwritten.
-        state.update { if (it is TvSignIn.SignedIn) it else TvSignIn.SignedOut }
+        // One step, so an approval landing meanwhile is never overwritten; a refusal's reason stays for the listener.
+        state.update { if (it is TvSignIn.SignedIn || it == TvSignIn.PhoneCheckNeeded) it else TvSignIn.SignedOut }
     }
 
     override fun signOut() {
@@ -224,9 +261,13 @@ internal class LiveTvAccount(
             }
         }
 
-    /** The API stopped taking [refused]: the TV is signed out, unless it signed in again since. */
-    fun refused(refused: String) {
-        if (tokens.token == refused) signedOut()
+    /**
+     * The API stopped taking [refused], at a sync or a trade ([reason]): the TV is signed out, unless
+     * it signed in again since. A token lent by an unchecked phone says so ([TvSignIn.PhoneCheckNeeded]).
+     */
+    fun refused(refused: String, reason: PairedTokenRefusal = PairedTokenRefusal.Invalid) {
+        if (tokens.token != refused) return
+        signedOut(if (reason == PairedTokenRefusal.UnattestedLender) TvSignIn.PhoneCheckNeeded else TvSignIn.SignedOut)
     }
 
     private fun signedIn(token: String, account: String?) {
@@ -238,13 +279,15 @@ internal class LiveTvAccount(
         requestSync()
     }
 
-    private fun signedOut() {
+    private fun signedOut(next: TvSignIn = TvSignIn.SignedOut) {
         tokens.token = null
         tokens.account = null
         store.update(TvCloudRules::unlinked)
-        state.value = TvSignIn.SignedOut
+        state.value = next
         onAccountChanged()
     }
+
+    private enum class Approval { SignedIn, RanOut, Closed }
 
     internal companion object {
         /** Codes shown in a row before the TV stops asking: about half an hour of 10-minute codes. */

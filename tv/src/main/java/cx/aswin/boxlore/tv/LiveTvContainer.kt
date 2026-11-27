@@ -48,7 +48,7 @@ internal object LiveTvContainer {
                 }
                 LiveTvAccount(cloud, tokens, store, sync::request, work, onAccountChanged = changed).also { account ->
                     sync.onRefused = account::refused
-                    pairing.onRefused = { token, _ -> account.refused(token) }
+                    pairing.onRefused = account::refused
                     account.giveUpUnrevoked()
                     sync.start()
                 }

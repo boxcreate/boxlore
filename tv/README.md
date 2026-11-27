@@ -27,7 +27,8 @@ Nothing outside this module depends on it. Inside it, screens depend only on the
 - `data.TvPlayback`: what is loaded (`NowPlaying`) and the transport, speed, sleep timer and Daily
   Mix. The remote's media keys reach it through the same calls.
 - `cloud.TvAccount`: where signing in stands (`TvSignIn`: signed out, showing a code, codes ran
-  out, no connection, signed in), starting and cancelling sign-in, and signing out.
+  out, no connection, sign-in closed, too many codes, the approving phone needs its check, signed
+  in), starting and cancelling sign-in, and signing out.
 - `TvContainer`: the whole object graph, built once by `TvApplication` through
   `TvContainerFactory`. Nothing else creates one. `LiveTvContainer` builds the real one
   (`LiveTvLibrary`, `LiveTvPlayback`).
@@ -104,13 +105,14 @@ src/release/java/...         # release TvContainerFactory
 - Signing in: `LiveTvAccount` shows a code from the API until a phone signed in to the account
   approves it. A code that runs out gives way to a new one, three in all, then the screen waits for
   Show a new code; codes are asked for and polled only while the sign-in screen is in front, and a
-  429 is waited out. The TV then holds its own account token, used as the watch's is, and gives it
-  up on Sign out (again at the next start when the API couldn't record it).
+  429 is waited out once. An approval that arrives as the screen leaves still signs the TV in (the
+  API hands its token over once). The TV then holds its own account token, used as the watch's is,
+  and gives it up on Sign out (again at the next start when the API couldn't record it).
 - Nothing else reaches the API before sign-in: `TvApp` shows only the sign-in screen,
   `data.SignedInTvCatalog` answers nothing (Daily Mix reads and the next episode after one ends
   included), and the API session sends only the sign-in routes. Once signed in the TV trades its
   account token for a paired session (`TvServer`, `cloud.TvPairing`); a trade the API refuses signs
-  the TV out.
+  the TV out, and one lent by a phone that had passed no check says so and waits for Show a new code.
 - `cloud.TvCloudSync` pushes what changed on the TV, then pulls what changed elsewhere: at start, a
   little after each change, and every 15 minutes. `cloud.TvCloudRules` merges by the rows the phone
   and the watch exchange: each part of a listening row (play, like) wins where it is newer, and the

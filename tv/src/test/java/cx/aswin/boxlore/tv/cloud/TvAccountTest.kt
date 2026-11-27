@@ -141,6 +141,56 @@ class TvAccountTest {
         assertEquals(1, api.starts)
     }
 
+    // Regression: a closed sign-in and a network over its code limit both read as no connection.
+    @Test
+    fun `a closed sign-in and too many codes say so, instead of blaming the connection`(@TempDir folder: File) {
+        val scope = TestScope(StandardTestDispatcher())
+        val api = FakeApi(ArrayDeque(listOf(CodeCheck.Closed)), startAnswers = ArrayDeque(listOf(CodeStart.Closed, CodeStart.Wait(60), CodeStart.Wait(60))))
+        val store = TvLibraryStore(File(folder, "library.json"), scope, StandardTestDispatcher(scope.testScheduler))
+        val account = LiveTvAccount(api, Tokens(), store, {}, scope, clock = { scope.testScheduler.currentTime })
+
+        account.startSignIn()
+        scope.runCurrent()
+        assertEquals(TvSignIn.SignInClosed, account.signIn.value)
+
+        // Told to wait, the TV waits once as long as the API says; told again, it stops asking.
+        account.startSignIn()
+        scope.advanceTimeBy(60_001)
+        assertEquals(TvSignIn.TooManyCodes, account.signIn.value)
+
+        // Signing in closes while a code is on screen.
+        account.startSignIn()
+        scope.advanceTimeBy(5_001)
+        assertEquals(TvSignIn.SignInClosed, account.signIn.value)
+        assertTrue(RetrofitTvCloudApi.signInClosed(403, RetrofitTvCloudApi.SIGN_IN_CLOSED))
+        assertFalse(RetrofitTvCloudApi.signInClosed(403, "attested_session_required"))
+    }
+
+    // Regression: leaving the sign-in screen between a poll's 200 and the sign-in dropped the
+    // one-time token, and the API answers that code 404 from then on.
+    @Test
+    fun `an approval that arrives as the screen leaves still signs the TV in`(@TempDir folder: File) {
+        val scope = TestScope(StandardTestDispatcher())
+        val answer = CompletableDeferred<CodeCheck>()
+        val inner = FakeApi(ArrayDeque())
+        val api =
+            object : TvCloudApi by inner {
+                override suspend fun poll(code: String, pair: String): CodeCheck = answer.await()
+            }
+        val tokens = Tokens()
+        val store = TvLibraryStore(File(folder, "library.json"), scope, StandardTestDispatcher(scope.testScheduler))
+        val account = LiveTvAccount(api, tokens, store, {}, scope, clock = { scope.testScheduler.currentTime })
+
+        account.startSignIn()
+        scope.advanceTimeBy(5_001)
+        account.cancelSignIn()
+        answer.complete(CodeCheck.Approved("token-1", "me@example.org"))
+        scope.runCurrent()
+
+        assertEquals("token-1", tokens.token)
+        assertEquals(TvSignIn.SignedIn("me@example.org"), account.signIn.value)
+    }
+
     @Test
     fun `a code that ran out is replaced by a fresh one, and leaving stops the waiting`(@TempDir folder: File) {
         val scope = TestScope(StandardTestDispatcher())
@@ -192,12 +242,38 @@ class TvAccountTest {
         val tokens = Tokens().apply { token = "lent" }
         val store = TvLibraryStore(File(folder, "library.json"), scope, StandardTestDispatcher(scope.testScheduler))
         val account = LiveTvAccount(FakeApi(ArrayDeque()), tokens, store, {}, scope)
-        val pairing = TvPairing(tokens).apply { onRefused = { token, _ -> account.refused(token) } }
+        val pairing = TvPairing(tokens).apply { onRefused = account::refused }
         assertEquals("lent", pairing.accountToken())
 
         pairing.onTokenRefused("lent", PairedTokenRefusal.Invalid)
         assertEquals(TvSignIn.SignedOut, account.signIn.value)
         assertNull(pairing.accountToken())
+    }
+
+    // Regression: a token lent by an unchecked phone flipped the TV back to a new code with no reason.
+    @Test
+    fun `a sign-in lent by an unchecked phone says so, and waits for the listener's new code`(@TempDir folder: File) {
+        val scope = TestScope(StandardTestDispatcher())
+        val tokens = Tokens().apply { token = "lent" }
+        val api = FakeApi(ArrayDeque())
+        val store = TvLibraryStore(File(folder, "library.json"), scope, StandardTestDispatcher(scope.testScheduler))
+        val account = LiveTvAccount(api, tokens, store, {}, scope, clock = { scope.testScheduler.currentTime })
+        val pairing = TvPairing(tokens).apply { onRefused = account::refused }
+
+        pairing.onTokenRefused("lent", PairedTokenRefusal.UnattestedLender)
+        assertEquals(TvSignIn.PhoneCheckNeeded, account.signIn.value)
+        assertNull(tokens.token)
+
+        // The sign-in screen coming up, or leaving, keeps the reason on screen.
+        account.startSignInBySelf()
+        account.cancelSignIn()
+        scope.runCurrent()
+        assertEquals(TvSignIn.PhoneCheckNeeded, account.signIn.value)
+        assertEquals(0, api.starts)
+
+        account.startSignIn()
+        scope.runCurrent()
+        assertEquals(TvSignIn.ShowingCode("CODE0001"), account.signIn.value)
     }
 
     @Test

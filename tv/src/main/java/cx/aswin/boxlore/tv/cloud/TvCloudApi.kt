@@ -32,6 +32,9 @@ internal sealed interface CodeStart {
     /** Too many codes asked for from this address lately: ask again after [seconds]. */
     data class Wait(val seconds: Long) : CodeStart
 
+    /** boxlore isn't signing TVs in for now. */
+    data object Closed : CodeStart
+
     data object Unreachable : CodeStart
 }
 
@@ -47,6 +50,9 @@ internal sealed interface CodeCheck {
 
     /** Asked too often from this address: the code still stands, ask again after [seconds]. */
     data class Wait(val seconds: Long) : CodeCheck
+
+    /** boxlore stopped signing TVs in: no code will be approved for now. */
+    data object Closed : CodeCheck
 
     data object Unreachable : CodeCheck
 }
@@ -74,10 +80,12 @@ internal class RetrofitTvCloudApi(
         withContext(io) {
             val response = runCatching { api.startTv().execute() }.getOrNull() ?: return@withContext CodeStart.Unreachable
             val started = response.body()?.takeIf { it.code.isNotBlank() }
-            response.errorBody()?.close()
+            // Reads and closes the error body.
+            val error = ApiErrorCodes.of(response)
             when {
                 response.isSuccessful && started != null -> CodeStart.Code(started)
                 response.code() == TOO_MANY -> CodeStart.Wait(retryAfterSeconds(response.headers()[RETRY_AFTER]))
+                signInClosed(response.code(), error) -> CodeStart.Closed
                 else -> CodeStart.Unreachable
             }
         }
@@ -87,12 +95,14 @@ internal class RetrofitTvCloudApi(
             val response = runCatching { api.pollTv(TvPollRequest(code, pair)).execute() }.getOrNull() ?: return@withContext CodeCheck.Unreachable
             val body = response.body()
             val token = body?.token?.takeIf { it.isNotBlank() }
-            response.errorBody()?.close()
+            // Reads and closes the error body.
+            val error = ApiErrorCodes.of(response)
             when {
                 response.code() == OK && token != null -> CodeCheck.Approved(token, body.account?.takeIf { it.isNotBlank() })
                 response.code() == ACCEPTED -> CodeCheck.Waiting
                 response.code() == NOT_FOUND -> CodeCheck.Expired
                 response.code() == TOO_MANY -> CodeCheck.Wait(retryAfterSeconds(response.headers()[RETRY_AFTER]))
+                signInClosed(response.code(), error) -> CodeCheck.Closed
                 else -> CodeCheck.Unreachable
             }
         }
@@ -131,12 +141,18 @@ internal class RetrofitTvCloudApi(
         /** Only that code signs the TV out: any other 401 is about the device's session, which renews itself. */
         fun refusesToken(status: Int, body: String?): Boolean = status == UNAUTHORIZED && ApiErrorCodes.parse(body) == TOKEN_REFUSED
 
+        /** The API's code while it signs no new watches or TVs in. */
+        const val SIGN_IN_CLOSED = "watch_sign_in_closed"
+
+        fun signInClosed(status: Int, error: String?): Boolean = status == FORBIDDEN && error == SIGN_IN_CLOSED
+
         /** A `Retry-After` in seconds, a minute when it is missing, and never more than [MAX_WAIT_SECONDS]. */
         fun retryAfterSeconds(header: String?): Long = (header?.trim()?.toLongOrNull() ?: DEFAULT_WAIT_SECONDS).coerceIn(1L, MAX_WAIT_SECONDS)
 
         private const val OK = 200
         private const val ACCEPTED = 202
         private const val UNAUTHORIZED = 401
+        private const val FORBIDDEN = 403
         private const val NOT_FOUND = 404
         private const val TOO_MANY = 429
         private const val RETRY_AFTER = "Retry-After"

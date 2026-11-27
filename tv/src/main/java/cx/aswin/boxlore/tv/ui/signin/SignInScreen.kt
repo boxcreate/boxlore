@@ -40,8 +40,11 @@ import cx.aswin.boxlore.tv.ui.components.PillButton
 import cx.aswin.boxlore.tv.ui.theme.TvColors
 import cx.aswin.boxlore.tv.ui.theme.TvSpace
 
-/** What the code panel on the sign-in screen holds. */
-internal enum class CodePanel { Loading, Code, RanOut, NoConnection }
+/**
+ * What the code panel on the sign-in screen holds: [Problem] says why no code is shown and offers
+ * Try again; [PhoneCheck] says the approving phone has to pass its check, and offers a new code.
+ */
+internal enum class CodePanel { Loading, Code, RanOut, PhoneCheck, Problem }
 
 internal object SignInRules {
     /** The panel for [signIn]; null once signed in, when the app itself takes the screen. */
@@ -49,8 +52,16 @@ internal object SignInRules {
         is TvSignIn.SignedIn -> null
         is TvSignIn.ShowingCode -> CodePanel.Code
         TvSignIn.CodeRanOut -> CodePanel.RanOut
-        TvSignIn.NoConnection -> CodePanel.NoConnection
+        TvSignIn.PhoneCheckNeeded -> CodePanel.PhoneCheck
+        TvSignIn.NoConnection, TvSignIn.SignInClosed, TvSignIn.TooManyCodes -> CodePanel.Problem
         TvSignIn.SignedOut, TvSignIn.Starting -> CodePanel.Loading
+    }
+
+    /** What a [CodePanel.Problem] panel says for [signIn]. */
+    fun problem(signIn: TvSignIn): Int = when (signIn) {
+        TvSignIn.SignInClosed -> R.string.tv_sign_in_closed
+        TvSignIn.TooManyCodes -> R.string.tv_too_many_codes
+        else -> R.string.tv_sign_in_failed
     }
 
     /** The code as the phone asks for it: two groups of four, easy to read across a room. */
@@ -65,12 +76,13 @@ internal object SignInRules {
 /**
  * The TV's first screen until it is signed in, and where signing out leads: how to approve the
  * TV on a phone, and the code to enter there. A code is asked for only while this screen is in
- * front (and polled only while it shows one); after a few run out unused, it waits for Show a new code.
+ * front (and polled only while it shows one); after a few run out unused, or after a phone that
+ * hadn't passed its check approved one, it waits for Show a new code.
  */
 @Composable
 fun SignInScreen(signIn: TvSignIn, account: TvAccount) {
     LifecycleStartEffect(account) {
-        account.startSignIn()
+        account.startSignInBySelf()
         onStopOrDispose { account.cancelSignIn() }
     }
     Row(
@@ -120,7 +132,7 @@ private fun Panel(signIn: TvSignIn, account: TvAccount) {
     val action = remember { FocusRequester() }
     val panel = SignInRules.panel(signIn) ?: return
     // A panel with a button puts the remote on it; the code itself has nothing to press.
-    LaunchedEffect(panel) { if (panel == CodePanel.RanOut || panel == CodePanel.NoConnection) runCatching { action.requestFocus() } }
+    LaunchedEffect(panel) { if (panel != CodePanel.Loading && panel != CodePanel.Code) runCatching { action.requestFocus() } }
     when (panel) {
         CodePanel.Loading -> Text(stringResource(R.string.tv_getting_code), style = MaterialTheme.typography.titleMedium, color = TvColors.onSurfaceVariant)
         CodePanel.Code -> {
@@ -141,8 +153,13 @@ private fun Panel(signIn: TvSignIn, account: TvAccount) {
             Text(stringResource(R.string.tv_code_ran_out_body), style = MaterialTheme.typography.bodyMedium, color = TvColors.onSurfaceVariant, textAlign = TextAlign.Center)
             PillButton(stringResource(R.string.tv_new_code), onClick = account::startSignIn, Modifier.focusRequester(action), icon = Icons.Rounded.Refresh)
         }
-        CodePanel.NoConnection -> {
-            Text(stringResource(R.string.tv_sign_in_failed), style = MaterialTheme.typography.titleMedium, color = TvColors.error, textAlign = TextAlign.Center)
+        CodePanel.PhoneCheck -> {
+            Text(stringResource(R.string.tv_phone_check_title), style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.tv_phone_check_body), style = MaterialTheme.typography.bodyMedium, color = TvColors.onSurfaceVariant, textAlign = TextAlign.Center)
+            PillButton(stringResource(R.string.tv_new_code), onClick = account::startSignIn, Modifier.focusRequester(action), icon = Icons.Rounded.Refresh)
+        }
+        CodePanel.Problem -> {
+            Text(stringResource(SignInRules.problem(signIn)), style = MaterialTheme.typography.titleMedium, color = TvColors.error, textAlign = TextAlign.Center)
             PillButton(stringResource(R.string.tv_try_again), onClick = account::startSignIn, Modifier.focusRequester(action), icon = Icons.Rounded.Refresh)
         }
     }

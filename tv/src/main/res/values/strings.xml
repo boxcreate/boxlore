@@ -163,6 +163,13 @@
     <string name="tv_code_ran_out_body">Get a new one when your phone is ready.</string>
     <string name="tv_new_code">Show a new code</string>
     <string name="tv_sign_in_failed">Couldn\'t reach boxlore. Check the TV\'s internet connection.</string>
+    <!-- boxlore has paused signing in new TVs (a switch on boxlore's side); TVs already signed in keep working. -->
+    <string name="tv_sign_in_closed">Signing in on a TV is paused for now. Try again later.</string>
+    <!-- The API limits how many codes one network may ask for; the TV already waited once as long as it said. -->
+    <string name="tv_too_many_codes">This network asked for a lot of codes. Wait a few minutes, then try again.</string>
+    <!-- A phone approved the code, but it hadn't passed boxlore's quick check (Cloudflare's, on the phone), so the TV couldn't sign in with it. -->
+    <string name="tv_phone_check_title">Your phone needs a quick check</string>
+    <string name="tv_phone_check_body">Show a new code and enter it on your phone. If boxlore there asks for a quick check, finish it so this TV can sign in.</string>
     <string name="tv_try_again">Try again</string>
     <string name="tv_search_failed">Couldn\'t search. Check the TV\'s internet connection.</string>
     <!-- The account this TV is signed in to, e.g. "Signed in as listener@example.com" -->
