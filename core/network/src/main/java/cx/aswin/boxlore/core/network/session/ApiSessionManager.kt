@@ -28,7 +28,7 @@ data class ApiSessionTiming(
     /** The whole Turnstile run, at sign-in or in a step-up, including any interaction. */
     val stepUpTimeoutMs: Long = 150_000L,
     /**
-     * How long the request that started a step-up holds its OkHttp thread. Past this it
+     * How long a request that starts or joins a step-up holds its OkHttp thread. Past this it
      * takes its fallback while the step-up finishes in the background for later requests.
      */
     val stepUpRequestWaitMs: Long = 45_000L,
