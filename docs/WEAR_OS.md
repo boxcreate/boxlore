@@ -79,7 +79,7 @@ The watch app isn't on Google Play yet. Once it is:
 ### Set it up
 
 - **Link with your phone.** Open boxlore on both. With matching apps and the phone in reach, your shows and progress appear on the watch on their own.
-- **Sign in.** boxlore on the watch needs your account. Sign in to boxlore on your phone, keep the phone in reach, and open boxlore on the watch: it signs in through your phone. (On earlier versions, open **Settings > Account > Sign in with phone** on the watch.)
+- **Sign in.** boxlore on the watch needs your account. Sign in to boxlore on your phone and keep the phone in reach, then on the watch open **Settings > Account > Sign in with phone**. From the next update, the watch opens on this sign-in step by itself.
 - **Add the tile.** Swipe to the end of your tiles, add one, and pick boxlore.
 - **Add the watch-face shortcut.** Customise your watch face and pick boxlore for one of its slots.
 

@@ -73,7 +73,7 @@ Here is the data collected by our application and API services, and exactly how 
 * **What is sent:** A key stored on your phone signs each request to our servers. Google Play's App Check vouches for most phones; when it can't (the app didn't come from Google Play, or the phone is rooted), the app may ask Cloudflare Turnstile to check you're human before some features, such as AI onboarding, topic search, feedback, or signing in a TV or watch.
 * **Why:** So only the real app uses our servers, and nobody else can act as your phone.
 * **Where it goes:** Our API, and Cloudflare for the Turnstile check, which it processes under its own privacy policy.
-* **Good to know:** The check often runs without asking you anything. If you skip it, the app keeps working; only those features ask again.
+* **Good to know:** The check often runs without asking you anything. If you skip it, the app keeps working without those features, and they ask again after about half an hour.
 
 ### 10. Feedback and Replies
 * **What is sent:** What you write when you send feedback, the type you pick, and the app version. If you leave "Include device diagnostics" on, also your phone model, Android version, network type, audio output and language, and boxlore's own recent logs with keys, sign-in details and email addresses removed. Any photos or screenshots you attach.
