@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The release contract gate (`verify_release_contracts.py --module wear|tv`) checks the Wear OS and TV apps' optimized APKs and bundles in the Release dry run and before publication. ([#1316](https://github.com/boxcreate/boxlore/pull/1316)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
 - Gradle resolves Maven Central artifacts through Google's Maven Central mirror (`MavenCentralMirror` in `settings.gradle.kts` and the root `buildscript`), with Maven Central or the Plugin Portal as fallback, and JitPack only for `com.github.racra`. `ArchitectureGuardTest` keeps the mirror ahead of every `mavenCentral()`. ([#1317](https://github.com/boxcreate/boxlore/pull/1317)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- README, the Wear OS guide and the privacy doc say boxlore on your phone needs no account, while Android TV and Wear OS use your account and sign in through your phone; the privacy doc adds the App Check and Turnstile check and the device key. ([#1319](https://github.com/boxcreate/boxlore/pull/1319)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - `EpisodeMetadata` keeps the episode's details on one marquee line with the Archived and Mark played pills fixed at its end, moving the pills below only when less than `MinDetailsWidth` of details would fit. ([#1318](https://github.com/boxcreate/boxlore/pull/1318)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 ## [v0.0.33] - 2026-11-24
