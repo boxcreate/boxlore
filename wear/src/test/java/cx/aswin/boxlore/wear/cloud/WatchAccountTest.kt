@@ -72,6 +72,9 @@ class WatchAccountTest {
         assertEquals(SignInProblem.PhoneAway, WatchSignInRules.problem(null))
         assertEquals(SignInProblem.PhoneSignedOut, WatchSignInRules.problem(WatchSignInReply(WatchSignInReply.SIGNED_OUT)))
         assertEquals(SignInProblem.Failed, WatchSignInRules.problem(WatchSignInReply(WatchSignInReply.FAILED)))
+        assertEquals(SignInProblem.CheckOnPhone, WatchSignInRules.problem(WatchSignInReply(WatchSignInReply.CHECK_NEEDED)))
+        // A status this build doesn't know, from a newer phone, reads as a failure.
+        assertEquals(SignInProblem.Failed, WatchSignInRules.problem(WatchSignInReply("later")))
         // An answer that says it worked but carries no code cannot sign anyone in.
         assertEquals(SignInProblem.Failed, WatchSignInRules.problem(WatchSignInReply(WatchSignInReply.OK)))
         assertNull(WatchSignInRules.problem(WatchSignInReply(WatchSignInReply.OK, code = "c")))
@@ -344,6 +347,23 @@ class WatchAccountTest {
             runCurrent()
             assertEquals(0, asked)
             assertNull(account.problem.value)
+        }
+
+    @Test
+    fun `a phone that needs its check first leaves the watch waiting for a tap`() =
+        runTest {
+            val tokens = WatchAccountStore.InMemory()
+            var asked = 0
+            val account = LiveWatchAccount({ asked++.let { WatchSignInReply(WatchSignInReply.CHECK_NEEDED) } }, FakeCloud(), tokens, store(), {}, backgroundScope)
+
+            account.signInBySelf()
+            runCurrent()
+            assertEquals(SignInProblem.CheckOnPhone, account.problem.value)
+            account.signInBySelf()
+            runCurrent()
+
+            assertEquals(1, asked, "the phone is asked again only after a tap")
+            assertEquals(SignInHold.CheckOnPhone, tokens.hold)
         }
 
     @Test

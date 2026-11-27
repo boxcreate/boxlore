@@ -234,6 +234,12 @@ data class WatchSignInReply(
 
         /** The phone is signed in but could not get a code just now. */
         const val FAILED = "failed"
+
+        /**
+         * The phone has to pass boxlore's check before it can lend its sign-in (open boxlore on it,
+         * then try again). Watch builds that don't know it read it as [FAILED].
+         */
+        const val CHECK_NEEDED = "check_needed"
     }
 }
 

@@ -196,6 +196,7 @@ internal object WatchSignInRules {
         when {
             reply == null -> SignInProblem.PhoneAway
             reply.status == WatchSignInReply.SIGNED_OUT -> SignInProblem.PhoneSignedOut
+            reply.status == WatchSignInReply.CHECK_NEEDED -> SignInProblem.CheckOnPhone
             reply.status == WatchSignInReply.OK && !reply.code.isNullOrBlank() -> null
             else -> SignInProblem.Failed
         }

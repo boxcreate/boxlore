@@ -12,7 +12,7 @@ object WatchAnalyticsTracks {
     /** boxlore on a watch linked with this phone for the first time. */
     fun trackWatchLinked() = AnalyticsEmit.event("watch_linked", emptyMap())
 
-    /** The phone answered the watch's request to be signed in: `ok`, `signed_out` or `failed`. */
+    /** The phone answered the watch's request to be signed in: `ok`, `signed_out`, `check_needed` or `failed`. */
     fun trackWatchSignInAnswered(result: String) = AnalyticsEmit.event("watch_sign_in_answered", mapOf("result" to result))
 
     /** Send to watch or Remove from watch on an episode page. */
