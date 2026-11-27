@@ -13,8 +13,8 @@ import okhttp3.ResponseBody.Companion.toResponseBody
  * - attaches the stored `X-Boxlore-Session` (and `X-Session-Proof` once past `exp`) without
  *   waiting, unless there is no usable session at all;
  * - stores `X-Session-Renew` from network responses;
- * - on `session_expired` / `session_invalid` / `session_revoked` / `attestation_required`, gets one
- *   new session (which may run the Turnstile check) and retries once;
+ * - on a 401 `session_expired` / `session_invalid` / `session_revoked` / `attestation_required`, gets
+ *   one new session (which may run the Turnstile check) and retries once (a 403 is never recovered);
  * - on `verification_required`, runs the step-up and retries once, or returns the 401 so the caller
  *   falls back (always, in the background, where no check can run);
  * - on a watch or TV, sends nothing but the pairing routes until it holds a paired session
@@ -35,6 +35,8 @@ class ApiSessionInterceptor(private val manager: () -> ApiSessionManager?) : Int
         // Each recovery runs at most once: a refused session first, then a step-up for its replacement.
         val recoveries = mutableSetOf<String>()
         while (true) {
+            // Only a 401 is about this session; a 403 answers the bundled app key of old builds, or a route this session may not use.
+            if (response.code != UNAUTHORIZED) return response
             val code = ApiErrorCodes.of(response) ?: return response
             val kind = if (code in ApiErrorCodes.SESSION_REJECTIONS) REJECTED else code
             if (!recoveries.add(kind)) return response
