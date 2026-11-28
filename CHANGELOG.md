@@ -12,9 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - The release contract gate (`verify_release_contracts.py --module wear|tv`) checks the Wear OS and TV apps' optimized APKs and bundles in the Release dry run and before publication. ([#1316](https://github.com/boxcreate/boxlore/pull/1316)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
+- Sessions: a phone that Google Play can't vouch for signs in with Cloudflare Turnstile, steps up when the API asks, and steps up before it lends its sign-in; attested sessions refresh a day early. ([#1320](https://github.com/boxcreate/boxlore/pull/1320)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Android TV and Wear OS sign in through the phone first and trade their account token for a paired session, with clear messages when a sign-in is refused or a phone can't lend. ([#1320](https://github.com/boxcreate/boxlore/pull/1320)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Gradle resolves Maven Central artifacts through Google's Maven Central mirror (`MavenCentralMirror` in `settings.gradle.kts` and the root `buildscript`), with Maven Central or the Plugin Portal as fallback, and JitPack only for `com.github.racra`. `ArchitectureGuardTest` keeps the mirror ahead of every `mavenCentral()`. ([#1317](https://github.com/boxcreate/boxlore/pull/1317)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - README, the Wear OS guide and the privacy doc say boxlore on your phone needs no account, while Android TV and Wear OS use your account and sign in through your phone; the privacy doc adds the App Check and Turnstile check and the device key. ([#1319](https://github.com/boxcreate/boxlore/pull/1319)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
+- Explore's topic search, collections and For you say they need the quick check and let you start it, instead of showing no results. ([#1320](https://github.com/boxcreate/boxlore/pull/1320)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - `EpisodeMetadata` keeps the episode's details on one marquee line with the Archived and Mark played pills fixed at its end, moving the pills below only when less than `MinDetailsWidth` of details would fit. ([#1318](https://github.com/boxcreate/boxlore/pull/1318)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 ## [v0.0.33] - 2026-11-24
 
