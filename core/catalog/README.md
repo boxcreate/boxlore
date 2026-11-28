@@ -20,8 +20,8 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 - Discovery uses `/v2` when switched on, else v1; show search, typeahead, onboarding, content catalog, feedback, `/sync` and OPML lookups stay v1.
 - `DiscoveryEpisodeIds` (`RoomDiscoveryEpisodeIds` in production) maps recipe IDs in `/v2` answers to the phone's owner IDs before use and sends seeds and exclusions as recipe IDs. Follow seeds and sent followed IDs go by latest play, then follow day (same-day follows take turns daily); picks of any followed show are dropped.
 - Hidden shows leave discovery answers and go out as `excludedPodcastIds`; show search keeps them.
-- Failed `/v2` requests never fall back to v1: they keep the last good answer (`V2DiscoveryLastGood`, not for Lore's new-card check; `RecommendationsLastGood` per country, marked `fromLastGood`), else mark Home results `failed`, keeping what's shown. Topic search, collections and Home picks refused until the phone passes the quick check say so (`needsCheck`; `readCuratedPodcasts` for collections).
-- `/v2` answers are cached under `v2|` keys, apart from v1.
+- Failed `/v2` requests never fall back to v1: they keep the last good answer (`V2DiscoveryLastGood`, not for Lore's new-card check; `RecommendationsLastGood` per country, `fromLastGood`), else mark Home results `failed`, keeping what's shown. Quick-check refusals set `needsCheck`.
+- `/v2` answers cache under separate `v2|` keys.
 - `DiscoveryRouting` and `BriefingLinks` give code outside the repository the same switch and ID translation.
 - `RolloutSwitches`: feed-first show pages (default off, fixed per process); upgrade repair, daily address check, `/v2` discovery (default on). Off pauses without marking done.
 - `ChapterRepository`, `TranscriptRepository` and their offline storage: chapters and transcripts, remote, from descriptions or saved for downloads. Remote reads share one `RemoteText` read per address; results sit in a bounded `TimedLruCache`, untranslated, so related-episode IDs are translated on every return.
