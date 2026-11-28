@@ -5,6 +5,7 @@ import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.ComponentActivity
+import androidx.activity.ComponentDialog
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.CompositionLocalProvider
@@ -13,13 +14,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.filterToOne
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -52,12 +58,14 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowDialog
 
 /**
  * The Turnstile step-up host keeps one page through every presentation: invisible, then the phone
  * sheet or the centered dialog as the window crosses the tablet gates (600dp wide, 480dp tall), the
  * 840dp expanded width, portrait/landscape and a half-opened fold, in both directions. Window
- * changes never count as a skip; Skip and an outside tap end the run once; the page is destroyed
+ * changes never count as a skip; only Skip ends the run (a tap outside, a swipe down or Back leave the
+ * check up); the page is destroyed
  * exactly once when the run ends. In every presentation Echo stands beside its line and the check
  * sits inside its card.
  */
@@ -146,6 +154,12 @@ class TurnstileStepUpHostAdaptiveTest {
         val card = compose.onNodeWithTag(CHALLENGE_CARD_TAG).getUnclippedBoundsInRoot()
         val page = compose.onNodeWithTag(CHALLENGE_PAGE_TAG).getUnclippedBoundsInRoot()
         assertTrue("$window: check inside its card", page.left >= card.left && page.right <= card.right && page.top >= card.top && page.bottom <= card.bottom)
+    }
+
+    /** Back, as the check's window gets it (the sheet and the dialog each have their own). */
+    private fun pressBackInTheCheck() {
+        compose.runOnUiThread { (ShadowDialog.getLatestDialog() as ComponentDialog).onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
     }
 
     private fun askForInteraction() {
@@ -250,7 +264,31 @@ class TurnstileStepUpHostAdaptiveTest {
     }
 
     @Test
-    fun `a tap outside the expanded dialog skips once, and a tap on it does not`() {
+    fun `on a phone a tap outside the sheet, a swipe down or Back leave the check up, and Skip ends it once`() {
+        render()
+        val result = start()
+        askForInteraction()
+
+        // The scrim above the sheet, in the sheet's own window.
+        compose.onAllNodes(isRoot()).filterToOne(hasAnyDescendant(hasText(TITLE))).performTouchInput { click(Offset(16f, 16f)) }
+        compose.waitForIdle()
+        compose.onNodeWithText(TITLE).performTouchInput { swipeDown() }
+        compose.waitForIdle()
+        pressBackInTheCheck()
+        assertFalse(result.isCompleted)
+        compose.onNodeWithText(TITLE).assertIsDisplayed()
+        compose.onNodeWithText("Skip").assertIsDisplayed()
+
+        compose.onNodeWithText("Skip").performClick()
+
+        assertEquals(TurnstileResult.Failed("cancelled"), runBlocking { result.await() })
+        compose.waitForIdle()
+        compose.onNodeWithText(TITLE).assertDoesNotExist()
+        assertEquals(1, destroyed.size)
+    }
+
+    @Test
+    fun `a tap outside the expanded dialog, a tap on it or Back leave the check up, and Skip ends it once`() {
         window.value = BoxloreWindowLayout(1280f, 800f)
         render()
         val result = start()
@@ -258,8 +296,13 @@ class TurnstileStepUpHostAdaptiveTest {
 
         compose.onNodeWithText(TITLE).performClick()
         compose.waitForIdle()
-        assertFalse(result.isCompleted)
         compose.onNode(isDialog()).performTouchInput { click(Offset(16f, 16f)) }
+        compose.waitForIdle()
+        pressBackInTheCheck()
+        assertFalse(result.isCompleted)
+        compose.onNodeWithText(TITLE).assertIsDisplayed()
+
+        compose.onNodeWithText("Skip").performClick()
 
         assertEquals(TurnstileResult.Failed("cancelled"), runBlocking { result.await() })
         compose.waitForIdle()
