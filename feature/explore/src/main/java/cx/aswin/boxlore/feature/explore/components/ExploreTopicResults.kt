@@ -43,9 +43,15 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.explore.R
+import cx.aswin.boxlore.feature.explore.logic.ExploreCheckedRead
+import cx.aswin.boxlore.feature.explore.logic.ExploreQuickCheck
 import cx.aswin.boxlore.feature.explore.orderedExploreItems
 
-/** Topic destinations retain the catalog's ordering and card positions. */
+/**
+ * Topic destinations retain the catalog's ordering and card positions. A collection refused until
+ * this phone passes the quick check ([check]) offers the check instead of Try again.
+ */
+@Suppress("LongParameterList") // The collection's answer and the actions for each of its states.
 internal fun LazyStaggeredGridScope.exploreTopicResults(
     title: String,
     podcasts: List<Podcast>,
@@ -54,6 +60,8 @@ internal fun LazyStaggeredGridScope.exploreTopicResults(
     onPodcastClick: (Podcast, Int) -> Unit,
     failed: Boolean = false,
     onRetry: () -> Unit = {},
+    check: ExploreQuickCheck = ExploreQuickCheck(),
+    onStartCheck: () -> Unit = {},
 ) {
     item(key = "topic_heading", span = StaggeredGridItemSpan.FullLine) {
         ExploreTopicHeading(title)
@@ -61,6 +69,16 @@ internal fun LazyStaggeredGridScope.exploreTopicResults(
     when {
         loading && podcasts.isEmpty() -> items(6, key = { "topic_loading_$it" }) { index ->
             Box(Modifier.testTag("topic_loading_$index")) { ExploreBrowseCardSkeleton(featured = false) }
+        }
+        failed && podcasts.isEmpty() && check.needs(ExploreCheckedRead.COLLECTION) -> item(key = "topic_quick_check", span = StaggeredGridItemSpan.FullLine) {
+            ExploreQuickCheckNotice(
+                title = stringResource(R.string.explore_check_collection_title),
+                body = stringResource(R.string.explore_check_collection_body),
+                checking = check.checking,
+                missed = check.missed,
+                onStartCheck = onStartCheck,
+                modifier = Modifier.padding(vertical = 24.dp),
+            )
         }
         failed && podcasts.isEmpty() -> item(key = "topic_failed", span = StaggeredGridItemSpan.FullLine) {
             ExploreLoadFailedState(

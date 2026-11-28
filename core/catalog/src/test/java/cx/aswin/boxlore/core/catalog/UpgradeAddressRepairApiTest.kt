@@ -102,14 +102,14 @@ class UpgradeAddressRepairApiTest {
     }
 
     @Test
-    fun `a 503 and a registry that is down keep the chunk waiting without counting a try`() = runTest {
+    fun `a 503, a registry that is down and a session the API won't take yet keep the chunk waiting without counting a try`() = runTest {
         seed("920666", OLD)
         responses += json("""{"error":"lookup_unavailable"}""", code = 503)
         responses += fixture("fixtures/v2/shows-feeds-registry-down.json")
+        responses += json("""{"error":"verification_required"}""", code = 401)
         val repair = repair()
 
-        assertEquals(UpgradeRepairRun.RETRY, repair.run())
-        assertEquals(UpgradeRepairRun.RETRY, repair.run())
+        repeat(3) { assertEquals(UpgradeRepairRun.RETRY, repair.run()) }
 
         val row = repairs.getShow("920666")!!
         assertEquals(0, row.completedStep)
@@ -117,7 +117,7 @@ class UpgradeAddressRepairApiTest {
         assertEquals("address_unavailable", row.lastError)
         assertEquals(OLD, podcasts.getPodcast("920666")!!.feedUrl)
         assertTrue(rereads.isEmpty())
-        assertEquals(2, server.requestCount)
+        assertEquals(3, server.requestCount)
     }
 
     @Test

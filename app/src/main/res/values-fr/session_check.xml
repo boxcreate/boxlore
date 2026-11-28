@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="session_check_title">Je suis le seul robot autorisé dans cette discussion.</string>
-    <string name="session_check_body">Cochez la case pour que Cloudflare vérifie que vous êtes humain, puis je continuerai à chercher des podcasts pour vous.</string>
+    <string name="session_check_title">Je suis le seul robot autorisé à utiliser cette appli.</string>
+    <string name="session_check_body">Cochez la case pour que Cloudflare vérifie que vous êtes humain. Cela tient les bots à l’écart de boxlore.</string>
     <string name="session_check_skip">Passer</string>
 </resources>

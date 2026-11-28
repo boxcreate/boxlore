@@ -10,6 +10,7 @@ import java.io.IOException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -54,9 +55,10 @@ class ApiSessionAppTest {
     }
 
     @Test
-    fun `an exchange reports the App Check attempt and the session status`() {
+    fun `an App Check attempt and an exchange report their own events`() {
         val listener = ApiSessionAnalyticsListener(appCheckProvider = "play_integrity")
 
+        listener.onAppCheck(obtained = false, failure = "play_integrity_-9")
         listener.onExchange(
             ApiSessionExchangeEvent(
                 trigger = ApiSessionTrigger.Launch,
@@ -69,6 +71,7 @@ class ApiSessionAppTest {
                 appCheckFailure = "play_integrity_-9",
                 failureReason = null,
                 serverReason = "appcheck:missing",
+                turnstile = "no_host",
             ),
         )
 
@@ -86,6 +89,7 @@ class ApiSessionAppTest {
                 "duration_ms" to 840L,
                 "app_check_attempted" to true,
                 "server_reason" to "appcheck:missing",
+                "turnstile" to "no_host",
             ),
             recorder[1],
         )
@@ -100,6 +104,14 @@ class ApiSessionAppTest {
         assertEquals(listOf("api_session_status"), recorder.map { it.first })
         assertEquals("network", recorder.single().second["failure_reason"])
         assertFalse("attestation" in recorder.single().second)
+    }
+
+    @Test
+    fun `route step-ups stay on until PostHog's flag says off`() {
+        assertTrue(ApiSessionSetup.stepUpSwitchOn(flagsReady = false) { false }, "flags not loaded yet")
+        assertFalse(ApiSessionSetup.stepUpSwitchOn(flagsReady = true) { false })
+        assertTrue(ApiSessionSetup.stepUpSwitchOn(flagsReady = true) { true })
+        assertTrue(ApiSessionSetup.stepUpSwitchOn(flagsReady = true) { error("flags unreadable") })
     }
 
     @Test

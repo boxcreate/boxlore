@@ -123,6 +123,22 @@
     <string name="wear_account_phone_away">Your phone isn\'t in reach. Bring it close and try again.</string>
     <string name="wear_account_phone_signed_out">Sign in to boxlore on your phone first.</string>
     <string name="wear_account_failed">Couldn\'t sign in. Try again.</string>
+    <!-- The phone must pass boxlore's quick check (Cloudflare's, on the phone) before it can sign the watch in. -->
+    <string name="wear_account_check_on_phone">Open boxlore on your phone, then try again. It may ask for a quick check.</string>
+    <!-- The phone has lent its sign-in to watches and TVs too often lately (boxlore's limit per minute, or per day). -->
+    <string name="wear_account_try_later">Too many tries for now. Wait a while, then try again.</string>
+    <!-- The phone passed boxlore's quick check, but boxlore wants more of the phone (Google's own check) before it signs a watch in; nothing on the watch fixes it. -->
+    <string name="wear_account_phone_cant_lend">Your phone can\'t sign in this watch right now. Try again later.</string>
+    <!-- boxlore stopped taking this watch's sign-in (signed out or reset from the account's side, or it ran out). -->
+    <string name="wear_account_signed_out_by_account">This watch was signed out of your account. Sign in again with your phone.</string>
     <string name="wear_shows_layout_honeycomb">Honeycomb</string>
     <string name="wear_shows_layout_list">List</string>
+    <!-- The watch's first screen until it is signed in through the phone; the phone lends its own sign-in, nothing is typed on the watch. -->
+    <string name="wear_pairing_title">Open boxlore on your phone to start</string>
+    <string name="wear_pairing_body">Your phone signs this watch in to your account.</string>
+    <!-- Under Downloads on the sign-in screen: episodes already stored on the watch play without signing in. -->
+    <string name="wear_pairing_downloads_detail">Play what\'s on this watch</string>
+    <!-- The tile and the watch-face shortcut until the watch is signed in. -->
+    <string name="wear_glance_sign_in">Sign in on your phone</string>
+    <string name="wear_complication_sign_in">boxlore: sign in on your phone</string>
 </resources>

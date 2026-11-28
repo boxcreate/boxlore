@@ -2,6 +2,7 @@ package cx.aswin.boxlore.wear
 
 import android.content.Context
 import cx.aswin.boxlore.wear.data.WatchSettings
+import cx.aswin.boxlore.wear.preview.PreviewWatchAccount
 import cx.aswin.boxlore.wear.preview.PreviewWatchLibrary
 import cx.aswin.boxlore.wear.preview.PreviewWatchPlayback
 
@@ -17,6 +18,7 @@ internal object WatchContainerFactory {
             library = library,
             playback = PreviewWatchPlayback(library),
             settings = WatchSettings.create(context),
+            account = PreviewWatchAccount(),
         )
     }
 }

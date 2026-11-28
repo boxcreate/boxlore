@@ -66,7 +66,7 @@ internal suspend fun PodcastRepository.withoutHiddenShows(vibes: Map<String, Lis
 internal suspend fun PodcastRepository.withoutHiddenShows(result: SemanticSearchGroupedResult): SemanticSearchGroupedResult {
     val hidden = hiddenShowIds()
     if (hidden.isEmpty()) return result
-    return SemanticSearchGroupedResult(result.podcasts.withoutHiddenShows(hidden), result.episodes.withoutHiddenShowEpisodes(hidden))
+    return result.copy(podcasts = result.podcasts.withoutHiddenShows(hidden), episodes = result.episodes.withoutHiddenShowEpisodes(hidden))
 }
 
 /**

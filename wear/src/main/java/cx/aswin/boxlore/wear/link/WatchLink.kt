@@ -100,6 +100,12 @@ internal object PublishPacing {
 private const val FRESH_LIST_TIMEOUT_MS = 15_000L
 
 /**
+ * How long the watch waits for the phone to lend its sign-in: the phone asks the API, and may first
+ * run boxlore's check on its screen (its request waits up to 45 seconds for that).
+ */
+private const val SIGN_IN_TIMEOUT_MS = 60_000L
+
+/**
  * The live phone link. It merges what the phone publishes into the watch's library, tells the
  * phone what changed on the watch, and keeps the two sides' watch settings the same. Everything
  * it publishes is kept by the system, so it reaches the phone the next time the two connect.
@@ -159,7 +165,7 @@ class LiveWatchLink(
 
     override suspend fun signIn(): WatchSignInReply? {
         if (!transport.peerReachable.value) return null
-        return WearLinkCodec.decode<WatchSignInReply>(transport.request(WearLinkProtocol.PATH_SIGN_IN, ByteArray(0)))
+        return WearLinkCodec.decode<WatchSignInReply>(transport.request(WearLinkProtocol.PATH_SIGN_IN, ByteArray(0), SIGN_IN_TIMEOUT_MS))
     }
 
     override fun send(command: WearLinkCommand, onLost: () -> Unit) {

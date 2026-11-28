@@ -159,7 +159,7 @@
     <plurals name="account_sync_hours_ago"><item quantity="one">Synchronisé il y a %d h</item><item quantity="many">Synchronisé il y a %d h</item><item quantity="other">Synchronisé il y a %d h</item></plurals>
     <plurals name="account_sync_days_ago"><item quantity="one">Synchronisé il y a %d jour</item><item quantity="many">Synchronisé il y a %d jours</item><item quantity="other">Synchronisé il y a %d jours</item></plurals>
     <string name="account_tv_sign_in">Se connecter sur une TV</string>
-    <string name="account_tv_instruction">Ouvrez boxlore sur votre TV, choisissez Se connecter et saisissez le code affiché.</string>
+    <string name="account_tv_instruction">Ouvrez boxlore sur votre TV et saisissez le code affiché.</string>
     <string name="account_tv_code">Code de la TV</string>
     <string name="account_tv_own_tv_only">Ne saisissez que le code de votre propre TV. Cette TV aura accès à vos émissions et à votre écoute.</string>
     <string name="account_tv_confirm">Connecter la TV</string>
@@ -167,6 +167,12 @@
     <string name="account_tv_signed_in">Votre TV est connectée. Vos émissions y apparaîtront dans quelques secondes.</string>
     <string name="account_tv_wrong_code">Ce code n’a pas fonctionné. Vérifiez-le sur votre TV ou demandez-en un nouveau.</string>
     <string name="account_tv_sign_in_first">Confirmez d’abord votre adresse e-mail sur ce téléphone.</string>
+    <string name="account_tv_check_needed">Ce téléphone doit d’abord passer une vérification rapide. Réessayez et terminez la vérification si elle s’affiche.</string>
+    <string name="account_tv_cannot_lend">Ce téléphone ne peut pas connecter une TV pour le moment. Réessayez plus tard ou utilisez un autre téléphone connecté à votre compte.</string>
+    <string name="account_tv_sign_in_again">Reconnectez-vous sur ce téléphone, puis réessayez.</string>
+    <string name="account_tv_too_many_tries">Trop de tentatives pour le moment. Patientez un peu, puis réessayez.</string>
+    <string name="account_tv_closed">La connexion sur une TV est suspendue pour le moment. Réessayez plus tard.</string>
+    <string name="account_tv_unavailable">Impossible de connecter votre TV pour le moment. Réessayez dans une minute.</string>
     <string name="account_tv_no_connection">Impossible de joindre boxlore. Vérifiez votre connexion et réessayez.</string>
     <string name="settings_sync_import_footer">Les podcasts où « Des épisodes manquent ? » est activé sont actualisés après l’import.</string>
 </resources>

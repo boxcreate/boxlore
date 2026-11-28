@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.network.session.ApiSessionInterceptor
 import cx.aswin.boxlore.core.network.session.ApiSessionManager
 import cx.aswin.boxlore.core.network.session.RequestProofInterceptor
 import kotlinx.serialization.json.Json
+import okhttp3.Dispatcher
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -63,24 +64,52 @@ object NetworkModule {
     @Volatile
     var authenticator: okhttp3.Authenticator? = null
 
-    private val loggingInterceptor = HttpLoggingInterceptor { message ->
-        Log.d("BoxCastAPI", message)
-    }.apply {
+    // Before the logging interceptor, which reads it as it is built.
+    private val REDACTED_HEADERS = listOf(
+        "X-Firebase-AppCheck",
+        "X-App-Key",
+        "Authorization",
+        ApiSessionInterceptor.SESSION_HEADER,
+        ApiSessionInterceptor.RENEW_HEADER,
+        ApiSessionInterceptor.PROOF_HEADER,
+        RequestProofInterceptor.PROOF_HEADER,
+        // A watch's or TV's fresh account token.
+        WatchAccountApi.RENEW_HEADER,
+    )
+
+    private val loggingInterceptor = headerLogger { message -> Log.d("BoxCastAPI", message) }.apply {
         level = if (cx.aswin.boxlore.core.network.BuildConfig.DEBUG) {
             HttpLoggingInterceptor.Level.HEADERS
         } else {
             HttpLoggingInterceptor.Level.NONE
         }
-        redactHeader("X-Firebase-AppCheck")
-        redactHeader("X-App-Key")
-        redactHeader("Authorization")
-        redactHeader(ApiSessionInterceptor.SESSION_HEADER)
-        redactHeader(ApiSessionInterceptor.RENEW_HEADER)
-        redactHeader(ApiSessionInterceptor.PROOF_HEADER)
-        redactHeader(RequestProofInterceptor.PROOF_HEADER)
     }
 
+    /** Debug header logging into [log], with every credential header redacted: keys, ID tokens, sessions, proofs and account tokens. */
+    internal fun headerLogger(log: (String) -> Unit): HttpLoggingInterceptor =
+        HttpLoggingInterceptor { message -> log(message) }.apply {
+            level = HttpLoggingInterceptor.Level.HEADERS
+            REDACTED_HEADERS.forEach(::redactHeader)
+        }
+
+    /**
+     * Requests at once to the API: OkHttp's default of 5 per host would let a few requests waiting on
+     * a step-up (each holds its thread up to [cx.aswin.boxlore.core.network.session.ApiSessionTiming.stepUpRequestWaitMs])
+     * hold up every other read.
+     */
+    internal const val MAX_REQUESTS_PER_HOST = 16
+    private const val MAX_REQUESTS = 64
+
+    /** The API client's dispatcher, shared by every client built from it; internal for tests. */
+    internal val apiDispatcher: Dispatcher get() = okHttpClient.dispatcher
+
     private val okHttpClient = OkHttpClient.Builder().apply {
+        dispatcher(
+            Dispatcher().apply {
+                maxRequests = MAX_REQUESTS
+                maxRequestsPerHost = MAX_REQUESTS_PER_HOST
+            },
+        )
         addInterceptor(EnglishOffInterceptor())
         addInterceptor(clientHeadersInterceptor)
         addInterceptor(sessionInterceptor)

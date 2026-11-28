@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.network.model.BootstrapRequest
 import cx.aswin.boxlore.core.network.model.CuratedCuriosityResponseDto
 import cx.aswin.boxlore.core.network.model.SimilarEpisodesRequest
 import cx.aswin.boxlore.core.network.model.V2BootstrapRequest
+import cx.aswin.boxlore.core.network.session.ApiErrorCodes
 import kotlinx.coroutines.CancellationException
 import retrofit2.Response
 import retrofit2.awaitResponse
@@ -47,25 +48,40 @@ internal class V2DiscoveryLastGood {
     }
 }
 
-/**
- * The body of a successful `/v2` answer, or null when the request failed: an HTTP error, no body,
- * or a network or parsing error. Cancellation propagates.
- */
-private inline fun <T> v2Body(route: String, call: () -> Response<T>,): T? = try {
+/** One `/v2` answer: its body, or why there is none. */
+private sealed interface V2Answer<out T> {
+    data class Body<T>(val value: T) : V2Answer<T>
+
+    /** Refused until this phone passes the quick check ([ApiErrorCodes.needsCheck]). */
+    data object NeedsCheck : V2Answer<Nothing>
+
+    /** An HTTP error, no body, or a network or parsing error. */
+    data object Failed : V2Answer<Nothing>
+}
+
+/** The answer of one `/v2` request ([V2Answer]). Cancellation propagates. */
+private inline fun <T> v2Answer(route: String, call: () -> Response<T>,): V2Answer<T> = try {
     val response = call()
     val body = response.body()
     if (response.isSuccessful && body != null) {
-        body
+        V2Answer.Body(body)
     } else {
         android.util.Log.w(V2_DISCOVERY_TAG, "v2 $route failed: HTTP ${response.code()}")
-        null
+        if (ApiErrorCodes.needsCheck(response)) V2Answer.NeedsCheck else V2Answer.Failed
     }
 } catch (error: CancellationException) {
     throw error
 } catch (error: Exception) {
     android.util.Log.w(V2_DISCOVERY_TAG, "v2 $route failed", error)
-    null
+    V2Answer.Failed
 }
+
+/** The body of a successful `/v2` answer, or null when the request failed ([V2Answer.NeedsCheck] or [V2Answer.Failed]). */
+private inline fun <T> v2Body(route: String, call: () -> Response<T>,): T? =
+    when (val answer = v2Answer(route, call)) {
+        is V2Answer.Body -> answer.value
+        else -> null
+    }
 
 /** One chart page, or null on a failure with no last good copy of the same page. */
 internal suspend fun PodcastRepository.v2TrendingPodcasts(country: String, limit: Int, category: String?, offset: Int,): List<Podcast>? {
@@ -78,20 +94,27 @@ internal suspend fun PodcastRepository.v2TrendingPodcasts(country: String, limit
 
 internal fun trendingLastGoodKey(country: String, limit: Int, category: String?, offset: Int,): String = "trending|$country|$limit|${category.orEmpty()}|$offset"
 
-/** One vibe's shows, or null on a failure with no last good list; [queryLanguages] is the comma-joined `languages` parameter. */
-internal suspend fun PodcastRepository.v2CuratedPodcasts(vibeId: String, country: String?, queryLanguages: String,): List<Podcast>? {
+/** One vibe's shows, or none on a failure with no last good list; [queryLanguages] is the comma-joined `languages` parameter. */
+internal suspend fun PodcastRepository.v2CuratedPodcasts(vibeId: String, country: String?, queryLanguages: String,): CuratedPodcastsRead {
     val key = "vibe|$vibeId|${country.orEmpty()}|$queryLanguages"
     val body =
-        v2Body("curated/vibe") { apiV2.getCuratedVibe(vibeId, country, queryLanguages).execute() }
-            ?: return v2LastGood.podcasts[key]
-    return discoveryEpisodeIds.latestToLocalOwners(mapFeedsToPodcasts(body.feeds)).also { v2LastGood.podcasts[key] = it }
+        when (val answer = v2Answer("curated/vibe") { apiV2.getCuratedVibe(vibeId, country, queryLanguages).execute() }) {
+            is V2Answer.Body -> answer.value
+            else -> {
+                val lastGood = v2LastGood.podcasts[key]
+                return CuratedPodcastsRead(lastGood, needsCheck = answer == V2Answer.NeedsCheck && lastGood == null)
+            }
+        }
+    return CuratedPodcastsRead(discoveryEpisodeIds.latestToLocalOwners(mapFeedsToPodcasts(body.feeds)).also { v2LastGood.podcasts[key] = it })
 }
 
 internal suspend fun PodcastRepository.v2SemanticGrouped(query: String, country: String,): SemanticSearchGroupedResult {
     val key = "$country|$query"
     val body =
-        v2Body("search/semantic") { apiV2.searchSemantic(query, country).execute() }
-            ?: return v2LastGood.semantic[key] ?: SemanticSearchGroupedResult(emptyList(), emptyList())
+        when (val answer = v2Answer("search/semantic") { apiV2.searchSemantic(query, country).execute() }) {
+            is V2Answer.Body -> answer.value
+            else -> return v2LastGood.semantic[key] ?: SemanticSearchGroupedResult(emptyList(), emptyList(), needsCheck = answer == V2Answer.NeedsCheck)
+        }
     return SemanticSearchGroupedResult(
         podcasts = body.feeds.mapNotNull(::mapSearchFeedToPodcast),
         episodes = discoveryEpisodeIds.toLocalOwners(body.items.mapNotNull(::mapToEpisode)),
@@ -241,10 +264,13 @@ internal suspend fun PodcastRepository.v2HomeRecommendations(
             languages = ContentRegions.expandLanguagesForQuery(languages),
             include = listOf(BootstrapRequest.INCLUDE_RECOMMENDATIONS),
         )
-    val body = v2Body("home/bootstrap") { apiV2.getHomeBootstrap(deviceUuid, request).execute() }
+    val answer = v2Answer("home/bootstrap") { apiV2.getHomeBootstrap(deviceUuid, request).execute() }
+    val body = if (answer is V2Answer.Body) answer.value else null
     val items = body?.recommendations?.mapNotNull(::mapToEpisode).orEmpty()
     if (items.isEmpty()) {
-        val lastGood = recommendationsLastGood.load(RecommendationsLastGood.Surface.HOME, country) ?: return HomeRecommendations(failed = true)
+        val lastGood =
+            recommendationsLastGood.load(RecommendationsLastGood.Surface.HOME, country)
+                ?: return HomeRecommendations(failed = true, needsCheck = answer == V2Answer.NeedsCheck)
         return HomeRecommendations(
             discoveryEpisodeIds.toLocalOwners(lastGood.episodes).withoutHistory(history).withoutFollowed(subscribedPodcastIds),
             lastGood.isFallback,

@@ -58,6 +58,9 @@ class ExploreForYouRefresher<T : Any>(
     /** Whether the Explore screen is visible. */
     fun onVisibilityChanged(visible: Boolean) = act(policy.onVisibilityChanged(visible, clockMs()))
 
+    /** The listener asked for the picks again (the quick check just passed): see [ExploreForYouRefreshPolicy.onAskAgain]. */
+    fun askAgain() = act(policy.onAskAgain(clockMs()))
+
     private fun act(action: Action) {
         wakeJob?.cancel()
         wakeJob = null

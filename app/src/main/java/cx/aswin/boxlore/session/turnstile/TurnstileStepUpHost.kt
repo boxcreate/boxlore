@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -142,8 +143,10 @@ internal class TurnstilePageHolder(
 }
 
 /**
- * The app-wide Turnstile host. Composed once in the app root; it shows nothing unless a limited
- * session is stepping up, and the sheet appears only if Turnstile asks for interaction.
+ * The app-wide Turnstile host. Composed once in the app root, so a check can run on any screen: at
+ * launch, on Home or in onboarding. While its activity is started it tells [controller] a check can
+ * run; it shows nothing unless one is running, and the sheet appears only if Turnstile asks for
+ * interaction.
  */
 @Composable
 internal fun TurnstileStepUpHost(
@@ -152,6 +155,10 @@ internal fun TurnstileStepUpHost(
     pageFactory: TurnstilePageFactory = TurnstileWebViewPage,
     destroyPage: (View) -> Unit = TurnstileWebViewPage::destroy,
 ) {
+    LifecycleStartEffect(controller) {
+        controller.hostStarted()
+        onStopOrDispose { controller.hostStopped() }
+    }
     val state by controller.state.collectAsStateWithLifecycle()
     val running = state as? TurnstileStepUpState.Running ?: return
     val attempt = running.attempt

@@ -11,6 +11,7 @@ import cx.aswin.boxlore.wear.ui.WatchRoutes
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -69,6 +70,15 @@ class WatchModelsTest {
         assertNull(WatchRoutes.launchRoute("home"))
         assertNull(WatchRoutes.launchRoute("show/darknet"))
         assertNull(WatchRoutes.launchRoute("anything else"))
+    }
+
+    @Test
+    fun `before sign-in only the downloads, their episodes and the player open`() {
+        // Routes as WatchRoutes.episode("7") and the rest build them (Uri.encode needs Android).
+        listOf(WatchRoutes.PAIRING, WatchRoutes.DOWNLOADS, WatchRoutes.PLAYER, WatchRoutes.SPEED, "episode/7", "play_where/7")
+            .forEach { assertTrue(WatchRoutes.opensSignedOut(it), it) }
+        listOf(WatchRoutes.HOME, WatchRoutes.SEARCH, WatchRoutes.SETTINGS, WatchRoutes.SHOWS, WatchRoutes.JUMP_BACK_IN, "show/7", "results/news")
+            .forEach { assertFalse(WatchRoutes.opensSignedOut(it), it) }
     }
 
     @Test

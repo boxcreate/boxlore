@@ -8,6 +8,12 @@ import kotlinx.serialization.json.Json
 enum class ApiAttestation(val wire: String, val rank: Int) {
     AppCheck("appcheck", 2),
     Challenge("challenge", 1),
+
+    /**
+     * A watch's or TV's session, traded for the account token a signed-in phone lent it
+     * (`POST /auth/watch/session`). Not limited, never renews, never reaches the AI routes.
+     */
+    Paired("paired", 1),
     None("none", 0),
     ;
 

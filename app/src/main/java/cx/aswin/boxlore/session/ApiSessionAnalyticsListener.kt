@@ -10,17 +10,15 @@ import cx.aswin.boxlore.core.network.session.ApiSessionStepUpOutcome
 
 /**
  * Forwards session events to `api_session_status`, and each App Check attempt (they happen only
- * inside a session exchange now) to `app_check_status` with its failure reason.
+ * for a session sign-in now, which may then send no exchange) to `app_check_status` with its
+ * failure reason.
  */
 internal class ApiSessionAnalyticsListener(private val appCheckProvider: String) : ApiSessionListener {
+    override fun onAppCheck(obtained: Boolean, failure: String?) {
+        AnalyticsHelper.trackAppCheckStatus(tokenObtained = obtained, provider = appCheckProvider, reason = failure)
+    }
+
     override fun onExchange(event: ApiSessionExchangeEvent) {
-        if (event.appCheckAttempted) {
-            AnalyticsHelper.trackAppCheckStatus(
-                tokenObtained = event.appCheckObtained,
-                provider = appCheckProvider,
-                reason = event.appCheckFailure,
-            )
-        }
         AnalyticsHelper.trackApiSessionStatus(
             ApiSessionStatus(
                 kind = "exchange",
@@ -32,6 +30,7 @@ internal class ApiSessionAnalyticsListener(private val appCheckProvider: String)
                 appCheckAttempted = event.appCheckAttempted,
                 failureReason = event.failureReason,
                 serverReason = event.serverReason,
+                turnstile = event.turnstile,
             ),
         )
     }

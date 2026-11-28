@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.model.EpisodeShareTargetSource
 import cx.aswin.boxlore.core.network.BoxLoreApiV2
 import cx.aswin.boxlore.core.network.model.V2EpisodeIds
 import cx.aswin.boxlore.core.network.model.V2EpisodeRegisterRequest
+import cx.aswin.boxlore.core.network.session.ApiErrorCodes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import retrofit2.awaitResponse
@@ -24,8 +25,14 @@ enum class EpisodeShareRegistrationOutcome {
     /** The API can't take this request (400, 404 for an unknown show); trying again won't help. */
     DROPPED,
 
-    /** Offline, a timeout, no API session yet, the daily limit or a server error: try again later. */
+    /** Offline, a timeout, the daily limit or a server error: try again later. */
     RETRY,
+
+    /**
+     * The API wants a better session first ([ApiErrorCodes.AWAITS_SESSION]), which the app gets the
+     * next time it is on screen: try again later without counting this as a failed try.
+     */
+    AWAIT_SESSION,
 }
 
 /**
@@ -42,6 +49,7 @@ object EpisodeShareRegistrar {
         when {
             response.isSuccessful -> EpisodeShareRegistrationOutcome.DONE
             response.code() in PERMANENT -> EpisodeShareRegistrationOutcome.DROPPED
+            ApiErrorCodes.awaitsSession(response) -> EpisodeShareRegistrationOutcome.AWAIT_SESSION
             else -> EpisodeShareRegistrationOutcome.RETRY
         }
     } catch (e: CancellationException) {
@@ -104,7 +112,7 @@ class EpisodeSharePreparer(
         val target = if (chosen is EpisodeShareTarget.Show) recipeTarget(showId, catalogKey) ?: return chosen else chosen
         val request = EpisodeShareRegistrar.requestFor(showId, catalogKey, episode.audioUrl) ?: return target
         val outcome = withTimeoutOrNull(timeoutMs) { register(request) } ?: EpisodeShareRegistrationOutcome.RETRY
-        if (outcome == EpisodeShareRegistrationOutcome.RETRY) scheduleRetry(request)
+        if (outcome == EpisodeShareRegistrationOutcome.RETRY || outcome == EpisodeShareRegistrationOutcome.AWAIT_SESSION) scheduleRetry(request)
         return target
     }
 

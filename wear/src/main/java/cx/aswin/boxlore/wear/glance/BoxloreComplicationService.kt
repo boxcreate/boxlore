@@ -20,6 +20,7 @@ import androidx.wear.watchface.complications.datasource.SuspendingComplicationDa
 import cx.aswin.boxlore.wear.MainActivity
 import cx.aswin.boxlore.wear.R
 import cx.aswin.boxlore.wear.WatchApplication
+import cx.aswin.boxlore.wear.cloud.WatchAccountState
 import cx.aswin.boxlore.wear.ui.WatchRoutes
 
 /**
@@ -28,16 +29,32 @@ import cx.aswin.boxlore.wear.ui.WatchRoutes
  * the episode. With nothing in progress it is the mark, and a tap opens the app.
  */
 class BoxloreComplicationService : SuspendingComplicationDataSourceService() {
-    override fun getPreviewData(type: ComplicationType): ComplicationData? = data(type, PREVIEW)
+    override fun getPreviewData(type: ComplicationType): ComplicationData? = data(type, PREVIEW, signedIn = true)
 
-    override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData? =
-        data(request.complicationType, (application as? WatchApplication)?.container?.glance?.invoke())
+    override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData? {
+        val container = (application as? WatchApplication)?.container
+        val signedIn = container?.account?.state?.value is WatchAccountState.SignedIn
+        return data(request.complicationType, container?.glance?.invoke()?.takeIf { signedIn }, signedIn)
+    }
 
-    private fun data(type: ComplicationType, glance: WatchGlance?): ComplicationData? {
+    /** The long slot's text and what a screen reader says: until the watch is signed in, a call to sign in on the phone. */
+    private fun texts(glance: WatchGlance?, signedIn: Boolean): Pair<String, String> {
         val name = getString(R.string.wear_app_name)
-        val timeLeft = glance?.let { getString(R.string.wear_minutes_left, it.minutesLeft) }
-        val long = if (glance == null || timeLeft == null) name else getString(R.string.wear_home_state_and_time, glance.title, timeLeft)
-        val spoken = plain(if (glance == null) name else getString(R.string.wear_complication_description, glance.title, timeLeft))
+        return when (GlanceRules.kind(signedIn, glance)) {
+            GlanceKind.SignIn -> getString(R.string.wear_glance_sign_in) to getString(R.string.wear_complication_sign_in)
+            GlanceKind.Nothing -> name to name
+            GlanceKind.Episode -> {
+                val shown = checkNotNull(glance)
+                val timeLeft = getString(R.string.wear_minutes_left, shown.minutesLeft)
+                getString(R.string.wear_home_state_and_time, shown.title, timeLeft) to getString(R.string.wear_complication_description, shown.title, timeLeft)
+            }
+        }
+    }
+
+    private fun data(type: ComplicationType, glance: WatchGlance?, signedIn: Boolean): ComplicationData? {
+        val name = getString(R.string.wear_app_name)
+        val (long, said) = texts(glance, signedIn)
+        val spoken = plain(said)
         val mark = MonochromaticImage.Builder(Icon.createWithResource(this, R.drawable.ic_boxlore_mark)).build()
         val tap = tap(this, resume = glance?.episodeId?.takeIf { it.isNotEmpty() })
         return when (type) {

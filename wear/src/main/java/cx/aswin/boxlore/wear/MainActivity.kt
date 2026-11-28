@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
+import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.wear.glance.GlanceRules
 import cx.aswin.boxlore.wear.glance.ResumeRequest
 import cx.aswin.boxlore.wear.glance.ResumeTap
@@ -44,6 +45,12 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // A paired session that ran out while the watch slept is traded again now, not on the next request.
+        NetworkModule.sessionManager?.onForegroundChanged(true)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

@@ -151,4 +151,19 @@
     <string name="explore_topic_failed_title">Couldn’t load this collection</string>
     <string name="explore_concept_example_dreams">Why do we dream?</string>
     <string name="explore_concept_example_pyramids">How were the pyramids built?</string>
+    <!-- The quick check (Cloudflare's, that the listener is a person): a phone Google Play couldn't vouch for may need it before
+         topic search, a mood collection or For you picks. These replace "nothing found", which would be untrue. -->
+    <string name="explore_check_search_title">Topic search needs a quick check</string>
+    <!-- "Find a show" is the name of the other search tab, which works without the check. -->
+    <string name="explore_check_search_body">It confirms you’re a person so boxlore can search by topic. Find a show works without it.</string>
+    <string name="explore_check_collection_title">This collection needs a quick check</string>
+    <string name="explore_check_collection_body">It confirms you’re a person so boxlore can show this collection.</string>
+    <string name="explore_check_for_you_title">Your picks need a quick check</string>
+    <string name="explore_check_for_you_body">It confirms you’re a person so boxlore can pick episodes for you.</string>
+    <!-- Button that starts the quick check now; boxlore then loads what it was waiting for. -->
+    <string name="explore_check_start">Start check</string>
+    <!-- The button while the check runs. -->
+    <string name="explore_check_running">Checking…</string>
+    <!-- Under the button after the check was skipped or didn't pass. -->
+    <string name="explore_check_missed">The check didn’t finish.</string>
 </resources>

@@ -42,7 +42,8 @@ data class ExploreForYouRefreshKey(
  *   screen shows, or while it stays visible.
  * - A failed refresh, or one that only brought the last good picks back, is tried again after
  *   [retryIntervalMs], doubling after each further failure up to [maxRetryIntervalMs]. A key change
- *   or a fresh answer starts the backoff again.
+ *   or a fresh answer starts the backoff again. The listener asking again ([onAskAgain], once the
+ *   quick check passed) tries it at once, with For you's loading state.
  * - Switching Picked for you off cancels a running refresh.
  *
  * Every call takes the time in milliseconds from one clock and returns what to do next. It is not
@@ -82,6 +83,7 @@ class ExploreForYouRefreshPolicy(
     private var failed: ExploreForYouRefreshKey? = null
     private var failedAtMs = 0L
     private var failures = 0
+    private var askedAgain = false
 
     /** The latest key; null while Picked for you is off. */
     fun onKey(key: ExploreForYouRefreshKey?, nowMs: Long): Action {
@@ -126,6 +128,18 @@ class ExploreForYouRefreshPolicy(
     /** The time [Action.WaitUntil] or [Action.Cancel] asked for came. */
     fun onWake(nowMs: Long): Action = next(nowMs)
 
+    /**
+     * The listener asked for the picks again: a key whose refresh failed is asked for at once, not
+     * quietly, since For you has nothing to show meanwhile. Anything else goes on as it would.
+     */
+    fun onAskAgain(nowMs: Long): Action {
+        val key = latest
+        if (key == null || key != failed) return next(nowMs)
+        failedAtMs = nowMs - retryDelayMs()
+        askedAgain = true
+        return next(nowMs).also { askedAgain = false }
+    }
+
     private fun next(nowMs: Long): Action {
         val key = latest ?: return cancelRunning(wakeAtMs = null)
         if (!visible || key == running) return Action.None
@@ -139,7 +153,7 @@ class ExploreForYouRefreshPolicy(
             // Back to picks that are still fresh: a refresh for an older change is no longer wanted.
             return if (key == refreshed && running != null) cancelRunning(readyAtMs) else Action.WaitUntil(readyAtMs)
         }
-        val quiet = key == failed || key == refreshed
+        val quiet = (key == failed || key == refreshed) && !askedAgain
         running = key
         lastStarted = key
         lastStartAtMs = nowMs

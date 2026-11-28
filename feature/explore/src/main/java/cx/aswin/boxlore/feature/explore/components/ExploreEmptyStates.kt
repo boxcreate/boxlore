@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,6 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
@@ -59,6 +64,47 @@ internal fun ExploreLoadFailedState(title: String, onRetry: () -> Unit, modifier
         ExploreSearchLandingHeader(title, stringResource(R.string.explore_load_failed_hint))
         FilledTonalButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
             Text(stringResource(R.string.explore_try_again))
+        }
+    }
+}
+
+/**
+ * A read the API refused until this phone passes the quick check: what needs it and why ([title],
+ * [body]), and a button that starts it, which waits while [checking]. [missed] says the last check
+ * didn't pass. Never "nothing found" or "check your connection", which would both be untrue.
+ */
+@Composable
+internal fun ExploreQuickCheckNotice(
+    title: String,
+    body: String,
+    checking: Boolean,
+    missed: Boolean,
+    onStartCheck: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier.fillMaxWidth().testTag(EXPLORE_QUICK_CHECK_TAG),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        ExploreSearchLandingHeader(title, body)
+        FilledTonalButton(onClick = onStartCheck, enabled = !checking, modifier = Modifier.heightIn(min = 48.dp)) {
+            if (checking) {
+                BoxLoreLoader.CircularWavy(size = 20.dp, color = LocalContentColor.current)
+                Spacer(Modifier.width(10.dp))
+                Text(stringResource(R.string.explore_check_running))
+            } else {
+                Text(stringResource(R.string.explore_check_start))
+            }
+        }
+        if (missed && !checking) {
+            Text(
+                stringResource(R.string.explore_check_missed),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
+            )
         }
     }
 }
@@ -161,3 +207,4 @@ fun ExploreRecommendationsEmptyState(
 }
 
 internal const val EXPLORE_TASTE_BADGE_TAG = "explore_taste_badge"
+internal const val EXPLORE_QUICK_CHECK_TAG = "explore_quick_check"

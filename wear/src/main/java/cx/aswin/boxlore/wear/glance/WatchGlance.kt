@@ -14,6 +14,9 @@ data class WatchGlance(
     val artworkUrl: String? = null,
 )
 
+/** What the tile and the watch-face shortcut show: a call to sign in on the phone, nothing in progress, or an episode. */
+enum class GlanceKind { SignIn, Nothing, Episode }
+
 /** What a tap on Resume, in the tile or on the watch face, leads to. */
 enum class ResumeTap { ShowPlayer, PlayHere, AskWhere }
 
@@ -59,6 +62,14 @@ internal object GlanceRules {
         val progress = if (total > 0L) (position.toFloat() / total).coerceIn(0f, 1f) else 0f
         return WatchGlance(episode.id, episode.title, episode.showTitle, left, progress, episode.artworkUrl)
     }
+
+    /** Until the watch is signed in they ask for that, whatever the saved library holds. */
+    fun kind(signedIn: Boolean, glance: WatchGlance?): GlanceKind =
+        when {
+            !signedIn -> GlanceKind.SignIn
+            glance == null -> GlanceKind.Nothing
+            else -> GlanceKind.Episode
+        }
 
     /** Changes exactly when the tile and the watch face have something new to draw. */
     fun key(glance: WatchGlance?): String = glance?.let { "${it.episodeId}|${it.minutesLeft}|${it.title}|${it.showTitle}|${it.artworkUrl}" }.orEmpty()

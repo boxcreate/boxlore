@@ -11,20 +11,45 @@ object ApiErrorCodes {
     const val SESSION_REVOKED = "session_revoked"
     const val SESSION_REQUIRED = "session_required"
     const val VERIFICATION_REQUIRED = "verification_required"
+
+    /**
+     * The API wants proof this is the app (App Check or Turnstile): `/auth/session` answers it
+     * instead of a limited session, and ordinary routes answer it for a limited session they no longer take.
+     */
+    const val ATTESTATION_REQUIRED = "attestation_required"
     const val DAILY_AI_LIMIT = "daily_ai_limit"
 
     /** Support routes: the session has no device key, or the request wasn't signed with it. */
     const val DEVICE_KEY_REQUIRED = "device_key_required"
     const val PROOF_REQUIRED = "proof_required"
 
+    /**
+     * A watch's or TV's account token the API no longer takes (given up, reset, another device's,
+     * unsigned): the device is signed out. Sent only for that.
+     */
+    const val WATCH_TOKEN_INVALID = "watch_token_invalid"
+
+    /**
+     * 403: the session (or, at `/auth/watch/session`, the phone that lent the account token) isn't
+     * attested enough for this route. A watch or TV trading its token signs out, as for
+     * [WATCH_TOKEN_INVALID], and waits for the listener (see [PairedTokenRefusal.UnattestedLender]).
+     */
+    const val ATTESTED_SESSION_REQUIRED = "attested_session_required"
+
     /** The session itself was refused: get a new one once, then retry. */
-    val SESSION_REJECTIONS = setOf(SESSION_EXPIRED, SESSION_INVALID, SESSION_REVOKED)
+    val SESSION_REJECTIONS = setOf(SESSION_EXPIRED, SESSION_INVALID, SESSION_REVOKED, ATTESTATION_REQUIRED)
 
     /** Answers about the API session, never about a Firebase sign-in. */
     val SHIELD_CODES = SESSION_REJECTIONS + setOf(SESSION_REQUIRED, VERIFICATION_REQUIRED, DAILY_AI_LIMIT, DEVICE_KEY_REQUIRED, PROOF_REQUIRED)
 
     /** AI routes refused for this session even after any step-up: onboarding uses its non-AI path. */
     val AI_UNAVAILABLE = setOf(VERIFICATION_REQUIRED, DAILY_AI_LIMIT)
+
+    /**
+     * Refusals a better session fixes, which the app gets only in the foreground (App Check, or
+     * Turnstile on screen). Background work retries them later without counting them as failures.
+     */
+    val AWAITS_SESSION = setOf(SESSION_REQUIRED, VERIFICATION_REQUIRED, ATTESTATION_REQUIRED)
 
     private const val MAX_PEEK_BYTES = 2_048L
     private val json = Json { ignoreUnknownKeys = true }
@@ -36,9 +61,9 @@ object ApiErrorCodes {
         return (element["error"] as? JsonPrimitive)?.takeIf { it.isString }?.content
     }
 
-    /** Reads the code of a 401 or 429 without consuming the body. */
+    /** Reads the code of a 401, 403 or 429 without consuming the body (403s carry shield codes too). */
     fun of(response: okhttp3.Response): String? {
-        if (response.code != 401 && response.code != 429) return null
+        if (response.code != UNAUTHORIZED && response.code != FORBIDDEN && response.code != TOO_MANY) return null
         return parse(runCatching { response.peekBody(MAX_PEEK_BYTES).string() }.getOrNull())
     }
 
@@ -47,4 +72,18 @@ object ApiErrorCodes {
         if (response.isSuccessful) return null
         return parse(runCatching { response.errorBody()?.string() }.getOrNull())
     }
+
+    /** A 401 in [AWAITS_SESSION]: try again later, once the app holds a better session. Consumes the error body. */
+    fun awaitsSession(response: retrofit2.Response<*>): Boolean = response.code() == UNAUTHORIZED && of(response) in AWAITS_SESSION
+
+    /**
+     * The route was refused until this phone passes the quick check ([VERIFICATION_REQUIRED]: the
+     * step-up didn't run, failed or was skipped), so a screen says so and offers the check
+     * ([ApiSessionManager.checkNow]) instead of showing nothing found. Consumes the error body.
+     */
+    fun needsCheck(response: retrofit2.Response<*>): Boolean = of(response) == VERIFICATION_REQUIRED
+
+    private const val UNAUTHORIZED = 401
+    private const val FORBIDDEN = 403
+    private const val TOO_MANY = 429
 }

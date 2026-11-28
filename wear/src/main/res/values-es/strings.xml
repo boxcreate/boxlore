@@ -124,6 +124,15 @@
     <string name="wear_account_phone_away">Tu teléfono no está al alcance. Acércalo y vuelve a intentarlo.</string>
     <string name="wear_account_phone_signed_out">Primero inicia sesión en boxlore en tu teléfono.</string>
     <string name="wear_account_failed">No se pudo iniciar sesión. Vuelve a intentarlo.</string>
+    <string name="wear_account_check_on_phone">Abre boxlore en tu teléfono y vuelve a intentarlo. Puede que te pida una comprobación rápida.</string>
+    <string name="wear_account_try_later">Demasiados intentos por ahora. Espera un rato y vuelve a intentarlo.</string>
+    <string name="wear_account_phone_cant_lend">Tu teléfono no puede iniciar sesión en este reloj ahora mismo. Vuelve a intentarlo más tarde.</string>
+    <string name="wear_account_signed_out_by_account">Se ha cerrado la sesión de tu cuenta en este reloj. Vuelve a iniciarla con tu teléfono.</string>
     <string name="wear_shows_layout_honeycomb">Panal</string>
     <string name="wear_shows_layout_list">Lista</string>
+    <string name="wear_pairing_title">Abre boxlore en tu teléfono para empezar</string>
+    <string name="wear_pairing_body">Tu teléfono inicia sesión en este reloj con tu cuenta.</string>
+    <string name="wear_pairing_downloads_detail">Reproduce lo que hay en este reloj</string>
+    <string name="wear_glance_sign_in">Inicia sesión en tu teléfono</string>
+    <string name="wear_complication_sign_in">boxlore: inicia sesión en tu teléfono</string>
 </resources>

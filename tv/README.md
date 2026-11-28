@@ -8,9 +8,9 @@ focus, the TV launcher banner, and its own release build.
 
 The TV keeps its own small library and plays audio itself, like the watch: it reads boxlore's API
 and each show's own feed, and never runs the phone's catalog or playback engines, which are too
-heavy for older TVs. Signing in is optional: the TV shows a code, the listener enters it in boxlore
-on a phone signed in to their account, and from then on the TV syncs with the account like the
-watch does.
+heavy for older TVs. It uses the API only once signed in: it opens on a sign-in screen with a code,
+the listener enters it in boxlore on a phone signed in to their account, and from then on the TV
+syncs with the account like the watch does. Signing out returns to the sign-in screen.
 
 Debug and `benchmark` builds run on sample shows; `-Ptv.sample=false` runs the real library in
 either. `benchmark` is a release-speed build signed with the debug key, for judging smoothness on a
@@ -26,8 +26,9 @@ Nothing outside this module depends on it. Inside it, screens depend only on the
   mark-played actions.
 - `data.TvPlayback`: what is loaded (`NowPlaying`) and the transport, speed, sleep timer and Daily
   Mix. The remote's media keys reach it through the same calls.
-- `cloud.TvAccount`: where signing in stands (`TvSignIn`: signed out, showing a code, signed in),
-  starting and cancelling sign-in, and signing out.
+- `cloud.TvAccount`: where signing in stands (`TvSignIn`: signed out, showing a code, codes ran
+  out, no connection, sign-in closed, too many codes, the approving phone needs its check, signed
+  in), starting and cancelling sign-in, and signing out.
 - `TvContainer`: the whole object graph, built once by `TvApplication` through
   `TvContainerFactory`. Nothing else creates one. `LiveTvContainer` builds the real one
   (`LiveTvLibrary`, `LiveTvPlayback`).
@@ -52,8 +53,9 @@ src/main/java/cx/aswin/boxlore/tv/
     TvText.kt       # time, date and sleep-timer labels
     theme/          # boxlore's dark roles, Google Sans Flex, the safe area (TvSpace)
     components/     # artwork, episode rows, pill and round buttons, content surfaces, section titles
+    signin/         # the sign-in screen, the TV's first screen until it is signed in
     home/  show/  player/  search/  library/  settings/
-src/debug/java/.../preview/  # sample shows; debug TvContainerFactory
+src/debug/java/.../preview/  # sample shows, signed in; debug TvContainerFactory
 src/release/java/...         # release TvContainerFactory
 ```
 
@@ -101,8 +103,18 @@ src/release/java/...         # release TvContainerFactory
   unfinished episode, never a played one or a trailer. The service's media
   session takes the remote's media keys while the app is closed.
 - Signing in: `LiveTvAccount` shows a code from the API until a phone signed in to the account
-  approves it, replacing a code that runs out until the listener leaves the page. The TV then holds
-  its own account token, used as the watch's is, and gives it up on Sign out.
+  approves it. A code that runs out gives way to a new one, three in all, then the screen waits for
+  Show a new code; codes are asked for and polled only while the sign-in screen is in front, as
+  often as the API says (`intervalSeconds`, 20 s now, taken up to a minute). A 429 asking for a
+  minute or less is waited out once; a longer one (a daily limit) says too many codes at once. An approval that arrives as the screen leaves still signs the TV in (the
+  API hands its token over once). The TV then holds its own account token, used as the watch's is,
+  and gives it up on Sign out (again at the next start when the API couldn't record it).
+- Nothing else reaches the API before sign-in: `TvApp` shows only the sign-in screen,
+  `data.SignedInTvCatalog` answers nothing (Daily Mix reads and the next episode after one ends
+  included), and the API session sends only the sign-in routes; the top chart, first asked for
+  then, loads on signing in. Once signed in the TV trades its
+  account token for a paired session (`TvServer`, `cloud.TvPairing`); a trade the API refuses signs
+  the TV out, and one lent by a phone that had passed no check says so and waits for Show a new code.
 - `cloud.TvCloudSync` pushes what changed on the TV, then pulls what changed elsewhere: at start, a
   little after each change, and every 15 minutes. `cloud.TvCloudRules` merges by the rows the phone
   and the watch exchange: each part of a listening row (play, like) wins where it is newer, and the
@@ -146,7 +158,8 @@ src/release/java/...         # release TvContainerFactory
 - `files/boxlore_tv_library.json` (`TvLibraryStore.FILE_NAME`): followed shows, Up next, places,
   played, likes, history and each show's newest episode.
 - Service `cx.aswin.boxlore.tv.playback.TvPlaybackService`.
-- SharedPreferences `boxlore_tv_account` (`TvAccountStore.FILE_NAME`): the TV's account token.
+- SharedPreferences `boxlore_tv_account` (`TvAccountStore.FILE_NAME`): the TV's account token, and
+  tokens signed out whose sign-out the API has not confirmed yet.
 - Install channel `tv` (`TvServer.CHANNEL`); the API session uses `:core:network`'s own file and
   Keystore alias, created fresh on the TV.
 
@@ -163,10 +176,11 @@ Tests live in `tv/src/test` (JUnit 5, plain JVM).
 | Show page lists and states, Your shows orders, when feeds are read again | `data/TvLibraryRulesTest` |
 | Show notes, links and API episodes | `data/TvMappingTest` |
 | Player time, sleep timer and saved places | `playback/PlaybackRulesTest` |
-| Charts: loaded once per genre, followed shows marked | `data/TvChartsTest` |
+| Charts: loaded once per genre, followed shows marked; nothing asked before sign-in | `data/TvChartsTest` |
 | How far a list scrolls to the remote's item | `ui/KeepInViewTest` |
 | What is sent to and taken from the account, and when | `cloud/TvCloudRulesTest` |
-| Sign-in with a code, a fresh code, sign out, a refused token | `cloud/TvAccountTest` |
+| Sign-in with a code, a fresh code, the three-code limit, 429 waits, a closed sign-in, an approval as the screen leaves, sign out and its retry, a refused token or trade | `cloud/TvAccountTest` |
+| What the sign-in screen shows in each state | `ui/signin/SignInRulesTest` |
 
 ```bash
 ./gradlew :tv:testDebugUnitTest

@@ -159,7 +159,7 @@
     <plurals name="account_sync_hours_ago"><item quantity="one">Sincronizado há %d h</item><item quantity="many">Sincronizado há %d h</item><item quantity="other">Sincronizado há %d h</item></plurals>
     <plurals name="account_sync_days_ago"><item quantity="one">Sincronizado há %d dia</item><item quantity="many">Sincronizado há %d dias</item><item quantity="other">Sincronizado há %d dias</item></plurals>
     <string name="account_tv_sign_in">Entrar em uma TV</string>
-    <string name="account_tv_instruction">Abra o boxlore na sua TV, escolha Entrar e digite o código que aparece.</string>
+    <string name="account_tv_instruction">Abra o boxlore na sua TV e digite o código que aparece.</string>
     <string name="account_tv_code">Código da TV</string>
     <string name="account_tv_own_tv_only">Só digite um código da sua própria TV. Essa TV recebe seus programas e o que você ouve.</string>
     <string name="account_tv_confirm">Entrar na TV</string>
@@ -167,6 +167,12 @@
     <string name="account_tv_signed_in">Sua TV está conectada. Seus programas aparecem nela em alguns segundos.</string>
     <string name="account_tv_wrong_code">Esse código não funcionou. Confira na sua TV ou gere um novo lá.</string>
     <string name="account_tv_sign_in_first">Primeiro confirme seu e-mail neste celular.</string>
+    <string name="account_tv_check_needed">Este celular precisa de uma verificação rápida primeiro. Tente de novo e conclua a verificação se ela aparecer.</string>
+    <string name="account_tv_cannot_lend">Este celular não consegue entrar em uma TV agora. Tente mais tarde ou use outro celular conectado à sua conta.</string>
+    <string name="account_tv_sign_in_again">Entre de novo neste celular e tente outra vez.</string>
+    <string name="account_tv_too_many_tries">Muitas tentativas por agora. Espere um pouco e tente de novo.</string>
+    <string name="account_tv_closed">Entrar em uma TV está pausado por enquanto. Tente mais tarde.</string>
+    <string name="account_tv_unavailable">Não foi possível entrar na sua TV agora. Tente de novo em um minuto.</string>
     <string name="account_tv_no_connection">Não foi possível conectar ao boxlore. Verifique sua conexão e tente de novo.</string>
     <string name="settings_sync_import_footer">Podcasts com “Faltam episódios?” ativado são atualizados depois da importação.</string>
 </resources>

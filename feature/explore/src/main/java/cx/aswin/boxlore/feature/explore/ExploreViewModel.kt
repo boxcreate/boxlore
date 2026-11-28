@@ -16,10 +16,12 @@ import cx.aswin.boxlore.core.ranking.PodcastRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
+import cx.aswin.boxlore.feature.explore.logic.ExploreCheckedRead
 import cx.aswin.boxlore.feature.explore.logic.ExploreForYouRefreshKey
 import cx.aswin.boxlore.feature.explore.logic.ExploreForYouRefresher
 import cx.aswin.boxlore.feature.explore.logic.ExploreHiddenShowsLogic
 import cx.aswin.boxlore.feature.explore.logic.ExploreLoadFailures
+import cx.aswin.boxlore.feature.explore.logic.ExploreQuickCheck
 import cx.aswin.boxlore.feature.explore.logic.ExploreSharedRecommendationsLogic
 import cx.aswin.boxlore.feature.explore.logic.ExploreTopChartPaging
 import cx.aswin.boxlore.feature.explore.logic.debouncedShowSearchText
@@ -42,8 +44,11 @@ import kotlinx.coroutines.launch
 
 enum class SearchTab { SHOWS, EPISODES }
 
-/** What a Try again button on Explore asks for again. */
-enum class ExploreRetry { SHOW_SEARCH, TOP_CHART, NEXT_TOP_CHART_PAGE, TOPIC }
+/**
+ * What a Try again button on Explore asks for again. [QUICK_CHECK] runs the quick check, then reads
+ * again what it held back ([ExploreQuickCheck]).
+ */
+enum class ExploreRetry { SHOW_SEARCH, TOP_CHART, NEXT_TOP_CHART_PAGE, TOPIC, QUICK_CHECK }
 
 sealed interface ExploreUiState {
     data object Loading : ExploreUiState
@@ -81,6 +86,8 @@ sealed interface ExploreUiState {
         val nextTopChartPageFailed: Boolean = false,
         /** The open mood collection couldn't be read: Try again, not "nothing here". */
         val topicFailed: Boolean = false,
+        /** Reads refused until this phone passes the quick check: a notice that starts it, not "nothing found". */
+        val quickCheck: ExploreQuickCheck = ExploreQuickCheck(),
     ) : ExploreUiState
     data class Error(val message: String) : ExploreUiState
 }
@@ -131,6 +138,11 @@ class ExploreViewModel(
     private val adaptiveScorer: AdaptiveCandidateScorer,
     initialCategory: String? = null,
     initialTab: String? = null,
+    /**
+     * Runs the quick check the listener asked for (past a Skip); true when it passed. Without one
+     * (previews, tests) it never passes.
+     */
+    private val quickCheck: suspend () -> Boolean = { false },
 ) : androidx.lifecycle.AndroidViewModel(application) {
 
     private val _hasForYou = MutableStateFlow(userPrefs.cachedPickedForYou)
@@ -224,6 +236,7 @@ class ExploreViewModel(
     private val _isLoadingMore = MutableStateFlow(false)
     private val _hasMorePages = MutableStateFlow(true)
     private val _failures = MutableStateFlow(ExploreLoadFailures())
+    private val _quickCheck = MutableStateFlow(ExploreQuickCheck())
     private val _topChartRetries = MutableStateFlow(0)
 
     // Telemetry State
@@ -359,6 +372,8 @@ class ExploreViewModel(
                     nextTopChartPageFailed = loading.failures.nextTopChartPage,
                     topicFailed = loading.failures.topic,
                 )
+            }.combine(_quickCheck) { state, check ->
+                state.copy(quickCheck = check)
             }.combine(userPrefs.hiddenShows.matchIdsStream) { state, hiddenIds ->
                 // On screen, so a show hidden elsewhere leaves at once and chart pages keep their size.
                 ExploreHiddenShowsLogic.withoutHiddenShows(state, hiddenIds)
@@ -521,6 +536,7 @@ class ExploreViewModel(
     private fun loadVibe(vibeId: String, vibeName: String) {
         currentVibeId = vibeId
         _failures.update { it.copy(topic = false) }
+        _quickCheck.update { it.answered(ExploreCheckedRead.COLLECTION, needsCheck = false) }
         _searchQuery.value = ""
         _localSubstringResults.value = emptyList()
         _currentVibe.value = vibeName
@@ -536,15 +552,17 @@ class ExploreViewModel(
                 // Uses same curated endpoint as HomeScreen!
                 val region = userPrefs.regionStream.first()
                 val languages = userPrefs.contentLanguagesStream.first()
-                val results = podcastRepository.getCuratedPodcastsOrNull(
+                val read = podcastRepository.readCuratedPodcasts(
                     vibeId = vibeId,
                     country = region,
                     languages = languages,
                 )
+                val results = read.podcasts
                 if (searchJob == myJob) {
                     _searchResults.value = results.orEmpty()
                     results?.forEach { _seenPodcasts[it.id] = it }
                     if (results == null) _failures.update { it.copy(topic = true) }
+                    _quickCheck.update { it.answered(ExploreCheckedRead.COLLECTION, read.needsCheck) }
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
@@ -619,6 +637,30 @@ class ExploreViewModel(
                 if (id != null && name != null) loadVibe(id, name)
             }
             ExploreRetry.NEXT_TOP_CHART_PAGE -> loadNextTopChartPage()
+            ExploreRetry.QUICK_CHECK -> runQuickCheck()
+        }
+    }
+
+    /** The quick check the listener started; once it passes, every read it held back is read again. */
+    private fun runQuickCheck() {
+        if (_quickCheck.value.checking) return
+        _quickCheck.update { it.started() }
+        viewModelScope.launch {
+            val passed =
+                try {
+                    quickCheck()
+                } catch (error: kotlinx.coroutines.CancellationException) {
+                    throw error
+                } catch (_: Exception) {
+                    false
+                }
+            // Reads refused while the check ran are read again too.
+            val heldBack = _quickCheck.value.needed
+            _quickCheck.update { it.finished(passed) }
+            if (!passed) return@launch
+            if (ExploreCheckedRead.TOPIC_SEARCH in heldBack) _searchQuery.value.trim().takeIf { it.isNotEmpty() }?.let(::performSemanticSearch)
+            if (ExploreCheckedRead.COLLECTION in heldBack) retry(ExploreRetry.TOPIC)
+            if (ExploreCheckedRead.FOR_YOU in heldBack) forYouRefresher.askAgain()
         }
     }
 
@@ -731,11 +773,15 @@ class ExploreViewModel(
                     _semanticPodcastResults.value = rankedPods
                     rankedPods.forEach { _seenPodcasts[it.id] = it }
                     _hasPerformedSemanticSearch.value = true
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreSearchPerformed(
-                        query,
-                        rankedEps.size + rankedPods.size,
-                        searchMode = "concept_semantic",
-                    )
+                    // Refused until the quick check passes: a notice, not "nothing matched", and not counted as a search.
+                    _quickCheck.update { it.answered(ExploreCheckedRead.TOPIC_SEARCH, grouped.needsCheck) }
+                    if (!grouped.needsCheck) {
+                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreSearchPerformed(
+                            query,
+                            rankedEps.size + rankedPods.size,
+                            searchMode = "concept_semantic",
+                        )
+                    }
                 }
             } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error
@@ -744,6 +790,7 @@ class ExploreViewModel(
                     _semanticSearchResults.value = emptyList()
                     _semanticPodcastResults.value = emptyList()
                     _hasPerformedSemanticSearch.value = true
+                    _quickCheck.update { it.answered(ExploreCheckedRead.TOPIC_SEARCH, needsCheck = false) }
                 }
             } finally {
                 if (semanticSearchJob == myJob) {
@@ -925,6 +972,7 @@ class ExploreViewModel(
                 subscribedGenres = subscribedGenres,
                 languages = languages,
             )
+            _quickCheck.update { it.answered(ExploreCheckedRead.FOR_YOU, bootstrapData.needsCheck) }
             // A failure with no last good picks keeps the picks For you shows.
             val distinctRecs = ExploreSharedRecommendationsLogic.freshRecommendations(bootstrapData) ?: return null
             android.util.Log.d(

@@ -9,6 +9,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.posthog.PostHog
 import cx.aswin.boxlore.BuildConfig
+import cx.aswin.boxlore.core.analytics.PostHogStartup
 import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.network.session.AndroidKeystoreDeviceKey
 import cx.aswin.boxlore.core.network.session.ApiSessionManager
@@ -49,7 +50,10 @@ internal class ApiSessionSetup private constructor(
     }
 
     companion object {
-        /** PostHog flag for the Turnstile step-up; off (or missing) keeps limited sessions on the AI fallback. */
+        /**
+         * PostHog switch for route step-ups (`verification_required`): on unless the flag says off,
+         * including before flags load. The sign-in check never reads it.
+         */
         const val STEP_UP_FLAG = "api-turnstile-step-up"
         private const val TAG = "ApiSessionSetup"
 
@@ -78,11 +82,14 @@ internal class ApiSessionSetup private constructor(
             )
             val turnstile = TurnstileStepUpController()
             manager.turnstile = turnstile
-            manager.stepUpEnabled = { runCatching { PostHog.isFeatureEnabled(STEP_UP_FLAG) }.getOrDefault(false) }
+            manager.stepUpEnabled = { stepUpSwitchOn(PostHogStartup.isReady) { PostHog.isFeatureEnabled(STEP_UP_FLAG, true) } }
             NetworkModule.sessionManager = manager
             manager.start()
             return ApiSessionSetup(manager, turnstile, baseUrl)
         }
+
+        /** Route step-ups stay on until PostHog is ready and its flag says off; a failing read keeps them on. */
+        internal fun stepUpSwitchOn(flagsReady: Boolean, flag: () -> Boolean): Boolean = !flagsReady || runCatching(flag).getOrDefault(true)
 
         /**
          * Debug builds use the debug provider (its secret must be registered in the Firebase

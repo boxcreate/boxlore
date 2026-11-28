@@ -135,4 +135,13 @@
     <string name="explore_topic_failed_title">No se pudo cargar esta colección</string>
     <string name="explore_concept_example_dreams">¿Por qué soñamos?</string>
     <string name="explore_concept_example_pyramids">¿Cómo se construyeron las pirámides?</string>
+    <string name="explore_check_search_title">La búsqueda por tema necesita una comprobación rápida</string>
+    <string name="explore_check_search_body">Confirma que eres una persona para que boxlore pueda buscar por tema. “Buscar un podcast” funciona sin ella.</string>
+    <string name="explore_check_collection_title">Esta colección necesita una comprobación rápida</string>
+    <string name="explore_check_collection_body">Confirma que eres una persona para que boxlore pueda mostrar esta colección.</string>
+    <string name="explore_check_for_you_title">Tus recomendaciones necesitan una comprobación rápida</string>
+    <string name="explore_check_for_you_body">Confirma que eres una persona para que boxlore pueda elegir episodios para ti.</string>
+    <string name="explore_check_start">Iniciar comprobación</string>
+    <string name="explore_check_running">Comprobando…</string>
+    <string name="explore_check_missed">La comprobación no terminó.</string>
 </resources>

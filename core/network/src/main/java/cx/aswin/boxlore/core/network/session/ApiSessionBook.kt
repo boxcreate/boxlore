@@ -25,6 +25,35 @@ internal class ApiSessionBook(private val clock: () -> Long) {
     var nextExchangeAtMs = 0L
     var lastMaintenanceAtMs = 0L
 
+    /**
+     * No background refresh of the attested session held before this local time: the last one got
+     * nothing better (its check was held back, skipped or failed). Not kept across restarts.
+     */
+    var nextRefreshAtMs = 0L
+
+    /**
+     * The API refused a session without attestation while the app was in the background, where no
+     * Turnstile check can run: no exchange until the app next comes to the foreground.
+     */
+    var awaitingForeground = false
+
+    /** No sign-in Turnstile check before this local time (one failed or wasn't accepted); coming on screen lifts it. */
+    var signInCheckAfterMs = 0L
+        set(value) {
+            field = value
+            signInCheckHeldUntilMs = maxOf(signInCheckHeldUntilMs, value)
+        }
+
+    /** The furthest [signInCheckAfterMs] has been set to: the same hold, which coming on screen doesn't lift. */
+    var signInCheckHeldUntilMs = 0L
+        private set
+
+    /**
+     * When the sign-in check a limited session gets after the app came on screen is due (see
+     * [ApiSessionScheduler]); 0 when none is. Not kept across restarts.
+     */
+    var foregroundCheckAtMs = 0L
+
     /** Local time the held token arrived; a rejection right after that is not worth another exchange. */
     var tokenReceivedAtMs = 0L
 
@@ -89,9 +118,9 @@ internal class ApiSessionBook(private val clock: () -> Long) {
         return RejectionPlan(RejectionStep.BackOff, refusedRenewal)
     }
 
-    fun recordAppCheck(attempted: Boolean, attestation: ApiAttestation) {
-        if (!attempted) return
-        if (attestation == ApiAttestation.AppCheck) {
+    /** One App Check attempt's verdict: [passed] when the API issued an App Check session for it. */
+    fun recordAppCheck(passed: Boolean) {
+        if (passed) {
             appCheckFailures = 0
             nextUpgradeAtMs = 0L
         } else {
@@ -99,6 +128,12 @@ internal class ApiSessionBook(private val clock: () -> Long) {
             nextUpgradeAtMs = clock() + ApiSessionPolicy.upgradeDelayMs(appCheckFailures)
         }
     }
+
+    /** App Check is worth asking: it hasn't failed lately, or its retry is due. */
+    val appCheckDue: Boolean get() = appCheckFailures == 0 || clock() >= nextUpgradeAtMs
+
+    /** A request may start an exchange: outside the backoff, and not waiting for the foreground. */
+    val mayExchange: Boolean get() = !awaitingForeground && clock() >= nextExchangeAtMs
 
     fun recordExchangeSuccess() {
         exchangeFailures = 0

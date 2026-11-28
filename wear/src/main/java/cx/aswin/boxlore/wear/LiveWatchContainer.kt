@@ -4,14 +4,18 @@ import android.content.Context
 import android.util.Log
 import cx.aswin.boxlore.core.wearlink.GmsWearLinkTransport
 import cx.aswin.boxlore.core.wearlink.WearLinkProtocol
+import cx.aswin.boxlore.wear.cloud.SharedPreferencesWatchAccountStore
+import cx.aswin.boxlore.wear.cloud.WatchAccountState
 import cx.aswin.boxlore.wear.cloud.WatchCloud
 import cx.aswin.boxlore.wear.cloud.WatchCloudPorts
+import cx.aswin.boxlore.wear.cloud.WatchPairing
 import cx.aswin.boxlore.wear.data.ApiWatchCatalog
 import cx.aswin.boxlore.wear.data.FileWatchDownloads
 import cx.aswin.boxlore.wear.data.LiveWatchLibrary
 import cx.aswin.boxlore.wear.data.NoWatchCatalog
 import cx.aswin.boxlore.wear.data.PhoneEpisodeList
 import cx.aswin.boxlore.wear.data.RssWatchFeedReader
+import cx.aswin.boxlore.wear.data.SignedInWatchCatalog
 import cx.aswin.boxlore.wear.data.StoragePolicy
 import cx.aswin.boxlore.wear.data.WatchFeedReader
 import cx.aswin.boxlore.wear.data.WatchLibraryStore
@@ -46,9 +50,12 @@ internal object LiveWatchContainer {
         val app = context.applicationContext
         val background = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val main = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-        val apis = WatchServer.start(app, BuildConfig.BOXLORE_API_BASE_URL, BuildConfig.VERSION_NAME, background)
+        val tokens = SharedPreferencesWatchAccountStore.create(app)
+        val pairing = WatchPairing(tokens)
+        val apis = WatchServer.start(app, BuildConfig.BOXLORE_API_BASE_URL, BuildConfig.VERSION_NAME, background, pairing)
         val api = apis?.catalog
-        val catalog = api?.let(::ApiWatchCatalog) ?: NoWatchCatalog
+        // Nothing asks boxlore's API for shows or episodes until the watch is signed in.
+        val catalog = api?.let { SignedInWatchCatalog(ApiWatchCatalog(it)) { tokens.token != null } } ?: NoWatchCatalog
         val store = WatchLibraryStore.create(app, background)
         val settings = WatchSettings.create(app)
         val limits =
@@ -105,7 +112,16 @@ internal object LiveWatchContainer {
                 showOf = { id -> id.toLongOrNull()?.let { catalog.show(it) }?.feed?.let { WatchMapping.show(it, subscribed = true) } },
                 playingId = { watchPlayer.loadedEpisodeId },
             )
-        val account = WatchCloud.start(app, apis?.account, store, cloud, background)
+        val account = WatchCloud.start(apis, tokens, pairing, store, cloud, background)
+        // Signing in or out changes what the tile and the watch-face shortcut show.
+        background.launch {
+            account.state.map { it is WatchAccountState.SignedIn }.distinctUntilChanged().collect {
+                runCatching {
+                    BoxloreTileService.requestUpdate(app)
+                    BoxloreComplicationService.requestUpdate(app)
+                }
+            }
+        }
         // Runs once at start-up and again whenever the listener changes the limit.
         background.launch { settings.storageLimitMb.collect { downloads.enforceLimit() } }
         return WatchContainer(library = library, playback = playback, settings = settings, onPhoneCommand = PhoneOrders(store, downloads, playback::fromPhone)::take, glance = { GlanceRules.from(store.state.value) }, phoneKnown = link.phoneWord::await, account = account)

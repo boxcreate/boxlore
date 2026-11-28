@@ -123,4 +123,13 @@
     <string name="explore_topic_failed_title">Diese Sammlung konnte nicht geladen werden</string>
     <string name="explore_concept_example_dreams">Warum träumen wir?</string>
     <string name="explore_concept_example_pyramids">Wie wurden die Pyramiden gebaut?</string>
+    <string name="explore_check_search_title">Die Themensuche braucht eine kurze Prüfung</string>
+    <string name="explore_check_search_body">Sie bestätigt, dass du ein Mensch bist, damit boxlore nach Themen suchen kann. „Podcast finden“ geht auch ohne.</string>
+    <string name="explore_check_collection_title">Diese Sammlung braucht eine kurze Prüfung</string>
+    <string name="explore_check_collection_body">Sie bestätigt, dass du ein Mensch bist, damit boxlore diese Sammlung zeigen kann.</string>
+    <string name="explore_check_for_you_title">Deine Empfehlungen brauchen eine kurze Prüfung</string>
+    <string name="explore_check_for_you_body">Sie bestätigt, dass du ein Mensch bist, damit boxlore Folgen für dich auswählen kann.</string>
+    <string name="explore_check_start">Prüfung starten</string>
+    <string name="explore_check_running">Wird geprüft…</string>
+    <string name="explore_check_missed">Die Prüfung wurde nicht abgeschlossen.</string>
 </resources>

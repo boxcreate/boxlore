@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavHostState
 import cx.aswin.boxlore.wear.R
 import cx.aswin.boxlore.wear.WatchContainer
+import cx.aswin.boxlore.wear.cloud.WatchAccountState
 import cx.aswin.boxlore.wear.data.StoragePolicy
 import cx.aswin.boxlore.wear.data.WatchDownloadProblem
 import cx.aswin.boxlore.wear.model.ShowEpisodes
@@ -49,6 +51,7 @@ import cx.aswin.boxlore.wear.ui.search.SearchResultsScreen
 import cx.aswin.boxlore.wear.ui.search.SearchScreen
 import cx.aswin.boxlore.wear.ui.settings.AccountSettings
 import cx.aswin.boxlore.wear.ui.settings.AccountSettingsScreen
+import cx.aswin.boxlore.wear.ui.settings.PairingScreen
 import cx.aswin.boxlore.wear.ui.settings.SettingsPage
 import cx.aswin.boxlore.wear.ui.settings.SettingsScreen
 import cx.aswin.boxlore.wear.ui.settings.ShowsLayoutSettingsScreen
@@ -62,6 +65,8 @@ import cx.aswin.boxlore.wear.ui.shows.YourShowsScreen
 
 /** Route names. Arguments are appended as path segments. */
 internal object WatchRoutes {
+    /** The sign-in screen, the first screen until the watch is signed in. */
+    const val PAIRING = "pairing"
     const val HOME = "home"
     const val SHOWS = "shows"
     const val JUMP_BACK_IN = "jump_back_in"
@@ -106,6 +111,12 @@ internal object WatchRoutes {
 
     fun launchRoute(requested: String?): String? = requested?.takeIf { it in launchable }
 
+    /** Screens that work before the watch is signed in: downloads, their episodes and the player, which reach no API. */
+    private val signedOut = setOf(PAIRING, DOWNLOADS, UP_NEXT, PLAYER, PLAYER_MORE, SLEEP_TIMER, SPEED)
+
+    /** Whether [route] can open while the watch is not signed in; anything else waits for sign-in. */
+    fun opensSignedOut(route: String): Boolean = route in signedOut || route.startsWith("episode/") || route.startsWith("play_where/")
+
     fun show(showId: String): String = "show/${Uri.encode(showId)}"
 
     fun episode(episodeId: String): String = "episode/${Uri.encode(episodeId)}"
@@ -127,36 +138,62 @@ internal object WatchRoutes {
         }
 }
 
+/**
+ * The watch app. Until the watch is signed in it opens on the sign-in screen, with only the
+ * downloads already on it and the player besides; signing out returns there. Once signed in it
+ * opens on Home.
+ */
 @Composable
 internal fun WatchApp(
     container: WatchContainer,
     requestedRoute: String? = null,
     onRouteShown: () -> Unit = {},
 ) {
-    val navController = rememberSwipeDismissableNavController()
-    LaunchedEffect(requestedRoute) {
-        if (requestedRoute != null) {
-            navController.navigate(requestedRoute) { launchSingleTop = true }
-            onRouteShown()
-        }
-    }
-    val swipeState = rememberSwipeToDismissBoxState()
-    val navHostState = rememberSwipeDismissableNavHostState(swipeState)
+    val account by container.account.state.collectAsStateWithLifecycle()
+    val signedIn = account is WatchAccountState.SignedIn
     val inPlayer by container.playback.nowPlaying.collectAsStateWithLifecycle()
     val playingEpisode = inPlayer?.let { PlayingEpisode(it.episode.id, it.isPlaying) }
     AppScaffold {
         CompositionLocalProvider(LocalPlayingEpisode provides playingEpisode) {
-            SwipeDismissableNavHost(
-                navController = navController,
-                startDestination = WatchRoutes.HOME,
-                state = navHostState,
-            ) {
-                homeRoutes(container, navController, swipeState)
-                listRoutes(container, navController)
-                detailRoutes(container, navController)
-                playerRoutes(container, navController)
+            // Signing in or out starts the screens afresh, on Home or on the sign-in screen.
+            key(signedIn) {
+                val navController = rememberSwipeDismissableNavController()
+                LaunchedEffect(requestedRoute) {
+                    if (requestedRoute != null) {
+                        if (signedIn || WatchRoutes.opensSignedOut(requestedRoute)) navController.navigate(requestedRoute) { launchSingleTop = true }
+                        onRouteShown()
+                    }
+                }
+                val swipeState = rememberSwipeToDismissBoxState()
+                val navHostState = rememberSwipeDismissableNavHostState(swipeState)
+                SwipeDismissableNavHost(
+                    navController = navController,
+                    startDestination = if (signedIn) WatchRoutes.HOME else WatchRoutes.PAIRING,
+                    state = navHostState,
+                ) {
+                    if (signedIn) homeRoutes(container, navController, swipeState) else pairingRoute(container, navController)
+                    listRoutes(container, navController, signedIn)
+                    detailRoutes(container, navController, signedIn)
+                    playerRoutes(container, navController)
+                }
             }
         }
+    }
+}
+
+private fun NavGraphBuilder.pairingRoute(container: WatchContainer, navController: NavHostController) {
+    composable(WatchRoutes.PAIRING) {
+        val account by container.account.state.collectAsStateWithLifecycle()
+        val problem by container.account.problem.collectAsStateWithLifecycle()
+        val downloads by container.library.downloads.collectAsStateWithLifecycle()
+        PairingScreen(
+            state = account,
+            problem = problem,
+            hasDownloads = downloads.isNotEmpty(),
+            onSignIn = container.account::signIn,
+            onSignInBySelf = container.account::signInBySelf,
+            onDownloads = { navController.navigate(WatchRoutes.DOWNLOADS) },
+        )
     }
 }
 
@@ -230,27 +267,30 @@ private fun NavGraphBuilder.homeRoutes(
     }
 }
 
-private fun NavGraphBuilder.listRoutes(container: WatchContainer, navController: NavHostController) {
+/** The lists; before sign-in only Up next and Downloads, which hold what is already on the watch. */
+private fun NavGraphBuilder.listRoutes(container: WatchContainer, navController: NavHostController, signedIn: Boolean) {
     val openEpisode: (String) -> Unit = { navController.navigate(WatchRoutes.episode(it)) }
-    composable(WatchRoutes.JUMP_BACK_IN) {
-        val episodes by container.library.jumpBackIn.collectAsStateWithLifecycle()
-        EpisodeListScreen(
-            title = stringResource(R.string.wear_jump_back_in),
-            episodes = episodes,
-            detail = EpisodeDetail.TimeLeft,
-            empty = ListEmpty(Icons.Rounded.History, R.string.wear_jump_back_in_empty, R.string.wear_jump_back_in_empty_body),
-            onEpisode = openEpisode,
-        )
-    }
-    composable(WatchRoutes.NEW_EPISODES) {
-        val episodes by container.library.newEpisodes.collectAsStateWithLifecycle()
-        EpisodeListScreen(
-            title = stringResource(R.string.wear_new_episodes),
-            episodes = episodes,
-            detail = EpisodeDetail.Length,
-            empty = ListEmpty(Icons.Rounded.AutoAwesome, R.string.wear_new_episodes_empty),
-            onEpisode = openEpisode,
-        )
+    if (signedIn) {
+        composable(WatchRoutes.JUMP_BACK_IN) {
+            val episodes by container.library.jumpBackIn.collectAsStateWithLifecycle()
+            EpisodeListScreen(
+                title = stringResource(R.string.wear_jump_back_in),
+                episodes = episodes,
+                detail = EpisodeDetail.TimeLeft,
+                empty = ListEmpty(Icons.Rounded.History, R.string.wear_jump_back_in_empty, R.string.wear_jump_back_in_empty_body),
+                onEpisode = openEpisode,
+            )
+        }
+        composable(WatchRoutes.NEW_EPISODES) {
+            val episodes by container.library.newEpisodes.collectAsStateWithLifecycle()
+            EpisodeListScreen(
+                title = stringResource(R.string.wear_new_episodes),
+                episodes = episodes,
+                detail = EpisodeDetail.Length,
+                empty = ListEmpty(Icons.Rounded.AutoAwesome, R.string.wear_new_episodes_empty),
+                onEpisode = openEpisode,
+            )
+        }
     }
     composable(WatchRoutes.UP_NEXT) {
         val own by container.library.upNext.collectAsStateWithLifecycle()
@@ -290,23 +330,11 @@ private fun storageUsage(container: WatchContainer): String {
     )
 }
 
-private fun NavGraphBuilder.detailRoutes(container: WatchContainer, navController: NavHostController) {
-    composable(WatchRoutes.SHOW) { entry ->
-        val showId = entry.arguments?.getString(WatchRoutes.ARG).orEmpty()
-        val show by remember(showId) { container.library.show(showId) }.collectAsStateWithLifecycle(null)
-        val episodes by remember(showId) { container.library.episodes(showId) }.collectAsStateWithLifecycle(ShowEpisodes.Loading)
-        val current = show
-        when {
-            current != null ->
-                ShowScreen(
-                    show = current,
-                    episodes = episodes,
-                    onToggleSubscribed = { container.library.setSubscribed(current.id, !current.subscribed) },
-                    onEpisode = { navController.navigate(WatchRoutes.episode(it)) },
-                    onRetry = { container.library.reloadShow(showId) },
-                )
-            episodes == ShowEpisodes.Failed -> ShowUnavailable(onRetry = { container.library.reloadShow(showId) })
-            else -> ShowLoading()
+/** A show's page (which reads the API, so only once signed in) and an episode's. */
+private fun NavGraphBuilder.detailRoutes(container: WatchContainer, navController: NavHostController, signedIn: Boolean) {
+    if (signedIn) {
+        composable(WatchRoutes.SHOW) { entry ->
+            ShowRoute(container, navController, entry.arguments?.getString(WatchRoutes.ARG).orEmpty())
         }
     }
     composable(WatchRoutes.EPISODE) { entry ->
@@ -338,6 +366,25 @@ private fun NavGraphBuilder.detailRoutes(container: WatchContainer, navControlle
                     ),
             )
         }
+    }
+}
+
+@Composable
+private fun ShowRoute(container: WatchContainer, navController: NavHostController, showId: String) {
+    val show by remember(showId) { container.library.show(showId) }.collectAsStateWithLifecycle(null)
+    val episodes by remember(showId) { container.library.episodes(showId) }.collectAsStateWithLifecycle(ShowEpisodes.Loading)
+    val current = show
+    when {
+        current != null ->
+            ShowScreen(
+                show = current,
+                episodes = episodes,
+                onToggleSubscribed = { container.library.setSubscribed(current.id, !current.subscribed) },
+                onEpisode = { navController.navigate(WatchRoutes.episode(it)) },
+                onRetry = { container.library.reloadShow(showId) },
+            )
+        episodes == ShowEpisodes.Failed -> ShowUnavailable(onRetry = { container.library.reloadShow(showId) })
+        else -> ShowLoading()
     }
 }
 
