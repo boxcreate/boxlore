@@ -18,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheetProperties
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -207,18 +209,27 @@ internal fun TurnstileStepUpHost(
  * short resizable windows, a tabletop half), Skip moves up beside Echo's line there, and the content
  * scrolls when it still doesn't fit, so the check and Skip are always reachable. While [loading], a small loader sits in the card behind
  * the not-yet-drawn check.
+ *
+ * Only Skip or a passed check closes it: a tap outside, a swipe down or Back does nothing, so the
+ * check is never skipped by accident. It has no drag handle, since it can't be dragged.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TurnstileStepUpSheet(onSkip: () -> Unit, loading: Boolean = false, challenge: @Composable () -> Unit) {
     TrackScreenView("connection_check")
     val short = boxloreAvailableHeightDp() < CHECK_SHORT_WINDOW_DP
-    BoxloreModalBottomSheet(onDismissRequest = onSkip, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+    BoxloreModalBottomSheet(
+        onDismissRequest = {},
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = { it != SheetValue.Hidden }),
+        sheetGesturesEnabled = false,
+        dragHandle = null,
+        properties = ModalBottomSheetProperties(shouldDismissOnBackPress = false, shouldDismissOnClickOutside = false),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 24.dp, end = 24.dp, bottom = if (short) 8.dp else 16.dp),
+                .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = if (short) 8.dp else 16.dp),
             verticalArrangement = Arrangement.spacedBy(if (short) 8.dp else 16.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
